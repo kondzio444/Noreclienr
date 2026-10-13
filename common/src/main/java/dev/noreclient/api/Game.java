@@ -267,6 +267,11 @@ public interface Game {
 
     void enableResourcePack(String fileName);
 
+    void disableResourcePack(String fileName);
+
+    /** True when the pack from resourcepacks/ is currently enabled. */
+    boolean isResourcePackEnabled(String fileName);
+
     int activeResourcePacks();
 
     String gpu();

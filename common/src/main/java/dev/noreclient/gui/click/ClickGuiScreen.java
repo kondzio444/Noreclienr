@@ -76,15 +76,16 @@ public class ClickGuiScreen extends NoreScreen {
     private final TextBox search = new TextBox("Szukaj modułów...", 32);
     private final TextBox profileName = new TextBox("Nazwa profilu", 24);
     private final Map<StringSetting, TextBox> stringBoxes = new HashMap<>();
-    private final TextBox dlSearch = new TextBox("Szukaj na Modrinth...", 40);
-    private Modrinth.Kind dlKind = Modrinth.Kind.RESOURCEPACK;
+    private final TextBox dlSearch = new TextBox("Szukaj paczek zasobów...", 40);
     private final List<Modrinth.Hit> dlResults = new ArrayList<>();
     private final Map<String, String> dlState = new HashMap<>();
-    private String dlQuery = null, dlError = null, dlSort = "relevance";
-    private boolean dlLoading, dlMore;
+    private String dlQuery = null, dlError = null, dlSort = "relevance", dlCategory = "";
+    private boolean dlLoading, dlMore, dlInstalledTab;
+    private int dlTotal;
     private long dlTyped;
     private int dlRequest;
     private final Animation dlTab = new Animation(0, 16);
+    private List<java.io.File> dlLocal;
     private final Animation open = new Animation(0, 10);
     private final Animation scroll = new Animation(0, 16);
     private final Animation pageAnim = new Animation(1, 12);
@@ -323,8 +324,8 @@ public class ClickGuiScreen extends NoreScreen {
         y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 2, "Nowe",
                 (cx, cy, c) -> Icons.sparkle(ctx, cx, cy, 5, collection == 2 ? Theme.accent2() : c), String.valueOf(news), () -> openCollection(2, null));
         y = section(ctx, "ZASOBY", y + 3);
-        navEntry(ctx, mx, my, y, page == Page.DOWNLOADS, "Pobieraj",
-                (cx, cy, c) -> Icons.download(ctx, cx, cy, 9, c), "Modrinth", () -> switchPage(Page.DOWNLOADS, null));
+        navEntry(ctx, mx, my, y, page == Page.DOWNLOADS, "Paczki zasobów",
+                (cx, cy, c) -> Icons.download(ctx, cx, cy, 9, c), "", () -> switchPage(Page.DOWNLOADS, null));
 
         // bottom buttons
         float bw = SIDEBAR - 24;
@@ -405,8 +406,8 @@ public class ClickGuiScreen extends NoreScreen {
             Module m = selected;
             hit(sx - 9, sy - 9, 18, 18, false, (a, b, c) -> toggleFavorite(m));
         } else if (page == Page.DOWNLOADS) {
-            title = "Pobieraj";
-            sub = "Modrinth \u2022 Minecraft " + Modrinth.gameVersion();
+            title = "Paczki zasobów";
+            sub = "Modrinth \u2022 Minecraft " + Modrinth.gameVersion() + " \u2022 włączysz jednym kliknięciem";
         } else if (page == Page.PROFILES) {
             title = "Profile";
             sub = "Zapisuj i wczytuj konfiguracje (aktywny: " + NoreClient.get().config().getActiveProfile() + ")";
@@ -888,7 +889,20 @@ public class ClickGuiScreen extends NoreScreen {
         return y;
     }
 
-    // ------------------------------------------------------------------ downloads page (Modrinth)
+    // ------------------------------------------------------------------ downloads page (resource packs from Modrinth)
+
+    private static final String[][] DL_SORTS = {{"relevance", "Trafność"}, {"downloads", "Pobrania"}, {"follows", "Obserwujący"}, {"newest", "Nowe"}, {"updated", "Aktualne"}};
+    private static final String[][] DL_CATS = {{"", "Wszystkie"}, {"combat", "PvP"}, {"vanilla-like", "Jak vanilla"}, {"simplistic", "Proste"},
+            {"realistic", "Realistyczne"}, {"gui", "Interfejs"}, {"tweaks", "Poprawki"}, {"themed", "Tematyczne"}, {"16x", "16x"}, {"32x", "32x"}, {"64x", "64x+"}};
+
+    private static String dlCatLabel(String c) {
+        for (String[] e : DL_CATS) if (e[0].equals(c)) return e[1];
+        return c.isEmpty() ? c : Character.toUpperCase(c.charAt(0)) + c.substring(1).replace('-', ' ');
+    }
+
+    private static String fmtCount(long n) {
+        return n >= 1_000_000 ? String.format("%.1fM", n / 1e6) : n >= 1000 ? String.format("%.1fK", n / 1e3) : String.valueOf(n);
+    }
 
     private void runSearch(boolean append) {
         if (!append) {
@@ -899,29 +913,24 @@ public class ClickGuiScreen extends NoreScreen {
         dlLoading = true;
         dlError = null;
         final int req = ++dlRequest;
-        Modrinth.Kind kind = dlKind;
-        Modrinth.search(dlQuery, kind, dlSort, append ? dlResults.size() : 0, (list, t) -> NoreClient.runNextTick(() -> {
+        Modrinth.search(dlQuery, dlCategory, dlSort, append ? dlResults.size() : 0, (res, t) -> NoreClient.runNextTick(() -> {
             if (req != dlRequest) return;
             dlLoading = false;
             if (t != null) {
                 dlError = "Brak połączenia z Modrinth";
                 return;
             }
-            dlResults.addAll(list);
-            dlMore = list.size() == 20;
+            dlResults.addAll(res.hits);
+            dlTotal = res.total;
+            dlMore = dlResults.size() < res.total && res.hits.size() == Modrinth.PAGE;
             if (!append) pageSwitch = System.currentTimeMillis();
         }));
     }
 
     private void install(Modrinth.Hit h) {
-        if (dlKind == Modrinth.Kind.DATAPACK && dlKind.targetDir() == null) {
-            NotificationManager.push("Datapacki", "Najpierw wejdź do świata (singleplayer)", NotificationManager.Type.WARNING);
-            return;
-        }
-        final Modrinth.Kind kind = dlKind;
         dlState.put(h.id, "loading");
         Sounds.click();
-        Modrinth.install(h.id, kind, (file, t) -> NoreClient.runNextTick(() -> {
+        Modrinth.install(h.id, (file, t) -> NoreClient.runNextTick(() -> {
             if (t != null) {
                 dlState.put(h.id, "error");
                 Throwable c = t.getCause() != null ? t.getCause() : t;
@@ -929,159 +938,118 @@ public class ClickGuiScreen extends NoreScreen {
                 return;
             }
             dlState.put(h.id, "done:" + file);
-            String msg = kind == Modrinth.Kind.RESOURCEPACK ? "Pobrano – kliknij Włącz"
-                    : kind == Modrinth.Kind.MOD ? "Zainstalowano – uruchom grę ponownie"
-                    : kind == Modrinth.Kind.DATAPACK ? "Dodano do świata – wpisz /reload" : "Pobrano – wymaga Iris";
-            NotificationManager.push(Render2D.trim(h.title, 120), msg, NotificationManager.Type.SUCCESS);
+            dlLocal = null;
+            NotificationManager.push(Render2D.trim(h.title, 120), "Pobrano – kliknij Włącz", NotificationManager.Type.SUCCESS);
         }));
     }
 
+    private List<java.io.File> localPacks() {
+        if (dlLocal == null) {
+            dlLocal = new ArrayList<>();
+            java.io.File[] files = Modrinth.packDir().listFiles();
+            if (files != null) {
+                for (java.io.File f : files) if (f.isDirectory() || f.getName().toLowerCase().endsWith(".zip")) dlLocal.add(f);
+            }
+            dlLocal.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        }
+        return dlLocal;
+    }
+
+    /** Small pill used for tabs, sorts and categories; returns its width. */
+    private float pill(Gfx ctx, double mx, double my, float x, float y, float h, String label, boolean on, Object key, Runnable action) {
+        float w = Render2D.textWidth(label) * 0.8f + 14;
+        boolean hov = hovered(mx, my, x, y, w, h, true);
+        float ha = anim(key, 16).target(hov || on ? 1 : 0).update();
+        if (on) Widgets.glowBox(ctx, x, y, w, h, h / 2f, Theme.accent(), 0.2f, 0.85f);
+        else {
+            Render2D.roundedRect(ctx, x, y, w, h, h / 2f, ColorUtil.lerp(Theme.PANEL, Theme.CARD_HOVER, ha));
+            Render2D.roundedOutline(ctx, x, y, w, h, h / 2f, 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 110), ha));
+        }
+        Render2D.scaledText(ctx, label, x + 7, y + h / 2f - 3, 0.8f, on ? 0xFFFFFFFF : ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
+        hit(x, y, w, h, true, (a, b, c) -> { Sounds.click(); action.run(); });
+        return w;
+    }
+
     private void renderDownloads(Gfx ctx, double mx, double my) {
-        if (dlQuery == null || (!dlSearch.getText().equals(dlQuery) && System.currentTimeMillis() - dlTyped > 350)) runSearch(false);
+        if (!dlInstalledTab && (dlQuery == null || (!dlSearch.getText().equals(dlQuery) && System.currentTimeMillis() - dlTyped > 350))) runSearch(false);
         float x = clipX, w = clipW, y = clipY + 2;
 
-        // kind tabs with a sliding glow pill
-        Modrinth.Kind[] kinds = Modrinth.Kind.values();
-        float tw = (w - 6 * (kinds.length - 1)) / kinds.length;
-        float px = dlTab.target(x + dlKind.ordinal() * (tw + 6)).update();
-        if (Math.abs(px - x) > w) dlTab.set(x + dlKind.ordinal() * (tw + 6));
-        for (int i = 0; i < kinds.length; i++) {
-            float bx = x + i * (tw + 6);
-            Render2D.roundedRect(ctx, bx, y, tw, 20, Theme.radius(), Theme.PANEL);
-        }
+        // tabs: browse / installed with a sliding glow pill
+        String[] tabs = {"Przeglądaj", "Zainstalowane (" + localPacks().size() + ")"};
+        float tw = (w - 6) / 2f;
+        float target = x + (dlInstalledTab ? tw + 6 : 0);
+        float px = dlTab.target(target).update();
+        if (Math.abs(px - target) > w) dlTab.set(target);
+        for (int i = 0; i < 2; i++) Render2D.roundedRect(ctx, x + i * (tw + 6), y, tw, 20, Theme.radius(), Theme.PANEL);
         Widgets.glowBox(ctx, dlTab.get(), y, tw, 20, Theme.radius(), Theme.accent(), 0.3f, 1f);
-        for (int i = 0; i < kinds.length; i++) {
-            Modrinth.Kind k = kinds[i];
+        for (int i = 0; i < 2; i++) {
             float bx = x + i * (tw + 6);
-            boolean on = k == dlKind;
+            boolean on = (i == 1) == dlInstalledTab;
             boolean hov = hovered(mx, my, bx, y, tw, 20, true);
-            Render2D.centeredText(ctx, k.label, bx + tw / 2f, y + 6, on ? Widgets.glowText(Theme.accent(), 0.4f) : hov ? Theme.TEXT : Theme.TEXT_DIM, false);
+            float ic = bx + tw / 2f - Render2D.textWidth(tabs[i]) / 2f - 8;
+            if (i == 0) Icons.globe(ctx, ic, y + 10, 8, on ? 0xFFFFFFFF : Theme.TEXT_MUTED);
+            else Icons.download(ctx, ic, y + 10, 8, on ? 0xFFFFFFFF : Theme.TEXT_MUTED);
+            Render2D.centeredText(ctx, tabs[i], bx + tw / 2f + 5, y + 6, on ? Widgets.glowText(Theme.accent(), 0.4f) : hov ? Theme.TEXT : Theme.TEXT_DIM, false);
+            final boolean inst = i == 1;
             hit(bx, y, tw, 20, true, (a, b, c) -> {
-                if (dlKind == k) return;
-                dlKind = k;
+                if (dlInstalledTab == inst) return;
+                dlInstalledTab = inst;
+                dlLocal = null;
+                scroll.set(0);
+                pageSwitch = System.currentTimeMillis();
                 Sounds.click();
-                runSearch(false);
             });
         }
-        y += 26;
+        y += 27;
+        if (dlInstalledTab) { renderInstalledPacks(ctx, mx, my, x, y, w); return; }
 
-        // sort + context line
-        String[] sorts = {"relevance", "downloads", "updated"};
-        String[] sortLabels = {"Trafność", "Popularne", "Nowe"};
+        // sort + category pills (wrapping)
         float sx = x;
-        for (int i = 0; i < sorts.length; i++) {
-            String srt = sorts[i];
-            float sw = Render2D.textWidth(sortLabels[i]) + 14;
-            boolean on = dlSort.equals(srt);
-            if (on) Widgets.glowBox(ctx, sx, y, sw, 14, 7, Theme.accent(), 0, 0.7f);
-            else Render2D.roundedRect(ctx, sx, y, sw, 14, 7, hovered(mx, my, sx, y, sw, 14, true) ? Theme.CARD_HOVER : Theme.CARD);
-            Render2D.text(ctx, sortLabels[i], sx + 7, y + 3, on ? 0xFFFFFFFF : Theme.TEXT_DIM);
-            hit(sx, y, sw, 14, true, (a, b, c) -> {
-                dlSort = srt;
-                Sounds.click();
-                runSearch(false);
-            });
-            sx += sw + 5;
+        Render2D.scaledText(ctx, "SORTUJ", sx, y + 4, 0.65f, Theme.TEXT_MUTED, false);
+        sx += 32;
+        for (String[] srt : DL_SORTS) {
+            sx += pill(ctx, mx, my, sx, y, 13, srt[1], dlSort.equals(srt[0]), "dls_" + srt[0], () -> { dlSort = srt[0]; runSearch(false); }) + 4;
         }
-        String ctxLine = dlKind == Modrinth.Kind.RESOURCEPACK ? "Instalowane do resourcepacks/ \u2022 włączysz jednym kliknięciem"
-                : dlKind == Modrinth.Kind.MOD ? "Mody Fabric \u2022 wymagają ponownego uruchomienia gry"
-                : dlKind == Modrinth.Kind.DATAPACK ? (dlKind.targetDir() == null ? "\u26a0 Wejdź do świata singleplayer, aby dodać datapack" : "Instalowane do bieżącego świata")
-                : "Instalowane do shaderpacks/ \u2022 wymagają moda Iris";
+        y += 18;
+        sx = x;
+        for (String[] cat : DL_CATS) {
+            float cw = Render2D.textWidth(cat[1]) * 0.8f + 14;
+            if (sx + cw > x + w) { sx = x; y += 17; }
+            sx += pill(ctx, mx, my, sx, y, 13, cat[1], dlCategory.equals(cat[0]), "dlc_" + cat[0], () -> { dlCategory = cat[0]; runSearch(false); }) + 4;
+        }
         y += 19;
-        Render2D.scaledText(ctx, ctxLine, x + 2, y, 0.75f, ctxLine.startsWith("\u26a0") ? Theme.WARNING : Theme.TEXT_MUTED, false);
-        y += 12;
+        String info = dlLoading && dlResults.isEmpty() ? "Szukam..." : fmtCount(dlTotal) + " paczek zasobów dla Minecraft " + Modrinth.gameVersion();
+        Render2D.scaledText(ctx, info, x + 1, y, 0.72f, Theme.TEXT_MUTED, false);
+        y += 11;
 
         if (dlResults.isEmpty()) {
             if (dlLoading) {
-                float a = (System.currentTimeMillis() % 1000) / 1000f * 360;
-                Render2D.ring(ctx, x + w / 2f, y + 50, 10, 2.5f, a, a + 260, Theme.accent());
-                Render2D.centeredText(ctx, "Szukam na Modrinth...", x + w / 2f, y + 68, Theme.TEXT_MUTED, false);
+                for (int i = 0; i < 4; i++) {
+                    float cw = (w - 6) / 2f, cx = x + (i % 2) * (cw + 6), cy = y + (i / 2) * 78;
+                    float sh = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 220.0 + i);
+                    Render2D.roundedRect(ctx, cx, cy, cw, 72, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, sh * 0.6f));
+                }
             } else {
-                Render2D.centeredText(ctx, dlError != null ? dlError : "Brak wyników", x + w / 2f, y + 46, Theme.TEXT_MUTED, false);
+                Icons.download(ctx, x + w / 2f, y + 40, 16, ColorUtil.withAlpha(Theme.accent(), 160));
+                Render2D.centeredText(ctx, dlError != null ? dlError : "Brak wyników", x + w / 2f, y + 56, Theme.TEXT_MUTED, false);
             }
-            contentHeight = y + 90 - clipY;
+            contentHeight = y + 170 - clipY;
             return;
         }
 
         long since = System.currentTimeMillis() - pageSwitch;
+        float cw = (w - 6) / 2f, ch = 74;
         for (int i = 0; i < dlResults.size(); i++) {
             Modrinth.Hit h = dlResults.get(i);
-            float rh = 40;
-            if (y > clipY + scroll.get() + clipH || y + rh < clipY + scroll.get()) {
-                y += rh + 5;
-                continue;
-            }
-            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 30) / 300f);
-            float off = (1 - Math.max(0, p)) * 12;
+            float cx = x + (i % 2) * (cw + 6), cy = y + (i / 2) * (ch + 6);
+            if (cy > clipY + scroll.get() + clipH || cy + ch < clipY + scroll.get()) continue;
+            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 35) / 320f);
             ctx.setAlpha(alpha * Math.max(0, Math.min(1, p)));
-            float ry = y + off;
-            boolean hov = hovered(mx, my, x, ry, w, rh, true);
-            float ha = anim("dl_" + h.id, 14).target(hov ? 1 : 0).update();
-            Render2D.roundedRect(ctx, x, ry, w, rh, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
-            Render2D.roundedOutline(ctx, x, ry, w, rh, Theme.radius(), 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 120), ha));
-
-            // icon
-            dev.noreclient.api.TextureRef icon = Modrinth.icon(h.iconUrl);
-            if (icon != null) {
-                Render2D.texture(ctx, icon, x + 5, ry + 5, 30, 30, 1f);
-            } else {
-                Render2D.roundedGradient(ctx, x + 5, ry + 5, 30, 30, 7, Theme.accent2(), Theme.accent(), true);
-                Render2D.centeredText(ctx, h.title.isEmpty() ? "?" : h.title.substring(0, 1).toUpperCase(), x + 20, ry + 16, 0xFFFFFFFF, true);
-            }
-            float tx = x + 42;
-            float maxW = w - 42 - 86;
-            String title = Render2D.trim(h.title, (int) (maxW * 0.6f));
-            Render2D.text(ctx, title, tx, ry + 6, Theme.TEXT);
-            Render2D.scaledText(ctx, "od " + h.author, tx + Render2D.textWidth(title) + 5, ry + 7.5f, 0.75f, Theme.TEXT_MUTED, false);
-            Render2D.scaledText(ctx, Render2D.trim(h.description, (int) (maxW / 0.75f)), tx, ry + 17, 0.75f, Theme.TEXT_DIM, false);
-            String dls = h.downloads >= 1_000_000 ? String.format("%.1fM", h.downloads / 1e6) : h.downloads >= 1000 ? String.format("%.1fK", h.downloads / 1e3) : String.valueOf(h.downloads);
-            Render2D.scaledText(ctx, "\u2b07 " + dls + " pobrań", tx, ry + 28, 0.7f, Theme.TEXT_MUTED, false);
-
-            // action button
-            String st = dlState.getOrDefault(h.id, "");
-            float bw = 74, bh = 18, bx = x + w - bw - 8, by = ry + (rh - bh) / 2f;
-            boolean bh2 = hovered(mx, my, bx, by, bw, bh, true);
-            float ba = anim("dlb_" + h.id, 16).target(bh2 ? 1 : 0).update();
-            String label;
-            int col = Theme.accent();
-            if (st.equals("loading")) {
-                Widgets.glowBox(ctx, bx, by, bw, bh, Theme.radius(), col, 0.2f, 0.8f);
-                float a = (System.currentTimeMillis() % 900) / 900f * 360;
-                Render2D.ring(ctx, bx + bw / 2f, by + bh / 2f, 5, 1.5f, a, a + 260, Widgets.glowText(col, 0));
-                label = null;
-            } else if (st.equals("enabled")) {
-                col = Theme.SUCCESS;
-                label = "\u2714 Włączona";
-            } else if (st.startsWith("done:")) {
-                boolean rp = dlKind == Modrinth.Kind.RESOURCEPACK;
-                col = rp ? Theme.accent() : Theme.SUCCESS;
-                label = rp ? "Włącz" : "\u2714 Gotowe";
-            } else {
-                label = st.equals("error") ? "Ponów" : "Pobierz";
-            }
-            if (label != null) {
-                Widgets.glowBox(ctx, bx, by, bw, bh, Theme.radius(), col, ba, 1f);
-                Render2D.centeredText(ctx, label, bx + bw / 2f, by + 5, Widgets.glowText(col, ba), false);
-                final String state = st;
-                hit(bx, by, bw, bh, true, (a, b, c) -> {
-                    if (state.equals("loading") || state.equals("enabled")) return;
-                    if (state.startsWith("done:")) {
-                        if (dlKind == Modrinth.Kind.RESOURCEPACK) {
-                            game().enableResourcePack(state.substring(5));
-                            dlState.put(h.id, "enabled");
-                            Sounds.toggle(true);
-                        }
-                        return;
-                    }
-                    install(h);
-                });
-            }
-            hit(x, ry, w - bw - 16, rh, true, (a, b, c) -> {
-                if (c == 1) game().openUrl("https://modrinth.com/project/" + h.slug);
-            });
+            float ry = cy + (1 - Math.max(0, p)) * 14;
+            renderPackCard(ctx, mx, my, h, cx, ry, cw, ch);
             ctx.setAlpha(alpha);
-            y += rh + 5;
         }
+        y += ((dlResults.size() + 1) / 2) * (ch + 6);
         if (dlMore) {
             boolean lh = hovered(mx, my, x + w / 2f - 60, y + 2, 120, 18, true);
             if (dlLoading) {
@@ -1093,8 +1061,151 @@ public class ClickGuiScreen extends NoreScreen {
             }
             y += 26;
         }
-        Render2D.scaledText(ctx, "PPM na pozycji otwiera stronę projektu", x, y + 2, 0.7f, Theme.TEXT_MUTED, false);
+        Render2D.scaledText(ctx, "PPM na kafelku otwiera stronę paczki na Modrinth", x, y + 2, 0.7f, Theme.TEXT_MUTED, false);
         contentHeight = y + 14 - clipY;
+    }
+
+    private void renderPackCard(Gfx ctx, double mx, double my, Modrinth.Hit h, float x, float y, float w, float hgt) {
+        boolean hov = hovered(mx, my, x, y, w, hgt, true);
+        float ha = anim("dl_" + h.id, 14).target(hov ? 1 : 0).update();
+        float r = Theme.radius();
+        if (ha > 0.01f) Render2D.shadow(ctx, x, y, w, hgt, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) (60 * ha)));
+        Render2D.roundedRect(ctx, x, y, w, hgt, r, ColorUtil.lerp(Theme.PANEL, Theme.CARD, 0.4f + 0.6f * ha));
+        // tinted header band
+        Render2D.roundedGradient(ctx, x, y, w, 26, r, ColorUtil.withAlpha(Theme.accent(), (int) (55 + 35 * ha)), ColorUtil.withAlpha(Theme.accent(), 0), true);
+        Render2D.roundedOutline(ctx, x, y, w, hgt, r, 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 150), ha));
+
+        // icon
+        float is = 30 + ha * 2, ix = x + 7 - ha, iy = y + 7 - ha;
+        Render2D.shadow(ctx, ix, iy, is, is, 7, 3, 0x60000000);
+        dev.noreclient.api.TextureRef icon = Modrinth.icon(h.iconUrl);
+        if (icon != null) {
+            Render2D.roundedRect(ctx, ix, iy, is, is, 7, 0xFF1A1411);
+            Render2D.texture(ctx, icon, ix, iy, is, is, 1f);
+        } else {
+            Render2D.roundedGradient(ctx, ix, iy, is, is, 7, Theme.accent2(), Theme.accent(), true);
+            Render2D.centeredText(ctx, h.title.isEmpty() ? "?" : h.title.substring(0, 1).toUpperCase(), ix + is / 2f, iy + is / 2f - 4, 0xFFFFFFFF, true);
+        }
+        float tx = x + 44, maxW = w - 50;
+        Render2D.text(ctx, Render2D.trim(h.title, (int) maxW), tx, y + 9, Theme.TEXT);
+        Render2D.scaledText(ctx, Render2D.trim("od " + h.author, (int) (maxW / 0.7f)), tx, y + 20, 0.7f, Theme.TEXT_MUTED, false);
+
+        // description: two wrapped lines
+        String[] lines = wrap(h.description, (int) ((w - 14) / 0.72f), 2);
+        for (int l = 0; l < lines.length; l++) Render2D.scaledText(ctx, lines[l], x + 7, y + 41 + l * 8, 0.72f, Theme.TEXT_DIM, false);
+
+        // footer: stats + category + button
+        float fy = y + hgt - 15;
+        String stats = "⬇ " + fmtCount(h.downloads) + "   ❤ " + fmtCount(h.follows);
+        Render2D.scaledText(ctx, stats, x + 7, fy + 4, 0.66f, Theme.TEXT_MUTED, false);
+        if (!h.categories.isEmpty()) {
+            String cat = dlCatLabel(h.categories.get(0));
+            float cx = x + 9 + Render2D.textWidth(stats) * 0.66f + 4, cwid = Render2D.textWidth(cat) * 0.62f + 8;
+            if (cx + cwid < x + w - 66) {
+                Render2D.roundedRect(ctx, cx, fy + 2, cwid, 10, 5, ColorUtil.withAlpha(Theme.accent(), 40));
+                Render2D.scaledText(ctx, cat, cx + 4, fy + 4.5f, 0.62f, ColorUtil.brighten(Theme.accent(), 0.4f), false);
+            }
+        }
+        String st = dlState.getOrDefault(h.id, "");
+        float bw = 56, bh = 14, bx = x + w - bw - 6, by = fy;
+        boolean bhov = hovered(mx, my, bx, by, bw, bh, true);
+        float ba = anim("dlb_" + h.id, 16).target(bhov ? 1 : 0).update();
+        int col = Theme.accent();
+        String label;
+        if (st.equals("loading")) {
+            Widgets.glowBox(ctx, bx, by, bw, bh, 7, col, 0.2f, 0.8f);
+            float a = (System.currentTimeMillis() % 900) / 900f * 360;
+            Render2D.ring(ctx, bx + bw / 2f, by + bh / 2f, 4, 1.4f, a, a + 260, Widgets.glowText(col, 0));
+            label = null;
+        } else if (st.equals("enabled")) {
+            col = Theme.SUCCESS;
+            label = "✔ Włączona";
+        } else if (st.startsWith("done:")) {
+            label = "Włącz";
+        } else {
+            label = st.equals("error") ? "Ponów" : "Pobierz";
+        }
+        if (label != null) {
+            Widgets.glowBox(ctx, bx, by, bw, bh, 7, col, ba, 1f);
+            Render2D.scaledText(ctx, label, bx + bw / 2f - Render2D.textWidth(label) * 0.4f, by + 4, 0.8f, Widgets.glowText(col, ba), false);
+            final String state = st;
+            hit(bx, by, bw, bh, true, (a, b, c) -> {
+                if (state.equals("loading") || state.equals("enabled")) return;
+                if (state.startsWith("done:")) {
+                    game().enableResourcePack(state.substring(5));
+                    dlState.put(h.id, "enabled");
+                    Sounds.toggle(true);
+                    return;
+                }
+                install(h);
+            });
+        }
+        hit(x, y, w, hgt - 16, true, (a, b, c) -> {
+            if (c == 1) game().openUrl("https://modrinth.com/resourcepack/" + h.slug);
+        });
+    }
+
+    private void renderInstalledPacks(Gfx ctx, double mx, double my, float x, float y, float w) {
+        List<java.io.File> packs = localPacks();
+        Render2D.scaledText(ctx, packs.size() + " paczek w resourcepacks/ • włączonych: " + game().activeResourcePacks(), x + 1, y, 0.72f, Theme.TEXT_MUTED, false);
+        float fw = 74, fx = x + w - fw;
+        boolean fh = hovered(mx, my, fx, y - 4, fw, 14, true);
+        Widgets.glowBox(ctx, fx, y - 4, fw, 14, 7, Theme.accent(), anim("dl_folder", 14).target(fh ? 1 : 0).update(), 0.6f);
+        Render2D.scaledText(ctx, "Otwórz folder", fx + 8, y - 0.5f, 0.75f, 0xFFFFFFFF, false);
+        hit(fx, y - 4, fw, 14, true, (a, b, c) -> game().openUrl(Modrinth.packDir().toURI().toString()));
+        y += 14;
+        if (packs.isEmpty()) {
+            Icons.download(ctx, x + w / 2f, y + 40, 16, ColorUtil.withAlpha(Theme.accent(), 160));
+            Render2D.centeredText(ctx, "Nie masz jeszcze paczek – znajdziesz je w zakładce Przeglądaj", x + w / 2f, y + 56, Theme.TEXT_MUTED, false);
+            contentHeight = y + 90 - clipY;
+            return;
+        }
+        long since = System.currentTimeMillis() - pageSwitch;
+        for (int i = 0; i < packs.size(); i++) {
+            java.io.File f = packs.get(i);
+            float rh = 26;
+            if (y > clipY + scroll.get() + clipH || y + rh < clipY + scroll.get()) { y += rh + 4; continue; }
+            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 30) / 300f);
+            ctx.setAlpha(alpha * Math.max(0, Math.min(1, p)));
+            float ry = y + (1 - Math.max(0, p)) * 10;
+            boolean on = game().isResourcePackEnabled(f.getName());
+            boolean hov = hovered(mx, my, x, ry, w, rh, true);
+            float ha = anim("dli_" + f.getName(), 14).target(hov ? 1 : 0).update();
+            Render2D.roundedRect(ctx, x, ry, w, rh, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
+            Render2D.roundedOutline(ctx, x, ry, w, rh, Theme.radius(), 1, on ? ColorUtil.withAlpha(Theme.SUCCESS, 110) : ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 110), ha));
+            Render2D.roundedGradient(ctx, x + 5, ry + 4, 18, 18, 5, on ? Theme.SUCCESS : Theme.accent2(), on ? ColorUtil.darken(Theme.SUCCESS, 0.3f) : Theme.accent(), true);
+            Render2D.centeredText(ctx, f.isDirectory() ? "D" : "Z", x + 14, ry + 9, 0xFFFFFFFF, true);
+            String name = f.getName().replaceAll("(?i)\\.zip$", "");
+            Render2D.text(ctx, Render2D.trim(name, (int) (w - 100)), x + 30, ry + 5, on ? Theme.TEXT : Theme.TEXT_DIM);
+            Render2D.scaledText(ctx, f.isDirectory() ? "folder" : (f.length() / 1024 >= 1024 ? String.format("%.1f MB", f.length() / 1048576.0) : (f.length() / 1024) + " KB"),
+                    x + 30, ry + 15.5f, 0.66f, Theme.TEXT_MUTED, false);
+            float tgx = x + w - 34;
+            Widgets.toggle(ctx, tgx, ry + 7, 26, 12, anim("dlt_" + f.getName(), 14).target(on ? 1 : 0).update());
+            hit(tgx - 4, ry + 3, 34, 20, true, (a, b, c) -> {
+                if (game().isResourcePackEnabled(f.getName())) game().disableResourcePack(f.getName());
+                else game().enableResourcePack(f.getName());
+                Sounds.toggle(!on);
+            });
+            ctx.setAlpha(alpha);
+            y += rh + 4;
+        }
+        contentHeight = y + 6 - clipY;
+    }
+
+    /** Greedy word wrap into at most maxLines lines (the last one is trimmed with an ellipsis). */
+    private static String[] wrap(String text, int maxWidth, int maxLines) {
+        List<String> out = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split("\\s+")) {
+            String next = line.length() == 0 ? word : line + " " + word;
+            if (Render2D.textWidth(next) <= maxWidth) { line.setLength(0); line.append(next); continue; }
+            if (out.size() == maxLines - 1) { line.setLength(0); line.append(next); break; }
+            if (line.length() > 0) out.add(line.toString());
+            line.setLength(0);
+            line.append(word);
+        }
+        if (line.length() > 0 && out.size() < maxLines) out.add(out.size() == maxLines - 1 ? Render2D.trim(line.toString(), maxWidth) : line.toString());
+        return out.toArray(new String[0]);
     }
 
     private float stringRow(Gfx ctx, float x, float y, float w, StringSetting s, double mx, double my) {

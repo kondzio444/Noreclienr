@@ -42,7 +42,7 @@ public class NorePauseMenu extends NoreScreen {
                 .add("Statystyki", null, SideNav.CHART, SideNav.NORMAL, () -> game().openStats(self))
                 .add("Opcje", null, SideNav.GEAR, SideNav.NORMAL, () -> game().openOptions(self));
         if (game().canOpenLan()) nav.add("Otwórz w LAN", null, SideNav.WIFI, SideNav.NORMAL, () -> game().openLan(self));
-        else nav.add("Pobieraj zasoby", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)));
+        else nav.add("Paczki zasobów", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)));
         nav.add(game().singleplayer() ? "Zapisz i wyjdź" : "Rozłącz", null, SideNav.POWER, SideNav.DANGER, () -> game().disconnect());
     }
 

@@ -522,6 +522,17 @@ public final class GameImpl implements Game {
         if (manager.enable("file/" + fileName)) mc().options.refreshResourcePacks(manager);
     }
 
+    @Override
+    public void disableResourcePack(String fileName) {
+        var manager = mc().getResourcePackManager();
+        if (manager.disable("file/" + fileName)) mc().options.refreshResourcePacks(manager);
+    }
+
+    @Override
+    public boolean isResourcePackEnabled(String fileName) {
+        return mc().getResourcePackManager().getEnabledIds().contains("file/" + fileName);
+    }
+
     @Override public int activeResourcePacks() { return (int) mc().getResourcePackManager().getEnabledIds().stream().filter(id -> id.startsWith("file/")).count(); }
     @Override public String gpu() { return GlDebugInfo.getRenderer(); }
     @Override public String cpu() { return GlDebugInfo.getCpuInfo(); }

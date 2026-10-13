@@ -20,10 +20,8 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,43 +47,38 @@ public final class Modrinth {
         void done(T result, Throwable error);
     }
 
-    public enum Kind {
-        RESOURCEPACK("resourcepack", "Paczki zasobów"),
-        MOD("mod", "Mody"),
-        DATAPACK("datapack", "Datapacki"),
-        SHADER("shader", "Shadery");
-
-        public final String projectType;
-        public final String label;
-
-        Kind(String projectType, String label) {
-            this.projectType = projectType;
-            this.label = label;
-        }
-
-        public File targetDir() {
-            File run = Platform.game().gameDir();
-            switch (this) {
-                case RESOURCEPACK: return Platform.game().resourcePackDir();
-                case MOD: return new File(run, "mods");
-                case SHADER: return new File(run, "shaderpacks");
-                default: return Platform.game().datapackDir();
-            }
-        }
+    /** Folder the in-game browser installs to (resource packs only – mods come from the launcher). */
+    public static File packDir() {
+        return Platform.game().resourcePackDir();
     }
 
     public static final class Hit {
-        public final String id, slug, title, author, description, iconUrl;
-        public final long downloads;
+        public final String id, slug, title, author, description, iconUrl, galleryUrl;
+        public final long downloads, follows;
+        public final List<String> categories;
 
-        Hit(String id, String slug, String title, String author, String description, long downloads, String iconUrl) {
+        Hit(String id, String slug, String title, String author, String description, long downloads, long follows, String iconUrl, String galleryUrl, List<String> categories) {
             this.id = id;
             this.slug = slug;
             this.title = title;
             this.author = author;
             this.description = description;
             this.downloads = downloads;
+            this.follows = follows;
             this.iconUrl = iconUrl;
+            this.galleryUrl = galleryUrl;
+            this.categories = categories;
+        }
+    }
+
+    /** One page of search results plus the total number of hits. */
+    public static final class Page {
+        public final List<Hit> hits;
+        public final int total;
+
+        Page(List<Hit> hits, int total) {
+            this.hits = hits;
+            this.total = total;
         }
     }
 
@@ -135,23 +128,29 @@ public final class Modrinth {
         return o.has(k) && !o.get(k).isJsonNull() ? o.get(k).getAsString() : "";
     }
 
-    public static void search(final String query, final Kind kind, final String sort, final int offset, final Callback<List<Hit>> cb) {
+    public static final int PAGE = 20;
+
+    /** Searches resource packs for the running Minecraft version; category may be null. */
+    public static void search(final String query, final String category, final String sort, final int offset, final Callback<Page> cb) {
         POOL.execute(new Runnable() {
             @Override public void run() {
                 try {
                     JsonArray facets = new JsonArray();
-                    facets.add(single("project_type:" + kind.projectType));
+                    facets.add(single("project_type:resourcepack"));
                     facets.add(single("versions:" + gameVersion()));
-                    if (kind == Kind.MOD) facets.add(single("categories:fabric"));
-                    String url = API + "/search?limit=20&offset=" + offset + "&index=" + enc(sort) + "&query=" + enc(query) + "&facets=" + enc(facets.toString());
+                    if (category != null && !category.isEmpty()) facets.add(single("categories:" + category));
+                    String url = API + "/search?limit=" + PAGE + "&offset=" + offset + "&index=" + enc(sort) + "&query=" + enc(query) + "&facets=" + enc(facets.toString());
                     JsonObject root = new JsonParser().parse(get(url)).getAsJsonObject();
                     List<Hit> out = new ArrayList<Hit>();
                     for (JsonElement e : root.getAsJsonArray("hits")) {
                         JsonObject h = e.getAsJsonObject();
-                        out.add(new Hit(str(h, "project_id"), str(h, "slug"), str(h, "title"), str(h, "author"),
-                                str(h, "description"), h.has("downloads") ? h.get("downloads").getAsLong() : 0, str(h, "icon_url")));
+                        List<String> cats = new ArrayList<String>();
+                        if (h.has("display_categories")) for (JsonElement c : h.getAsJsonArray("display_categories")) cats.add(c.getAsString());
+                        out.add(new Hit(str(h, "project_id"), str(h, "slug"), str(h, "title"), str(h, "author"), str(h, "description"),
+                                h.has("downloads") ? h.get("downloads").getAsLong() : 0, h.has("follows") ? h.get("follows").getAsLong() : 0,
+                                str(h, "icon_url"), str(h, "featured_gallery"), cats));
                     }
-                    cb.done(out, null);
+                    cb.done(new Page(out, root.has("total_hits") ? root.get("total_hits").getAsInt() : out.size()), null);
                 } catch (Throwable t) {
                     cb.done(null, t);
                 }
@@ -159,16 +158,13 @@ public final class Modrinth {
         });
     }
 
-    public static void install(final String projectId, final Kind kind, final Callback<String> cb) {
-        final File dir = kind.targetDir();
-        if (dir == null) {
-            cb.done(null, new IllegalStateException("Otwórz świat w trybie jednoosobowym"));
-            return;
-        }
+    /** Downloads the newest compatible version of a resource pack; returns the file name. */
+    public static void install(final String projectId, final Callback<String> cb) {
+        final File dir = packDir();
         POOL.execute(new Runnable() {
             @Override public void run() {
                 try {
-                    cb.done(installRec(projectId, kind, dir, new HashSet<String>()), null);
+                    cb.done(download(projectId, dir), null);
                 } catch (Throwable t) {
                     cb.done(null, t);
                 }
@@ -176,11 +172,8 @@ public final class Modrinth {
         });
     }
 
-    private static String installRec(String projectId, Kind kind, File dir, Set<String> seen) throws Exception {
-        if (!seen.add(projectId)) return null;
+    private static String download(String projectId, File dir) throws Exception {
         String url = API + "/project/" + enc(projectId) + "/version?game_versions=" + enc("[\"" + gameVersion() + "\"]");
-        if (kind == Kind.MOD) url += "&loaders=" + enc("[\"fabric\"]");
-        if (kind == Kind.DATAPACK) url += "&loaders=" + enc("[\"datapack\"]");
         JsonArray versions = new JsonParser().parse(get(url)).getAsJsonArray();
         if (versions.size() == 0) throw new IllegalStateException("Brak wersji dla " + gameVersion());
         JsonObject version = versions.get(0).getAsJsonObject();
@@ -205,14 +198,6 @@ public final class Modrinth {
         File dest = new File(dir, name);
         if (dest.exists()) dest.delete();
         if (!tmp.renameTo(dest)) throw new IOException("Nie można zapisać " + name);
-        if (kind == Kind.MOD) {
-            for (JsonElement d : version.getAsJsonArray("dependencies")) {
-                JsonObject dep = d.getAsJsonObject();
-                if ("required".equals(str(dep, "dependency_type")) && !str(dep, "project_id").isEmpty()) {
-                    try { installRec(str(dep, "project_id"), kind, dir, seen); } catch (Exception ignored) { }
-                }
-            }
-        }
         return name;
     }
 

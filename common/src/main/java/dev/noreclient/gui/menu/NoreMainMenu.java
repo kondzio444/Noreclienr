@@ -63,7 +63,7 @@ public class NoreMainMenu extends NoreScreen {
                 .add("Multiplayer", "Serwery", SideNav.GLOBE, SideNav.NORMAL, () -> go(() -> game().openMultiplayer(self)))
                 .add("Moduły klienta", NoreClient.get().modules().getModules().size() + " modułów", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new ClickGuiScreen(self)))
                 .add("Edytor HUD", "Nakładki", SideNav.HUD, SideNav.NORMAL, () -> go(() -> game().openScreen(new HudEditorScreen(self))))
-                .add("Pobieraj zasoby", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)))
+                .add("Paczki zasobów", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)))
                 .add("Opcje", "Ustawienia gry", SideNav.GEAR, SideNav.NORMAL, () -> go(() -> game().openOptions(self)))
                 .add("Wyjdź", null, SideNav.POWER, SideNav.DANGER, () -> go(() -> game().quit()));
         try {
