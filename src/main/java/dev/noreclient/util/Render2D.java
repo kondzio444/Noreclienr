@@ -183,6 +183,31 @@ public final class Render2D {
         end();
     }
 
+    /** Draws a whole texture smoothly (bilinear) at a float position/size with the given opacity. */
+    public static void texture(DrawContext ctx, net.minecraft.util.Identifier id, float x, float y, float w, float h, int texW, int texH, float alpha) {
+        net.minecraft.client.MinecraftClient.getInstance().getTextureManager().getTexture(id).setFilter(true, false);
+        ctx.draw();
+        RenderSystem.enableBlend();
+        float[] prev = RenderSystem.getShaderColor().clone();
+        RenderSystem.setShaderColor(prev[0], prev[1], prev[2], prev[3] * alpha);
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x, y, 0);
+        ctx.getMatrices().scale(w / texW, h / texH, 1);
+        ctx.drawTexture(id, 0, 0, texW, texH, 0, 0, texW, texH, texW, texH);
+        ctx.getMatrices().pop();
+        ctx.draw();
+        RenderSystem.setShaderColor(prev[0], prev[1], prev[2], prev[3]);
+    }
+
+    public static final net.minecraft.util.Identifier LOGO = net.minecraft.util.Identifier.of("noreclient", "textures/gui/logo.png");
+
+    /** The client logo with a soft pulsing glow behind it. */
+    public static void logo(DrawContext ctx, float x, float y, float size, float alpha) {
+        float pulse = 0.75f + 0.25f * (float) Math.sin(System.currentTimeMillis() / 600.0);
+        radial(ctx, x + size / 2f, y + size / 2f, size * 0.85f, ColorUtil.withAlpha(Theme.accent(), (int) (80 * pulse * alpha)), 0x00000000);
+        texture(ctx, LOGO, x, y, size, size, 256, 256, alpha);
+    }
+
     // ------------------------------------------------------------------ text
 
     public static TextRenderer font() {

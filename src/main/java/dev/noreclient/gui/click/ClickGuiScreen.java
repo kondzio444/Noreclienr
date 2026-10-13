@@ -19,6 +19,7 @@ import dev.noreclient.setting.Setting;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.MenuBackground;
+import dev.noreclient.util.Modrinth;
 import dev.noreclient.util.Render2D;
 import dev.noreclient.util.Sounds;
 import dev.noreclient.util.Theme;
@@ -42,7 +43,7 @@ import java.util.Map;
 public class ClickGuiScreen extends Screen {
     private static final float W = 500, H = 310, SIDEBAR = 124;
 
-    private enum Page { MODULES, SETTINGS, PROFILES }
+    private enum Page { MODULES, SETTINGS, PROFILES, DOWNLOADS }
 
     private interface ClickAction { void click(double mx, double my, int button); }
 
@@ -58,6 +59,15 @@ public class ClickGuiScreen extends Screen {
     private final Map<Object, Animation> anims = new HashMap<>();
     private final TextBox search = new TextBox("Szukaj modułów...", 32);
     private final TextBox profileName = new TextBox("Nazwa profilu", 24);
+    private final TextBox dlSearch = new TextBox("Szukaj na Modrinth...", 40);
+    private Modrinth.Kind dlKind = Modrinth.Kind.RESOURCEPACK;
+    private final List<Modrinth.Hit> dlResults = new ArrayList<>();
+    private final Map<String, String> dlState = new HashMap<>();
+    private String dlQuery = null, dlError = null, dlSort = "relevance";
+    private boolean dlLoading, dlMore;
+    private long dlTyped;
+    private int dlRequest;
+    private final Animation dlTab = new Animation(0, 16);
     private final Animation open = new Animation(0, 10);
     private final Animation scroll = new Animation(0, 16);
     private final Animation pageAnim = new Animation(1, 12);
@@ -208,6 +218,7 @@ public class ClickGuiScreen extends Screen {
             case MODULES -> renderModules(ctx, mx, cmy);
             case SETTINGS -> renderSettings(ctx, mx, cmy);
             case PROFILES -> renderProfiles(ctx, mx, cmy);
+            case DOWNLOADS -> renderDownloads(ctx, mx, cmy);
         }
         ctx.getMatrices().pop();
         ctx.disableScissor();
@@ -247,29 +258,43 @@ public class ClickGuiScreen extends Screen {
         Render2D.rect(ctx, SIDEBAR, 0, 1, H, Theme.OUTLINE);
 
         // logo
-        Render2D.roundedGradient(ctx, 14, 14, 22, 22, 6, Theme.accent(), Theme.accent2(), true);
-        Render2D.scaledText(ctx, "N", 20.5f, 17.5f, 1.6f, 0xFFFFFFFF, true);
-        Render2D.gradientText(ctx, "Nore", 42, 14, 1.35f, Theme.accent(), Theme.accent2(), false);
-        Render2D.text(ctx, "Client v" + NoreClient.VERSION, 42, 27, Theme.TEXT_MUTED);
+        Render2D.logo(ctx, 9, 8, 32, 1f);
+        Render2D.gradientText(ctx, "Nore", 44, 14, 1.35f, Theme.accent2(), Theme.accent(), false);
+        Render2D.text(ctx, "Client v" + NoreClient.VERSION, 44, 27, Theme.TEXT_MUTED);
 
         float y = 52;
         Render2D.scaledText(ctx, "MODUŁY", 14, y, 0.7f, Theme.TEXT_MUTED, false);
         y += 9;
         int idx = -1;
-        if (page != Page.PROFILES) idx = category == null ? 0 : category.ordinal() + 1;
-        navY.target(y + Math.max(0, idx) * 22);
-        if (navAlpha.get() < 0.01f && idx >= 0) navY.set(y + idx * 22);
+        if (page == Page.DOWNLOADS) idx = Category.values().length + 2;
+        else if (page != Page.PROFILES) idx = category == null ? 0 : category.ordinal() + 1;
+        navY.target(y + Math.max(0, idx) * 22 - (idx > Category.values().length ? 22 - 13 : 0));
+        if (navAlpha.get() < 0.01f && idx >= 0) navY.set(navY.getTarget());
         float na = navAlpha.target(idx >= 0 ? 1 : 0).update();
         float ny = navY.update();
         if (na > 0.01f) {
-            Render2D.roundedGradient(ctx, 8, ny, SIDEBAR - 16, 20, Theme.radius(),
-                    ColorUtil.withAlpha(Theme.accent(), (int) (70 * na)), ColorUtil.withAlpha(Theme.accent2(), (int) (25 * na)), false);
+            Widgets.glowBox(ctx, 8, ny, SIDEBAR - 16, 20, Theme.radius(), Theme.accent(), 0.2f, na);
             Render2D.roundedRect(ctx, 8, ny + 5, 2.5f, 10, 1.25f, ColorUtil.fade(Theme.accent(), na));
         }
         y = navItem(ctx, mx, my, y, null, "Wszystkie", 0xFFFFFFFF, NoreClient.get().modules().getModules());
         for (Category c : Category.values()) {
             y = navItem(ctx, mx, my, y, c, c.displayName, c.color, NoreClient.get().modules().getModules(c));
         }
+        y += 4;
+        Render2D.scaledText(ctx, "ZASOBY", 14, y, 0.7f, Theme.TEXT_MUTED, false);
+        y += 9;
+        boolean dActive = page == Page.DOWNLOADS;
+        boolean dHov = Render2D.hovered(mx, my, 8, y, SIDEBAR - 16, 20);
+        if (dHov && !dActive) Render2D.roundedRect(ctx, 8, y, SIDEBAR - 16, 20, Theme.radius(), 0x10FFFFFF);
+        // download arrow icon
+        int ic = dActive ? Theme.accent() : Theme.TEXT_DIM;
+        Render2D.rect(ctx, 19.5f, y + 5, 1.2f, 7, ic);
+        Render2D.line(ctx, 17, y + 9.5f, 20.1f, y + 12.5f, 1.2f, ic);
+        Render2D.line(ctx, 23.2f, y + 9.5f, 20.1f, y + 12.5f, 1.2f, ic);
+        Render2D.rect(ctx, 16.5f, y + 14, 7.2f, 1.2f, ic);
+        Render2D.text(ctx, "Pobieraj", 29 + (dActive ? 3 : 0), y + 6, dActive || dHov ? Theme.TEXT : Theme.TEXT_DIM);
+        Render2D.scaledText(ctx, "Modrinth", SIDEBAR - 16 - Render2D.textWidth("Modrinth") * 0.7f, y + 7.5f, 0.7f, Theme.TEXT_MUTED, false);
+        hit(8, y, SIDEBAR - 16, 20, false, (a, b, c) -> switchPage(Page.DOWNLOADS, null));
 
         // bottom buttons
         float bw = SIDEBAR - 24;
@@ -317,6 +342,9 @@ public class ClickGuiScreen extends Screen {
             x += 28;
             title = selected.getName();
             sub = selected.getDescription();
+        } else if (page == Page.DOWNLOADS) {
+            title = "Pobieraj";
+            sub = "Modrinth \u2022 Minecraft " + Modrinth.gameVersion();
         } else if (page == Page.PROFILES) {
             title = "Profile";
             sub = "Zapisuj i wczytuj konfiguracje (aktywny: " + NoreClient.get().config().getActiveProfile() + ")";
@@ -330,6 +358,15 @@ public class ClickGuiScreen extends Screen {
         Render2D.scaledText(ctx, title, x, 12, 1.3f, Theme.TEXT, false);
         Render2D.text(ctx, Render2D.trim(sub, (int) (W - x - 170)), x, 26, Theme.TEXT_MUTED);
 
+        if (page == Page.DOWNLOADS) {
+            float sw = 150, sx = W - sw - 12;
+            dlSearch.render(ctx, sx, 12, sw, 22, TextBox.SEARCH_ICON);
+            hit(sx, 12, sw, 22, false, (a, b, c) -> {
+                dlSearch.setFocused(true);
+                search.setFocused(false);
+                profileName.setFocused(false);
+            });
+        }
         if (page == Page.MODULES) {
             float sw = 150, sx = W - sw - 12;
             search.render(ctx, sx, 12, sw, 22, TextBox.SEARCH_ICON);
@@ -391,8 +428,10 @@ public class ClickGuiScreen extends Screen {
         float ta = anim(m.getName() + "_on", 14).target(m.isEnabled() ? 1 : 0).update();
         float r = Theme.radius();
 
-        if (ta > 0.01f && m.isToggleable()) Render2D.shadow(ctx, x, y, w, h, r, 4, ColorUtil.withAlpha(Theme.accent(), (int) (60 * ta)));
+        if (ta > 0.01f && m.isToggleable()) Render2D.shadow(ctx, x, y - ha, w, h, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) ((60 + 40 * ha) * ta)));
         Render2D.roundedRect(ctx, x, y - ha, w, h, r, ColorUtil.lerp(Theme.CARD, Theme.CARD_HOVER, ha));
+        if (ta > 0.01f && m.isToggleable()) Render2D.roundedGradient(ctx, x, y - ha, w, h, r,
+                ColorUtil.withAlpha(Theme.accent(), (int) (34 * ta)), ColorUtil.withAlpha(Theme.accent(), (int) (8 * ta)), true);
         int outline = m.isToggleable() ? ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 200), ta) : Theme.OUTLINE;
         Render2D.roundedOutline(ctx, x, y - ha, w, h, r, 1, outline);
         float yy = y - ha;
@@ -707,6 +746,220 @@ public class ClickGuiScreen extends Screen {
         return y;
     }
 
+    // ------------------------------------------------------------------ downloads page (Modrinth)
+
+    private void runSearch(boolean append) {
+        if (!append) {
+            dlResults.clear();
+            scroll.set(0);
+        }
+        dlQuery = dlSearch.getText();
+        dlLoading = true;
+        dlError = null;
+        int req = ++dlRequest;
+        Modrinth.Kind kind = dlKind;
+        Modrinth.search(dlQuery, kind, dlSort, append ? dlResults.size() : 0).whenComplete((list, t) -> client.execute(() -> {
+            if (req != dlRequest) return;
+            dlLoading = false;
+            if (t != null) {
+                dlError = "Brak połączenia z Modrinth";
+                return;
+            }
+            dlResults.addAll(list);
+            dlMore = list.size() == 20;
+            if (!append) pageSwitch = System.currentTimeMillis();
+        }));
+    }
+
+    private void install(Modrinth.Hit h) {
+        if (dlKind == Modrinth.Kind.DATAPACK && dlKind.targetDir() == null) {
+            NotificationManager.push("Datapacki", "Najpierw wejdź do świata (singleplayer)", NotificationManager.Type.WARNING);
+            return;
+        }
+        Modrinth.Kind kind = dlKind;
+        dlState.put(h.id(), "loading");
+        Sounds.click();
+        Modrinth.install(h.id(), kind).whenComplete((file, t) -> client.execute(() -> {
+            if (t != null) {
+                dlState.put(h.id(), "error");
+                Throwable c = t.getCause() != null ? t.getCause() : t;
+                NotificationManager.push(Render2D.trim(h.title(), 120), String.valueOf(c.getMessage()), NotificationManager.Type.ERROR);
+                return;
+            }
+            dlState.put(h.id(), "done:" + file);
+            String msg = switch (kind) {
+                case RESOURCEPACK -> "Pobrano – kliknij Włącz";
+                case MOD -> "Zainstalowano – uruchom grę ponownie";
+                case DATAPACK -> "Dodano do świata – wpisz /reload";
+                case SHADER -> "Pobrano – wymaga Iris";
+            };
+            NotificationManager.push(Render2D.trim(h.title(), 120), msg, NotificationManager.Type.SUCCESS);
+        }));
+    }
+
+    private void renderDownloads(DrawContext ctx, double mx, double my) {
+        if (dlQuery == null || (!dlSearch.getText().equals(dlQuery) && System.currentTimeMillis() - dlTyped > 350)) runSearch(false);
+        float x = clipX, w = clipW, y = clipY + 2;
+
+        // kind tabs with a sliding glow pill
+        Modrinth.Kind[] kinds = Modrinth.Kind.values();
+        float tw = (w - 6 * (kinds.length - 1)) / kinds.length;
+        float px = dlTab.target(x + dlKind.ordinal() * (tw + 6)).update();
+        if (Math.abs(px - x) > w) dlTab.set(x + dlKind.ordinal() * (tw + 6));
+        for (int i = 0; i < kinds.length; i++) {
+            float bx = x + i * (tw + 6);
+            Render2D.roundedRect(ctx, bx, y, tw, 20, Theme.radius(), Theme.PANEL);
+        }
+        Widgets.glowBox(ctx, dlTab.get(), y, tw, 20, Theme.radius(), Theme.accent(), 0.3f, 1f);
+        for (int i = 0; i < kinds.length; i++) {
+            Modrinth.Kind k = kinds[i];
+            float bx = x + i * (tw + 6);
+            boolean on = k == dlKind;
+            boolean hov = hovered(mx, my, bx, y, tw, 20, true);
+            Render2D.centeredText(ctx, k.label, bx + tw / 2f, y + 6, on ? Widgets.glowText(Theme.accent(), 0.4f) : hov ? Theme.TEXT : Theme.TEXT_DIM, false);
+            hit(bx, y, tw, 20, true, (a, b, c) -> {
+                if (dlKind == k) return;
+                dlKind = k;
+                Sounds.click();
+                runSearch(false);
+            });
+        }
+        y += 26;
+
+        // sort + context line
+        String[] sorts = {"relevance", "downloads", "updated"};
+        String[] sortLabels = {"Trafność", "Popularne", "Nowe"};
+        float sx = x;
+        for (int i = 0; i < sorts.length; i++) {
+            String srt = sorts[i];
+            float sw = Render2D.textWidth(sortLabels[i]) + 14;
+            boolean on = dlSort.equals(srt);
+            if (on) Widgets.glowBox(ctx, sx, y, sw, 14, 7, Theme.accent(), 0, 0.7f);
+            else Render2D.roundedRect(ctx, sx, y, sw, 14, 7, hovered(mx, my, sx, y, sw, 14, true) ? Theme.CARD_HOVER : Theme.CARD);
+            Render2D.text(ctx, sortLabels[i], sx + 7, y + 3, on ? 0xFFFFFFFF : Theme.TEXT_DIM);
+            hit(sx, y, sw, 14, true, (a, b, c) -> {
+                dlSort = srt;
+                Sounds.click();
+                runSearch(false);
+            });
+            sx += sw + 5;
+        }
+        String ctxLine = switch (dlKind) {
+            case RESOURCEPACK -> "Instalowane do resourcepacks/ \u2022 włączysz jednym kliknięciem";
+            case MOD -> "Mody Fabric \u2022 wymagają ponownego uruchomienia gry";
+            case DATAPACK -> dlKind.targetDir() == null ? "\u26a0 Wejdź do świata singleplayer, aby dodać datapack" : "Instalowane do bieżącego świata";
+            case SHADER -> "Instalowane do shaderpacks/ \u2022 wymagają moda Iris";
+        };
+        y += 19;
+        Render2D.scaledText(ctx, ctxLine, x + 2, y, 0.75f, ctxLine.startsWith("\u26a0") ? Theme.WARNING : Theme.TEXT_MUTED, false);
+        y += 12;
+
+        if (dlResults.isEmpty()) {
+            if (dlLoading) {
+                float a = (System.currentTimeMillis() % 1000) / 1000f * 360;
+                Render2D.ring(ctx, x + w / 2f, y + 50, 10, 2.5f, a, a + 260, Theme.accent());
+                Render2D.centeredText(ctx, "Szukam na Modrinth...", x + w / 2f, y + 68, Theme.TEXT_MUTED, false);
+            } else {
+                Render2D.centeredText(ctx, dlError != null ? dlError : "Brak wyników", x + w / 2f, y + 46, Theme.TEXT_MUTED, false);
+            }
+            contentHeight = y + 90 - clipY;
+            return;
+        }
+
+        long since = System.currentTimeMillis() - pageSwitch;
+        for (int i = 0; i < dlResults.size(); i++) {
+            Modrinth.Hit h = dlResults.get(i);
+            float rh = 40;
+            if (y > clipY + scroll.get() + clipH || y + rh < clipY + scroll.get()) {
+                y += rh + 5;
+                continue;
+            }
+            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 30) / 300f);
+            float off = (1 - Math.max(0, p)) * 12;
+            RenderSystem.setShaderColor(1, 1, 1, alpha * Math.max(0, Math.min(1, p)));
+            float ry = y + off;
+            boolean hov = hovered(mx, my, x, ry, w, rh, true);
+            float ha = anim("dl_" + h.id(), 14).target(hov ? 1 : 0).update();
+            Render2D.roundedRect(ctx, x, ry, w, rh, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
+            Render2D.roundedOutline(ctx, x, ry, w, rh, Theme.radius(), 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 120), ha));
+
+            // icon
+            net.minecraft.util.Identifier icon = Modrinth.icon(h.iconUrl());
+            if (icon != null) {
+                Render2D.texture(ctx, icon, x + 5, ry + 5, 30, 30, 96, 96, 1f);
+            } else {
+                Render2D.roundedGradient(ctx, x + 5, ry + 5, 30, 30, 7, Theme.accent2(), Theme.accent(), true);
+                Render2D.centeredText(ctx, h.title().isEmpty() ? "?" : h.title().substring(0, 1).toUpperCase(), x + 20, ry + 16, 0xFFFFFFFF, true);
+            }
+            float tx = x + 42;
+            float maxW = w - 42 - 86;
+            String title = Render2D.trim(h.title(), (int) (maxW * 0.6f));
+            Render2D.text(ctx, title, tx, ry + 6, Theme.TEXT);
+            Render2D.scaledText(ctx, "od " + h.author(), tx + Render2D.textWidth(title) + 5, ry + 7.5f, 0.75f, Theme.TEXT_MUTED, false);
+            Render2D.scaledText(ctx, Render2D.trim(h.description(), (int) (maxW / 0.75f)), tx, ry + 17, 0.75f, Theme.TEXT_DIM, false);
+            String dls = h.downloads() >= 1_000_000 ? String.format("%.1fM", h.downloads() / 1e6) : h.downloads() >= 1000 ? String.format("%.1fK", h.downloads() / 1e3) : String.valueOf(h.downloads());
+            Render2D.scaledText(ctx, "\u2b07 " + dls + " pobrań", tx, ry + 28, 0.7f, Theme.TEXT_MUTED, false);
+
+            // action button
+            String st = dlState.getOrDefault(h.id(), "");
+            float bw = 74, bh = 18, bx = x + w - bw - 8, by = ry + (rh - bh) / 2f;
+            boolean bh2 = hovered(mx, my, bx, by, bw, bh, true);
+            float ba = anim("dlb_" + h.id(), 16).target(bh2 ? 1 : 0).update();
+            String label;
+            int col = Theme.accent();
+            if (st.equals("loading")) {
+                Widgets.glowBox(ctx, bx, by, bw, bh, Theme.radius(), col, 0.2f, 0.8f);
+                float a = (System.currentTimeMillis() % 900) / 900f * 360;
+                Render2D.ring(ctx, bx + bw / 2f, by + bh / 2f, 5, 1.5f, a, a + 260, Widgets.glowText(col, 0));
+                label = null;
+            } else if (st.equals("enabled")) {
+                col = Theme.SUCCESS;
+                label = "\u2714 Włączona";
+            } else if (st.startsWith("done:")) {
+                boolean rp = dlKind == Modrinth.Kind.RESOURCEPACK;
+                col = rp ? Theme.accent() : Theme.SUCCESS;
+                label = rp ? "Włącz" : "\u2714 Gotowe";
+            } else {
+                label = st.equals("error") ? "Ponów" : "Pobierz";
+            }
+            if (label != null) {
+                Widgets.glowBox(ctx, bx, by, bw, bh, Theme.radius(), col, ba, 1f);
+                Render2D.centeredText(ctx, label, bx + bw / 2f, by + 5, Widgets.glowText(col, ba), false);
+                final String state = st;
+                hit(bx, by, bw, bh, true, (a, b, c) -> {
+                    if (state.equals("loading") || state.equals("enabled")) return;
+                    if (state.startsWith("done:")) {
+                        if (dlKind == Modrinth.Kind.RESOURCEPACK) {
+                            Modrinth.enableResourcePack(state.substring(5));
+                            dlState.put(h.id(), "enabled");
+                            Sounds.toggle(true);
+                        }
+                        return;
+                    }
+                    install(h);
+                });
+            }
+            hit(x, ry, w - bw - 16, rh, true, (a, b, c) -> {
+                if (c == 1) net.minecraft.util.Util.getOperatingSystem().open("https://modrinth.com/project/" + h.slug());
+            });
+            RenderSystem.setShaderColor(1, 1, 1, alpha);
+            y += rh + 5;
+        }
+        if (dlMore) {
+            boolean lh = hovered(mx, my, x + w / 2f - 60, y + 2, 120, 18, true);
+            if (dlLoading) {
+                float a = (System.currentTimeMillis() % 1000) / 1000f * 360;
+                Render2D.ring(ctx, x + w / 2f, y + 11, 6, 2f, a, a + 260, Theme.accent());
+            } else {
+                Widgets.button(ctx, x + w / 2f - 60, y + 2, 120, 18, "Załaduj więcej", anim("dl_more", 14).target(lh ? 1 : 0).update(), false);
+                hit(x + w / 2f - 60, y + 2, 120, 18, true, (a, b, c) -> runSearch(true));
+            }
+            y += 26;
+        }
+        Render2D.scaledText(ctx, "PPM na pozycji otwiera stronę projektu", x, y + 2, 0.7f, Theme.TEXT_MUTED, false);
+        contentHeight = y + 14 - clipY;
+    }
+
     // ------------------------------------------------------------------ profiles page
 
     private void renderProfiles(DrawContext ctx, double mx, double my) {
@@ -808,6 +1061,7 @@ public class ClickGuiScreen extends Screen {
         boolean wasSearch = search.isFocused(), wasProfile = profileName.isFocused();
         search.setFocused(false);
         profileName.setFocused(false);
+        dlSearch.setFocused(false);
         if (listening != null && button > 1) {
             // allow binding mouse side buttons? keep simple: cancel
             listening = null;
@@ -863,6 +1117,20 @@ public class ClickGuiScreen extends Screen {
             Sounds.click();
             return true;
         }
+        if (dlSearch.isFocused()) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                dlSearch.setFocused(false);
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ENTER) {
+                dlTyped = 0;
+                return true;
+            }
+            if (dlSearch.keyPressed(keyCode)) {
+                dlTyped = System.currentTimeMillis();
+                return true;
+            }
+        }
         if (search.isFocused() || profileName.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
                 search.setFocused(false);
@@ -894,6 +1162,16 @@ public class ClickGuiScreen extends Screen {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (profileName.charTyped(chr)) return true;
+        if (dlSearch.charTyped(chr)) {
+            dlTyped = System.currentTimeMillis();
+            return true;
+        }
+        if (page == Page.DOWNLOADS && Character.isLetterOrDigit(chr)) {
+            dlSearch.setFocused(true);
+            dlSearch.charTyped(chr);
+            dlTyped = System.currentTimeMillis();
+            return true;
+        }
         if (search.charTyped(chr)) {
             scroll.set(0);
             return true;

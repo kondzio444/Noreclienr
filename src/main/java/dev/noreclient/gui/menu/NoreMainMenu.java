@@ -30,7 +30,8 @@ public class NoreMainMenu extends Screen {
 
     private static final String[] LABELS = {"Singleplayer", "Multiplayer", "Moduły klienta", "Edytor HUD"};
     private static final String[] HINTS = {"Graj w swoich światach", "Dołącz do serwera", "Ustawienia i moduły", "Rozmieść nakładki"};
-    private static final float BW = 210, BH = 24, GAP = 6;
+    private static final float BW = 210;
+    private float BH = 24, GAP = 6;
     /** Only the very first menu of a session plays the long intro. */
     private static boolean firstOpen = true;
 
@@ -57,22 +58,28 @@ public class NoreMainMenu extends Screen {
         return Animation.easeOutCubic(t / (float) (duration * Math.max(0.4f, scaleT)));
     }
 
-    private float logoScale() {
-        float avail = height - 30 - 14 - 16 - buttonsHeight();
-        return Math.max(2f, Math.min(4.5f, Math.min(width / 160f, avail / 8f)));
+    /** Pixel size of the logo image; shrinks on small windows. */
+    private float logoSize() {
+        boolean small = height < 300;
+        BH = small ? 20 : 24;
+        GAP = small ? 4 : 6;
+        float avail = height - 30 - HEAD_TEXT - 18 - buttonsHeight();
+        return Math.max(0f, Math.min(96f, Math.min(width / 7f, avail)));
     }
+
+    private static final float HEAD_TEXT = 4 + 16 + 5 + 10 + 6;
 
     private float buttonsHeight() {
         return (LABELS.length + 1) * BH + LABELS.length * GAP;
     }
 
     private float logoY() {
-        float total = 8 * logoScale() + 16 + 16 + buttonsHeight();
+        float total = logoSize() + HEAD_TEXT + 18 + buttonsHeight();
         return Math.max(4, (height - 20 - total) / 2f);
     }
 
     private float buttonsY() {
-        return logoY() + 8 * logoScale() + 16 + 16;
+        return logoY() + logoSize() + HEAD_TEXT + 18;
     }
 
     @Override
@@ -88,27 +95,27 @@ public class NoreMainMenu extends Screen {
         if (bgIn < 1) Render2D.rect(ctx, 0, 0, width, height, ColorUtil.withAlpha(0xFF000000, (int) (255 * (1 - bgIn))));
 
         float cx = width / 2f;
-        float s = logoScale();
-        float logoP = stage(150, 700);
+        float L = logoSize();
+        float logoP = stage(150, 800);
         float logoY = logoY() - (1 - logoP) * 18;
+        float pop = 0.85f + 0.15f * Animation.easeOutBack(Math.min(1, logoP));
 
-        // logo with glow
-        RenderSystem.setShaderColor(1, 1, 1, logoP);
-        float lw = Render2D.textWidth("NORE") * s;
-        double t = System.currentTimeMillis() / 1000.0;
-        float pulse = 0.75f + 0.25f * (float) Math.sin(t * 1.6);
-        Render2D.radial(ctx, cx, logoY + 4 * s, lw * 0.9f, ColorUtil.withAlpha(Theme.accent(), (int) (70 * pulse)), 0x00000000);
-        Render2D.gradientText(ctx, "NORE", cx - lw / 2, logoY, s, Theme.accent(), Theme.accent2(), true);
-        RenderSystem.setShaderColor(1, 1, 1, 1);
+        // logo image with pulsing glow
+        float ls = L * pop;
+        if (L >= 16) Render2D.logo(ctx, cx - ls / 2f, logoY + (L - ls) / 2f, ls, logoP);
 
         float subP = stage(400, 600);
-        String sub = "C  L  I  E  N  T";
         RenderSystem.setShaderColor(1, 1, 1, subP);
-        float spread = 1 + (1 - subP) * 0.6f;
-        Render2D.centeredText(ctx, sub, cx, logoY + 8 * s + 5, Theme.TEXT_DIM, false);
-        // accent line under the subtitle growing from the centre
-        float line = 60 * subP * spread;
-        Render2D.roundedGradient(ctx, cx - line / 2, logoY + 8 * s + 17, line, 1.5f, 0.75f, Theme.accent(), Theme.accent2(), false);
+        float ty = logoY + L + 4;
+        String title = "NORE CLIENT";
+        float tw = Render2D.textWidth(title) * 2f;
+        Render2D.gradientText(ctx, title, cx - tw / 2f, ty, 2f, Theme.accent2(), Theme.accent(), true);
+        String sub = "Minecraft " + SharedConstants.getGameVersion().getName() + "  \u2022  PvP & QoL";
+        Render2D.scaledText(ctx, sub, cx - Render2D.textWidth(sub) * 0.4f, ty + 21, 0.8f, Theme.TEXT_DIM, false);
+        // accent line growing from the centre
+        float line = 70 * subP;
+        Render2D.radial(ctx, cx, ty + 33, 40 * subP, ColorUtil.withAlpha(Theme.accent(), 60), 0x00000000);
+        Render2D.roundedGradient(ctx, cx - line / 2, ty + 32, line, 1.5f, 0.75f, Theme.accent2(), Theme.accent(), false);
         RenderSystem.setShaderColor(1, 1, 1, 1);
 
         // main buttons with staggered entrance

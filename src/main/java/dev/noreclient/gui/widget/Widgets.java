@@ -11,27 +11,48 @@ public final class Widgets {
 
     /** iOS-like switch; {@code p} is the animated 0..1 on-state. */
     public static void toggle(DrawContext ctx, float x, float y, float w, float h, float p) {
-        int off = 0xFF2C3044;
-        int bg = ColorUtil.lerp(off, Theme.accent(), p);
+        int off = 0xFF2E2621;
+        if (p > 0.02f) Render2D.shadow(ctx, x, y, w, h, h / 2f, 4, ColorUtil.withAlpha(Theme.accent(), (int) (110 * p)));
+        int bg = ColorUtil.lerp(off, ColorUtil.darken(Theme.accent(), 0.15f), p);
         Render2D.roundedRect(ctx, x, y, w, h, h / 2f, bg);
+        Render2D.roundedOutline(ctx, x, y, w, h, h / 2f, 1, ColorUtil.lerp(0x20FFFFFF, ColorUtil.brighten(Theme.accent(), 0.3f), p));
         float knob = h - 4;
         float kx = x + 2 + (w - knob - 4) * p;
         Render2D.circle(ctx, kx + knob / 2f, y + h / 2f, knob / 2f, 0xFFFFFFFF);
     }
 
-    /** Button with hover animation; {@code primary} uses the accent gradient. */
+    /**
+     * The signature "glow" surface: translucent tinted fill, bright outline and a soft outer glow
+     * that intensifies on hover (the style of the "Wyjdź" button, used everywhere).
+     */
+    public static void glowBox(DrawContext ctx, float x, float y, float w, float h, float r, int color, float hover, float strength) {
+        int glow = (int) ((55 + 75 * hover) * strength);
+        Render2D.shadow(ctx, x, y, w, h, r, (int) (5 + 4 * hover), ColorUtil.withAlpha(color, Math.min(255, glow)));
+        Render2D.roundedRect(ctx, x, y, w, h, r, 0xD0120E0B);
+        Render2D.roundedGradient(ctx, x, y, w, h, r,
+                ColorUtil.withAlpha(color, (int) (46 + 34 * hover)), ColorUtil.withAlpha(color, (int) (22 + 26 * hover)), true);
+        Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.withAlpha(ColorUtil.brighten(color, 0.15f * hover), (int) (190 + 65 * hover)));
+    }
+
+    /** Text colour that sits on a glow surface. */
+    public static int glowText(int color, float hover) {
+        return ColorUtil.lerp(ColorUtil.brighten(color, 0.62f), 0xFFFFFFFF, hover);
+    }
+
+    /** Button with hover animation; {@code primary} uses the glowing accent style. */
     public static void button(DrawContext ctx, float x, float y, float w, float h, String label, float hover, boolean primary) {
         float r = Theme.radius();
         if (primary) {
-            int c1 = ColorUtil.brighten(Theme.accent(), hover * 0.15f);
-            int c2 = ColorUtil.brighten(Theme.accent2(), hover * 0.15f);
-            if (hover > 0.01f) Render2D.shadow(ctx, x, y, w, h, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) (90 * hover)));
-            Render2D.roundedGradient(ctx, x, y, w, h, r, c1, c2, false);
-            Render2D.centeredText(ctx, label, x + w / 2f, y + (h - 8) / 2f, 0xFFFFFFFF, true);
+            glowBox(ctx, x, y, w, h, r, Theme.accent(), hover, 1f);
+            Render2D.centeredText(ctx, label, x + w / 2f, y + (h - 8) / 2f, glowText(Theme.accent(), hover), false);
         } else {
-            Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.lerp(Theme.CARD, Theme.CARD_HOVER, hover));
-            Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 180), hover));
-            Render2D.centeredText(ctx, label, x + w / 2f, y + (h - 8) / 2f, ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, hover), false);
+            if (hover > 0.01f) {
+                glowBox(ctx, x, y, w, h, r, Theme.accent(), hover * 0.8f, hover);
+            } else {
+                Render2D.roundedRect(ctx, x, y, w, h, r, Theme.CARD);
+                Render2D.roundedOutline(ctx, x, y, w, h, r, 1, Theme.OUTLINE);
+            }
+            Render2D.centeredText(ctx, label, x + w / 2f, y + (h - 8) / 2f, ColorUtil.lerp(Theme.TEXT_DIM, 0xFFFFFFFF, hover), false);
         }
     }
 
@@ -44,31 +65,29 @@ public final class Widgets {
     public static void menuButton(DrawContext ctx, float x, float y, float w, float h, String label, String hint, float hov, int style) {
         float r = Theme.radius();
         y -= hov * 1.5f;
-        int glow = style == DANGER ? 0xFFF87171 : Theme.accent();
-        if (hov > 0.01f) Render2D.shadow(ctx, x, y, w, h, r, 6, ColorUtil.withAlpha(glow, (int) (80 * hov)));
-        if (style == PRIMARY) {
-            Render2D.roundedGradient(ctx, x, y, w, h, r,
-                    ColorUtil.brighten(Theme.accent(), hov * 0.12f), ColorUtil.brighten(Theme.accent2(), hov * 0.12f), false);
-            float sweep = (float) ((System.currentTimeMillis() % 3200) / 3200.0);
-            float sx = x + 4 + (w - 32) * sweep;
-            Render2D.quadGradient(ctx, sx, y + 1, 12, h - 2, 0x00FFFFFF, 0x28FFFFFF, 0x28FFFFFF, 0x00FFFFFF);
-            Render2D.quadGradient(ctx, sx + 12, y + 1, 12, h - 2, 0x28FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x28FFFFFF);
-        } else if (style == DANGER) {
-            Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.lerp(0x90301018, 0xD0C0384C, hov));
-            Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.lerp(0x50F87171, 0xFFF87171, hov));
+        int color = style == DANGER ? 0xFFFF5C5C : Theme.accent();
+        if (style == NORMAL) {
+            Render2D.roundedRect(ctx, x, y, w, h, r, 0xB0120E0B);
+            Render2D.roundedOutline(ctx, x, y, w, h, r, 1, 0x26FFFFFF);
+            if (hov > 0.01f) glowBox(ctx, x, y, w, h, r, color, hov * 0.85f, hov);
         } else {
-            Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.lerp(0xB0141522, 0xE0202334, hov));
-            Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.lerp(0x30FFFFFF, ColorUtil.withAlpha(Theme.accent(), 220), hov));
-            if (hov > 0.01f) Render2D.roundedRect(ctx, x + 4, y + h / 2f - 5 * hov, 2.5f, 10 * hov, 1.25f, Theme.accent());
+            glowBox(ctx, x, y, w, h, r, color, hov, 1f);
+        }
+        if (style == PRIMARY) {
+            // slow light sweep across the primary button
+            float sweep = (float) ((System.currentTimeMillis() % 3600) / 3600.0);
+            float sx = x + 4 + (w - 32) * sweep;
+            Render2D.quadGradient(ctx, sx, y + 1, 12, h - 2, 0x00FFFFFF, 0x18FFFFFF, 0x18FFFFFF, 0x00FFFFFF);
+            Render2D.quadGradient(ctx, sx + 12, y + 1, 12, h - 2, 0x18FFFFFF, 0x00FFFFFF, 0x00FFFFFF, 0x18FFFFFF);
         }
         float cy = y + (h - 8) / 2f;
-        int tc = style == PRIMARY ? 0xFFFFFFFF : style == DANGER ? ColorUtil.lerp(Theme.ERROR, 0xFFFFFFFF, hov)
-                : ColorUtil.lerp(0xFFD0D3E2, 0xFFFFFFFF, hov);
-        boolean shadow = style == PRIMARY;
+        int tc = style == NORMAL ? ColorUtil.lerp(0xFFE2D6CC, 0xFFFFFFFF, hov) : glowText(color, hov);
+        boolean shadow = false;
+        if (style == NORMAL && hov > 0.01f) Render2D.roundedRect(ctx, x + 4, y + h / 2f - 5 * hov, 2.5f, 10 * hov, 1.25f, color);
         if (hint != null && hov > 0.02f) {
             float base = x + w / 2f - Render2D.textWidth(label) / 2f;
             Render2D.text(ctx, label, base + (x + 14 - base) * hov, cy, tc, shadow);
-            int hc = ColorUtil.withAlpha(style == PRIMARY ? 0xFFFFFFFF : Theme.TEXT_DIM, (int) (200 * hov));
+            int hc = ColorUtil.withAlpha(ColorUtil.brighten(color, 0.5f), (int) (200 * hov));
             Render2D.scaledText(ctx, hint, x + w - 10 - Render2D.textWidth(hint) * 0.75f + (1 - hov) * 8, cy + 1.5f, 0.75f, hc, false);
         } else {
             Render2D.centeredText(ctx, label, x + w / 2f + hov * 2, cy, tc, shadow);

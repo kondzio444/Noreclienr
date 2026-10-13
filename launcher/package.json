@@ -1,0 +1,24 @@
+{
+  "name": "nore-launcher",
+  "productName": "Nore Launcher",
+  "version": "1.0.0",
+  "description": "Launcher Nore Client – wersje Minecraft, Fabric, mody, paczki zasobów, datapacki i shadery z Modrinth, konta premium i non-premium.",
+  "main": "src/main/main.js",
+  "author": "kondzio444",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win nsis",
+    "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:mac": "electron-builder --mac dmg"
+  },
+  "dependencies": {
+    "adm-zip": "0.5.16"
+  },
+  "devDependencies": {
+    "electron": "39.8.10",
+    "electron-builder": "26.0.12"
+  }
+}

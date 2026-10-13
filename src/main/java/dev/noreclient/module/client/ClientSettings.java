@@ -10,8 +10,8 @@ import dev.noreclient.setting.NumberSetting;
 /** Always-on module holding the theme and global client options. */
 public class ClientSettings extends Module {
     public final ModeSetting accentMode = add(new ModeSetting("Accent Mode", "Sposób kolorowania akcentu", "Gradient", "Static", "Gradient", "Wave", "Rainbow"));
-    public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFF8B5CF6));
-    public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFF22D3EE));
+    public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFFFF8A1F));
+    public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFFFB547));
     public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów GUI", 6, 0, 12, 1, "px"));
     public final BooleanSetting blur = add(new BooleanSetting("Background Blur", "Rozmycie tła w menu", true));
     public final BooleanSetting customMenu = add(new BooleanSetting("Custom Main Menu", "Własne menu główne klienta", true));

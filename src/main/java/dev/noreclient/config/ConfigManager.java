@@ -161,6 +161,8 @@ public class ConfigManager {
 
     private void apply(JsonObject root) {
         if (!root.has("modules")) return;
+        // configs from 1.0.x used the old purple theme: keep everything except the theme colours
+        boolean oldTheme = root.has("version") && root.get("version").getAsString().startsWith("1.0");
         JsonObject mods = root.getAsJsonObject("modules");
         for (Module m : modules.getModules()) {
             if (!mods.has(m.getName())) continue;
@@ -168,6 +170,7 @@ public class ConfigManager {
             if (o.has("settings")) {
                 JsonObject settings = o.getAsJsonObject("settings");
                 for (Setting<?> s : m.getSettings()) {
+                    if (oldTheme && m.getName().equals("Client Settings") && s.getName().startsWith("Accent")) continue;
                     JsonElement e = settings.get(s.getName());
                     if (e != null) {
                         try {

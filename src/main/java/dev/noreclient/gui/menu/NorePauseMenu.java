@@ -114,7 +114,10 @@ public class NorePauseMenu extends Screen {
         // header: title + player/server card
         RenderSystem.setShaderColor(1, 1, 1, o * hp);
         float ty = y - (1 - hp) * 10;
-        Render2D.gradientText(ctx, "PAUZA", cx - Render2D.textWidth("PAUZA"), ty, 2f, Theme.accent(), Theme.accent2(), true);
+        float titleW = Render2D.textWidth("PAUZA") * 2f;
+        float lx = cx - (titleW + 26) / 2f;
+        Render2D.logo(ctx, lx, ty - 4, 22, hp * o);
+        Render2D.gradientText(ctx, "PAUZA", lx + 26, ty, 2f, Theme.accent2(), Theme.accent(), true);
         String info = sessionInfo();
         float iw = Render2D.textWidth(info) + 20;
         Render2D.roundedRect(ctx, cx - iw / 2, ty + 22, iw, 16, 8, 0xA0101018);

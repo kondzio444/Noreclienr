@@ -8,3 +8,6 @@ classes/
 .vscode/
 bin/
 .DS_Store
+node_modules/
+launcher/dist/
+launcher/resources/noreclient.jar
