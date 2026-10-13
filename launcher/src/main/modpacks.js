@@ -54,6 +54,10 @@ async function installFile(file, meta = {}, onProgress = () => {}, concurrency =
     },
     iconUrl: meta.icon || null,
     packInstalled: true,
+    // Fabric packs on a version Nore Client supports run with Nore Client on top;
+    // the pack brings its own performance mods, so the launcher's set is not added
+    noreClient: loader === 'fabric' && instances.NORE_VERSIONS.includes(deps.minecraft),
+    perfMods: false,
   });
   const root = inst.gameDir;
   try {
