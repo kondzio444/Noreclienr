@@ -7,7 +7,7 @@ import dev.noreclient.util.Capes;
 
 /** Nore capes for the local player (also on the elytra). */
 public class Cosmetics extends Module {
-    public final ModeSetting cape = add(new ModeSetting("Cape", "Peleryna Nore", "Nore Orange", Capes.NAMES));
+    public final ModeSetting cape = add(new ModeSetting("Cape", "Peleryna Nore", "Nova 1.4", Capes.NAMES));
     private String applied;
 
     public Cosmetics() {

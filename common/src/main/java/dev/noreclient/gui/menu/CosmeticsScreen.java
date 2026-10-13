@@ -20,7 +20,7 @@ public class CosmeticsScreen extends PanelScreen {
 
     @Override protected String title() { return "KOSMETYKI"; }
 
-    @Override protected String subtitle() { return "Peleryny Nore Client • widoczne w grze (F5) i na elytrze"; }
+    @Override protected String subtitle() { return "Peleryny Nore Client • kolekcja Historia Nore • widoczne w grze (F5) i na elytrze"; }
 
     @Override
     protected void content(Gfx g, int mx, int my, float x, float y, float w, float h) {
@@ -61,7 +61,14 @@ public class CosmeticsScreen extends PanelScreen {
                 if (t != null) Render2D.texture(g, t, px, py, pw, ph, 1f);
             }
             Render2D.centeredText(g, Render2D.trim(name, (int) cw - 6), cx + cw / 2f, cy + ch - 26, sel ? Theme.accent2() : Theme.TEXT, false);
-            String sub = locked ? "Sklep – wkrótce" : sel ? "Założona" : i == 0 ? "Bez peleryny" : "Kliknij, aby założyć";
+            boolean history = !locked && Capes.isHistory(name);
+            if (history) {
+                float bw = Render2D.textWidth("HISTORIA") * 0.55f + 8;
+                Render2D.roundedRect(g, cx + 5, cy + 5, bw, 9, 3, ColorUtil.withAlpha(0xFFFFC23D, 210));
+                Render2D.scaledText(g, "HISTORIA", cx + 9, cy + 7.5f, 0.55f, 0xFF2A1A08, false);
+            }
+            String sub = locked ? "Sklep – wkrótce" : sel ? "Założona" : i == 0 ? "Bez peleryny" : history ? Capes.tagline(name) : "Kliknij, aby założyć";
+            sub = Render2D.trim(sub, (int) ((cw - 6) / 0.64f));
             Render2D.scaledText(g, sub, cx + cw / 2f - Render2D.textWidth(sub) * 0.32f, cy + ch - 14, 0.64f, sel ? Theme.SUCCESS : Theme.TEXT_MUTED, false);
             if (sel) Icons.sparkle(g, cx + cw - 9, cy + 9, 3.5f, Theme.accent2());
             if (!locked && cy >= y - 2) hit(cx, cy, cw, ch, () -> {
