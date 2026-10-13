@@ -5,6 +5,6 @@
 
 !macro customWelcomePage
   !define MUI_WELCOMEPAGE_TITLE "Witaj w Nore Launcher"
-  !define MUI_WELCOMEPAGE_TEXT "Ten kreator zainstaluje Nore Launcher – launcher Minecraft z własnym klientem PvP Nore Client.$\r$\n$\r$\n• wszystkie wersje Minecraft i Fabric$\r$\n• mody, paczki zasobów, shadery i datapacki z Modrinth$\r$\n• konta premium (Microsoft) i non-premium$\r$\n$\r$\nKliknij Dalej, aby kontynuować."
+  !define MUI_WELCOMEPAGE_TEXT "Ten kreator zainstaluje Nore Launcher – launcher Minecraft z własnym klientem PvP Nore Client 2.1.$\r$\n$\r$\n• wszystkie wersje Minecraft, Fabric i mody wydajności$\r$\n• mody, paczki zasobów, shadery i datapacki z Modrinth$\r$\n• własne serwery z pluginami, modami i domeną$\r$\n• konta premium (Microsoft) i non-premium$\r$\n• automatyczne aktualizacje launchera i Nore Client$\r$\n$\r$\nKliknij Dalej, aby kontynuować."
   !insertmacro MUI_PAGE_WELCOME
 !macroend

@@ -51,16 +51,32 @@ zasobów i shadery** (włączanie/wyłączanie/usuwanie), **światy** (kopia zap
 **zrzuty ekranu** (podgląd i usuwanie) oraz **ustawienia** (RAM, argumenty JVM, rozdzielczość, auto-dołączanie).
 W *Ustawieniach* launchera jest lista pobranych wersji gry z rozmiarem i usuwaniem.
 
-### Serwery (BETA)
+### Serwery 2.0
 
-| Lista serwerów | Konsola i ustawienia |
-|---|---|
-| ![Serwery](docs/screenshots/launcher-servers.png) | ![Konsola](docs/screenshots/launcher-server-console.png) |
+| Panel serwera | Pluginy z Modrinth | Sieć i domena |
+|---|---|---|
+| ![Serwer](docs/screenshots/launcher-server.png) | ![Pluginy](docs/screenshots/launcher-server-plugins.png) | ![Domena](docs/screenshots/launcher-server-domain.png) |
 
-Własny serwer na Twoim komputerze: **Vanilla, Paper lub Fabric**, dowolna wersja. Start/stop, konsola na żywo
-z wpisywaniem komend, lista graczy (OP / wyrzucanie), edycja `server.properties` (MOTD, tryb gry, trudność,
-PvP, online-mode, biała lista…), RAM i port, akceptacja EULA, oraz przycisk **Dołącz**, który od razu
-uruchamia grę i łączy z serwerem. Java dobierana automatycznie do wersji serwera.
+- **Silniki**: Paper, Purpur, Folia, Fabric, NeoForge, Forge i Vanilla – każda wersja, instalacja jednym kliknięciem.
+- **Dodatki**: pluginy, mody serwerowe, datapacki i całe paczki modów (.mrpack) z Modrinth; włączanie/wyłączanie,
+  wgrywanie z pliku i **aktualizacja wszystkiego jednym kliknięciem**.
+- **Światy**: kopie zapasowe (także w trakcie gry i automatycznie przy starcie), przywracanie, nowy świat z seedem.
+- **Gracze**: online (OP / kick / ban), biała lista, operatorzy, bany – także gdy serwer jest wyłączony.
+- **Sieć i domena**: automatyczne otwieranie portu (UPnP), test „czy znajomi się połączą” z zewnątrz,
+  darmowa subdomena **DuckDNS**, własna domena przez **Cloudflare** (rekordy A + SRV ustawiane automatycznie)
+  albo gotowe rekordy DNS dla dowolnego dostawcy. IP domeny aktualizuje się przy każdym starcie.
+- Konsola z historią i szybkimi komendami, statystyki RAM i czasu działania, automatyczny restart po awarii,
+  ikona serwera, pełny `server.properties`, argumenty JVM, paczka zasobów serwera.
+
+### Automatyczne aktualizacje
+
+Launcher sprawdza nowe wersje przy starcie i co 3 godziny, pobiera je w tle i instaluje po zamknięciu
+(albo od razu – przycisk „Uruchom ponownie”). Nore Client aktualizuje się razem z launcherem.
+Mody w instancjach: przycisk **Aktualizacje** albo automatycznie przy każdym uruchomieniu.
+
+Wydanie nowej wersji: podbij `version` w `launcher/package.json`, wypchnij tag `vX.Y.Z` (np. `git tag v1.2.0 &&
+git push origin v1.2.0`) – GitHub Actions zbuduje instalatory i opublikuje wydanie, z którego aktualizują się
+zainstalowane launchery. Repozytorium musi być publiczne (albo wydania muszą być publicznie dostępne).
 
 ### Instalator `.exe`
 

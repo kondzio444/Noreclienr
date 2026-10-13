@@ -37,13 +37,21 @@ function instanceTags(inst) {
 
 // ================================================================== HOME
 
+const HOME_NEWS = [
+  ['zap', 'Auto Craft i 12 nowych modułów', 'Deski, stół, pochodnie i narzędzia jednym kliknięciem przy ekwipunku. Plus alerty, Inventory HUD, TPS, stoper.'],
+  ['server', 'Serwery 2.0', 'Paper, Purpur, Fabric, NeoForge, Forge – pluginy i mody z Modrinth, kopie zapasowe, własna domena.'],
+  ['refresh', 'Automatyczne aktualizacje', 'Launcher i Nore Client aktualizują się same. Mody w instancjach – jednym kliknięciem.'],
+  ['sparkles', 'Nowy wygląd', 'Nowe menu w grze, ekran ładowania Nore i ekrany Minecrafta w stylu klienta. Discord RPC.'],
+];
+
 Pages.home = (root) => {
   const s = App.state;
   root.innerHTML = `
     <div class="hero stagger">
+      <div class="col" style="gap:20px;min-width:0">
       <div class="card hero-main" style="--i:0">
         <img class="hero-logo" src="assets/logo.png" alt="">
-        <div class="eyebrow">NORE CLIENT • MINECRAFT 1.21.1</div>
+        <div class="eyebrow">NORE CLIENT 2.1 • NORE LAUNCHER ${esc(App.info.version)}</div>
         <h1>Graj <span>lepiej</span>.<br>Wyglądaj lepiej.</h1>
         <p class="lead">Własny klient PvP z edytorem HUD, zoomem, freelookiem i dziesiątkami nakładek —
           plus mody, paczki zasobów, shadery i datapacki jednym kliknięciem.</p>
@@ -53,26 +61,39 @@ Pages.home = (root) => {
         </div>
         ${progressHtml()}
       </div>
-      <div class="col" style="gap:20px">
-        <div class="stat-list" style="--i:1">
-          <div class="card stat"><b id="st-play">–</b><span>Czas gry (instancja)</span></div>
-          <div class="card stat"><b id="st-last">–</b><span>Ostatnio grane</span></div>
-          <div class="card stat"><b>${s.instances.length}</b><span>Instancje</span></div>
-          <div class="card stat"><b>${(s.settings.memoryMb / 1024).toFixed(1)} GB</b><span>Pamięć RAM</span></div>
-        </div>
-        <div class="card news" style="--i:2">
-          <div class="section-title">${icon('sparkles')} Nowości</div>
-          <div class="news-item"><div class="ico">${icon('zap')}</div><div><b>Nore Client 1.0</b><p>Nowe menu modułów, edytor HUD z przyciąganiem i pomarańczowy motyw z poświatą.</p></div></div>
-          <div class="news-item"><div class="ico">${icon('puzzle')}</div><div><b>Przeglądarka Modrinth</b><p>Mody, shadery, paczki zasobów i datapacki — także w grze (Prawy Shift → Pobieraj).</p></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="quick stagger">
+      <div class="quick stagger" style="margin-top:0">
       <div class="card hover" data-go="mods" style="--i:3"><div class="ico">${icon('puzzle')}</div><div><b>Mody</b><span>Fabric • Modrinth</span></div></div>
       <div class="card hover" data-go="resourcepacks" style="--i:4"><div class="ico">${icon('image')}</div><div><b>Paczki zasobów</b><span>Tekstury i dźwięki</span></div></div>
       <div class="card hover" data-go="shaders" style="--i:5"><div class="ico">${icon('sun')}</div><div><b>Shadery</b><span>Iris / OptiFine</span></div></div>
       <div class="card hover" data-go="datapacks" style="--i:6"><div class="ico">${icon('database')}</div><div><b>Datapacki</b><span>Do Twoich światów</span></div></div>
-    </div>`;
+      <div class="card hover" data-go="servers" style="--i:7"><div class="ico">${icon('server')}</div><div><b>Serwery</b><span>Pluginy, mody, domena</span></div></div>
+      <div class="card hover" data-go="instances" style="--i:8"><div class="ico">${icon('layers')}</div><div><b>Instancje</b><span>Wersje i mody</span></div></div>
+      </div>
+      </div>
+      <div class="col" style="gap:20px">
+        <div class="stat-list" style="--i:1">
+          <div class="card stat"><b id="st-play">–</b><span>Czas gry (instancja)</span></div>
+          <div class="card stat"><b id="st-last">–</b><span>Ostatnio grane</span></div>
+        </div>
+        <div class="card news" style="--i:2">
+          <div class="section-title">${icon('sparkles')} Co nowego</div>
+          ${HOME_NEWS.map(n => `<div class="news-item"><div class="ico">${icon(n[0])}</div><div><b>${n[1]}</b><p>${n[2]}</p></div></div>`).join('')}
+        </div>
+        <div class="card home-servers" id="hsrv" style="--i:3"></div>
+      </div>
+    </div>
+`;
+  nore.servers.list().then(list => {
+    const box = $('#hsrv', root);
+    if (!box) return;
+    const on = list.filter(x => x.state === 'running');
+    box.innerHTML = `<div class="row"><div class="section-title" style="flex:1">${icon('server')} Twoje serwery</div><button class="btn ghost sm" data-go2="servers">${list.length ? 'Zarządzaj' : 'Utwórz'} ${icon('arrowRight')}</button></div>
+      ${list.length ? list.slice(0, 3).map(x => `<div class="hs-row" data-id="${esc(x.id)}"><i class="dot ${x.state}"></i><b>${esc(x.name)}</b><span>${esc(x.mcVersion)} • ${x.state === 'running' ? x.players.length + ' graczy' : 'wyłączony'}</span></div>`).join('')
+        : '<div class="muted" style="font-size:12.5px;margin-top:8px">Postaw własny serwer Paper, Fabric albo NeoForge z pluginami i domeną.</div>'}
+      ${on.length ? `<div class="muted" style="font-size:12px;margin-top:6px">${on.length} online</div>` : ''}`;
+    $$('[data-go2]', box).forEach(b => b.onclick = () => go(b.dataset.go2));
+    $$('.hs-row', box).forEach(r => r.onclick = () => go('server', { id: r.dataset.id }));
+  }).catch(() => {});
   $$('[data-go]', root).forEach(c => c.onclick = () => go(c.dataset.go));
   $('#pick', root).onclick = () => instancePickerModal();
 

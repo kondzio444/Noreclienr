@@ -230,10 +230,10 @@ Pages.server = (root, { id, tab: startTab }) => {
           <div class="muted" style="font-size:12px;margin-top:10px">Znajomi spoza Twojej sieci potrzebują otwartego portu – zakładka <a href="#" id="tonet">Sieć i domena</a>.</div></div>
         <div class="card panel"><div class="section-title">${icon('zap')} Szybkie akcje</div>
           <div class="quick-grid">
-            <button class="quick" data-q="backup">${icon('archive')}<b>Kopia zapasowa</b><span>Zapisz świat teraz</span></button>
-            <button class="quick" data-q="addons">${icon('plug')}<b>${s.type === 'vanilla' ? 'Datapacki' : ['paper', 'purpur', 'folia'].includes(s.type) ? 'Pluginy' : 'Mody'}</b><span>Instaluj z Modrinth</span></button>
-            <button class="quick" data-q="day" ${s.state !== 'running' ? 'disabled' : ''}>${icon('sun')}<b>Dzień</b><span>time set day</span></button>
-            <button class="quick" data-q="save" ${s.state !== 'running' ? 'disabled' : ''}>${icon('database')}<b>Zapisz świat</b><span>save-all</span></button>
+            <button class="qa" data-q="backup">${icon('archive')}<b>Kopia zapasowa</b><span>Zapisz świat teraz</span></button>
+            <button class="qa" data-q="addons">${icon('plug')}<b>${s.type === 'vanilla' ? 'Datapacki' : ['paper', 'purpur', 'folia'].includes(s.type) ? 'Pluginy' : 'Mody'}</b><span>Instaluj z Modrinth</span></button>
+            <button class="qa" data-q="day" ${s.state !== 'running' ? 'disabled' : ''}>${icon('sun')}<b>Dzień</b><span>time set day</span></button>
+            <button class="qa" data-q="save" ${s.state !== 'running' ? 'disabled' : ''}>${icon('database')}<b>Zapisz świat</b><span>save-all</span></button>
           </div></div></div>`;
     $$('[data-copy]', t).forEach(b => b.onclick = () => copyText(b.dataset.copy, 'Skopiowano adres'));
     $('#tonet', t).onclick = (e) => { e.preventDefault(); switchTab('network'); };
