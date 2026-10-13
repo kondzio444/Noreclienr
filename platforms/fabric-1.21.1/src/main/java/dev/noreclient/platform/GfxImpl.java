@@ -93,6 +93,12 @@ public final class GfxImpl implements Gfx {
     }
 
     /** Draws whatever is queued: first the DrawContext's own batch (earlier text), then our shapes. */
+    /** Draws everything batched so far and gives direct access to the context. */
+    public DrawContext context() {
+        flush();
+        return ctx;
+    }
+
     private void flush() {
         ctx.draw();
         if (batch == null) return;
@@ -109,7 +115,9 @@ public final class GfxImpl implements Gfx {
         RenderSystem.disableDepthTest();
         RenderSystem.setShaderColor(1, 1, 1, 1);
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferRenderer.drawWithGlobalProgram(b.end());
+        // endNullable: a nested frame (e.g. "Preparing for world creation") may have reset the shared allocator
+        net.minecraft.client.render.BuiltBuffer built = b.endNullable();
+        if (built != null) BufferRenderer.drawWithGlobalProgram(built);
         RenderSystem.setShaderColor(1, 1, 1, alpha);
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();

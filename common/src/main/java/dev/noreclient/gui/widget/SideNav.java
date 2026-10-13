@@ -11,7 +11,7 @@ import java.util.List;
 
 /** Vertical navigation list with icons used by the main and pause menus. */
 public final class SideNav {
-    public static final int PLAY = 0, GLOBE = 1, GRID = 2, HUD = 3, DOWNLOAD = 4, GEAR = 5, POWER = 6, STAR = 7, CHART = 8, WIFI = 9, BACK = 10, CAMERA = 11;
+    public static final int PLAY = 0, GLOBE = 1, GRID = 2, HUD = 3, DOWNLOAD = 4, GEAR = 5, POWER = 6, STAR = 7, CHART = 8, WIFI = 9, BACK = 10, CAMERA = 11, PERSON = 12, SHOP = 13, HELP = 14, MODS = 15;
     public static final int NORMAL = 0, PRIMARY = 1, DANGER = 2;
 
     private static final class Item {
@@ -61,6 +61,10 @@ public final class SideNav {
             case WIFI: Icons.globe(g, cx, cy, s, color); break;
             case BACK: Icons.play(g, cx + 0.5f, cy, s * 0.9f, color); break;
             case CAMERA: Icons.camera(g, cx, cy, s, color); break;
+            case PERSON: Icons.person(g, cx, cy, s, color); break;
+            case SHOP: Icons.bag(g, cx, cy, s, color); break;
+            case HELP: Icons.question(g, cx, cy, s, color); break;
+            case MODS: Icons.wrench(g, cx, cy, s, color); break;
             default: Icons.power(g, cx, cy, s, color); break;
         }
     }

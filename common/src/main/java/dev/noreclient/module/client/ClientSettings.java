@@ -15,6 +15,8 @@ public class ClientSettings extends Module {
     public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFFFF8A1F));
     public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFFFB547));
     public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów GUI", 6, 0, 12, 1, "px"));
+    public final ModeSetting menuBackground = add(new ModeSetting("Menu Background", "Tło menu głównego i ekranów Nore", "Panorama", "Panorama", "Mgławica", "Panorama + gwiazdy"));
+    public final BooleanSetting welcomeGuide = add(new BooleanSetting("Welcome Guide", "Pokaż poradnik powitalny przy następnym otwarciu menu", true));
     public final BooleanSetting blur = add(new BooleanSetting("Background Blur", "Rozmycie tła w menu", true));
     public final BooleanSetting notifications = add(new BooleanSetting("Notifications", "Powiadomienia przy przełączaniu modułów", true));
     public final ModeSetting notificationSide = add(new ModeSetting("Notification Side", "Gdzie pokazywać powiadomienia", "Bottom Right", "Bottom Right", "Top Right", "Top Left"));

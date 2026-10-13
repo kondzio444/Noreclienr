@@ -38,9 +38,10 @@ public class NorePauseMenu extends NoreScreen {
         nav.add("Powrót do gry", "Esc", SideNav.BACK, SideNav.PRIMARY, this::close)
                 .add("Moduły klienta", "Prawy Shift", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new ClickGuiScreen(self)))
                 .add("Edytor HUD", "H", SideNav.HUD, SideNav.NORMAL, () -> game().openScreen(new HudEditorScreen(self)))
-                .add("Postępy", null, SideNav.STAR, SideNav.NORMAL, () -> game().openAdvancements(self))
-                .add("Statystyki", null, SideNav.CHART, SideNav.NORMAL, () -> game().openStats(self))
+                .add("Postępy", null, SideNav.CHART, SideNav.NORMAL, () -> game().openAdvancements(self))
                 .add("Zrzuty ekranu", null, SideNav.CAMERA, SideNav.NORMAL, () -> game().openScreen(new ScreenshotsScreen(self)))
+                .add("Znajomi", null, SideNav.PERSON, SideNav.NORMAL, () -> game().openScreen(new FriendsScreen(self)))
+                .add("Kosmetyki", null, SideNav.STAR, SideNav.NORMAL, () -> game().openScreen(new CosmeticsScreen(self)))
                 .add("Opcje", null, SideNav.GEAR, SideNav.NORMAL, () -> game().openOptions(self));
         if (game().canOpenLan()) nav.add("Otwórz w LAN", null, SideNav.WIFI, SideNav.NORMAL, () -> game().openLan(self));
         else nav.add("Paczki zasobów", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)));

@@ -25,11 +25,20 @@ public abstract class MinecraftClientMixin {
         NoreClient.onShutdown();
     }
 
+    @Inject(method = "getFramerateLimit", at = @At("RETURN"), cancellable = true)
+    private void noreclient$dynamicFps(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Integer> cir) {
+        int limit = NoreClient.framerateLimit(cir.getReturnValue(), ((MinecraftClient) (Object) this).isWindowFocused());
+        if (limit != cir.getReturnValue()) cir.setReturnValue(limit);
+    }
+
     @ModifyVariable(method = "setScreen", at = @At("HEAD"), argsOnly = true)
     private Screen noreclient$replaceMenus(Screen screen) {
         NoreScreen replacement = null;
         if (screen instanceof TitleScreen) replacement = NoreClient.titleScreen();
         else if (screen instanceof GameMenuScreen && ((GameMenuScreen) screen).shouldShowMenu()) replacement = NoreClient.pauseScreen();
+        else if (screen instanceof net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen && !dev.noreclient.platform.ScreenRouting.consumeVanilla()) {
+            replacement = NoreClient.multiplayerScreen();
+        }
         return replacement != null ? new ScreenAdapter(replacement) : screen;
     }
 }

@@ -24,14 +24,18 @@ public final class ExtraModules {
         m.add(new Alerts.CoordsShare());
         m.add(new dev.noreclient.module.utility.Screenshots());
         m.add(new dev.noreclient.module.hud.ServerInfoHud());
+        m.add(new dev.noreclient.module.social.FriendsModule());
+        m.add(new dev.noreclient.module.social.Cosmetics());
+        m.add(new dev.noreclient.module.render.Hitboxes());
+        m.add(new dev.noreclient.module.utility.AutoGG());
+        m.add(new dev.noreclient.module.client.DynamicFps());
+        m.add(new dev.noreclient.module.hud.WaypointHud());
     }
 
     /** Names of modules added in the current release (shown with a NEW badge). */
     public static boolean isNew(Module module) {
         String n = module.getName();
-        return n.equals("Auto Craft") || n.equals("Auto Respawn") || n.equals("Inventory HUD") || n.equals("Stopwatch")
-                || n.equals("Last Death") || n.equals("TPS") || n.equals("Item Counter") || n.equals("Durability Alert")
-                || n.equals("Low Health Alert") || n.equals("Effect Alert") || n.equals("Break Reminder") || n.equals("Coords Share") || n.equals("Discord RPC")
-                || n.equals("Screenshots") || n.equals("Server Info");
+        return n.equals("Screenshots") || n.equals("Server Info") || n.equals("Friends") || n.equals("Cosmetics") || n.equals("Hitboxes")
+                || n.equals("Auto GG") || n.equals("Dynamic FPS") || n.equals("Waypoint");
     }
 }

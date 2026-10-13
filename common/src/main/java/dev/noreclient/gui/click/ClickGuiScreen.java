@@ -419,7 +419,7 @@ public class ClickGuiScreen extends NoreScreen {
             sub = currentList().isEmpty() ? "Kliknij gwiazdkę na module, aby go tu przypiąć" : currentList().size() + " przypiętych modułów";
         } else if (collection == 2) {
             title = "Nowe w " + NoreClient.VERSION;
-            sub = "Auto Craft, Discord RPC, alerty, nowe nakładki i więcej";
+            sub = "Znajomi, peleryny, zrzuty, Auto GG, Dynamic FPS, Waypoint i więcej";
         } else {
             title = category == null ? "Wszystkie moduły" : category.displayName;
             sub = category == null ? NoreClient.get().modules().getModules().size() + " modułów \u2022 " + NoreClient.get().modules().optionCount() + " opcji" : category.subtitle;

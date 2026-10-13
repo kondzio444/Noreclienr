@@ -461,8 +461,109 @@ public final class GameImpl implements Game {
                 net.minecraft.client.network.ServerAddress.parse(address), info, false, null);
     }
 
+    // ------------------------------------------------------------------ 1.4
+
+    private static net.minecraft.client.gui.RotatingCubeMapRenderer panorama;
+
+    @Override
+    public void renderPanorama(dev.noreclient.api.Gfx g, float delta) {
+        if (panorama == null) panorama = new net.minecraft.client.gui.RotatingCubeMapRenderer(
+                new net.minecraft.client.gui.CubeMapRenderer(Identifier.ofVanilla("textures/gui/title/background/panorama")));
+        net.minecraft.client.gui.DrawContext ctx = ((GfxImpl) g).context();
+        panorama.render(ctx, ctx.getScaledWindowWidth(), ctx.getScaledWindowHeight(), 1f, delta);
+    }
+
+    private net.minecraft.client.option.ServerList servers() {
+        net.minecraft.client.option.ServerList list = new net.minecraft.client.option.ServerList(mc());
+        list.loadFile();
+        return list;
+    }
+
+    @Override
+    public void addServer(String name, String address) {
+        net.minecraft.client.option.ServerList list = servers();
+        list.add(new ServerInfo(name, address, ServerInfo.ServerType.OTHER), false);
+        list.saveFile();
+    }
+
+    @Override
+    public void editServer(int index, String name, String address) {
+        net.minecraft.client.option.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return;
+        ServerInfo info = list.get(index);
+        info.name = name;
+        info.address = address;
+        list.saveFile();
+    }
+
+    @Override
+    public void removeServer(int index) {
+        net.minecraft.client.option.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return;
+        list.remove(list.get(index));
+        list.saveFile();
+    }
+
+    @Override
+    public void moveServer(int from, int to) {
+        net.minecraft.client.option.ServerList list = servers();
+        if (from < 0 || to < 0 || from >= list.size() || to >= list.size()) return;
+        list.swapEntries(from, to);
+        list.saveFile();
+    }
+
+    @Override
+    public void openVanillaMultiplayer(Object parent) {
+        dev.noreclient.platform.ScreenRouting.allowVanilla = true;
+        mc().setScreen(new MultiplayerScreen(toScreen(parent)));
+    }
+
+    @Override
+    public List<String[]> mods() {
+        List<String[]> out = new ArrayList<>();
+        for (net.fabricmc.loader.api.ModContainer c : FabricLoader.getInstance().getAllMods()) {
+            net.fabricmc.loader.api.metadata.ModMetadata m = c.getMetadata();
+            if (m.getType().equals("builtin") && !m.getId().equals("minecraft") && !m.getId().equals("java")) continue;
+            if (c.getContainingMod().isPresent()) continue; // bundled library inside another mod
+            StringBuilder authors = new StringBuilder();
+            for (net.fabricmc.loader.api.metadata.Person p : m.getAuthors()) authors.append(authors.length() > 0 ? ", " : "").append(p.getName());
+            out.add(new String[]{m.getId(), m.getName(), m.getVersion().getFriendlyString(), m.getDescription(), authors.toString(),
+                    m.getContact().get("homepage").orElse(""), m.getContact().get("sources").orElse(""), m.getContact().get("issues").orElse("")});
+        }
+        out.sort((a, b) -> a[1].compareToIgnoreCase(b[1]));
+        return out;
+    }
+
+    @Override
+    public byte[] modIcon(String id) {
+        try {
+            net.fabricmc.loader.api.ModContainer c = FabricLoader.getInstance().getModContainer(id).orElse(null);
+            if (c == null) return null;
+            String icon = c.getMetadata().getIconPath(64).orElse(null);
+            if (icon == null) return null;
+            java.util.Optional<java.nio.file.Path> path = c.findPath(icon);
+            return path.isPresent() ? java.nio.file.Files.readAllBytes(path.get()) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    public List<String> tabPlayerNames() {
+        List<String> out = new ArrayList<>();
+        if (mc().getNetworkHandler() == null) return out;
+        for (PlayerListEntry e : mc().getNetworkHandler().getPlayerList()) out.add(e.getProfile().getName());
+        return out;
+    }
+
+    @Override public void setRenderHitboxes(boolean on) { mc().getEntityRenderDispatcher().setRenderHitboxes(on); }
+
+    public static Identifier localCape;
+
+    @Override public void setLocalCape(TextureRef cape) { localCape = cape == null ? null : (Identifier) cape.handle; }
+
     @Override public void openSingleplayer(Object parent) { mc().setScreen(new SelectWorldScreen(toScreen(parent))); }
-    @Override public void openMultiplayer(Object parent) { mc().setScreen(new MultiplayerScreen(toScreen(parent))); }
+    @Override public void openMultiplayer(Object parent) { openScreen(new dev.noreclient.gui.menu.MultiplayerScreen2(parent)); }
     @Override public void openOptions(Object parent) { mc().setScreen(new OptionsScreen(toScreen(parent), mc().options)); }
 
     @Override

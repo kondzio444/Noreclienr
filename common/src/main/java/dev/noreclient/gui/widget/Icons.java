@@ -134,6 +134,18 @@ public final class Icons {
         Render2D.ring(g, cx, cy + s * 0.06f, s * 0.2f, 1.1f, 0, 360, color);
     }
 
+    public static void bag(Gfx g, float cx, float cy, float s, int color) {
+        Render2D.roundedOutline(g, cx - s * 0.42f, cy - s * 0.18f, s * 0.84f, s * 0.66f, s * 0.12f, 1.1f, color);
+        Render2D.ring(g, cx, cy - s * 0.18f, s * 0.22f, 1.1f, 180, 360, color);
+    }
+
+    public static void question(Gfx g, float cx, float cy, float s, int color) {
+        Render2D.ring(g, cx, cy, s * 0.48f, 1.1f, 0, 360, color);
+        Render2D.ring(g, cx, cy - s * 0.1f, s * 0.16f, 1.1f, 200, 450, color);
+        Render2D.rect(g, cx - 0.55f, cy + s * 0.04f, 1.1f, s * 0.12f, color);
+        Render2D.circle(g, cx, cy + s * 0.28f, 0.8f, color);
+    }
+
     public static void download(Gfx g, float cx, float cy, float s, int color) {
         Render2D.rect(g, cx - 0.6f, cy - s * 0.5f, 1.2f, s * 0.65f, color);
         Render2D.line(g, cx - s * 0.32f, cy, cx, cy + s * 0.3f, 1.2f, color);

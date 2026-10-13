@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  */
 public final class NoreClient {
     public static final String NAME = "Nore Client";
-    public static final String VERSION = "2.1.0";
+    public static final String VERSION = "1.4 Beta";
     public static final Logger LOGGER = Logger.getLogger(NAME);
 
     private static NoreClient instance;
@@ -129,6 +129,50 @@ public final class NoreClient {
 
     public static void onMouseButton(int button, boolean pressed, boolean inGameNoScreen) {
         if (pressed && inGameNoScreen) ClickTracker.click(button);
+        if (pressed && inGameNoScreen && button == 2 && instance != null) {
+            dev.noreclient.module.social.FriendsModule f = instance.moduleManager.get(dev.noreclient.module.social.FriendsModule.class);
+            if (f.isActive()) f.onMiddleClick();
+        }
+    }
+
+    // ------------------------------------------------------------------ 1.4 hooks
+
+    /** Replacement for the vanilla multiplayer list. */
+    public static NoreScreen multiplayerScreen() {
+        return instance == null ? null : new dev.noreclient.gui.menu.MultiplayerScreen2(null);
+    }
+
+    /** Frame-rate limit (Dynamic FPS lowers it while the window is in the background). */
+    public static int framerateLimit(int limit, boolean focused) {
+        if (instance == null) return limit;
+        dev.noreclient.module.client.DynamicFps d = instance.moduleManager.get(dev.noreclient.module.client.DynamicFps.class);
+        return d.isActive() ? d.limit(limit, focused) : limit;
+    }
+
+    public static boolean isFriendHighlighted(String name) {
+        if (instance == null) return false;
+        dev.noreclient.module.social.FriendsModule f = instance.moduleManager.get(dev.noreclient.module.social.FriendsModule.class);
+        return f.isActive() && f.highlight.isOn() && dev.noreclient.util.Friends.isFriend(name);
+    }
+
+    public static void onChatMessage(String text) {
+        if (instance == null) return;
+        dev.noreclient.module.utility.AutoGG gg = instance.moduleManager.get(dev.noreclient.module.utility.AutoGG.class);
+        if (gg.isActive()) gg.onChat(text);
+    }
+
+    private static volatile String connectName, connectAddress;
+
+    public static void onConnecting(String name, String address) {
+        connectName = name;
+        connectAddress = address;
+    }
+
+    /** Server card on the "connecting" screen. */
+    public static void renderConnecting(Gfx g, int width, int height) {
+        if (instance == null || connectAddress == null) return;
+        CurrentGfx.set(g);
+        dev.noreclient.gui.menu.ConnectOverlay.render(g, width, height, connectName, connectAddress);
     }
 
     /** Returns true when the scroll was consumed (zoom). */

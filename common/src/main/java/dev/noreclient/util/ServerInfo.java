@@ -84,6 +84,20 @@ public final class ServerInfo {
         if (address != null) CACHE.remove(address.trim().toLowerCase(Locale.ROOT));
     }
 
+    private static final Map<Object, Object[]> TYPED = new ConcurrentHashMap<Object, Object[]>();
+
+    /**
+     * Text from an input that is still being typed: returns it only once it has stayed the same
+     * for 450 ms and looks like an address (so partial addresses are not queried).
+     */
+    public static String settled(Object owner, String text) {
+        String t = text == null ? "" : text.trim();
+        Object[] prev = TYPED.get(owner);
+        long now = System.currentTimeMillis();
+        if (prev == null || !prev[0].equals(t)) { TYPED.put(owner, new Object[]{t, now}); return null; }
+        return looksLikeAddress(t) && now - (Long) prev[1] >= 450 ? t : null;
+    }
+
     /** True when the text could be a server address (host or host:port). */
     public static boolean looksLikeAddress(String s) {
         return s != null && s.trim().matches("[A-Za-z0-9._-]+\\.[A-Za-z0-9-]{2,}(:\\d{1,5})?|\\[?[0-9a-fA-F:]+\\]?(:\\d{1,5})?|localhost(:\\d{1,5})?");

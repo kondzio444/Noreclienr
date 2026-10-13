@@ -22,6 +22,7 @@ public abstract class ChatHudMixin {
     private Text noreclient$timestamp(Text message) {
         NoreClient c = NoreClient.get();
         if (c == null) return message;
+        NoreClient.onChatMessage(message.getString());
         ChatTimestamps m = c.modules().get(ChatTimestamps.class);
         return m.isActive() ? Text.literal(m.prefix()).append(message) : message;
     }

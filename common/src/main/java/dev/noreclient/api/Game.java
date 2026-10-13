@@ -274,6 +274,35 @@ public interface Game {
 
     int activeResourcePacks();
 
+    // ------------------------------------------------------------------ 1.4
+    /** Minecraft's rotating title-screen panorama, full screen. */
+    void renderPanorama(Gfx g, float delta);
+
+    void addServer(String name, String address);
+
+    void editServer(int index, String name, String address);
+
+    void removeServer(int index);
+
+    void moveServer(int from, int to);
+
+    /** The original Minecraft server list screen. */
+    void openVanillaMultiplayer(Object parent);
+
+    /** Loaded mods: {id, name, version, description, authors, homepage, sources, issues}. */
+    List<String[]> mods();
+
+    /** PNG of a mod's icon or null. */
+    byte[] modIcon(String id);
+
+    /** Names in the tab list (empty outside a server). */
+    List<String> tabPlayerNames();
+
+    void setRenderHitboxes(boolean on);
+
+    /** Cape for the local player (null = the player's own / none). */
+    void setLocalCape(TextureRef cape);
+
     String gpu();
 
     String cpu();
