@@ -10,7 +10,7 @@
     "start": "electron .",
     "test": "node --test",
     "dist": "electron-builder",
-    "dist:win": "node scripts/copy-mod.js && electron-builder --win nsis --x64",
+    "dist:win": "node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
     "dist:linux": "node scripts/copy-mod.js && electron-builder --linux AppImage",
     "dist:mac": "node scripts/copy-mod.js && electron-builder --mac dmg",
     "predist": "node scripts/copy-mod.js"
