@@ -37,6 +37,41 @@ public class ModuleManager {
         add(new ComboHud());
         add(new ReachHud());
         add(new TargetHud());
+        add(new FpsGraphHud());
+        add(new AnalogClockHud());
+        add(new CooldownHud());
+        add(new InfoHuds.DayCounter());
+        add(new InfoHuds.LightLevel());
+        add(new InfoHuds.EntityCount());
+        add(new InfoHuds.Saturation());
+        add(new InfoHuds.Health());
+        add(new InfoHuds.Experience());
+        add(new InfoHuds.ArrowCounter());
+        add(new InfoHuds.TotemCounter());
+        add(new InfoHuds.PearlCounter());
+        add(new InfoHuds.GappleCounter());
+        add(new InfoHuds.SessionTime());
+        add(new InfoHuds.DateDisplay());
+        add(new InfoHuds.Weather());
+        add(new InfoHuds.GameTime());
+        add(new InfoHuds.Rotation());
+        add(new InfoHuds.VerticalSpeed());
+        add(new InfoHuds.DistanceTraveled());
+        add(new InfoHuds.DeathCounter());
+        add(new InfoHuds.BlockInfo());
+        add(new InfoHuds.ChunkInfo());
+        add(new InfoHuds.Dimension());
+        add(new InfoHuds.PlayerCount());
+        add(new InfoHuds.FrameTime());
+        add(new InfoHuds.ServerBrand());
+        add(new InfoHuds.MovementState());
+        add(new InfoHuds.TargetDistance());
+        add(new InfoHuds.ResourcePacks());
+        add(new InfoHuds.SystemInfo());
+        add(new InfoHuds.HitCounter());
+        add(new InfoHuds.BiomeDisplay());
+        add(new InfoHuds.ElytraInfo());
+        add(new InfoHuds.TimeToDay());
         // Render
         add(new Fullbright());
         add(new Zoom());
@@ -46,11 +81,21 @@ public class ModuleManager {
         add(new LowFire());
         add(new TimeChanger());
         add(new ClearWeather());
+        add(new Particles());
+        add(new FogControl());
+        add(new HandCustomizer());
+        add(new CameraTweaks());
+        add(new SelfNametag());
+        add(new FovChanger());
+        add(new BlockOutline());
         // Player
         add(new ToggleSprint());
         // Utility
         add(new ChatTimestamps());
         add(new ScoreboardTweaks());
+        add(new dev.noreclient.module.utility.TabPing());
+        add(new dev.noreclient.module.utility.ChatTweaks());
+        add(new dev.noreclient.module.utility.ChatMacros());
         // Client
         add(new ClientSettings());
         add(new ClickGuiModule());
@@ -92,7 +137,15 @@ public class ModuleManager {
         for (Module m : modules) if (m.isEnabled()) m.onTick();
     }
 
+    /** Total number of user-configurable options (settings + keybinds). */
+    public int optionCount() {
+        int n = 0;
+        for (Module m : modules) n += m.getSettings().size() + 1;
+        return n;
+    }
+
     public void onKey(int key) {
+        get(dev.noreclient.module.utility.ChatMacros.class).onKey(key);
         for (Module m : modules) {
             if (m.getKeybind().isBound() && m.getKeybind().get() == key) m.toggleWithFeedback();
         }

@@ -29,6 +29,39 @@ w ciemnym, pomarańczowym stylu z poświatą — jak Lunar Client, Feather czy L
 - **Wygląd**: animowane tło (zdjęcie JWST z efektem Ken Burns i paralaksą), unoszące się iskry, przyciski z poświatą,
   płynne przejścia stron, kaskadowe animacje kart, przesuwany wskaźnik w menu, ekran startowy, powiadomienia.
 
+### Instalator wersji – Vanilla albo z modami, każda wersja
+
+![Nowa instancja](docs/screenshots/launcher-new-instance.png)
+
+Przy pobieraniu wybierasz **wersję** (wszystkie wydania i snapshoty) i **rodzaj**:
+- **Vanilla** – czysta gra, działa dla każdej wersji (także bardzo starych, np. 1.8.9 z Javą 8).
+- **Z modami** – Fabric oraz:
+  - **Nore Client** (wersje **1.21 i 1.21.1**, oznaczone NORE),
+  - **Pakiet Nore** dla *każdej* wersji wspieranej przez Fabric (1.14+): Sodium, Lithium, FerriteCore,
+    Entity Culling, ImmediatelyFast, Zoomify, AppleSkin, Mod Menu + Fabric API – dobierane automatycznie
+    pod wybraną wersję (przetestowane np. na 1.20.4).
+
+### Edycja pobranych wersji (instancji)
+
+![Szczegóły instancji](docs/screenshots/launcher-instance-details.png)
+
+Kliknij instancję, aby wejść w jej szczegóły: **zmiana wersji Minecraft**, przełączanie Vanilla / Fabric /
+Nore Client, Pakiet Nore, nazwa i kolor, duplikowanie, rozmiar na dysku, a w zakładkach: **mody, paczki
+zasobów i shadery** (włączanie/wyłączanie/usuwanie), **światy** (kopia zapasowa .zip, datapacki, usuwanie),
+**zrzuty ekranu** (podgląd i usuwanie) oraz **ustawienia** (RAM, argumenty JVM, rozdzielczość, auto-dołączanie).
+W *Ustawieniach* launchera jest lista pobranych wersji gry z rozmiarem i usuwaniem.
+
+### Serwery (BETA)
+
+| Lista serwerów | Konsola i ustawienia |
+|---|---|
+| ![Serwery](docs/screenshots/launcher-servers.png) | ![Konsola](docs/screenshots/launcher-server-console.png) |
+
+Własny serwer na Twoim komputerze: **Vanilla, Paper lub Fabric**, dowolna wersja. Start/stop, konsola na żywo
+z wpisywaniem komend, lista graczy (OP / wyrzucanie), edycja `server.properties` (MOTD, tryb gry, trudność,
+PvP, online-mode, biała lista…), RAM i port, akceptacja EULA, oraz przycisk **Dołącz**, który od razu
+uruchamia grę i łączy z serwerem. Java dobierana automatycznie do wersji serwera.
+
 ### Instalator `.exe`
 
 | Powitanie | Zakończenie |
@@ -79,9 +112,21 @@ Do tego czasu można grać na koncie non-premium (singleplayer, LAN, serwery z `
   do aktualnego świata i shadery prosto z Modrinth, z ikonami i sortowaniem.
 - **Menu modułów**: kategorie, wyszukiwarka, przełączniki, suwaki, wybór trybów, color picker z trybem tęczy, przypisywanie klawiszy, profile.
 - **Edytor HUD** (`H`): przeciąganie, przyciąganie do linii pomocniczych, skalowanie, panel elementów.
-- **Moduły**: 17 nakładek HUD (FPS, CPS, Keystrokes, Coordinates, Armor Status, Potion Effects, Target HUD, Compass,
-  Combo, Reach…), Zoom (`C`), Freelook (`Lewy Alt`), własny celownik, Fullbright (`B`), Toggle Sprint, Time Changer,
-  Low Fire, No Hurt Cam, Clear Weather, Chat Timestamps, Hide Scoreboard.
+- **75 modułów i 667 opcji** (licznik widać w menu modułów). Nakładki HUD (53): FPS, CPS, Keystrokes, Coordinates,
+  Armor Status, Potion Effects, Target HUD, Compass, Combo, Reach, **wykres FPS, zegar analogowy, wskaźnik
+  odnowienia ataku / naciągnięcia łuku**, licznik dni, poziom światła, liczba bytów, nasycenie, HP, XP, liczniki
+  strzał / totemów / pereł / złotych jabłek, czas sesji, data, pogoda, czas w grze, obrót, prędkość pionowa,
+  przebyty dystans, licznik śmierci i uderzeń, informacja o bloku, chunk, wymiar, gracze online, czas klatki,
+  silnik serwera, stan ruchu, odległość do celu, paczki zasobów, informacje o systemie, biom, elytra, czas do nocy.
+  Każda nakładka tekstowa ma własny styl, nawiasy, tło, kolory, cień i skalę.
+- Render: Zoom (`C`), Freelook (`Lewy Alt`), celownik, Fullbright (`B`), **Particles** (ilość i rodzaje cząsteczek,
+  mnożnik krytyków), **Fog Control** (mgła świata / woda / lawa / śnieg), **Hand Customizer** (pozycja, skala,
+  machnięcie, bez animacji zmiany przedmiotu), **Camera Tweaks** (odległość F5, przenikanie przez bloki),
+  **FOV Changer** (do 140°, stałe FOV), **Block Outline** (kolorowy obrys), **Self Nametag**, Time Changer,
+  Low Fire, No Hurt Cam, Clear Weather.
+- Utility: **Chat Macros** (5 makr pod klawisze), **Chat Tweaks** (historia do 5000 wiadomości, zachowanie czatu
+  między serwerami), **Tab Ping** (ping w liczbach), Chat Timestamps, Hide Scoreboard, Toggle Sprint.
+- Nore Client działa na Minecraft **1.21 i 1.21.1**; dla pozostałych wersji launcher oferuje Pakiet Nore.
 
 Wszystkie funkcje działają tylko po stronie klienta – bez cheatów.
 

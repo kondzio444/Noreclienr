@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class NoreClient implements ClientModInitializer {
     public static final String MOD_ID = "noreclient";
     public static final String NAME = "Nore Client";
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.2.0";
     public static final Logger LOGGER = LoggerFactory.getLogger(NAME);
 
     private static NoreClient instance;
@@ -77,6 +77,7 @@ public class NoreClient implements ClientModInitializer {
                 CombatTracker.onAttack(entity);
                 moduleManager.get(ComboHud.class).onHit(entity);
                 moduleManager.get(ReachHud.class).onHit(player, entity);
+                moduleManager.get(dev.noreclient.module.hud.InfoHuds.HitCounter.class).onHit();
             }
             return ActionResult.PASS;
         });
@@ -95,7 +96,7 @@ public class NoreClient implements ClientModInitializer {
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> configManager.save());
 
-        LOGGER.info("{} {} initialised with {} modules", NAME, VERSION, moduleManager.getModules().size());
+        LOGGER.info("{} {} initialised with {} modules and {} options", NAME, VERSION, moduleManager.getModules().size(), moduleManager.optionCount());
     }
 
     public static NoreClient get() { return instance; }

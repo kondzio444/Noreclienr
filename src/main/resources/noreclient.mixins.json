@@ -4,18 +4,24 @@
   "package": "dev.noreclient.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "BackgroundRendererMixin",
     "CameraMixin",
     "ChatHudMixin",
     "ClientWorldPropertiesMixin",
     "EntityMixin",
+    "HeldItemRendererMixin",
     "GameRendererMixin",
     "InGameHudMixin",
     "InGameOverlayRendererMixin",
     "KeyboardMixin",
+    "LivingEntityRendererMixin",
     "MinecraftClientMixin",
     "MouseMixin",
+    "ParticleManagerMixin",
+    "PlayerListHudMixin",
     "SimpleOptionMixin",
-    "WorldMixin"
+    "WorldMixin",
+    "WorldRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

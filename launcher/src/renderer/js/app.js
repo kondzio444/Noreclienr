@@ -33,6 +33,7 @@ const NAV = {
   'nav-main': [
     { id: 'home', label: 'Start', icon: 'home' },
     { id: 'instances', label: 'Instancje', icon: 'layers' },
+    { id: 'servers', label: 'Serwery', icon: 'globe', badge: 'BETA' },
   ],
   'nav-content': [
     { id: 'mods', label: 'Mody', icon: 'puzzle' },
@@ -51,7 +52,7 @@ function buildNav() {
   for (const [id, items] of Object.entries(NAV)) {
     const nav = document.getElementById(id);
     nav.innerHTML = '<span class="indicator"></span>' + items.map(it =>
-      `<a data-page="${it.id}">${icon(it.icon)}<span>${it.label}</span><span class="badge" data-badge="${it.id}" hidden></span></a>`).join('');
+      `<a data-page="${it.id}">${icon(it.icon)}<span>${it.label}</span><span class="badge" data-badge="${it.id}" ${it.badge ? '' : 'hidden'}>${it.badge || ''}</span></a>`).join('');
     $$('a', nav).forEach(a => a.addEventListener('click', () => go(a.dataset.page)));
   }
 }
@@ -60,7 +61,8 @@ function moveIndicator() {
   for (const id of Object.keys(NAV)) {
     const nav = document.getElementById(id);
     const ind = $('.indicator', nav);
-    const active = $(`a[data-page="${App.page}"]`, nav);
+    const key = App.page === 'instance' ? 'instances' : App.page === 'server' ? 'servers' : App.page;
+    const active = $(`a[data-page="${key}"]`, nav);
     $$('a', nav).forEach(a => a.classList.toggle('active', a === active));
     if (active) {
       ind.style.opacity = 1;

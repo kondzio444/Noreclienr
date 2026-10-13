@@ -7,7 +7,7 @@ const versions = require('./versions');
 const java = require('./java');
 
 const LAUNCHER_NAME = 'nore-launcher';
-const LAUNCHER_VERSION = '1.0.0';
+const LAUNCHER_VERSION = '1.1.0';
 
 function substitute(str, vars) {
   return str.replace(/\$\{([a-zA-Z_]+)\}/g, (m, k) => (k in vars ? vars[k] : m));

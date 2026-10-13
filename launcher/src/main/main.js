@@ -12,8 +12,12 @@ const launcher = require('./launch');
 const modrinth = require('./modrinth');
 const instances = require('./instances');
 const net = require('./net');
+const servers = require('./servers');
+const AdmZip = require('adm-zip');
 
 const FABRIC_API_ID = 'P7dR8mSH';
+/** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
+const NORE_PACK = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'entityculling', 'immediatelyfast', 'modmenu', 'zoomify', 'appleskin'];
 const ICON = path.join(__dirname, '..', 'renderer', 'assets', 'logo.png');
 
 let win = null;
@@ -70,9 +74,12 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store.load();
+  servers.setEmitter(send);
   instances.ensureDefault();
   createWindow();
 });
+
+app.on('before-quit', () => servers.stopAll());
 
 app.on('window-all-closed', () => {
   if (!game) app.quit();
@@ -100,6 +107,8 @@ ipcMain.handle('state:get', () => {
     instances: instances.list(),
     selectedInstance: d.selectedInstance,
     running: game ? game.instanceId : null,
+    noreVersions: instances.NORE_VERSIONS,
+    servers: servers.list(),
   };
 });
 
@@ -253,6 +262,19 @@ async function prepareGame(inst, settings, progress) {
     progress({ stage: 'Instalowanie Nore Client', step: 'nore' });
     await prepareNore(inst);
   }
+  if (inst.perfPack && inst.loader === 'fabric' && !inst.packInstalled) {
+    const mods = path.join(inst.gameDir, 'mods');
+    let i = 0;
+    for (const slug of NORE_PACK) {
+      progress({ stage: 'Pakiet Nore', current: slug, done: i++, total: NORE_PACK.length, step: 'nore' });
+      try {
+        await modrinth.install({ projectId: slug, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
+      } catch (e) {
+        send('log', { line: `[Launcher] Pakiet Nore: ${slug} niedostępny dla ${inst.mcVersion} (${e.message})`, stream: 'out' });
+      }
+    }
+    instances.update(inst.id, { packInstalled: true });
+  }
   let javaBin = settings.javaPath;
   if (!javaBin) {
     const component = (installed.version.javaVersion && installed.version.javaVersion.component) || 'jre-legacy';
@@ -276,16 +298,18 @@ ipcMain.handle('game:prepare', async (e, instanceId) => {
   }
 });
 
-ipcMain.handle('game:launch', async (e, instanceId) => {
+ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
   if (busy) throw new Error('Trwa już przygotowywanie gry.');
   if (game) throw new Error('Gra jest już uruchomiona.');
   busy = true;
   const progress = (p) => send('progress', p);
   try {
-    const inst = instances.get(instanceId);
+    let inst = instances.get(instanceId);
     if (!inst) throw new Error('Nie znaleziono instancji.');
+    if (opts.joinServer) inst = { ...inst, joinServer: opts.joinServer };
     const account = await readyAccount();
-    const settings = store.get().settings;
+    const base = store.get().settings;
+    const settings = { ...base, jvmArgs: [base.jvmArgs, inst.jvmArgs].filter(Boolean).join(' ') };
 
     const { installed, javaBin } = await prepareGame(inst, settings, progress);
 
@@ -302,10 +326,11 @@ ipcMain.handle('game:launch', async (e, instanceId) => {
         }
       },
       onExit: (code) => {
+        const killed = game && game.killed;
         const played = Date.now() - started;
         instances.update(inst.id, { playTime: (instances.get(inst.id).playTime || 0) + played });
         game = null;
-        send('game:state', { running: null, code });
+        send('game:state', { running: null, code: killed ? 0 : code });
         if (win) { win.show(); win.focus(); }
       },
     });
@@ -320,7 +345,7 @@ ipcMain.handle('game:launch', async (e, instanceId) => {
 });
 
 ipcMain.handle('game:kill', () => {
-  if (game) game.child.kill();
+  if (game) { game.killed = true; game.child.kill(); }
 });
 
 // ------------------------------------------------------------------ IPC: content (Modrinth)
@@ -369,3 +394,82 @@ ipcMain.handle('content:delete', async (e, { instanceId, kind, world, file }) =>
 ipcMain.handle('net:check', async () => {
   try { await net.getJson('https://api.modrinth.com/'); return true; } catch { return false; }
 });
+
+// ------------------------------------------------------------------ IPC: instance details
+
+ipcMain.handle('instances:worldsInfo', (e, id) => instances.worldsInfo(id));
+ipcMain.handle('instances:screenshots', (e, id) => instances.screenshots(id));
+ipcMain.handle('instances:deleteWorld', async (e, id, world) => {
+  const inst = instances.get(id);
+  await fsp.rm(path.join(inst.gameDir, 'saves', path.basename(world)), { recursive: true, force: true });
+  return true;
+});
+ipcMain.handle('instances:backupWorld', async (e, id, world) => {
+  const inst = instances.get(id);
+  const src = path.join(inst.gameDir, 'saves', path.basename(world));
+  const outDir = path.join(inst.gameDir, 'backups');
+  await fsp.mkdir(outDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  const file = path.join(outDir, `${path.basename(world)}-${stamp}.zip`);
+  const zip = new AdmZip();
+  zip.addLocalFolder(src, path.basename(world));
+  await zip.writeZipPromise(file);
+  return file;
+});
+ipcMain.handle('instances:deleteScreenshot', async (e, id, name) => {
+  const inst = instances.get(id);
+  await fsp.rm(path.join(inst.gameDir, 'screenshots', path.basename(name)), { force: true });
+  return true;
+});
+ipcMain.handle('instances:size', (e, id) => instances.dirSize(instances.get(id).gameDir));
+ipcMain.handle('instances:duplicate', async (e, id) => {
+  const inst = instances.get(id);
+  const copy = instances.create({ name: inst.name + ' (kopia)', mcVersion: inst.mcVersion, loader: inst.loader, modpack: inst.modpack, perfPack: inst.perfPack, color: inst.color });
+  await fsp.cp(inst.gameDir, copy.gameDir, { recursive: true, force: true });
+  instances.update(copy.id, { packInstalled: inst.packInstalled, loaderVersion: inst.loaderVersion, memoryMb: inst.memoryMb, jvmArgs: inst.jvmArgs });
+  return instances.get(copy.id);
+});
+
+// ------------------------------------------------------------------ IPC: downloaded versions
+
+ipcMain.handle('versions:installed', async () => {
+  const out = [];
+  let dirs = [];
+  try { dirs = await fsp.readdir(paths.versions, { withFileTypes: true }); } catch { return []; }
+  for (const d of dirs) {
+    if (!d.isDirectory()) continue;
+    const p = path.join(paths.versions, d.name);
+    const used = instances.list().filter(i => i.mcVersion === d.name || d.name.endsWith('-' + i.mcVersion)).map(i => i.name);
+    out.push({ id: d.name, size: await instances.dirSize(p), fabric: d.name.startsWith('fabric-loader-'), usedBy: used });
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+});
+ipcMain.handle('versions:delete', async (e, id) => {
+  await fsp.rm(path.join(paths.versions, path.basename(id)), { recursive: true, force: true });
+  return true;
+});
+ipcMain.handle('storage:info', async () => ({
+  libraries: await instances.dirSize(paths.libraries),
+  assets: await instances.dirSize(paths.assets),
+  runtime: await instances.dirSize(paths.runtime),
+  versions: await instances.dirSize(paths.versions),
+  instances: await instances.dirSize(paths.instances),
+}));
+
+// ------------------------------------------------------------------ IPC: servers (BETA)
+
+ipcMain.handle('servers:list', () => servers.list());
+ipcMain.handle('servers:create', (e, opts) => servers.create(opts));
+ipcMain.handle('servers:update', (e, id, patch) => servers.update(id, patch));
+ipcMain.handle('servers:remove', (e, id) => servers.remove(id));
+ipcMain.handle('servers:start', async (e, id) => {
+  try {
+    return await servers.start(id, (p) => send('server:progress', { id, ...p }));
+  } finally {
+    send('server:progress', { id, done: true });
+  }
+});
+ipcMain.handle('servers:stop', (e, id) => servers.stop(id));
+ipcMain.handle('servers:command', (e, id, cmd) => servers.command(id, cmd));
+ipcMain.handle('servers:logs', (e, id) => servers.logs(id));
+ipcMain.handle('servers:folder', (e, id) => shell.openPath(servers.get(id).dir));

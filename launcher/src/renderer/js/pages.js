@@ -31,7 +31,7 @@ function updateProgress(root) {
 
 function instanceTags(inst) {
   const loader = inst.loader === 'fabric' ? '<span class="tag accent">Fabric</span>' : '<span class="tag offline">Vanilla</span>';
-  const nore = inst.noreClient ? '<span class="tag accent">Nore Client</span>' : '';
+  const nore = inst.noreClient ? '<span class="tag accent">Nore Client</span>' : inst.perfPack ? '<span class="tag accent">Pakiet Nore</span>' : '';
   return `<span class="tag offline">${esc(inst.mcVersion)}</span>${loader}${nore}`;
 }
 
@@ -144,11 +144,11 @@ Pages.instances = (root) => {
       const inst = s.instances.find(x => x.id === id);
       card.onclick = async (e) => {
         const act = e.target.closest('[data-act]');
-        if (!act) { await nore.instances.select(id); return App.refresh(); }
+        if (!act) { await nore.instances.select(id); await App.refresh(); return go('instance', { id }); }
         e.stopPropagation();
         if (act.dataset.act === 'play') { await nore.instances.select(id); await App.refresh(); launchSelected(inst); go('home'); }
         if (act.dataset.act === 'folder') nore.instances.folder(id);
-        if (act.dataset.act === 'edit') editInstanceModal(inst);
+        if (act.dataset.act === 'edit') go('instance', { id, tab: 'overview' });
         if (act.dataset.act === 'delete') {
           if (await confirmModal('Usunąć instancję?', `„${inst.name}” zostanie usunięta razem z jej światami i modami.`, { ok: 'Usuń', danger: true })) {
             await nore.instances.remove(id, true);

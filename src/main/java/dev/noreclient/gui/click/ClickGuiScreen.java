@@ -16,6 +16,7 @@ import dev.noreclient.setting.KeybindSetting;
 import dev.noreclient.setting.ModeSetting;
 import dev.noreclient.setting.NumberSetting;
 import dev.noreclient.setting.Setting;
+import dev.noreclient.setting.StringSetting;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.MenuBackground;
@@ -59,6 +60,7 @@ public class ClickGuiScreen extends Screen {
     private final Map<Object, Animation> anims = new HashMap<>();
     private final TextBox search = new TextBox("Szukaj modułów...", 32);
     private final TextBox profileName = new TextBox("Nazwa profilu", 24);
+    private final Map<StringSetting, TextBox> stringBoxes = new HashMap<>();
     private final TextBox dlSearch = new TextBox("Szukaj na Modrinth...", 40);
     private Modrinth.Kind dlKind = Modrinth.Kind.RESOURCEPACK;
     private final List<Modrinth.Hit> dlResults = new ArrayList<>();
@@ -353,7 +355,7 @@ public class ClickGuiScreen extends Screen {
             sub = NoreClient.get().modules().search(search.getText()).size() + " pasujących modułów";
         } else {
             title = category == null ? "Wszystkie moduły" : category.displayName;
-            sub = category == null ? NoreClient.get().modules().getModules().size() + " modułów" : category.subtitle;
+            sub = category == null ? NoreClient.get().modules().getModules().size() + " modułów \u2022 " + NoreClient.get().modules().optionCount() + " opcji" : category.subtitle;
         }
         Render2D.scaledText(ctx, title, x, 12, 1.3f, Theme.TEXT, false);
         Render2D.text(ctx, Render2D.trim(sub, (int) (W - x - 170)), x, 26, Theme.TEXT_MUTED);
@@ -523,6 +525,7 @@ public class ClickGuiScreen extends Screen {
             else if (s instanceof ModeSetting md) y = modeRow(ctx, x, y, w, md, mx, my);
             else if (s instanceof ColorSetting c) y = colorRow(ctx, x, y, w, c, mx, my);
             else if (s instanceof KeybindSetting k) y = keybindRow(ctx, x, y, w, k, mx, my);
+            else if (s instanceof StringSetting st) y = stringRow(ctx, x, y, w, st, mx, my);
         }
 
         // reset button
@@ -566,7 +569,7 @@ public class ClickGuiScreen extends Screen {
         double range = s.getMax() - s.getMin();
         float target = (float) ((s.get() - s.getMin()) / range);
         float p = anim(s, 18).target(target).update();
-        Render2D.roundedRect(ctx, sx, sy, sw, 4, 2, 0xFF2C3044);
+        Render2D.roundedRect(ctx, sx, sy, sw, 4, 2, 0xFF2E2621);
         Render2D.roundedGradient(ctx, sx, sy, Math.max(4, sw * p), 4, 2, Theme.accent(), Theme.accent2(), false);
         boolean kh = drag != null && dragTarget == s || hovered(mx, my, sx - 4, top, sw + 8, 26, true);
         float kr = kh ? 5 : 4;
@@ -595,7 +598,7 @@ public class ClickGuiScreen extends Screen {
         y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
         float pw = 110, px = x + w - pw - 10, py = top + 5;
         boolean hov = hovered(mx, my, px, py, pw, 16, true);
-        Render2D.roundedRect(ctx, px, py, pw, 16, 8, hov ? Theme.CARD_HOVER : 0xFF262A3B);
+        Render2D.roundedRect(ctx, px, py, pw, 16, 8, hov ? Theme.CARD_HOVER : 0xFF2A231D);
         Render2D.text(ctx, "‹", px + 6, py + 4, hov ? Theme.accent() : Theme.TEXT_MUTED);
         Render2D.text(ctx, "›", px + pw - 10, py + 4, hov ? Theme.accent() : Theme.TEXT_MUTED);
         Animation slide = anim("mode_" + s.hashCode(), 16);
@@ -732,7 +735,7 @@ public class ClickGuiScreen extends Screen {
         String label = isListening ? "Naciśnij klawisz..." : s.getKeyName();
         float bw = Math.max(60, Render2D.textWidth(label) + 16), bx = x + w - bw - 10;
         float la = anim(s, 14).target(isListening ? 1 : 0).update();
-        Render2D.roundedRect(ctx, bx, top + 5, bw, 16, Theme.radius(), ColorUtil.lerp(0xFF262A3B, ColorUtil.withAlpha(Theme.accent(), 120), la));
+        Render2D.roundedRect(ctx, bx, top + 5, bw, 16, Theme.radius(), ColorUtil.lerp(0xFF2A231D, ColorUtil.withAlpha(Theme.accent(), 120), la));
         Render2D.centeredText(ctx, label, bx + bw / 2f, top + 9, isListening ? Theme.TEXT : Theme.TEXT_DIM, false);
         hit(x, top, w, 26, true, (a, b, button) -> {
             if (button == 1) {
@@ -960,6 +963,26 @@ public class ClickGuiScreen extends Screen {
         contentHeight = y + 14 - clipY;
     }
 
+    private float stringRow(DrawContext ctx, float x, float y, float w, StringSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
+        TextBox box = stringBoxes.computeIfAbsent(s, k -> new TextBox("Wpisz tekst...", k.getMaxLength()));
+        if (!box.isFocused()) box.setText(s.get());
+        else s.set(box.getText());
+        float bw = Math.min(200, w * 0.45f), bx = x + w - bw - 8;
+        box.render(ctx, bx, top + 4, bw, 18, null);
+        hit(bx, top + 4, bw, 18, true, (a, b, c) -> {
+            stringBoxes.values().forEach(t -> t.setFocused(false));
+            box.setFocused(true);
+        });
+        return y;
+    }
+
+    private TextBox focusedString() {
+        for (TextBox t : stringBoxes.values()) if (t.isFocused()) return t;
+        return null;
+    }
+
     // ------------------------------------------------------------------ profiles page
 
     private void renderProfiles(DrawContext ctx, double mx, double my) {
@@ -1062,6 +1085,7 @@ public class ClickGuiScreen extends Screen {
         search.setFocused(false);
         profileName.setFocused(false);
         dlSearch.setFocused(false);
+        stringBoxes.values().forEach(t -> t.setFocused(false));
         if (listening != null && button > 1) {
             // allow binding mouse side buttons? keep simple: cancel
             listening = null;
@@ -1117,6 +1141,14 @@ public class ClickGuiScreen extends Screen {
             Sounds.click();
             return true;
         }
+        TextBox fs = focusedString();
+        if (fs != null) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE || keyCode == GLFW.GLFW_KEY_ENTER) {
+                fs.setFocused(false);
+                return true;
+            }
+            if (fs.keyPressed(keyCode)) return true;
+        }
         if (dlSearch.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
                 dlSearch.setFocused(false);
@@ -1161,6 +1193,8 @@ public class ClickGuiScreen extends Screen {
 
     @Override
     public boolean charTyped(char chr, int modifiers) {
+        TextBox fs = focusedString();
+        if (fs != null && fs.charTyped(chr)) return true;
         if (profileName.charTyped(chr)) return true;
         if (dlSearch.charTyped(chr)) {
             dlTyped = System.currentTimeMillis();
