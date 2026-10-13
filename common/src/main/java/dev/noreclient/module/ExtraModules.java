@@ -22,6 +22,8 @@ public final class ExtraModules {
         m.add(new Alerts.EffectAlert());
         m.add(new Alerts.BreakReminder());
         m.add(new Alerts.CoordsShare());
+        m.add(new dev.noreclient.module.utility.Screenshots());
+        m.add(new dev.noreclient.module.hud.ServerInfoHud());
     }
 
     /** Names of modules added in the current release (shown with a NEW badge). */
@@ -29,6 +31,7 @@ public final class ExtraModules {
         String n = module.getName();
         return n.equals("Auto Craft") || n.equals("Auto Respawn") || n.equals("Inventory HUD") || n.equals("Stopwatch")
                 || n.equals("Last Death") || n.equals("TPS") || n.equals("Item Counter") || n.equals("Durability Alert")
-                || n.equals("Low Health Alert") || n.equals("Effect Alert") || n.equals("Break Reminder") || n.equals("Coords Share") || n.equals("Discord RPC");
+                || n.equals("Low Health Alert") || n.equals("Effect Alert") || n.equals("Break Reminder") || n.equals("Coords Share") || n.equals("Discord RPC")
+                || n.equals("Screenshots") || n.equals("Server Info");
     }
 }

@@ -40,6 +40,7 @@ public class NorePauseMenu extends NoreScreen {
                 .add("Edytor HUD", "H", SideNav.HUD, SideNav.NORMAL, () -> game().openScreen(new HudEditorScreen(self)))
                 .add("Postępy", null, SideNav.STAR, SideNav.NORMAL, () -> game().openAdvancements(self))
                 .add("Statystyki", null, SideNav.CHART, SideNav.NORMAL, () -> game().openStats(self))
+                .add("Zrzuty ekranu", null, SideNav.CAMERA, SideNav.NORMAL, () -> game().openScreen(new ScreenshotsScreen(self)))
                 .add("Opcje", null, SideNav.GEAR, SideNav.NORMAL, () -> game().openOptions(self));
         if (game().canOpenLan()) nav.add("Otwórz w LAN", null, SideNav.WIFI, SideNav.NORMAL, () -> game().openLan(self));
         else nav.add("Paczki zasobów", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)));

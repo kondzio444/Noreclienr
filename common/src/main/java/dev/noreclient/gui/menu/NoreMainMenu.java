@@ -12,6 +12,8 @@ import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.CurrentGfx;
 import dev.noreclient.util.MenuBackground;
+import dev.noreclient.util.ServerInfo;
+import dev.noreclient.gui.widget.TextBox;
 import dev.noreclient.util.Render2D;
 import dev.noreclient.util.Sounds;
 import dev.noreclient.util.Theme;
@@ -64,6 +66,7 @@ public class NoreMainMenu extends NoreScreen {
                 .add("Moduły klienta", NoreClient.get().modules().getModules().size() + " modułów", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new ClickGuiScreen(self)))
                 .add("Edytor HUD", "Nakładki", SideNav.HUD, SideNav.NORMAL, () -> go(() -> game().openScreen(new HudEditorScreen(self))))
                 .add("Paczki zasobów", "Modrinth", SideNav.DOWNLOAD, SideNav.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)))
+                .add("Zrzuty ekranu", "Galeria", SideNav.CAMERA, SideNav.NORMAL, () -> game().openScreen(new ScreenshotsScreen(self)))
                 .add("Opcje", "Ustawienia gry", SideNav.GEAR, SideNav.NORMAL, () -> go(() -> game().openOptions(self)))
                 .add("Wyjdź", null, SideNav.POWER, SideNav.DANGER, () -> go(() -> game().quit()));
         try {
@@ -72,9 +75,6 @@ public class NoreMainMenu extends NoreScreen {
             servers = new ArrayList<String[]>();
         }
     }
-
-    @Override
-    public boolean keyPressed(int key, int modifiers) { return false; }
 
     @Override
     public Background background() { return Background.NONE; }
@@ -160,30 +160,8 @@ public class NoreMainMenu extends NoreScreen {
                 }
                 cy += nh + 8;
             }
-            // quick join
-            int count = Math.min(3, servers.size());
-            float sh = 22 + Math.max(1, count) * 20 + 4;
-            if (cy + sh < height - 22) {
-                card(ctx, cardX, cy, cardW, sh);
-                Icons.globe(ctx, cardX + 10, cy + 10, 8, Theme.accent());
-                Render2D.text(ctx, "Szybkie dołączanie", cardX + 18, cy + 6.5f, Theme.TEXT, false);
-                serversY = cy + 21;
-                if (count == 0) Render2D.scaledText(ctx, "Dodaj serwer w Multiplayer", cardX + 9, cy + 26, 0.72f, Theme.TEXT_MUTED, false);
-                for (int i = 0; i < count; i++) {
-                    String[] s = servers.get(i);
-                    float y = serversY + i * 20;
-                    boolean hov = rp > 0.9f && Render2D.hovered(mouseX, mouseY, cardX + 4, y, cardW - 8, 18);
-                    float h = hover[10 + i].target(hov ? 1 : 0).update();
-                    if (h > 0.01f) Render2D.roundedRect(ctx, cardX + 4, y, cardW - 8, 18, Theme.radius() * 0.7f, ColorUtil.withAlpha(Theme.accent(), (int) (40 * h)));
-                    Render2D.text(ctx, Render2D.trim(s[0], (int) cardW - 60), cardX + 9, y + 2.5f, Theme.TEXT, false);
-                    Render2D.scaledText(ctx, Render2D.trim(s[1], (int) ((cardW - 60) / 0.65f)), cardX + 9, y + 12, 0.65f, Theme.TEXT_MUTED, false);
-                    float bw = 38;
-                    Widgets.glowBox(ctx, cardX + cardW - bw - 8, y + 3, bw, 12, 6, Theme.accent(), h, 0.8f);
-                    Render2D.scaledText(ctx, "Dołącz", cardX + cardW - bw - 8 + (bw - Render2D.textWidth("Dołącz") * 0.7f) / 2f, y + 6.3f, 0.7f, Widgets.glowText(Theme.accent(), h), false);
-                }
-            } else {
-                serversY = -1000;
-            }
+            // quick join: type an address for a live preview, saved servers below
+            quickJoin(ctx, cy, mouseX, mouseY, rp);
         }
         Render2D.scaledText(ctx, "Tło: NASA/ESA/CSA/STScI (JWST)", rx - Render2D.textWidth("Tło: NASA/ESA/CSA/STScI (JWST)") * 0.6f, height - 9, 0.6f, ColorUtil.withAlpha(Theme.TEXT_MUTED, 150), false);
         ctx.setAlpha(1);
@@ -199,6 +177,135 @@ public class NoreMainMenu extends NoreScreen {
                 r.run();
             }
         }
+    }
+
+    // ------------------------------------------------------------------ quick join
+
+    private final TextBox ipBox = new TextBox("Wpisz IP serwera...", 64);
+    private float ipX, ipY, ipW, joinX, previewY = -1000, previewH;
+    private int savedShown;
+
+    private String typedAddress() {
+        String t = ipBox.getText().trim();
+        return ServerInfo.looksLikeAddress(t) ? t : null;
+    }
+
+    private void quickJoin(Gfx ctx, float cy, int mouseX, int mouseY, float rp) {
+        String typed = typedAddress();
+        ServerInfo.Info preview = typed == null ? null : ServerInfo.get(typed);
+        float pvH = preview == null ? 0 : 62;
+        int maxSaved = (int) Math.max(0, Math.min(3, (height - 22 - cy - 22 - 22 - pvH - 8) / 20));
+        savedShown = Math.min(maxSaved, servers.size());
+        float sh = 22 + 20 + pvH + (savedShown > 0 ? 6 + savedShown * 20 : servers.isEmpty() ? 14 : 0) + 4;
+        if (cy + sh > height - 12) { serversY = -1000; previewY = -1000; ipY = -1000; return; }
+        card(ctx, cardX, cy, cardW, sh);
+        Icons.globe(ctx, cardX + 10, cy + 10, 8, Theme.accent());
+        Render2D.text(ctx, "Szybkie dołączanie", cardX + 18, cy + 6.5f, Theme.TEXT, false);
+
+        // address box + join button
+        ipX = cardX + 6; ipY = cy + 20; ipW = cardW - 12 - 42;
+        ipBox.render(ctx, ipX, ipY, ipW, 16, null);
+        joinX = ipX + ipW + 4;
+        boolean jh = Render2D.hovered(mouseX, mouseY, joinX, ipY, 38, 16);
+        float ja = hover[14].target(jh ? 1 : 0).update();
+        Widgets.glowBox(ctx, joinX, ipY, 38, 16, 6, Theme.accent(), ja, typed != null ? 1f : 0.4f);
+        Render2D.scaledText(ctx, "Dołącz", joinX + (38 - Render2D.textWidth("Dołącz") * 0.75f) / 2f, ipY + 5, 0.75f, Widgets.glowText(Theme.accent(), ja), false);
+        float y = ipY + 20;
+
+        // live preview of the typed server
+        previewY = preview == null ? -1000 : y;
+        if (preview != null) {
+            previewH = pvH - 4;
+            serverPreview(ctx, preview, cardX + 6, y, cardW - 12, previewH);
+            y += pvH;
+        }
+
+        // saved servers
+        serversY = y + 2;
+        if (servers.isEmpty()) Render2D.scaledText(ctx, "Zapisane serwery pojawią się tutaj", cardX + 9, y + 2, 0.68f, Theme.TEXT_MUTED, false);
+        for (int i = 0; i < savedShown; i++) {
+            String[] s = servers.get(i);
+            float ry = serversY + i * 20;
+            boolean hov = rp > 0.9f && Render2D.hovered(mouseX, mouseY, cardX + 4, ry, cardW - 8, 18);
+            float h = hover[10 + i].target(hov ? 1 : 0).update();
+            if (h > 0.01f) Render2D.roundedRect(ctx, cardX + 4, ry, cardW - 8, 18, Theme.radius() * 0.7f, ColorUtil.withAlpha(Theme.accent(), (int) (40 * h)));
+            ServerInfo.Info info = ServerInfo.get(s[1]);
+            float ix = cardX + 8;
+            if (info != null && info.favicon != null) Render2D.texture(ctx, info.favicon, ix, ry + 1, 16, 16, 1f);
+            else Render2D.roundedRect(ctx, ix, ry + 1, 16, 16, 3, 0x30FFFFFF);
+            float tx = ix + 20;
+            ServerInfo.drawFlag(ctx, info, tx, ry + 3.5f, 6);
+            Render2D.text(ctx, Render2D.trim(s[0], (int) cardW - 92), tx + 12, ry + 2.5f, Theme.TEXT, false);
+            String sub = info == null || info.state == ServerInfo.State.LOADING && info.online < 0 ? "sprawdzanie..."
+                    : info.state == ServerInfo.State.OFFLINE ? "offline" : info.online + "/" + info.max + " graczy";
+            Render2D.scaledText(ctx, sub, tx, ry + 12, 0.62f, info != null && info.state == ServerInfo.State.OFFLINE ? 0xFFFF7A7A : Theme.TEXT_MUTED, false);
+            if (info != null && info.state == ServerInfo.State.ONLINE) ServerInfo.drawBars(ctx, info.ping, cardX + cardW - 22, ry + 4, 9);
+        }
+    }
+
+    private void serverPreview(Gfx ctx, ServerInfo.Info info, float x, float y, float w, float h) {
+        Render2D.roundedRect(ctx, x, y, w, h, Theme.radius() * 0.8f, 0x50000000);
+        Render2D.roundedOutline(ctx, x, y, w, h, Theme.radius() * 0.8f, 1, info.state == ServerInfo.State.OFFLINE ? 0x60FF5C5C : ColorUtil.withAlpha(Theme.accent(), 90));
+        if (info.favicon != null) Render2D.texture(ctx, info.favicon, x + 4, y + 4, 28, 28, 1f);
+        else {
+            Render2D.roundedRect(ctx, x + 4, y + 4, 28, 28, 4, 0x30FFFFFF);
+            if (info.state == ServerInfo.State.LOADING) {
+                float a = (System.currentTimeMillis() % 900) / 900f * 360;
+                Render2D.ring(ctx, x + 18, y + 18, 6, 1.6f, a, a + 260, Theme.accent());
+            }
+        }
+        float tx = x + 37, tw = w - 41;
+        if (info.state == ServerInfo.State.OFFLINE && info.online < 0) {
+            Render2D.text(ctx, Render2D.trim(info.address, (int) tw), tx, y + 5, Theme.TEXT, false);
+            Render2D.scaledText(ctx, info.error == null ? "Serwer nie odpowiada" : info.error, tx, y + 16, 0.72f, 0xFFFF7A7A, false);
+            return;
+        }
+        if (info.state == ServerInfo.State.LOADING && info.online < 0) {
+            Render2D.text(ctx, Render2D.trim(info.address, (int) tw), tx, y + 5, Theme.TEXT, false);
+            Render2D.scaledText(ctx, "Sprawdzanie serwera...", tx, y + 16, 0.72f, Theme.TEXT_MUTED, false);
+            return;
+        }
+        // first line: flag + players + ping
+        ServerInfo.drawFlag(ctx, info, tx, y + 4.5f, 7);
+        String players = info.online + " / " + info.max;
+        Render2D.text(ctx, players, tx + 14, y + 4, Theme.TEXT, false);
+        Render2D.scaledText(ctx, "graczy", tx + 16 + Render2D.textWidth(players), y + 5.5f, 0.65f, Theme.TEXT_MUTED, false);
+        ServerInfo.drawBars(ctx, info.ping, x + w - 34, y + 4, 8);
+        Render2D.scaledText(ctx, info.ping + " ms", x + w - 20, y + 5.5f, 0.6f, Theme.TEXT_MUTED, false);
+        // MOTD (two lines, colour codes kept)
+        String[] motd = info.motd.split("\n");
+        for (int i = 0; i < Math.min(2, motd.length); i++) {
+            Render2D.scaledText(ctx, Render2D.trim(motd[i].trim(), (int) (tw / 0.68f)), tx, y + 15 + i * 7.5f, 0.68f, 0xFFDDDDDD, false);
+        }
+        // bottom line: country, version
+        String where = info.country != null ? info.country + (info.city != null && !info.city.isEmpty() ? ", " + info.city : "") : (info.ip != null ? info.ip : "");
+        String line = where + (info.version.isEmpty() ? "" : "  \u2022  " + info.version.replaceAll("§.", ""));
+        Render2D.scaledText(ctx, Render2D.trim(line, (int) ((w - 8) / 0.6f)), x + 4, y + h - 9, 0.6f, Theme.TEXT_MUTED, false);
+        // player bar
+        float pct = info.max > 0 ? Math.min(1, info.online / (float) info.max) : 0;
+        Render2D.roundedRect(ctx, x + 4, y + 35, 28, 2.5f, 1, 0x30FFFFFF);
+        Render2D.roundedRect(ctx, x + 4, y + 35, 28 * pct, 2.5f, 1, Theme.accent());
+    }
+
+    @Override
+    public boolean keyPressed(int key, int modifiers) {
+        if (ipBox.isFocused()) {
+            if (key == dev.noreclient.api.Keys.ENTER) { joinTyped(); return true; }
+            if (key == dev.noreclient.api.Keys.ESCAPE) { ipBox.setFocused(false); return true; }
+            return ipBox.keyPressed(key);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(char c) { return ipBox.charTyped(c); }
+
+    private void joinTyped() {
+        final String addr = typedAddress();
+        if (addr == null) return;
+        final NoreMainMenu self = this;
+        Sounds.click();
+        go(() -> game().connect(addr, addr, self));
     }
 
     private static void card(Gfx ctx, float x, float y, float w, float h) {
@@ -220,7 +327,11 @@ public class NoreMainMenu extends NoreScreen {
             Sounds.click();
             return true;
         }
-        int count = Math.min(3, servers.size());
+        if (Render2D.hovered(mx, my, ipX, ipY, ipW, 16)) { ipBox.setFocused(true); return true; }
+        ipBox.setFocused(false);
+        if (Render2D.hovered(mx, my, joinX, ipY, 38, 16)) { joinTyped(); return true; }
+        if (previewY > -999 && Render2D.hovered(mx, my, cardX + 6, previewY, cardW - 12, previewH)) { joinTyped(); return true; }
+        int count = savedShown;
         for (int i = 0; i < count; i++) {
             if (Render2D.hovered(mx, my, cardX + 4, serversY + i * 20, cardW - 8, 18)) {
                 final String[] s = servers.get(i);

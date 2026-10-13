@@ -86,7 +86,7 @@ public final class Modrinth {
         return Platform.game().minecraftVersion();
     }
 
-    private static byte[] getBytes(String url) throws IOException {
+    static byte[] getBytes(String url) throws IOException {
         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
         c.setRequestProperty("User-Agent", UA);
         c.setConnectTimeout(10000);
@@ -106,7 +106,7 @@ public final class Modrinth {
         }
     }
 
-    private static String get(String url) throws IOException {
+    static String get(String url) throws IOException {
         return new String(getBytes(url), "UTF-8");
     }
 

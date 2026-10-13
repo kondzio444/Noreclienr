@@ -128,6 +128,12 @@ public final class Icons {
         Render2D.ring(g, cx, cy, s * 0.34f, 1.3f, 0, 360, color);
     }
 
+    public static void camera(Gfx g, float cx, float cy, float s, int color) {
+        Render2D.roundedOutline(g, cx - s * 0.5f, cy - s * 0.28f, s, s * 0.68f, s * 0.12f, 1.1f, color);
+        Render2D.rect(g, cx - s * 0.18f, cy - s * 0.42f, s * 0.36f, s * 0.16f, color);
+        Render2D.ring(g, cx, cy + s * 0.06f, s * 0.2f, 1.1f, 0, 360, color);
+    }
+
     public static void download(Gfx g, float cx, float cy, float s, int color) {
         Render2D.rect(g, cx - 0.6f, cy - s * 0.5f, 1.2f, s * 0.65f, color);
         Render2D.line(g, cx - s * 0.32f, cy, cx, cy + s * 0.3f, 1.2f, color);

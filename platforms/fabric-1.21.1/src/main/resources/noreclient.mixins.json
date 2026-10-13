@@ -23,6 +23,7 @@
     "MouseMixin",
     "ParticleManagerMixin",
     "PlayerListHudMixin",
+    "ServerEntryMixin",
     "SimpleOptionMixin",
     "SplashOverlayMixin",
     "WorldMixin",
