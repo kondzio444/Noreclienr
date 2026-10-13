@@ -191,7 +191,7 @@ Pages.instance = (root, { id, tab: startTab }) => {
           <label class="switch"><input type="checkbox" id="pack" ${i.perfPack ? 'checked' : ''} ${i.loader === 'fabric' ? '' : 'disabled'}><i></i></label></div>
         ${i.noreClient ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>Sodium, Lithium, FerriteCore, EntityCulling, ImmediatelyFast – dużo więcej FPS</span></div>
           <label class="switch"><input type="checkbox" id="perfmods" ${i.perfMods !== false ? 'checked' : ''}><i></i></label></div>` : ''}
-        <div class="muted" style="font-size:12px;margin-top:6px">Fabric Loader: ${esc(i.loaderVersion || (i.loader === 'fabric' ? 'najnowszy stabilny' : '—'))}</div>
+        <div class="muted" style="font-size:12px;margin-top:6px">${i.loader === 'vanilla' ? 'Bez loadera modów' : `${loaderName(i.loader)} Loader: ${esc(i.loaderVersion || 'najnowszy stabilny')}`}</div>
       </div>
       <div class="card panel"><div class="section-title">${icon('edit')} Wygląd</div>
         <div class="field" style="margin-top:12px"><label>Nazwa</label><input class="input" id="name" value="${esc(i.name)}" maxlength="40"></div>

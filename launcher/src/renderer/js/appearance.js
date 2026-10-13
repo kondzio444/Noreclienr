@@ -61,11 +61,12 @@ function appearanceCard(root) {
       <div class="look-col"><div class="look-label">Efekty na tle</div><div class="chips" id="lk-part">${Background.PARTICLES.map(([v, l]) => `<button class="lchip ${v === s.bgParticles ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div></div>
       <div class="look-col"><div class="look-label">Ruch zdjęcia</div><div class="chips" id="lk-motion">${Background.MOTIONS.map(([v, l]) => `<button class="lchip ${v === s.bgMotion ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div></div>
     </div>
+    <div class="look-label">Ustawienia tła</div>
     <div class="look-sliders">
-      <label><span>Przyciemnienie <i id="lk-dimv"></i></span><input type="range" class="slider" id="lk-dim" min="0" max="90" step="5" value="${s.bgDim}"></label>
-      <label><span>Rozmycie <i id="lk-blurv"></i></span><input type="range" class="slider" id="lk-blur" min="0" max="16" step="1" value="${s.bgBlur}"></label>
-      <label><span>Ilość efektów <i id="lk-denv"></i></span><input type="range" class="slider" id="lk-den" min="0.2" max="2.5" step="0.1" value="${s.bgDensity}"></label>
-      <label><span>Prędkość animacji <i id="lk-spdv"></i></span><input type="range" class="slider" id="lk-spd" min="0.25" max="2.5" step="0.25" value="${s.bgSpeed}"></label>
+      <label class="lslider"><span class="lhead">${icon('sun')}<b>Przyciemnienie</b><i id="lk-dimv"></i></span><input type="range" class="slider" id="lk-dim" min="0" max="90" step="5" value="${s.bgDim}"></label>
+      <label class="lslider"><span class="lhead">${icon('image')}<b>Rozmycie</b><i id="lk-blurv"></i></span><input type="range" class="slider" id="lk-blur" min="0" max="16" step="1" value="${s.bgBlur}"></label>
+      <label class="lslider"><span class="lhead">${icon('sparkles')}<b>Ilość efektów</b><i id="lk-denv"></i></span><input type="range" class="slider" id="lk-den" min="0.2" max="2.5" step="0.1" value="${s.bgDensity}"></label>
+      <label class="lslider"><span class="lhead">${icon('zap')}<b>Prędkość</b><i id="lk-spdv"></i></span><input type="range" class="slider" id="lk-spd" min="0.25" max="2.5" step="0.25" value="${s.bgSpeed}"></label>
     </div>
     <div class="look-row">
       <div class="look-col"><div class="look-label">Kolor akcentu</div><div class="swatches" id="lk-acc">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swatch ${k === s.accentPreset ? 'on' : ''}" data-v="${k}" title="${esc(a.name)}" style="--c1:${a.b};--c2:${a.d}"></button>`).join('')}</div></div>
