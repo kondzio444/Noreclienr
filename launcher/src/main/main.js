@@ -20,6 +20,8 @@ const AdmZip = require('adm-zip');
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
 const NORE_PACK = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'entityculling', 'immediatelyfast', 'modmenu', 'zoomify', 'appleskin'];
+/** Performance mods installed next to Nore Client (several times more FPS than vanilla rendering). */
+const NORE_PERF = ['sodium', 'lithium', 'ferrite-core', 'entityculling', 'immediatelyfast'];
 const ICON = path.join(__dirname, '..', 'renderer', 'assets', 'logo.png');
 
 let win = null;
@@ -252,6 +254,18 @@ async function prepareNore(inst) {
     send('progress', { stage: 'Pobieranie Fabric API' });
     await modrinth.install({ projectId: FABRIC_API_ID, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
   }
+  if (inst.perfMods !== false && !inst.perfModsInstalled) {
+    let i = 0;
+    for (const slug of NORE_PERF) {
+      send('progress', { stage: 'Mody wydajności', current: slug, done: i++, total: NORE_PERF.length, step: 'nore' });
+      try {
+        await modrinth.install({ projectId: slug, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
+      } catch (e) {
+        send('log', { line: `[Launcher] ${slug} niedostępny dla ${inst.mcVersion} (${e.message})`, stream: 'out' });
+      }
+    }
+    instances.update(inst.id, { perfModsInstalled: true });
+  }
 }
 
 /** Downloads everything an instance needs (game, loader, Java, Nore Client) without launching. */
@@ -268,8 +282,9 @@ async function prepareGame(inst, settings, progress) {
   if (inst.perfPack && inst.loader === 'fabric' && !inst.packInstalled) {
     const mods = path.join(inst.gameDir, 'mods');
     let i = 0;
-    for (const slug of NORE_PACK) {
-      progress({ stage: 'Pakiet Nore', current: slug, done: i++, total: NORE_PACK.length, step: 'nore' });
+    const pack = inst.noreClient ? NORE_PACK.filter(s => s !== 'zoomify') : NORE_PACK;
+    for (const slug of pack) {
+      progress({ stage: 'Pakiet Nore', current: slug, done: i++, total: pack.length, step: 'nore' });
       try {
         await modrinth.install({ projectId: slug, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
       } catch (e) {

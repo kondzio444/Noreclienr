@@ -48,6 +48,8 @@ public class ModuleManager {
     private final List<Module> all = new ArrayList<Module>();
     /** Modules available on this Minecraft version (shown in the GUI). */
     private final List<Module> modules = new ArrayList<Module>();
+    private final java.util.Map<Class<?>, Module> byClass = new java.util.concurrent.ConcurrentHashMap<Class<?>, Module>();
+    private List<HudModule> hudModules;
 
     public void init() {
         add(new WatermarkHud());
@@ -148,10 +150,14 @@ public class ModuleManager {
         return out;
     }
 
+    /** Cached: the module list never changes after {@link #init()}. */
     public List<HudModule> getHudModules() {
-        List<HudModule> out = new ArrayList<HudModule>();
-        for (Module m : modules) if (m instanceof HudModule) out.add((HudModule) m);
-        return out;
+        if (hudModules == null) {
+            List<HudModule> out = new ArrayList<HudModule>();
+            for (Module m : modules) if (m instanceof HudModule) out.add((HudModule) m);
+            hudModules = Collections.unmodifiableList(out);
+        }
+        return hudModules;
     }
 
     public List<Module> search(String query) {
@@ -164,8 +170,16 @@ public class ModuleManager {
     }
 
     @SuppressWarnings("unchecked")
+    /** Hot path (called from render mixins many times per frame): constant-time lookup. */
     public <T extends Module> T get(Class<T> type) {
-        for (Module m : all) if (type.isInstance(m)) return (T) m;
+        Module cached = byClass.get(type);
+        if (cached != null) return (T) cached;
+        for (Module m : all) {
+            if (type.isInstance(m)) {
+                byClass.put(type, m);
+                return (T) m;
+            }
+        }
         throw new IllegalArgumentException("No module " + type.getSimpleName());
     }
 

@@ -57,7 +57,7 @@ function update(id, patch) {
     if (!i) return;
     const versionChanged = patch.mcVersion && patch.mcVersion !== i.mcVersion;
     Object.assign(i, patch, { id });
-    if (versionChanged) { i.loaderVersion = null; i.packInstalled = false; }
+    if (versionChanged) { i.loaderVersion = null; i.packInstalled = false; i.perfModsInstalled = false; }
     if (patch.modpack) {
       if (i.modpack === 'nore' && !NORE_VERSIONS.includes(i.mcVersion)) { i.modpack = 'fabric'; i.perfPack = true; }
       i.loader = i.modpack === 'vanilla' ? 'vanilla' : 'fabric';
@@ -68,6 +68,7 @@ function update(id, patch) {
       i.modpack = 'fabric'; i.noreClient = false; i.perfPack = true;
     }
     if (patch.perfPack !== undefined) i.packInstalled = false;
+    if (patch.perfMods === true) i.perfModsInstalled = false;
   });
   return get(id);
 }

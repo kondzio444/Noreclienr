@@ -223,6 +223,50 @@ public final class Modrinth {
     }
 
     /** Icon texture, loaded in the background; null while loading or if not a PNG. */
+    private static final int ICON_SIZE = 64;
+
+    /**
+     * Downloads an icon as a small PNG. Minecraft can only load PNG, while Modrinth icons are
+     * often WebP, JPEG or GIF: JPEG/GIF/PNG are decoded and scaled with ImageIO, WebP (which Java
+     * cannot decode) is fetched as PNG through the wsrv.nl image proxy.
+     */
+    static byte[] iconPng(String url) {
+        try {
+            byte[] raw = getBytes(url);
+            boolean webp = raw.length > 12 && raw[0] == 'R' && raw[1] == 'I' && raw[2] == 'F' && raw[3] == 'F'
+                    && raw[8] == 'W' && raw[9] == 'E' && raw[10] == 'B' && raw[11] == 'P';
+            if (!webp) {
+                byte[] png = toSmallPng(raw);
+                if (png != null) return png;
+            }
+        } catch (Throwable ignored) {
+            // fall through to the proxy
+        }
+        try {
+            return toSmallPng(getBytes("https://wsrv.nl/?url=" + enc(url) + "&output=png&w=" + ICON_SIZE + "&h=" + ICON_SIZE + "&fit=contain"));
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static byte[] toSmallPng(byte[] data) throws IOException {
+        System.setProperty("java.awt.headless", "true");
+        java.awt.image.BufferedImage src = javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(data));
+        if (src == null) return null;
+        int w = src.getWidth(), h = src.getHeight();
+        float scale = Math.min(1f, ICON_SIZE / (float) Math.max(w, h));
+        int tw = Math.max(1, Math.round(w * scale)), th = Math.max(1, Math.round(h * scale));
+        java.awt.image.BufferedImage out = new java.awt.image.BufferedImage(tw, th, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = out.createGraphics();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_RENDERING, java.awt.RenderingHints.VALUE_RENDER_QUALITY);
+        g.drawImage(src, 0, 0, tw, th, null);
+        g.dispose();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(out, "png", bytes);
+        return bytes.toByteArray();
+    }
+
     public static TextureRef icon(final String url) {
         if (url == null || url.isEmpty()) return null;
         Object o = ICONS.get(url);
@@ -233,9 +277,8 @@ public final class Modrinth {
             POOL.execute(new Runnable() {
                 @Override public void run() {
                     try {
-                        final byte[] data = getBytes(url);
-                        boolean png = data.length > 8 && (data[0] & 0xFF) == 0x89 && data[1] == 'P' && data[2] == 'N' && data[3] == 'G';
-                        if (!png) { ICONS.put(url, NO_ICON); return; }
+                        final byte[] data = iconPng(url);
+                        if (data == null) { ICONS.put(url, NO_ICON); return; }
                         NoreClient.runNextTick(new Runnable() {
                             @Override public void run() {
                                 TextureRef t = Platform.game().loadTexture("modrinth/" + Integer.toHexString(url.hashCode()), data);

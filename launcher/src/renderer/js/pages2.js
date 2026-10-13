@@ -177,6 +177,8 @@ Pages.instance = (root, { id, tab: startTab }) => {
         <div class="field"><label>Rodzaj</label><div id="mp"></div></div>
         <div class="setting"><div class="col"><b>Pakiet Nore</b><span>Mody wydajności i QoL z Modrinth (pobiorą się przy starcie)</span></div>
           <label class="switch"><input type="checkbox" id="pack" ${i.perfPack ? 'checked' : ''} ${i.loader === 'fabric' ? '' : 'disabled'}><i></i></label></div>
+        ${i.noreClient ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>Sodium, Lithium, FerriteCore, EntityCulling, ImmediatelyFast – dużo więcej FPS</span></div>
+          <label class="switch"><input type="checkbox" id="perfmods" ${i.perfMods !== false ? 'checked' : ''}><i></i></label></div>` : ''}
         <div class="muted" style="font-size:12px;margin-top:6px">Fabric Loader: ${esc(i.loaderVersion || (i.loader === 'fabric' ? 'najnowszy stabilny' : '—'))}</div>
       </div>
       <div class="card panel"><div class="section-title">${icon('edit')} Wygląd</div>
@@ -199,6 +201,10 @@ Pages.instance = (root, { id, tab: startTab }) => {
     });
     $('#mp', page).appendChild(mp);
     $('#pack', page).onchange = async (e) => { await nore.instances.update(i.id, { perfPack: e.target.checked }); await App.refresh(); };
+    if ($('#perfmods', page)) $('#perfmods', page).onchange = async (e) => {
+      await nore.instances.update(i.id, { perfMods: e.target.checked });
+      toast(e.target.checked ? 'Mody wydajności włączone' : 'Mody wydajności wyłączone', e.target.checked ? 'Pobiorą się przy następnym starcie' : 'Usuń je ręcznie z folderu mods, jeśli są już pobrane');
+    };
     $('#name', page).onchange = async (e) => { await nore.instances.update(i.id, { name: e.target.value.trim() || i.name }); await App.refresh(); };
     let color = i.color;
     $('#colors', page).innerHTML = INSTANCE_COLORS.map(([a, b], k) => `<button data-c="${k}" style="background:linear-gradient(135deg,${a},${b})"></button>`).join('');

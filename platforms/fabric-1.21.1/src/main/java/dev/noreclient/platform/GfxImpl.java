@@ -10,7 +10,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.util.BufferAllocator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.texture.Sprite;
@@ -19,10 +20,22 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 import org.joml.Matrix4f;
 
-/** Gfx on top of 1.20–1.21.1 DrawContext + immediate mode buffers. */
+/**
+ * Gfx on top of the 1.21–1.21.1 DrawContext.
+ *
+ * <p>Performance: all shapes are converted to triangles (already transformed by the current
+ * matrix, alpha baked into the vertex colour) and collected in one buffer, which is drawn in a
+ * single call only when something else has to be drawn on top (text, textures, items), when the
+ * scissor changes, or at {@link #finish()}. Text is queued in the DrawContext's own batch. A HUD
+ * or menu that used to issue hundreds of draw calls per frame now issues a handful.
+ */
 public final class GfxImpl implements Gfx {
+    private static final BufferAllocator ALLOCATOR = new BufferAllocator(1 << 18);
+
     private final DrawContext ctx;
     private float alpha = 1f;
+    private BufferBuilder batch;
+    private int batched;
 
     public GfxImpl(DrawContext ctx) {
         this.ctx = ctx;
@@ -42,19 +55,62 @@ public final class GfxImpl implements Gfx {
         }
     }
 
+    private int tint(int c) {
+        if (alpha >= 1f) return c;
+        return (c & 0x00FFFFFF) | (Math.round(((c >>> 24) & 0xFF) * alpha) << 24);
+    }
+
+    private void vertex(Matrix4f m, float[] xy, int[] colors, int i) {
+        batch.vertex(m, xy[i * 2], xy[i * 2 + 1], 0).color(tint(colors[i]));
+        batched++;
+    }
+
     @Override
     public void mesh(int mode, float[] xy, int[] colors, int n) {
-        if (n == 0) return;
+        if (n < 3) return;
+        if (batch == null) batch = new BufferBuilder(ALLOCATOR, VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
         Matrix4f m = ctx.getMatrices().peek().getPositionMatrix();
+        switch (mode) {
+            case TRIANGLE_FAN:
+                for (int i = 1; i + 1 < n; i++) { vertex(m, xy, colors, 0); vertex(m, xy, colors, i); vertex(m, xy, colors, i + 1); }
+                break;
+            case TRIANGLE_STRIP:
+                for (int i = 0; i + 2 < n; i++) {
+                    if ((i & 1) == 0) { vertex(m, xy, colors, i); vertex(m, xy, colors, i + 1); vertex(m, xy, colors, i + 2); }
+                    else { vertex(m, xy, colors, i + 1); vertex(m, xy, colors, i); vertex(m, xy, colors, i + 2); }
+                }
+                break;
+            case TRIANGLES:
+                for (int i = 0; i + 2 < n; i += 3) { vertex(m, xy, colors, i); vertex(m, xy, colors, i + 1); vertex(m, xy, colors, i + 2); }
+                break;
+            default: // quads
+                for (int i = 0; i + 3 < n; i += 4) {
+                    vertex(m, xy, colors, i); vertex(m, xy, colors, i + 1); vertex(m, xy, colors, i + 2);
+                    vertex(m, xy, colors, i); vertex(m, xy, colors, i + 2); vertex(m, xy, colors, i + 3);
+                }
+                break;
+        }
+    }
+
+    /** Draws whatever is queued: first the DrawContext's own batch (earlier text), then our shapes. */
+    private void flush() {
         ctx.draw();
+        if (batch == null) return;
+        BufferBuilder b = batch;
+        batch = null;
+        if (batched == 0) {
+            b.endNullable();
+            return;
+        }
+        batched = 0;
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.disableCull();
         RenderSystem.disableDepthTest();
+        RenderSystem.setShaderColor(1, 1, 1, 1);
         RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        BufferBuilder b = Tessellator.getInstance().begin(mode(mode), VertexFormats.POSITION_COLOR);
-        for (int i = 0; i < n; i++) b.vertex(m, xy[i * 2], xy[i * 2 + 1], 0).color(colors[i]);
         BufferRenderer.drawWithGlobalProgram(b.end());
+        RenderSystem.setShaderColor(1, 1, 1, alpha);
         RenderSystem.enableDepthTest();
         RenderSystem.enableCull();
         RenderSystem.disableBlend();
@@ -62,22 +118,22 @@ public final class GfxImpl implements Gfx {
 
     @Override
     public void text(String s, float x, float y, int color, boolean shadow) {
-        ctx.getMatrices().push();
-        ctx.getMatrices().translate(x, y, 0);
-        ctx.drawText(MinecraftClient.getInstance().textRenderer, s, 0, 0, color, shadow);
-        ctx.getMatrices().pop();
+        if (batched > 0) flush();
+        // queued in the DrawContext's batch (drawn together with neighbouring text)
+        MinecraftClient.getInstance().textRenderer.draw(s, x, y, color, shadow, ctx.getMatrices().peek().getPositionMatrix(),
+                ctx.getVertexConsumers(), TextRenderer.TextLayerType.NORMAL, 0, 0xF000F0);
     }
 
     @Override public int textWidth(String s) { return MinecraftClient.getInstance().textRenderer.getWidth(s); }
     @Override public int fontHeight() { return MinecraftClient.getInstance().textRenderer.fontHeight; }
-    @Override public void scissor(int x1, int y1, int x2, int y2) { ctx.enableScissor(x1, y1, x2, y2); }
-    @Override public void endScissor() { ctx.disableScissor(); }
+    @Override public void scissor(int x1, int y1, int x2, int y2) { flush(); ctx.enableScissor(x1, y1, x2, y2); }
+    @Override public void endScissor() { flush(); ctx.disableScissor(); }
 
     @Override
     public void texture(TextureRef tex, float x, float y, float w, float h, float a) {
+        flush();
         Identifier id = (Identifier) tex.handle;
         MinecraftClient.getInstance().getTextureManager().getTexture(id).setFilter(true, false);
-        ctx.draw();
         RenderSystem.enableBlend();
         RenderSystem.setShaderColor(1, 1, 1, alpha * a);
         ctx.getMatrices().push();
@@ -91,6 +147,7 @@ public final class GfxImpl implements Gfx {
 
     @Override
     public void item(ItemInfo item, int x, int y, boolean overlay) {
+        flush();
         ItemStack s = (ItemStack) item.handle;
         ctx.drawItem(s, x, y);
         if (overlay) ctx.drawItemInSlot(MinecraftClient.getInstance().textRenderer, s, x, y);
@@ -98,6 +155,7 @@ public final class GfxImpl implements Gfx {
 
     @Override
     public void effectIcon(EffectInfo effect, float x, float y, float size, float a) {
+        flush();
         StatusEffectInstance inst = (StatusEffectInstance) effect.handle;
         Sprite sprite = MinecraftClient.getInstance().getStatusEffectSpriteManager().getSprite(inst.getEffectType());
         ctx.getMatrices().push();
@@ -109,8 +167,10 @@ public final class GfxImpl implements Gfx {
 
     @Override
     public void setAlpha(float a) {
+        if (a == alpha) return;
+        // queued text uses the shader colour at draw time, so draw it with the old alpha first
+        flush();
         alpha = a;
-        ctx.draw();
         RenderSystem.setShaderColor(1, 1, 1, a);
     }
 
@@ -120,7 +180,7 @@ public final class GfxImpl implements Gfx {
 
     /** Restores render state after core drawing. */
     public void finish() {
-        ctx.draw();
+        flush();
         RenderSystem.setShaderColor(1, 1, 1, 1);
     }
 }
