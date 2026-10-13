@@ -937,3 +937,25 @@ table.dns td { padding: 6px; border-top: 1px solid var(--line); font-family: 'Je
 .pack-info { grid-column: 1 / -1; }
 .pack-ico { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
 textarea.input { height: auto; padding: 10px 12px; resize: vertical; font-family: inherit; line-height: 1.5; }
+
+/* ================================================================== auto repair */
+.doc-head { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; }
+.doc-head h3 { margin-bottom: 4px; }
+.doc-head .sub { margin: 0 !important; }
+.doc-badge { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; flex: none; animation: pop .5s var(--ease-spring) both; }
+.doc-badge svg { width: 26px; height: 26px; }
+.doc-head.ok .doc-badge { background: rgba(61, 220, 151, .15); color: var(--success); box-shadow: 0 0 24px rgba(61, 220, 151, .25); }
+.doc-head.warn .doc-badge { background: rgba(var(--accent-rgb), .18); color: var(--accent-2); box-shadow: var(--glow); }
+.doc-head.bad .doc-badge { background: rgba(255, 92, 92, .15); color: #ff8c8c; }
+.doc-list { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow: auto; }
+.doc-item { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .03); border: 1px solid var(--line); animation: rise .4s var(--ease) both; }
+.doc-ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: rgba(var(--accent-rgb), .14); color: var(--accent); flex: none; }
+.doc-ico svg { width: 17px; height: 17px; }
+.doc-text { flex: 1; min-width: 0; }
+.doc-text b { display: block; font-size: 13.5px; }
+.doc-text span { display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.doc-res { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 700; color: var(--success); background: rgba(61, 220, 151, .12); padding: 4px 9px; border-radius: 10px; flex: none; max-width: 180px; }
+.doc-res svg { width: 13px; height: 13px; flex: none; }
+.doc-res.bad { color: #ff9a9a; background: rgba(255, 92, 92, .12); }
+.doc-scan { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 300; padding: 12px 18px; border-radius: 14px; background: rgba(24, 19, 16, .95);
+  border: 1px solid rgba(var(--accent-rgb), .4); box-shadow: var(--glow); display: flex; gap: 10px; align-items: center; animation: pop .3s var(--ease-spring) both; }

@@ -300,7 +300,7 @@ function renderInstallStep(content, next) {
   });
   nore.on('game:state', async (g) => {
     App.running = g.running;
-    if (!g.running && g.code != null && g.code !== 0) toast('Gra zakończyła się błędem', `Kod wyjścia ${g.code} — sprawdź konsolę.`, 'error', 7000);
+    if (!g.running && g.code != null && g.code !== 0) toast('Gra zakończyła się błędem', `Kod wyjścia ${g.code} — szukam przyczyny…`, 'error', 5000);
     await App.refresh();
   });
 

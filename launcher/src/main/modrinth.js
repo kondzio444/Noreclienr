@@ -193,7 +193,10 @@ async function identify(dir, exts) {
   const out = {};
   for (const [hash, v] of Object.entries(versions)) {
     const p = pmap[v.project_id] || {};
-    out[byHash[hash]] = { projectId: v.project_id, version: v.version_number, versionId: v.id, title: p.title, icon: p.icon_url, slug: p.slug, description: p.description };
+    out[byHash[hash]] = {
+      projectId: v.project_id, version: v.version_number, versionId: v.id, title: p.title, icon: p.icon_url, slug: p.slug, description: p.description,
+      gameVersions: v.game_versions || [], loaders: v.loaders || [],
+    };
   }
   return out;
 }

@@ -21,6 +21,7 @@ const serverNet = require('./server-net');
 const AdmZip = require('adm-zip');
 const loaders = require('./loaders');
 const modpacks = require('./modpacks');
+const doctor = require('./doctor');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -359,6 +360,31 @@ async function prepareGame(inst, settings, progress) {
   return { installed, javaBin };
 }
 
+/** After a crash: find the cause in the log and (if enabled) fix it automatically. */
+async function crashRepair(inst, lines, code) {
+  try {
+    const fresh = instances.get(inst.id) || inst;
+    const problems = await doctor.analyzeLog(fresh, lines.slice(-3000));
+    const auto = store.get().settings.autoRepair !== false;
+    const result = auto && problems.length ? await doctor.apply(fresh, problems) : problems;
+    for (const p of result) send('log', { line: `[Naprawa] ${p.title}${p.result ? ': ' + p.result : ''}`, stream: 'out' });
+    send('doctor:report', { instanceId: inst.id, phase: 'crash', code, applied: auto, problems: result });
+  } catch (e) {
+    send('log', { line: `[Naprawa] Analiza błędu nie powiodła się: ${e.message}`, stream: 'err' });
+  }
+}
+
+ipcMain.handle('doctor:check', async (e, id) => {
+  const inst = instances.get(id);
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  return doctor.deepCheck(inst);
+});
+ipcMain.handle('doctor:fix', async (e, id, problems) => {
+  const inst = instances.get(id);
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  return doctor.apply(inst, problems);
+});
+
 ipcMain.handle('game:prepare', async (e, instanceId) => {
   if (busy) throw new Error('Trwa już przygotowywanie gry.');
   busy = true;
@@ -388,11 +414,28 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
 
     const { installed, javaBin } = await prepareGame(inst, settings, progress);
 
+    // automatic repair before the start: duplicate mods, mods for another loader
+    if (base.autoRepair !== false) {
+      try {
+        const found = await doctor.preflight(inst);
+        if (found.length) {
+          const fixed = await doctor.apply(inst, found);
+          for (const p of fixed) send('log', { line: `[Naprawa] ${p.title}: ${p.result}`, stream: 'out' });
+          send('doctor:report', { instanceId: inst.id, phase: 'preflight', problems: fixed });
+        }
+      } catch (err) {
+        send('log', { line: `[Naprawa] Sprawdzanie modów nie powiodło się: ${err.message}`, stream: 'err' });
+      }
+    }
+
     progress({ stage: 'Uruchamianie gry' });
     const started = Date.now();
+    const tail = [];
     const child = await launcher.launch({ instance: inst, account, settings, installed, javaBin }, {
       onLog: (line, stream) => {
         send('log', { line, stream });
+        tail.push(line);
+        if (tail.length > 4000) tail.splice(0, 1000);
         if (game && !game.visible && /Backend library|Setting user|LWJGL/.test(line)) {
           game.visible = true;
           send('game:state', { running: inst.id, phase: 'running' });
@@ -408,6 +451,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
         discord.setActivity(LAUNCHER_ACTIVITY);
         send('game:state', { running: null, code: killed ? 0 : code });
         if (win) { win.show(); win.focus(); }
+        if (!killed && code !== 0) crashRepair(inst, tail, code);
       },
     });
     game = { child, instanceId: inst.id, started, visible: false };

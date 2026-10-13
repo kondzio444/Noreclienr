@@ -25,6 +25,7 @@ const DEFAULTS = {
     msClientId: '',
     discordRpc: true,
     autoUpdate: true,
+    autoRepair: true,
     discordAppId: DISCORD_APP_ID,
     animations: true,
     accent: '#ff8a1f',

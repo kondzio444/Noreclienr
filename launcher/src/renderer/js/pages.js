@@ -538,6 +538,7 @@ Pages.settings = (root) => {
       <div class="card panel">
         <div class="section-title">${icon('refresh')} Aktualizacje</div>
         <div class="setting"><div class="col"><b>Automatyczne aktualizacje</b><span>Pobieraj nowe wersje launchera i Nore Client w tle</span></div><label class="switch"><input type="checkbox" id="autoupd" ${s.autoUpdate !== false ? 'checked' : ''}><i></i></label></div>
+        <div class="setting"><div class="col"><b>Automatyczna naprawa błędów</b><span>Wyłącza zdublowane mody i mody z innego loadera, a po crashu sam naprawia przyczynę</span></div><label class="switch"><input type="checkbox" id="autorep" ${s.autoRepair !== false ? 'checked' : ''}><i></i></label></div>
         <div class="setting"><div class="col"><b>Nore Launcher ${esc(App.info.version)}</b><span id="updstate">${updateText(App.update)}</span></div><button class="btn ghost sm" id="updcheck">${icon('refresh')} Sprawdź teraz</button></div>
       </div>
       <div class="card panel">
@@ -567,6 +568,7 @@ Pages.settings = (root) => {
   $('#java', root).onchange = (e) => save({ javaPath: e.target.value.trim() });
   $('#jvm', root).onchange = (e) => save({ jvmArgs: e.target.value });
   $('#autoupd', root).onchange = (e) => save({ autoUpdate: e.target.checked });
+  $('#autorep', root).onchange = (e) => save({ autoRepair: e.target.checked });
   $('#updcheck', root).onclick = async () => {
     $('#updstate', root).textContent = 'Sprawdzanie…';
     const st = await nore.update.check().catch(() => null);

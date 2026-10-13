@@ -111,6 +111,7 @@ contextBridge.exposeInMainWorld('nore', {
   },
   loaders: { versions: invoke('loaders:versions') },
   background: { custom: invoke('bg:custom'), pick: invoke('bg:pick') },
+  doctor: { check: invoke('doctor:check'), fix: invoke('doctor:fix') },
   update: {
     state: invoke('update:state'),
     check: invoke('update:check'),
@@ -118,7 +119,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state', 'modpack:progress'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state', 'modpack:progress', 'doctor:report'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);
