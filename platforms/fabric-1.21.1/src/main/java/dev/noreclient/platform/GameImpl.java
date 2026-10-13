@@ -51,10 +51,22 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
 
+import net.minecraft.client.gui.screen.ingame.CraftingScreen;
+import net.minecraft.client.gui.screen.ingame.InventoryScreen;
+import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.RecipeEntry;
+import net.minecraft.recipe.RecipeMatcher;
+import net.minecraft.recipe.ShapedRecipe;
+import net.minecraft.screen.AbstractRecipeScreenHandler;
+import net.minecraft.screen.slot.Slot;
+import net.minecraft.screen.slot.SlotActionType;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 /** Game facade for Minecraft 1.21 – 1.21.1 (Fabric, yarn mappings). */
@@ -223,6 +235,109 @@ public final class GameImpl implements Game {
     }
 
     @Override
+    public List<ItemInfo> inventory() {
+        List<ItemInfo> out = new ArrayList<>();
+        if (p() == null) return out;
+        var main = p().getInventory().main;
+        for (int i = 9; i < 36; i++) out.add(info(main.get(i)));
+        for (int i = 0; i < 9; i++) out.add(info(main.get(i)));
+        return out;
+    }
+
+    private final Map<String, ItemInfo> icons = new HashMap<>();
+
+    @Override
+    public ItemInfo itemIcon(String id) {
+        return icons.computeIfAbsent(id, k -> {
+            Identifier ident = Identifier.tryParse(k);
+            if (ident == null || !Registries.ITEM.containsId(ident)) return null;
+            return info(new ItemStack(Registries.ITEM.get(ident)));
+        });
+    }
+
+    // ------------------------------------------------------------------ crafting
+    private AbstractRecipeScreenHandler<?, ?> recipeHandler() {
+        if (p() == null || !(mc().currentScreen instanceof InventoryScreen || mc().currentScreen instanceof CraftingScreen)) return null;
+        return p().currentScreenHandler instanceof AbstractRecipeScreenHandler<?, ?> h ? h : null;
+    }
+
+    private RecipeEntry<?> recipe(String id) {
+        if (mc().world == null) return null;
+        Identifier ident = Identifier.tryParse(id.contains(":") ? id : "minecraft:" + id);
+        return ident == null ? null : mc().world.getRecipeManager().get(ident).orElse(null);
+    }
+
+    @Override
+    public int craftingGrid() {
+        AbstractRecipeScreenHandler<?, ?> h = recipeHandler();
+        return h == null ? 0 : h.getCraftingWidth();
+    }
+
+    @Override
+    public int craftableCount(String recipeId) {
+        AbstractRecipeScreenHandler<?, ?> h = recipeHandler();
+        RecipeEntry<?> r = recipe(recipeId);
+        if (h == null || r == null || !r.value().fits(h.getCraftingWidth(), h.getCraftingHeight())) return 0;
+        RecipeMatcher matcher = new RecipeMatcher();
+        p().getInventory().populateRecipeFinder(matcher);
+        h.populateRecipeFinder(matcher);
+        return matcher.countCrafts(r, null);
+    }
+
+    private void click(AbstractRecipeScreenHandler<?, ?> h, int slot, int button, SlotActionType type) {
+        mc().interactionManager.clickSlot(h.syncId, slot, button, type, p());
+    }
+
+    @Override
+    public boolean fillRecipe(String recipeId, boolean all) {
+        AbstractRecipeScreenHandler<?, ?> h = recipeHandler();
+        RecipeEntry<?> r = recipe(recipeId);
+        if (h == null || r == null || craftableCount(recipeId) <= 0 || !h.getCursorStack().isEmpty()) return false;
+        if (mc().player.getRecipeBook().contains(r)) {
+            mc().interactionManager.clickRecipe(h.syncId, r, all);
+            return true;
+        }
+        // Recipe not unlocked: place one set of ingredients by hand, like a player would.
+        int gw = h.getCraftingWidth(), gh = h.getCraftingHeight();
+        for (int i = 0; i < h.getCraftingSlotCount(); i++) {
+            if (i != h.getCraftingResultSlotIndex() && h.getSlot(i).hasStack()) click(h, i, 0, SlotActionType.QUICK_MOVE);
+        }
+        List<Ingredient> ingredients = r.value().getIngredients();
+        int rw = r.value() instanceof ShapedRecipe shaped ? shaped.getWidth() : gw;
+        for (int k = 0; k < ingredients.size(); k++) {
+            Ingredient ing = ingredients.get(k);
+            if (ing.isEmpty()) continue;
+            int row = k / rw, col = k % rw;
+            if (row >= gh || col >= gw) return false;
+            int target = 1 + row * gw + col;
+            int source = -1;
+            for (Slot slot : h.slots) {
+                if (slot.inventory == p().getInventory() && slot.getIndex() < 36 && slot.hasStack() && ing.test(slot.getStack())) {
+                    source = slot.id;
+                    break;
+                }
+            }
+            if (source < 0) return false;
+            click(h, source, 0, SlotActionType.PICKUP);
+            click(h, target, 1, SlotActionType.PICKUP);
+            click(h, source, 0, SlotActionType.PICKUP);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean craftResultReady() {
+        AbstractRecipeScreenHandler<?, ?> h = recipeHandler();
+        return h != null && h.getSlot(h.getCraftingResultSlotIndex()).hasStack();
+    }
+
+    @Override
+    public void takeCraftResult() {
+        AbstractRecipeScreenHandler<?, ?> h = recipeHandler();
+        if (h != null) click(h, h.getCraftingResultSlotIndex(), 0, SlotActionType.QUICK_MOVE);
+    }
+
+    @Override
     public int countItem(String id) {
         if (p() == null) return 0;
         int n = 0;
@@ -294,6 +409,8 @@ public final class GameImpl implements Game {
     @Override public boolean controlDown() { return Screen.hasControlDown(); }
     @Override public String clipboard() { return mc().keyboard.getClipboard(); }
 
+    @Override public void setClipboard(String text) { mc().keyboard.setClipboard(text); }
+
     // ------------------------------------------------------------------ actions
     public static Screen toScreen(Object parent) {
         if (parent instanceof NoreScreen) return new ScreenAdapter((NoreScreen) parent);
@@ -328,8 +445,6 @@ public final class GameImpl implements Game {
         mc().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), pitch, 0.35f));
     }
 
-    @Override public void openVanillaTitle() { mc().setScreen(new TitleScreen()); }
-    @Override public void openVanillaPause() { mc().setScreen(new GameMenuScreen(true)); }
     @Override public void openSingleplayer(Object parent) { mc().setScreen(new SelectWorldScreen(toScreen(parent))); }
     @Override public void openMultiplayer(Object parent) { mc().setScreen(new MultiplayerScreen(toScreen(parent))); }
     @Override public void openOptions(Object parent) { mc().setScreen(new OptionsScreen(toScreen(parent), mc().options)); }
@@ -353,6 +468,16 @@ public final class GameImpl implements Game {
         TitleScreen title = new TitleScreen();
         if (sp || server == null) mc().setScreen(title);
         else mc().setScreen(new MultiplayerScreen(title));
+    }
+
+    @Override
+    public void respawn() {
+        if (p() != null && p().isDead()) mc().player.requestRespawn();
+    }
+
+    @Override
+    public void localChat(String message) {
+        mc().inGameHud.getChatHud().addMessage(Text.literal(message));
     }
 
     @Override public void quit() { mc().scheduleStop(); }

@@ -80,6 +80,7 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
     const f = version.logging.client.file;
     jvm.push(substitute(version.logging.client.argument, { path: path.join(paths.assets, 'log_configs', f.id) }));
   }
+  if (settings.discordRpc !== false && settings.discordAppId) jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId}`);
   const extra = (settings.jvmArgs || '').trim();
   if (extra) jvm.push(...extra.split(/\s+/));
   if (process.platform === 'darwin') jvm.push('-XstartOnFirstThread');

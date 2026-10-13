@@ -20,6 +20,8 @@ const DEFAULTS = {
     concurrency: 16,
     showSnapshots: false,
     msClientId: '',
+    discordRpc: true,
+    discordAppId: '',
     animations: true,
     accent: '#ff8a1f',
   },

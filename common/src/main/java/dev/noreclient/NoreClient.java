@@ -33,7 +33,7 @@ import java.util.logging.Logger;
  */
 public final class NoreClient {
     public static final String NAME = "Nore Client";
-    public static final String VERSION = "2.0.0";
+    public static final String VERSION = "2.1.0";
     public static final Logger LOGGER = Logger.getLogger(NAME);
 
     private static NoreClient instance;
@@ -90,6 +90,7 @@ public final class NoreClient {
     public static void onRenderHud(Gfx g, float tickDelta) {
         if (instance == null) return;
         CurrentGfx.set(g);
+        instance.moduleManager.renderOverlays(g, tickDelta);
         instance.hudRenderer.render(g, tickDelta);
         NotificationManager.render(g);
     }
@@ -143,25 +144,35 @@ public final class NoreClient {
         instance.moduleManager.get(InfoHuds.HitCounter.class).onHit();
     }
 
-    /** Replacement for the vanilla title screen, or null to keep vanilla. */
-    public static NoreScreen titleScreen() {
-        if (instance == null || NoreMainMenu.bypass) {
-            NoreMainMenu.bypass = false;
-            return null;
-        }
-        return instance.moduleManager.get(ClientSettings.class).customMenu.isOn() ? new NoreMainMenu() : null;
+    /** Overlays drawn on top of container screens (inventory, crafting table...). */
+    public static void onRenderContainer(Gfx g, int left, int top, int bgWidth, int bgHeight, int mouseX, int mouseY) {
+        if (instance == null) return;
+        CurrentGfx.set(g);
+        instance.moduleManager.get(dev.noreclient.module.player.AutoCraft.class).renderPanel(g, left, top, bgWidth, bgHeight, g.width(), mouseX, mouseY);
     }
 
-    /** Replacement for the vanilla pause menu, or null to keep vanilla. */
+    /** Returns true when a client overlay consumed the click on a container screen. */
+    public static boolean onContainerClick(double mouseX, double mouseY, int button) {
+        return instance != null && instance.moduleManager.get(dev.noreclient.module.player.AutoCraft.class).click(mouseX, mouseY, button);
+    }
+
+    /** Replacement for the vanilla title screen (always the Nore menu once the client runs). */
+    public static NoreScreen titleScreen() {
+        return instance == null ? null : new NoreMainMenu();
+    }
+
+    /** Replacement for the vanilla pause menu. */
     public static NoreScreen pauseScreen() {
-        if (instance == null || NorePauseMenu.bypass) {
-            NorePauseMenu.bypass = false;
-            return null;
-        }
-        return instance.moduleManager.get(ClientSettings.class).customPause.isOn() ? new NorePauseMenu() : null;
+        return instance == null ? null : new NorePauseMenu();
+    }
+
+    /** World time from the server's time packet (about once a second); used for the TPS meter. */
+    public static void onServerTime(long worldTime) {
+        dev.noreclient.module.hud.ExtraHuds.Tps.onServerTime(worldTime);
     }
 
     public static void onShutdown() {
+        dev.noreclient.util.DiscordIpc.stop();
         if (instance != null) instance.configManager.save();
     }
 

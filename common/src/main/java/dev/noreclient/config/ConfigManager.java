@@ -145,6 +145,7 @@ public class ConfigManager {
             JsonObject o = new JsonObject();
             if (m.persistsEnabled()) o.addProperty("enabled", m.isEnabled());
             o.add("key", m.getKeybind().toJson());
+            if (m.isFavorite()) o.addProperty("favorite", true);
             JsonObject settings = new JsonObject();
             for (Setting<?> s : m.getSettings()) settings.add(s.getName(), s.toJson());
             o.add("settings", settings);
@@ -184,6 +185,7 @@ public class ConfigManager {
                 }
             }
             if (o.has("key")) m.getKeybind().fromJson(o.get("key"));
+            m.setFavorite(o.has("favorite") && o.get("favorite").getAsBoolean());
             if (m instanceof HudModule && o.has("position")) {
                 HudModule h = (HudModule) m;
                 JsonObject pos = o.getAsJsonObject("position");

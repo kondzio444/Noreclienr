@@ -14,6 +14,7 @@ const instances = require('./instances');
 const noreMods = require('./nore-mods');
 const net = require('./net');
 const servers = require('./servers');
+const discord = require('./discord');
 const AdmZip = require('adm-zip');
 
 const FABRIC_API_ID = 'P7dR8mSH';
@@ -78,7 +79,16 @@ app.whenReady().then(() => {
   servers.setEmitter(send);
   instances.ensureDefault();
   createWindow();
+  applyDiscord();
+  discord.setActivity(LAUNCHER_ACTIVITY);
 });
+
+const LAUNCHER_ACTIVITY = { details: 'W launcherze', state: 'Wybiera, w co zagrać' };
+
+function applyDiscord() {
+  const s = store.get().settings;
+  discord.setClientId(s.discordRpc !== false ? s.discordAppId : '');
+}
 
 app.on('before-quit', () => servers.stopAll());
 
@@ -115,6 +125,7 @@ ipcMain.handle('state:get', () => {
 
 ipcMain.handle('settings:set', (e, patch) => {
   store.update(d => Object.assign(d.settings, patch));
+  if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
   return store.get().settings;
 });
 
@@ -322,11 +333,16 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
         const played = Date.now() - started;
         instances.update(inst.id, { playTime: (instances.get(inst.id).playTime || 0) + played });
         game = null;
+        discord.setActivity(LAUNCHER_ACTIVITY);
         send('game:state', { running: null, code: killed ? 0 : code });
         if (win) { win.show(); win.focus(); }
       },
     });
     game = { child, instanceId: inst.id, started, visible: false };
+    // Nore Client shows its own, richer presence from inside the game
+    discord.setActivity(inst.modpack === 'nore' ? null : {
+      details: `Gra w Minecraft ${inst.mcVersion}`, state: inst.name, start: Math.floor(started / 1000),
+    });
     instances.update(inst.id, { lastPlayed: Date.now() });
     send('game:state', { running: inst.id, phase: 'starting' });
     return true;

@@ -515,6 +515,13 @@ Pages.settings = (root) => {
         <div class="field" style="margin-top:16px"><label>Dodatkowe argumenty JVM</label><input class="input" id="jvm" value="${esc(s.jvmArgs)}" placeholder="-XX:+UseG1GC"></div>
       </div>
       <div class="card panel">
+        <div class="section-title">${icon('globe')} Discord</div>
+        <div class="setting"><div class="col"><b>Status w Discordzie (Rich Presence)</b><span>Pokazuj znajomym, w co grasz – w launcherze i w Nore Client</span></div><label class="switch"><input type="checkbox" id="drpc" ${s.discordRpc !== false ? 'checked' : ''}><i></i></label></div>
+        <div class="field"><label>Discord Application ID</label><input class="input" id="dappid" value="${esc(s.discordAppId || '')}" placeholder="np. 1234567890123456789">
+          <span class="hint">Utwórz aplikację „Nore Client” na discord.com/developers/applications i wklej tu jej Application ID.
+          W Rich Presence → Art Assets dodaj obrazek o nazwie <b>logo</b> (i opcjonalnie <b>minecraft</b>).</span></div>
+      </div>
+      <div class="card panel">
         <div class="section-title">${icon('key')} Konta Microsoft</div>
         <div class="field"><label>Azure Client ID</label><input class="input" id="msid" value="${esc(s.msClientId)}" placeholder="00000000-0000-0000-0000-000000000000">
           <span class="hint">Logowanie premium wymaga własnej aplikacji w Azure (konta osobiste Microsoft) zatwierdzonej przez Mojang
@@ -535,6 +542,8 @@ Pages.settings = (root) => {
   $('#h', root).onchange = (e) => save({ height: Math.max(240, parseInt(e.target.value, 10) || 720) });
   $('#java', root).onchange = (e) => save({ javaPath: e.target.value.trim() });
   $('#jvm', root).onchange = (e) => save({ jvmArgs: e.target.value });
+  $('#drpc', root).onchange = (e) => save({ discordRpc: e.target.checked });
+  $('#dappid', root).onchange = (e) => { save({ discordAppId: e.target.value.replace(/\D/g, '') }); toast('Zapisano Discord Application ID'); };
   $('#msid', root).onchange = (e) => { save({ msClientId: e.target.value.trim() }); toast('Zapisano Client ID'); };
   $('#after', root).appendChild(segmented([{ value: 'hide', label: 'Ukryj' }, { value: 'keep', label: 'Zostaw' }, { value: 'close', label: 'Zamknij' }], s.afterLaunch, (v) => save({ afterLaunch: v })));
   $('#pickjava', root).onclick = async () => {

@@ -7,10 +7,12 @@
     "BackgroundRendererMixin",
     "CameraMixin",
     "ChatHudMixin",
+    "ClientPlayNetworkHandlerMixin",
     "ClientPlayerInteractionManagerMixin",
     "ClientWorldPropertiesMixin",
     "EntityMixin",
     "GameRendererMixin",
+    "HandledScreenMixin",
     "HeldItemRendererMixin",
     "InGameHudMixin",
     "InGameOverlayRendererMixin",
@@ -22,7 +24,12 @@
     "PlayerListHudMixin",
     "SimpleOptionMixin",
     "WorldMixin",
-    "WorldRendererMixin"
+    "WorldRendererMixin",
+    "skin.EntryListWidgetMixin",
+    "skin.PressableWidgetMixin",
+    "skin.ScreenMixin",
+    "skin.SliderWidgetMixin",
+    "skin.TextFieldWidgetMixin"
   ],
   "injectors": {
     "defaultRequire": 1

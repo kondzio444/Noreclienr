@@ -19,9 +19,6 @@ import java.util.List;
 
 /** Pause menu in the client's style, replacing the vanilla game menu. */
 public class NorePauseMenu extends NoreScreen {
-    /** Set to open the vanilla pause screen once without it being replaced. */
-    public static boolean bypass;
-
     private static final class Entry {
         final String label;
         final int style;
@@ -64,10 +61,7 @@ public class NorePauseMenu extends NoreScreen {
         rows.add(new Entry[]{
                 new Entry("Ustawienia", Widgets.NORMAL, () -> game().openOptions(self)),
                 game().canOpenLan() ? new Entry("Otwórz w LAN", Widgets.NORMAL, () -> game().openLan(self))
-                        : new Entry("Menu vanilla", Widgets.NORMAL, () -> {
-                    bypass = true;
-                    game().openVanillaPause();
-                })});
+                        : new Entry("Pobieraj zasoby", Widgets.NORMAL, () -> game().openScreen(ClickGuiScreen.forDownloads(self)))});
         rows.add(new Entry[]{new Entry(game().singleplayer() ? "Zapisz i wyjdź do menu" : "Rozłącz", Widgets.DANGER, () -> game().disconnect())});
     }
 

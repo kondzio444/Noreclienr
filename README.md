@@ -106,13 +106,33 @@ Do tego czasu można grać na koncie non-premium (singleplayer, LAN, serwery z `
 | **Pobieraj w grze (Modrinth)** | **Menu pauzy** |
 | ![Pobieraj](docs/screenshots/client-downloads.png) | ![Pauza](docs/screenshots/client-pause.png) |
 
+### Nowe w 2.1
+
+| Auto Craft | Nowe moduły |
+|---|---|
+| ![Auto Craft](docs/screenshots/client-autocraft.png) | ![Nowe](docs/screenshots/client-new-modules.png) |
+| **Ekrany Minecrafta w stylu Nore** | |
+| ![Opcje](docs/screenshots/client-options-skin.png) | |
+
+- **Auto Craft** – panel obok ekwipunku i stołu rzemieślniczego: deski, patyki, stół, pochodnie, skrzynia, piec,
+  drabina, narzędzia, drzwi, chleb… jednym kliknięciem (Shift+klik = wszystko). Brakujące deski i patyki robi sam.
+  Działa przez księgę receptur, a gdy przepis nie jest odblokowany – zwykłymi kliknięciami (każdy serwer).
+- **Discord RPC** – status w Discordzie (menu / świat / serwer, wymiar, czas gry, przycisk) z moda i z launchera.
+  Wystarczy wpisać *Application ID* w launcherze: **Ustawienia → Discord**.
+- **Koniec z vanilla UI** – menu główne i pauzy zawsze Nore, a wszystkie pozostałe ekrany Minecrafta (opcje, światy,
+  serwery, tworzenie świata…) mają przyciski, suwaki, pola tekstowe, listy i tło w stylu klienta.
+- **Odświeżone menu modułów** – ikony kategorii, karty z kafelkami, **Ulubione** (gwiazdka), kolekcja **Nowe**,
+  widok siatki / listy, gotowe motywy kolorów (Nore Orange, Crimson, Violet, Ocean, Emerald, Sakura, Gold, Ice).
+- **Nowe moduły**: Inventory HUD, Stopwatch, Last Death, TPS, Item Counter (dowolny przedmiot), Durability Alert,
+  Low Health Alert (winieta), Effect Alert, Break Reminder, Coords Share, Auto Respawn.
+
 - **Styl**: pomarańczowy motyw, wszystkie przyciski z poświatą („glow outline”), logo w menu, animacje wejścia,
   własne menu główne i menu pauzy (Powrót do gry, Moduły, Edytor HUD, Postępy, Statystyki, Ustawienia, LAN, Wyjdź).
 - **Pobieraj w grze** (`Prawy Shift` → *Pobieraj*): paczki zasobów (włączane jednym kliknięciem), mody, datapacki
   do aktualnego świata i shadery prosto z Modrinth, z ikonami i sortowaniem.
 - **Menu modułów**: kategorie, wyszukiwarka, przełączniki, suwaki, wybór trybów, color picker z trybem tęczy, przypisywanie klawiszy, profile.
 - **Edytor HUD** (`H`): przeciąganie, przyciąganie do linii pomocniczych, skalowanie, panel elementów.
-- **75 modułów i 667 opcji** (licznik widać w menu modułów). Nakładki HUD (53): FPS, CPS, Keystrokes, Coordinates,
+- **88 modułów i 755 opcji** (licznik widać w menu modułów). Nakładki HUD (53): FPS, CPS, Keystrokes, Coordinates,
   Armor Status, Potion Effects, Target HUD, Compass, Combo, Reach, **wykres FPS, zegar analogowy, wskaźnik
   odnowienia ataku / naciągnięcia łuku**, licznik dni, poziom światła, liczba bytów, nasycenie, HP, XP, liczniki
   strzał / totemów / pereł / złotych jabłek, czas sesji, data, pogoda, czas w grze, obrót, prędkość pionowa,
@@ -133,7 +153,9 @@ Wszystkie funkcje działają tylko po stronie klienta – bez cheatów.
 ## Struktura
 
 ```
-src/main/java/dev/noreclient/   – mod (Fabric 1.21.1)
+common/                         – rdzeń moda niezależny od wersji MC (Java 8: moduły, GUI, HUD, konfiguracja)
+platforms/<wersja>/             – implementacja dla danej wersji Minecrafta (Game/Gfx, mixiny); ./gradlew build buduje wszystkie
+dist/mods/                      – zbudowane mody (noreclient-<platforma>.jar), które launcher dołącza do instalatora
 launcher/src/main/              – proces główny launchera (pobieranie, Java, konta, uruchamianie, Modrinth)
 launcher/src/renderer/          – interfejs launchera (HTML/CSS/JS)
 launcher/build/                 – grafiki i konfiguracja instalatora NSIS

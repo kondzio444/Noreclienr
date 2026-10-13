@@ -170,6 +170,30 @@ public interface Game {
 
     List<ItemInfo> previewArmor();
 
+    /** The 27 main inventory slots followed by the 9 hotbar slots (null for empty). */
+    List<ItemInfo> inventory();
+
+    /** An item stack of the given id for drawing icons, or null if the id is unknown. */
+    ItemInfo itemIcon(String id);
+
+    // ------------------------------------------------------------------ crafting
+    /** Size of the open crafting grid: 2 (player inventory), 3 (crafting table) or 0. */
+    int craftingGrid();
+
+    /** How many times the recipe can be crafted from the inventory and grid (0 if unknown or too big). */
+    int craftableCount(String recipeId);
+
+    /**
+     * Fills the grid with the recipe: through the recipe book when the recipe is unlocked (all =
+     * a full stack), otherwise by placing one set of ingredients with ordinary slot clicks.
+     */
+    boolean fillRecipe(String recipeId, boolean all);
+
+    boolean craftResultReady();
+
+    /** Shift-clicks the crafting result into the inventory. */
+    void takeCraftResult();
+
     // ------------------------------------------------------------------ input
     /** Logical keys: forward, back, left, right, jump, sneak, sprint, attack, use. */
     boolean keyDown(String logicalKey);
@@ -186,6 +210,8 @@ public interface Game {
 
     String clipboard();
 
+    void setClipboard(String text);
+
     // ------------------------------------------------------------------ actions
     void openScreen(NoreScreen screen);
 
@@ -197,10 +223,6 @@ public interface Game {
     void sendChat(String message);
 
     void playClick(float pitch);
-
-    void openVanillaTitle();
-
-    void openVanillaPause();
 
     void openSingleplayer(Object parent);
 
@@ -217,6 +239,12 @@ public interface Game {
     boolean canOpenLan();
 
     void disconnect();
+
+    /** Respawns after death (no-op while alive). */
+    void respawn();
+
+    /** Shows a message in the chat that only this player sees. */
+    void localChat(String message);
 
     void quit();
 

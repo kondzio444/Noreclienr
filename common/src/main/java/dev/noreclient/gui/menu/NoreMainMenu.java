@@ -20,9 +20,6 @@ import java.time.format.DateTimeFormatter;
 
 /** Custom animated title screen that replaces the vanilla one. */
 public class NoreMainMenu extends NoreScreen {
-    /** Set to open the vanilla title screen once without it being replaced. */
-    public static boolean bypass;
-
     private static final String[] LABELS = {"Singleplayer", "Multiplayer", "Moduły klienta", "Edytor HUD"};
     private static final String[] HINTS = {"Graj w swoich światach", "Dołącz do serwera", "Ustawienia i moduły", "Rozmieść nakładki"};
     private static final float BW = 210;
@@ -147,7 +144,7 @@ public class NoreMainMenu extends NoreScreen {
         Render2D.scaledText(ctx, clock, 8, 8, 1.6f, 0xFFFFFFFF, true);
         Render2D.scaledText(ctx, "Tło: NASA/ESA/CSA/STScI (JWST)", 8, 24, 0.65f, ColorUtil.withAlpha(Theme.TEXT_MUTED, 150), false);
 
-        String van = "Menu vanilla ›";
+        String van = "\u2b07 Pobieraj zasoby";
         float vw = Render2D.textWidth(van) + 14;
         boolean hv = Render2D.hovered(mouseX, mouseY, width - vw - 6, 6, vw, 16);
         float va = hover[6].target(hv ? 1 : 0).update();
@@ -201,13 +198,11 @@ public class NoreMainMenu extends NoreScreen {
             go(() -> game().quit());
             return true;
         }
-        String van = "Menu vanilla ›";
+        String van = "\u2b07 Pobieraj zasoby";
         float vw = Render2D.textWidth(van) + 14;
         if (Render2D.hovered(mx, my, width - vw - 6, 6, vw, 16)) {
-            go(() -> {
-                bypass = true;
-                game().openVanillaTitle();
-            });
+            Sounds.click();
+            game().openScreen(ClickGuiScreen.forDownloads(this));
             return true;
         }
         return false;

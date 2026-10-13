@@ -1,5 +1,7 @@
 package dev.noreclient.module;
 
+import dev.noreclient.api.Gfx;
+
 import dev.noreclient.api.Game;
 import dev.noreclient.api.Keys;
 import dev.noreclient.api.Platform;
@@ -18,6 +20,7 @@ public abstract class Module {
     private final List<Setting<?>> settings = new ArrayList<Setting<?>>();
     private final KeybindSetting keybind;
     private boolean enabled;
+    private boolean favorite;
 
     protected Module(String name, String description, Category category) {
         this(name, description, category, Keys.UNKNOWN);
@@ -76,6 +79,12 @@ public abstract class Module {
 
     public void onTick() {}
 
+    /** Any key pressed in game (no screen open); for modules with their own extra keys. */
+    public void onKeyPressed(int key) {}
+
+    /** Full-screen effects drawn under the HUD (vignettes, flashes...). */
+    public void onRenderOverlay(Gfx g, float tickDelta) {}
+
     public String getName() { return name; }
 
     public String getDescription() { return description; }
@@ -83,6 +92,10 @@ public abstract class Module {
     public Category getCategory() { return category; }
 
     public boolean isEnabled() { return enabled; }
+
+    public boolean isFavorite() { return favorite; }
+
+    public void setFavorite(boolean favorite) { this.favorite = favorite; }
 
     /** Enabled and supported by this version: what hooks should check. */
     public boolean isActive() { return enabled && isSupported(); }

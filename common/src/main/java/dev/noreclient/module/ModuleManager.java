@@ -184,8 +184,13 @@ public class ModuleManager {
         for (Module m : modules) if (m.isEnabled()) m.onTick();
     }
 
+    public void renderOverlays(dev.noreclient.api.Gfx g, float tickDelta) {
+        for (Module m : modules) if (m.isActive()) m.onRenderOverlay(g, tickDelta);
+    }
+
     public void onKey(int key) {
         get(ChatMacros.class).onKey(key);
+        for (Module m : modules) if (m.isActive()) m.onKeyPressed(key);
         for (Module m : modules) {
             if (m.getKeybind().isBound() && m.getKeybind().get() == key) m.toggleWithFeedback();
         }
