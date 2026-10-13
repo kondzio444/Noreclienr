@@ -1,0 +1,50 @@
+// Shared configuration for every Nore Client platform build. Each platform directory is a
+// standalone Gradle build (its own Loom / Legacy Looming version) that compiles the version
+// independent core from ../../common together with its own Game/Gfx implementation and mixins.
+
+version = "${project.mod_version}+${project.platform_name}"
+group = 'dev.noreclient'
+
+base {
+    archivesName = 'noreclient'
+}
+
+sourceSets {
+    main {
+        java.srcDirs += '../../common/src/main/java'
+        resources.srcDirs += '../../common/src/main/resources'
+    }
+}
+
+processResources {
+    def props = [
+            version     : project.version,
+            platform    : project.platform_name,
+            mc_range    : project.mc_range,
+            java_version: project.java_version,
+            loader_min  : project.loader_min
+    ]
+    inputs.properties props
+    from('../fabric.mod.json') {
+        expand props
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = Integer.parseInt(project.java_version)
+    it.options.encoding = 'UTF-8'
+}
+
+jar {
+    from('../../LICENSE')
+}
+
+// Copies the finished jar to /dist/mods/noreclient-<platform>.jar, which the launcher bundles.
+tasks.register('dist', Copy) {
+    dependsOn remapJar
+    from remapJar.archiveFile
+    into '../../dist/mods'
+    rename { "noreclient-${project.platform_name}.jar" }
+}
+build.finalizedBy dist
