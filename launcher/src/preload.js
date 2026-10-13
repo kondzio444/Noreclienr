@@ -112,6 +112,11 @@ contextBridge.exposeInMainWorld('nore', {
   loaders: { versions: invoke('loaders:versions') },
   background: { custom: invoke('bg:custom'), pick: invoke('bg:pick') },
   doctor: { check: invoke('doctor:check'), fix: invoke('doctor:fix') },
+  friends: { list: invoke('friends:list'), add: invoke('friends:add'), remove: invoke('friends:remove') },
+  gallery: {
+    list: invoke('gallery:list'), full: invoke('gallery:full'), copy: invoke('gallery:copy'),
+    reveal: invoke('gallery:reveal'), open: invoke('gallery:open'), remove: invoke('gallery:delete'),
+  },
   update: {
     state: invoke('update:state'),
     check: invoke('update:check'),

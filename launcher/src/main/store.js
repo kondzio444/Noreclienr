@@ -12,6 +12,8 @@ const DEFAULTS = {
   selectedAccount: null,
   instances: [],
   selectedInstance: null,
+  friends: [],
+  friendsRemoved: [],
   settings: {
     memoryMb: 4096,
     javaPath: '',

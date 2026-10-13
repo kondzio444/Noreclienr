@@ -36,15 +36,22 @@
     <aside id="sidebar">
       <div class="logo-block">
         <img src="assets/logo.png" alt="">
-        <div><h1>Nore</h1><small>LAUNCHER</small></div>
+        <div class="lb-text"><h1>Nore</h1><small>LAUNCHER</small></div>
+        <span class="ver-chip">1.4 BETA</span>
       </div>
-      <div class="nav-label">GRA</div>
-      <nav class="nav" id="nav-main"></nav>
-      <div class="nav-label">ZAWARTOŚĆ</div>
-      <nav class="nav" id="nav-content"></nav>
-      <div class="nav-label">LAUNCHER</div>
-      <nav class="nav" id="nav-launcher"></nav>
+      <button class="sb-toggle" id="sb-toggle" title="Zwiń / rozwiń menu"><svg viewBox="0 0 24 24" class="i"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="sb-scroll">
+        <div class="nav-label">GRA</div>
+        <nav class="nav" id="nav-main"></nav>
+        <div class="nav-label">ZAWARTOŚĆ</div>
+        <nav class="nav" id="nav-content"></nav>
+        <div class="nav-label">SPOŁECZNOŚĆ</div>
+        <nav class="nav" id="nav-social"></nav>
+        <div class="nav-label">LAUNCHER</div>
+        <nav class="nav" id="nav-launcher"></nav>
+      </div>
       <div class="sidebar-bottom">
+        <div class="mini-play" id="mini-play"></div>
         <div class="account-chip" id="account-chip"></div>
       </div>
     </aside>
@@ -63,6 +70,8 @@
   <script src="js/appearance.js"></script>
   <script src="js/instances.js"></script>
   <script src="js/doctor.js"></script>
+  <script src="js/social.js"></script>
+  <script src="js/home14.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

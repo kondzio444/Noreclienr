@@ -22,6 +22,7 @@ const AdmZip = require('adm-zip');
 const loaders = require('./loaders');
 const modpacks = require('./modpacks');
 const doctor = require('./doctor');
+const social = require('./social');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -374,6 +375,34 @@ async function crashRepair(inst, lines, code) {
   }
 }
 
+// ------------------------------------------------------------------ IPC: friends, gallery
+
+ipcMain.handle('friends:list', () => social.friends());
+ipcMain.handle('friends:add', (e, name) => social.addFriend(name));
+ipcMain.handle('friends:remove', (e, name) => social.removeFriend(name));
+ipcMain.handle('gallery:list', () => social.gallery());
+/** Only screenshots of Nore instances may be read, copied, opened or deleted through the gallery. */
+function screenshotPath(p) {
+  const full = path.resolve(String(p || ''));
+  if (!/\.png$/i.test(full) || !instances.list().some(i => full.startsWith(path.join(i.gameDir, 'screenshots') + path.sep))) {
+    throw new Error('Niedozwolona ścieżka.');
+  }
+  return full;
+}
+ipcMain.handle('gallery:full', (e, p) => social.fullImage(screenshotPath(p)));
+ipcMain.handle('gallery:copy', (e, p) => {
+  const img = nativeImage.createFromPath(screenshotPath(p));
+  if (img.isEmpty()) throw new Error('Nie można odczytać obrazu.');
+  require('electron').clipboard.writeImage(img);
+  return true;
+});
+ipcMain.handle('gallery:reveal', (e, p) => shell.showItemInFolder(screenshotPath(p)));
+ipcMain.handle('gallery:open', (e, p) => shell.openPath(screenshotPath(p)));
+ipcMain.handle('gallery:delete', async (e, p) => {
+  await fsp.rm(screenshotPath(p), { force: true });
+  return true;
+});
+
 ipcMain.handle('doctor:check', async (e, id) => {
   const inst = instances.get(id);
   if (!inst) throw new Error('Nie znaleziono instancji.');
@@ -413,6 +442,8 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
     const settings = { ...base, jvmArgs: [base.jvmArgs, inst.jvmArgs].filter(Boolean).join(' ') };
 
     const { installed, javaBin } = await prepareGame(inst, settings, progress);
+
+    await social.sync().catch(() => {});
 
     // automatic repair before the start: duplicate mods, mods for another loader
     if (base.autoRepair !== false) {

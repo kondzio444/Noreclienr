@@ -35,17 +35,22 @@ const NAV = {
   'nav-main': [
     { id: 'home', label: 'Start', icon: 'home' },
     { id: 'instances', label: 'Instancje', icon: 'layers' },
-    { id: 'servers', label: 'Serwery', icon: 'globe', badge: 'BETA' },
+    { id: 'servers', label: 'Serwery', icon: 'server', badge: 'BETA' },
   ],
   'nav-content': [
-    { id: 'modpacks', label: 'Modpacki', icon: 'box', badge: 'NOWE' },
+    { id: 'modpacks', label: 'Modpacki', icon: 'box' },
     { id: 'mods', label: 'Mody', icon: 'puzzle' },
     { id: 'resourcepacks', label: 'Paczki zasobów', icon: 'image' },
     { id: 'shaders', label: 'Shadery', icon: 'sun' },
     { id: 'datapacks', label: 'Datapacki', icon: 'database' },
   ],
+  'nav-social': [
+    { id: 'friends', label: 'Znajomi', icon: 'users' },
+    { id: 'gallery', label: 'Galeria', icon: 'monitor' },
+    { id: 'shop', label: 'Sklep', icon: 'crown', badge: 'WKRÓTCE' },
+  ],
   'nav-launcher': [
-    { id: 'accounts', label: 'Konta', icon: 'users' },
+    { id: 'accounts', label: 'Konta', icon: 'user' },
     { id: 'settings', label: 'Ustawienia', icon: 'settings' },
     { id: 'console', label: 'Konsola', icon: 'terminal' },
   ],
@@ -56,7 +61,7 @@ function buildNav() {
     const nav = document.getElementById(id);
     nav.innerHTML = '<span class="indicator"></span>' + items.map(it =>
       `<a data-page="${it.id}">${icon(it.icon)}<span>${it.label}</span><span class="badge" data-badge="${it.id}" ${it.badge ? '' : 'hidden'}>${it.badge || ''}</span></a>`).join('');
-    $$('a', nav).forEach(a => a.addEventListener('click', () => go(a.dataset.page)));
+    $$('a', nav).forEach(a => { a.title = a.textContent.trim(); a.addEventListener('click', () => go(a.dataset.page)); });
   }
 }
 
