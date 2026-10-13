@@ -37,8 +37,8 @@
     ],
     "extraResources": [
       {
-        "from": "resources/noreclient.jar",
-        "to": "nore/noreclient.jar"
+        "from": "resources/mods",
+        "to": "nore/mods"
       }
     ],
     "asar": true,

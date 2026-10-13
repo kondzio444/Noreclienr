@@ -59,9 +59,6 @@ import java.util.List;
 
 /** Game facade for Minecraft 1.21 – 1.21.1 (Fabric, yarn mappings). */
 public final class GameImpl implements Game {
-    private static final TextureRef LOGO = new TextureRef(Identifier.of("noreclient", "textures/gui/logo.png"), 256, 256);
-    private static final TextureRef BACKGROUND = new TextureRef(Identifier.of("noreclient", "textures/gui/background.png"), 1600, 926);
-
     private static MinecraftClient mc() { return MinecraftClient.getInstance(); }
 
     private static PlayerEntity p() { return mc().player; }
@@ -362,9 +359,6 @@ public final class GameImpl implements Game {
     @Override public void openUrl(String url) { Util.getOperatingSystem().open(url); }
 
     // ------------------------------------------------------------------ resources
-    @Override public TextureRef logo() { return LOGO; }
-    @Override public TextureRef menuBackground() { return BACKGROUND; }
-
     @Override
     public TextureRef loadTexture(String key, byte[] png) {
         try {

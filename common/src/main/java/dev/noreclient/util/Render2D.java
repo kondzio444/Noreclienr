@@ -178,7 +178,7 @@ public final class Render2D {
     public static void logo(Gfx g, float x, float y, float size, float alpha) {
         float pulse = 0.75f + 0.25f * (float) Math.sin(System.currentTimeMillis() / 600.0);
         radial(g, x + size / 2f, y + size / 2f, size * 0.85f, ColorUtil.withAlpha(Theme.accent(), (int) (80 * pulse * alpha)), 0);
-        texture(g, Platform.game().logo(), x, y, size, size, alpha);
+        texture(g, BundledTextures.logo(), x, y, size, size, alpha);
     }
 
     // ------------------------------------------------------------------ text

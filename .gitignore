@@ -10,5 +10,5 @@ bin/
 .DS_Store
 node_modules/
 launcher/dist/
-launcher/resources/noreclient.jar
+launcher/resources/mods/
 dist/

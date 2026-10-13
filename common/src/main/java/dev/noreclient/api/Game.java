@@ -223,10 +223,7 @@ public interface Game {
     void openUrl(String url);
 
     // ------------------------------------------------------------------ resources
-    TextureRef logo();
-
-    TextureRef menuBackground();
-
+    /** Registers a PNG as a texture (render thread); null on failure. */
     TextureRef loadTexture(String key, byte[] png);
 
     File resourcePackDir();

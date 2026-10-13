@@ -48,3 +48,10 @@ tasks.register('dist', Copy) {
     rename { "noreclient-${project.platform_name}.jar" }
 }
 build.finalizedBy dist
+
+// Dev runs (./gradlew -p platforms/<p> runClient) use run/<platform> in the repository root.
+loom {
+    runConfigs.configureEach {
+        runDir = "../../run/${project.platform_name}"
+    }
+}

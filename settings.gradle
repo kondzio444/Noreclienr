@@ -1,0 +1,7 @@
+// Root build: "./gradlew build" builds every Nore Client platform (platforms/<name>/, one per
+// group of Minecraft versions) into dist/mods/noreclient-<name>.jar, which the launcher bundles.
+rootProject.name = 'noreclient'
+
+file('platforms').listFiles().findAll { new File(it, 'settings.gradle').exists() }.sort().each {
+    includeBuild(it)
+}

@@ -11,6 +11,7 @@ const auth = require('./auth');
 const launcher = require('./launch');
 const modrinth = require('./modrinth');
 const instances = require('./instances');
+const noreMods = require('./nore-mods');
 const net = require('./net');
 const servers = require('./servers');
 const AdmZip = require('adm-zip');
@@ -229,21 +230,12 @@ ipcMain.handle('instances:worlds', (e, id) => instances.worlds(id));
 
 // ------------------------------------------------------------------ IPC: launch
 
-function bundledNoreJar() {
-  const candidates = [
-    path.join(process.resourcesPath || '', 'nore', 'noreclient.jar'),
-    path.join(__dirname, '..', '..', 'resources', 'noreclient.jar'),
-    path.join(__dirname, '..', '..', '..', 'build', 'libs', 'noreclient-1.0.0.jar'),
-  ];
-  return candidates.find(c => { try { return fs.statSync(c).isFile(); } catch { return false; } });
-}
-
 async function prepareNore(inst) {
   const mods = path.join(inst.gameDir, 'mods');
   await fsp.mkdir(mods, { recursive: true });
-  const jar = bundledNoreJar();
+  const jar = noreMods.jarFor(inst.mcVersion);
   if (jar) await fsp.copyFile(jar, path.join(mods, 'noreclient.jar'));
-  else send('log', { line: '[Launcher] Nie znaleziono pliku Nore Client – pomijam.', stream: 'err' });
+  else send('log', { line: `[Launcher] Brak Nore Client dla Minecraft ${inst.mcVersion} – pomijam.`, stream: 'err' });
   const present = await fsp.readdir(mods).catch(() => []);
   if (!present.some(f => /^fabric-api-.*\.jar$/.test(f))) {
     send('progress', { stage: 'Pobieranie Fabric API' });

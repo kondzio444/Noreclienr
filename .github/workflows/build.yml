@@ -16,12 +16,12 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Build Nore Client mod
-        run: ./gradlew build --no-daemon
+      - name: Build Nore Client (all platforms)
+        run: ./scripts/build-all.sh
       - uses: actions/upload-artifact@v4
         with:
           name: noreclient-mod
-          path: build/libs/noreclient-*.jar
+          path: dist/mods/*.jar
 
   launcher:
     needs: mod
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: noreclient-mod
-          path: build/libs
+          path: dist/mods
       - run: npm ci
       - run: npm test
       - name: Build installer

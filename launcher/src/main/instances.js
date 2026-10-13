@@ -5,10 +5,11 @@ const path = require('path');
 const crypto = require('crypto');
 const paths = require('./paths');
 const store = require('./store');
+const noreMods = require('./nore-mods');
 
 const NORE_MC_VERSION = '1.21.1';
-/** Minecraft versions the bundled Nore Client jar supports. */
-const NORE_VERSIONS = ['1.21', '1.21.1'];
+/** Minecraft versions the bundled Nore Client jars support. */
+const NORE_VERSIONS = noreMods.versions();
 
 function gameDir(inst) {
   return path.join(paths.instances, inst.id);

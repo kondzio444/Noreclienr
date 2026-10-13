@@ -20,7 +20,7 @@ public final class MenuBackground {
         parX += (tx - parX) * 0.05f;
         parY += (ty - parY) * 0.05f;
 
-        TextureRef tex = Platform.game().menuBackground();
+        TextureRef tex = BundledTextures.background();
         if (tex != null) {
             float cover = Math.max(width / (float) tex.width, height / (float) tex.height);
             float zoom = 1.12f + 0.05f * (float) Math.sin(t * 0.06);
