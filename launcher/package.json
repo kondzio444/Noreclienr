@@ -8,11 +8,12 @@
   "license": "Apache-2.0",
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/",
+    "test": "node --test",
     "dist": "electron-builder",
-    "dist:win": "electron-builder --win nsis",
-    "dist:linux": "electron-builder --linux AppImage deb",
-    "dist:mac": "electron-builder --mac dmg"
+    "dist:win": "node scripts/copy-mod.js && electron-builder --win nsis --x64",
+    "dist:linux": "node scripts/copy-mod.js && electron-builder --linux AppImage",
+    "dist:mac": "node scripts/copy-mod.js && electron-builder --mac dmg",
+    "predist": "node scripts/copy-mod.js"
   },
   "dependencies": {
     "adm-zip": "0.5.16"
@@ -20,5 +21,89 @@
   "devDependencies": {
     "electron": "39.8.10",
     "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "dev.noreclient.launcher",
+    "productName": "Nore Launcher",
+    "copyright": "Copyright © 2026 kondzio444",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/noreclient.jar",
+        "to": "nore/noreclient.jar"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "NoreLauncher-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Nore Launcher",
+      "runAfterFinish": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "license": "build/license.txt",
+      "include": "build/installer.nsh",
+      "installerLanguages": [
+        "pl_PL"
+      ],
+      "language": "1045",
+      "deleteAppDataOnUninstall": false,
+      "uninstallDisplayName": "Nore Launcher"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "build/icon.png",
+      "category": "Game",
+      "artifactName": "NoreLauncher-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.games",
+      "artifactName": "NoreLauncher-${version}.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kondzio444",
+        "repo": "Noreclienr"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kondzio444/Noreclienr.git"
   }
 }

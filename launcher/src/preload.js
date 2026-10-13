@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('nore', {
   },
   game: {
     launch: invoke('game:launch'),
+    prepare: invoke('game:prepare'),
     kill: invoke('game:kill'),
   },
   content: {

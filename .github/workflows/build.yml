@@ -1,0 +1,65 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build Nore Client mod
+        run: ./gradlew build --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: noreclient-mod
+          path: build/libs/noreclient-*.jar
+
+  launcher:
+    needs: mod
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            files: launcher/dist/*.exe
+          - os: ubuntu-latest
+            script: dist:linux
+            files: launcher/dist/*.AppImage
+          - os: macos-latest
+            script: dist:mac
+            files: launcher/dist/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: noreclient-mod
+          path: build/libs
+      - run: npm ci
+      - run: npm test
+      - name: Build installer
+        run: npm run ${{ matrix.script }} -- --publish never
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nore-launcher-${{ matrix.os }}
+          path: ${{ matrix.files }}

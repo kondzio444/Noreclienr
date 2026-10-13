@@ -137,7 +137,7 @@ async function launchSelected(instance) {
 
 function onboarding() {
   return new Promise((resolve) => {
-    const wiz = el(`<div class="wizard"><div class="box"><div class="steps"><i></i><i></i><i></i><i></i></div><div class="content"></div></div></div>`);
+    const wiz = el(`<div class="wizard"><div class="box"><div class="steps"><i></i><i></i><i></i><i></i><i></i></div><div class="content"></div></div></div>`);
     document.body.appendChild(wiz);
     const content = $('.content', wiz);
     let step = 0;
@@ -182,12 +182,14 @@ function onboarding() {
         r.oninput = upd; upd();
         $('#w-back', content).onclick = () => { step = 1; render(); };
         $('#w-next', content).onclick = async () => { await nore.setSettings({ memoryMb: memory }); step = 3; render(); };
+      } else if (step === 3) {
+        renderInstallStep(content, () => { step = 4; render(); });
       } else {
         content.innerHTML = `<div class="step" style="text-align:center">
           <img class="welcome-logo" src="assets/logo.png" alt="">
           <h2>Wszystko <span>gotowe!</span></h2>
-          <p class="lead" style="margin:0 auto 26px">Utworzyliśmy instancję <b>Nore Client 1.21.1</b> z Fabric.
-          Pliki gry pobiorą się automatycznie przy pierwszym uruchomieniu.</p>
+          <p class="lead" style="margin:0 auto 26px">Instancja <b>Nore Client 1.21.1</b> z Fabric jest gotowa.
+          Kliknij GRAJ na stronie głównej, aby zacząć.</p>
           <button class="btn play" id="w-done">${icon('play')} DO GRY</button></div>`;
         $('#w-done', content).onclick = async () => {
           await nore.onboardingDone();
@@ -198,6 +200,82 @@ function onboarding() {
     };
     render();
   });
+}
+
+/** Wizard step that installs the default instance with an animated progress ring. */
+function renderInstallStep(content, next) {
+  const inst = App.instance();
+  const C = 2 * Math.PI * 92;
+  const PHASES = [
+    { id: 'game', name: 'Minecraft ' + (inst ? inst.mcVersion : ''), desc: 'Biblioteki, zasoby i dźwięki' },
+    { id: 'loader', name: 'Fabric Loader', desc: 'Ładowarka modów' },
+    { id: 'nore', name: 'Nore Client + Fabric API', desc: 'Klient PvP i jego zależności' },
+    { id: 'java', name: 'Java', desc: 'Środowisko uruchomieniowe od Mojang' },
+  ];
+  content.innerHTML = `<div class="step">
+    <h2>Instalacja <span>gry</span></h2>
+    <p class="lead">Pobieramy wszystko, czego potrzebujesz. Możesz też pominąć ten krok — pliki pobiorą się przy pierwszym uruchomieniu.</p>
+    <div class="install-step">
+      <div class="ring" id="ring"><div class="orbit"></div>
+        <svg viewBox="0 0 210 210"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb547"/><stop offset="1" stop-color="#ff5a1a"/></linearGradient></defs>
+          <circle class="track" cx="105" cy="105" r="92"/><circle class="bar" id="bar" cx="105" cy="105" r="92" stroke-dasharray="${C}" stroke-dashoffset="${C}"/></svg>
+        <div class="center"><div><div class="pct" id="pct">0%</div><div class="lbl" id="lbl">GOTOWY</div></div></div></div>
+      <div class="phases" id="phases">${PHASES.map(p => `<div class="phase" data-p="${p.id}"><div class="st">${icon('clock')}</div><div><b>${esc(p.name)}</b><small>${esc(p.desc)}</small></div></div>`).join('')}</div>
+    </div>
+    <div class="nav-row"><button class="btn ghost" id="w-skip">Pomiń</button><button class="btn" id="w-go">${icon('download')} Zainstaluj</button></div></div>`;
+  let overall = 0, current = null;
+  const order = PHASES.map(p => p.id);
+  const weight = { game: 0.7, loader: 0.05, nore: 0.07, java: 0.18 };
+  const setPct = (f) => {
+    overall = Math.max(overall, Math.min(1, f));
+    $('#bar', content).style.strokeDashoffset = C * (1 - overall);
+    $('#pct', content).textContent = Math.round(overall * 100) + '%';
+  };
+  const mark = (step) => {
+    const idx = order.indexOf(step);
+    if (idx < 0) return;
+    order.forEach((id, i) => {
+      const el2 = $(`[data-p="${id}"]`, content);
+      const state = i < idx ? 'done' : i === idx ? 'active' : '';
+      if (el2.dataset.state === state) return;
+      el2.dataset.state = state;
+      el2.className = 'phase ' + state;
+      $('.st', el2).innerHTML = state === 'done' ? icon('check') : state === 'active' ? '<span class="spinner"></span>' : icon('clock');
+    });
+    current = step;
+  };
+  $('#w-skip', content).onclick = next;
+  $('#w-go', content).onclick = async () => {
+    if (!inst) return next();
+    $('#w-go', content).disabled = true;
+    $('#w-skip', content).disabled = true;
+    $('#lbl', content).textContent = 'POBIERANIE';
+    const off = nore.on('progress', (p) => {
+      if (!p) return;
+      const step = p.step || current || 'game';
+      mark(step);
+      const before = order.slice(0, order.indexOf(step)).reduce((a, id) => a + weight[id], 0);
+      const frac = p.total ? (p.totalBytes ? p.bytes / p.totalBytes : p.done / p.total) : 0.05;
+      setPct(before + weight[step] * frac);
+      const small = $(`[data-p="${step}"] small`, content);
+      if (small && p.current) small.textContent = p.current;
+    });
+    try {
+      await nore.game.prepare(inst.id);
+      order.forEach(id => { const e2 = $(`[data-p="${id}"]`, content); e2.className = 'phase done'; $('.st', e2).innerHTML = icon('check'); });
+      setPct(1);
+      $('#ring', content).classList.add('done');
+      $('#lbl', content).textContent = 'ZAINSTALOWANO';
+      setTimeout(next, 1200);
+    } catch (e) {
+      errorToast(e, 'Instalacja nie powiodła się');
+      $('#w-go', content).disabled = false;
+      $('#w-skip', content).disabled = false;
+      $('#lbl', content).textContent = 'BŁĄD';
+    } finally {
+      off();
+    }
+  };
 }
 
 // ------------------------------------------------------------------ boot

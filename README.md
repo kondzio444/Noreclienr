@@ -1,90 +1,101 @@
-# Nore Client
+# Nore Client + Nore Launcher
 
-Rozbudowany klient do **Minecraft 1.21.1** (Fabric), z dopracowanym, animowanym interfejsem:
-własne menu główne i menu pauzy, menu modułów (ClickGUI), edytor HUD, nakładki,
-profile konfiguracji i wiele modułów PvP/QoL.
+Własny **launcher Minecraft** (instalator `.exe`) i **klient PvP/QoL** dla Minecraft 1.21.1 (Fabric),
+w ciemnym, pomarańczowym stylu z poświatą — jak Lunar Client, Feather czy LabyMod.
 
-![Menu główne](docs/screenshots/main-menu.png)
+![Launcher](docs/screenshots/launcher-home.png)
 
-| Menu modułów | Ustawienia + color picker |
+## Nore Launcher
+
+| Mody z Modrinth | Instancje |
 |---|---|
-| ![ClickGUI](docs/screenshots/click-gui.png) | ![Ustawienia](docs/screenshots/settings-color.png) |
-| **Edytor HUD** (przeciąganie, przyciąganie do linii) | **Menu pauzy** |
-| ![Edytor HUD](docs/screenshots/hud-editor.png) | ![Pauza](docs/screenshots/pause-menu.png) |
-| **HUD + powiadomienia** | **Profile** |
-| ![HUD](docs/screenshots/hud.png) | ![Profile](docs/screenshots/profiles.png) |
+| ![Mody](docs/screenshots/launcher-mods.png) | ![Instancje](docs/screenshots/launcher-instances.png) |
+| **Konta premium i non-premium** | **Ustawienia** |
+| ![Konta](docs/screenshots/launcher-accounts.png) | ![Ustawienia](docs/screenshots/launcher-settings.png) |
+| **Kreator pierwszego uruchomienia** | **Animowana instalacja gry** |
+| ![Kreator](docs/screenshots/launcher-wizard.png) | ![Instalacja](docs/screenshots/launcher-install.png) |
 
-## Instalacja
+**Możliwości**
+- **Wszystkie wersje Minecraft** (wydania i snapshoty) – pliki pobierane prosto z serwerów Mojang z weryfikacją SHA-1,
+  wiele plików naraz (regulowane), praca offline po pobraniu.
+- **Fabric** dla dowolnej wspieranej wersji, **Nore Client + Fabric API** instalowane automatycznie dla 1.21.1.
+- **Java dobierana automatycznie** (oficjalne środowiska Mojang) albo własna ścieżka.
+- **Instancje** – osobne foldery z modami, światami i ustawieniami; kolor, RAM per instancja, auto-dołączanie do serwera, czas gry.
+- **Przeglądarka Modrinth**: mody (z zależnościami), paczki zasobów, shadery i datapacki (instalowane do wybranego świata);
+  zakładka „Zainstalowane” z włączaniem/wyłączaniem i usuwaniem.
+- **Konta**: Microsoft/premium (logowanie kodem urządzenia, odświeżanie sesji, tokeny szyfrowane systemowo)
+  oraz non-premium (dowolny nick).
+- **Konsola** z logami gry na żywo, zatrzymywanie gry, ukrywanie launchera po starcie.
+- **Wygląd**: animowane tło (zdjęcie JWST z efektem Ken Burns i paralaksą), unoszące się iskry, przyciski z poświatą,
+  płynne przejścia stron, kaskadowe animacje kart, przesuwany wskaźnik w menu, ekran startowy, powiadomienia.
 
-1. Zainstaluj [Fabric Loader](https://fabricmc.net/use/) dla 1.21.1 oraz [Fabric API](https://modrinth.com/mod/fabric-api).
-2. Zbuduj moda: `./gradlew build` (wymaga Javy 21) – plik pojawi się w `build/libs/noreclient-1.0.0.jar`.
-3. Wrzuć jar do folderu `.minecraft/mods`.
+### Instalator `.exe`
 
-Uruchomienie testowe ze środowiska deweloperskiego: `./gradlew runClient`.
-
-## Sterowanie
-
-| Klawisz | Akcja |
+| Powitanie | Zakończenie |
 |---|---|
-| `Prawy Shift` | Menu modułów (ClickGUI) |
-| `H` | Edytor HUD |
-| `C` (przytrzymaj) | Zoom – kółkiem myszy zmieniasz przybliżenie |
-| `Lewy Alt` (przytrzymaj) | Freelook – rozglądanie się wokół postaci |
-| `B` | Fullbright |
+| ![Instalator](docs/screenshots/installer-welcome.png) | ![Koniec](docs/screenshots/installer-finish.png) |
 
-Każdemu modułowi można przypisać własny klawisz (karta modułu → *Opcje* → *Keybind*).
-Klawisze Zoom / Freelook / Edytor HUD zmienisz w *Opcje → Sterowanie → Nore Client*.
+Polski instalator z własną grafiką: wybór folderu i użytkownika, licencja, skróty na pulpicie i w menu Start,
+uruchomienie po instalacji, deinstalator. Po pierwszym starcie launcher prowadzi przez animowany kreator:
+konto → RAM → instalacja gry z pierścieniem postępu.
 
-## Interfejs
+### Budowanie launchera
 
-- **Menu główne** – animowane tło (zdjęcie JWST z powolnym zoomem i paralaksą od myszy, migoczące gwiazdy),
-  kaskadowe wejście elementów, przyciski z poświatą, unoszeniem i podpowiedziami, płynne przejścia między ekranami.
-- **Menu modułów** – animacja otwierania/zamykania (skala + zanikanie), przesuwany wskaźnik kategorii,
-  kaskadowe pojawianie się kart, wyszukiwarka (zacznij pisać w dowolnym miejscu), przełączniki, suwaki,
-  wybór trybów z animacją przesuwania, rozwijany color picker (HSB, przezroczystość, tryb tęczy/chroma), przypisywanie klawiszy.
-- **Edytor HUD** – przeciąganie myszą, przyciąganie do krawędzi, środka ekranu i innych elementów (Shift wyłącza),
-  scroll = rozmiar, PPM = ustawienia elementu, panel do włączania nakładek, siatka.
-- **Menu pauzy** – w stylu klienta, z informacją o sesji (nick, serwer, ping).
-- **Powiadomienia** – wysuwane toasty z paskiem czasu (pozycja do wyboru).
-- **Motyw** – (moduł *Client Settings*) kolor akcentu, drugi kolor gradientu, tryby Static / Gradient / Wave / Rainbow,
-  zaokrąglenie rogów, rozmycie tła, dźwięki GUI, własne menu główne / pauzy.
+```bash
+./gradlew build                 # najpierw mod (trafi do instalatora)
+cd launcher
+npm install
+npm start                       # uruchomienie w trybie deweloperskim
+npm test                        # testy rdzenia
+npm run dist:win                # instalator Windows -> launcher/dist/NoreLauncher-Setup-1.0.0.exe
+npm run dist:linux              # AppImage
+npm run dist:mac                # DMG (na macOS)
+```
 
-## Moduły
+Na Linuksie do budowania `.exe` potrzebny jest Wine (`wine64` + `wine32`). Najprościej użyć GitHub Actions —
+workflow `.github/workflows/build.yml` buduje mod oraz instalatory Windows/Linux/macOS przy każdym pushu
+(pliki w zakładce *Actions → Artifacts*).
 
-**HUD:** Watermark, Module List, FPS, CPS, Keystrokes, Coordinates (kierunek, biom, koordy Netheru), Armor Status,
-Potion Effects (ikony, mruganie przy końcu), Ping, Speed, Clock, Memory, Server Address, Compass, Combo,
-Reach Display, Target HUD.
-Każda nakładka ma skalę, a nakładki tekstowe także styl (Modern / Classic / Minimal), nawiasy, tło i kolory.
+### Logowanie Microsoft (premium)
 
-**Render:** Fullbright, Zoom (płynny, scroll, kamera kinowa), Freelook, Crosshair (5 kształtów, obrys, kolor przy celowaniu,
-dynamiczny), No Hurt Cam, Low Fire, Time Changer, Clear Weather.
+Mojang wymaga, aby każdy launcher miał własną aplikację Azure zatwierdzoną do Minecraft API:
+1. Zarejestruj aplikację na [portal.azure.com](https://portal.azure.com) (typ kont: *osobiste konta Microsoft*, włącz *public client flows*).
+2. Złóż wniosek o dostęp do Minecraft API (formularz Mojang „Minecraft API access”).
+3. Wpisz *Application (client) ID* w launcherze: **Ustawienia → Konta Microsoft**.
 
-**Player:** Toggle Sprint. **Utility:** Chat Timestamps, Hide Scoreboard. **Client:** Client Settings, Click GUI.
+Do tego czasu można grać na koncie non-premium (singleplayer, LAN, serwery z `online-mode=false`).
 
-Wszystkie moduły działają wyłącznie po stronie klienta i nie dają nieuczciwej przewagi (brak cheatów).
+## Nore Client (mod)
 
-## Konfiguracja
+| Menu główne | Menu modułów |
+|---|---|
+| ![Menu](docs/screenshots/client-main-menu.png) | ![Moduły](docs/screenshots/client-modules.png) |
+| **Pobieraj w grze (Modrinth)** | **Menu pauzy** |
+| ![Pobieraj](docs/screenshots/client-downloads.png) | ![Pauza](docs/screenshots/client-pause.png) |
 
-Ustawienia zapisują się automatycznie w `.minecraft/config/noreclient/config.json`.
-Profile (np. „pvp”, „survival”) zapisujesz i wczytujesz w menu modułów → *Profile*.
+- **Styl**: pomarańczowy motyw, wszystkie przyciski z poświatą („glow outline”), logo w menu, animacje wejścia,
+  własne menu główne i menu pauzy (Powrót do gry, Moduły, Edytor HUD, Postępy, Statystyki, Ustawienia, LAN, Wyjdź).
+- **Pobieraj w grze** (`Prawy Shift` → *Pobieraj*): paczki zasobów (włączane jednym kliknięciem), mody, datapacki
+  do aktualnego świata i shadery prosto z Modrinth, z ikonami i sortowaniem.
+- **Menu modułów**: kategorie, wyszukiwarka, przełączniki, suwaki, wybór trybów, color picker z trybem tęczy, przypisywanie klawiszy, profile.
+- **Edytor HUD** (`H`): przeciąganie, przyciąganie do linii pomocniczych, skalowanie, panel elementów.
+- **Moduły**: 17 nakładek HUD (FPS, CPS, Keystrokes, Coordinates, Armor Status, Potion Effects, Target HUD, Compass,
+  Combo, Reach…), Zoom (`C`), Freelook (`Lewy Alt`), własny celownik, Fullbright (`B`), Toggle Sprint, Time Changer,
+  Low Fire, No Hurt Cam, Clear Weather, Chat Timestamps, Hide Scoreboard.
 
-## Struktura kodu
+Wszystkie funkcje działają tylko po stronie klienta – bez cheatów.
+
+## Struktura
 
 ```
-src/main/java/dev/noreclient/
-├── NoreClient.java          – inicjalizacja, zdarzenia, klawisze
-├── module/                  – system modułów (+ hud/, render/, player/, utility/, client/)
-├── setting/                 – typy ustawień (bool, liczba, tryb, kolor, klawisz)
-├── config/ConfigManager     – zapis JSON i profile
-├── gui/click/               – menu modułów
-├── gui/hud/                 – edytor i renderer HUD
-├── gui/menu/                – menu główne i menu pauzy
-├── notification/            – powiadomienia
-├── util/                    – renderowanie 2D (zaokrąglenia, gradienty, cienie), animacje, motyw
-└── mixin/                   – wstrzyknięcia w kod gry
+src/main/java/dev/noreclient/   – mod (Fabric 1.21.1)
+launcher/src/main/              – proces główny launchera (pobieranie, Java, konta, uruchamianie, Modrinth)
+launcher/src/renderer/          – interfejs launchera (HTML/CSS/JS)
+launcher/build/                 – grafiki i konfiguracja instalatora NSIS
+branding/                       – logo (pomarańczowe + oryginalne niebieskie), ikona .ico
 ```
 
 ## Licencje
 
-Kod: Apache-2.0 (patrz `LICENSE`).
-Tło menu: „Cosmic Cliffs” w Mgławicy Carina, fot. NASA, ESA, CSA, STScI (James Webb Space Telescope) – domena publiczna.
+Kod: Apache-2.0. Tło: „Cosmic Cliffs”, NASA/ESA/CSA/STScI (domena publiczna). Czcionki Inter i Outfit: SIL OFL 1.1.
+Minecraft jest znakiem towarowym Mojang; projekt nie jest z nim powiązany. Do gry potrzebna jest licencja Minecraft: Java Edition.

@@ -116,7 +116,7 @@ public class HudEditorScreen extends Screen {
         float total = bw * 4 + gap * 3;
         float x = width / 2f - total / 2f, y = height - bh - 10;
         float hy = y - 18 + (1 - f) * 8;
-        Render2D.roundedRect(ctx, width / 2f - hw / 2, hy, hw, 14, 7, ColorUtil.fade(0xC0101018, f));
+        Render2D.roundedRect(ctx, width / 2f - hw / 2, hy, hw, 14, 7, ColorUtil.fade(0xC0140F0C, f));
         Render2D.scaledText(ctx, help, width / 2f - hw / 2 + 8, hy + 3.5f, 0.75f, ColorUtil.fade(Theme.TEXT_DIM, f), false);
         y += (1 - f) * 30;
         String[] labels = {"☰ Elementy", "⚙ Moduły", showGrid ? "▦ Siatka: on" : "▦ Siatka: off", "✔ Gotowe"};
@@ -134,7 +134,7 @@ public class HudEditorScreen extends Screen {
         float pw = 150, ph = Math.min(height - 40, 26 + list.size() * 18 + 6);
         float x = 8 - (1 - p) * (pw + 12), y = 26;
         Render2D.shadow(ctx, x, y, pw, ph, Theme.radius(), 6, 0x80000000);
-        Render2D.roundedRect(ctx, x, y, pw, ph, Theme.radius(), 0xF0101018);
+        Render2D.roundedRect(ctx, x, y, pw, ph, Theme.radius(), 0xF0140F0C);
         Render2D.roundedOutline(ctx, x, y, pw, ph, Theme.radius(), 1, Theme.OUTLINE);
         Render2D.text(ctx, "Elementy HUD", x + 8, y + 8, Theme.TEXT);
         float ry = y + 24;

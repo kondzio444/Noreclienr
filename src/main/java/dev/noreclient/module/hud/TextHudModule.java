@@ -15,7 +15,7 @@ public abstract class TextHudModule extends HudModule {
     public final BooleanSetting showLabel = add(new BooleanSetting("Show Label", "Pokazuj etykietę", true));
     public final ModeSetting brackets = add(new ModeSetting("Brackets", "Nawiasy wokół tekstu", "None", "None", "[ ]", "( )", "< >"));
     public final BooleanSetting background = add(new BooleanSetting("Background", "Tło za tekstem", true));
-    public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90101018));
+    public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90140F0C));
     public final BooleanSetting accentLabel = add(new BooleanSetting("Accent Label", "Etykieta w kolorze motywu", true));
     public final ColorSetting labelColor = add(new ColorSetting("Label Color", "Kolor etykiety", 0xFFFFC08A))
             .visibleWhen(() -> !accentLabel.isOn());

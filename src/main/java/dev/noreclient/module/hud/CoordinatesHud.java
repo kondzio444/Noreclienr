@@ -18,7 +18,7 @@ public class CoordinatesHud extends HudModule {
     public final BooleanSetting netherCoords = add(new BooleanSetting("Nether Coords", "Przeliczone koordynaty Netheru/Overworldu", false));
     public final BooleanSetting decimals = add(new BooleanSetting("Decimals", "Dokładne koordynaty", false));
     public final BooleanSetting background = add(new BooleanSetting("Background", "Tło", true));
-    public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90101018));
+    public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90140F0C));
     public final ColorSetting valueColor = add(new ColorSetting("Value Color", "Kolor wartości", 0xFFFFFFFF));
 
     public CoordinatesHud() {

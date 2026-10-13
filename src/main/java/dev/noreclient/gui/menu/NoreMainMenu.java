@@ -153,7 +153,7 @@ public class NoreMainMenu extends Screen {
         float vw = Render2D.textWidth(van) + 14;
         boolean hv = Render2D.hovered(mouseX, mouseY, width - vw - 6, 6, vw, 16);
         float va = hover[6].target(hv ? 1 : 0).update();
-        Render2D.roundedRect(ctx, width - vw - 6, 6, vw, 16, 8, ColorUtil.lerp(0x40101018, ColorUtil.withAlpha(Theme.accent(), 170), va));
+        Render2D.roundedRect(ctx, width - vw - 6, 6, vw, 16, 8, ColorUtil.lerp(0x40140F0C, ColorUtil.withAlpha(Theme.accent(), 170), va));
         Render2D.roundedOutline(ctx, width - vw - 6, 6, vw, 16, 8, 1, 0x30FFFFFF);
         Render2D.text(ctx, van, width - vw + 1, 10, Theme.TEXT, false);
         RenderSystem.setShaderColor(1, 1, 1, 1);

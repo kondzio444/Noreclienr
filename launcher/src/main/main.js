@@ -242,6 +242,40 @@ async function prepareNore(inst) {
   }
 }
 
+/** Downloads everything an instance needs (game, loader, Java, Nore Client) without launching. */
+async function prepareGame(inst, settings, progress) {
+  progress({ stage: 'Minecraft ' + inst.mcVersion, step: 'game' });
+  const installed = await versions.installVersion(
+    { mcVersion: inst.mcVersion, loader: inst.loader, loaderVersion: inst.loaderVersion },
+    { progress: (p) => progress({ ...p, step: p.stage && p.stage.startsWith('Instalowanie Fabric') ? 'loader' : 'game' }), concurrency: settings.concurrency });
+  if (inst.loader === 'fabric' && !inst.loaderVersion) instances.update(inst.id, { loaderVersion: installed.loaderVersion });
+  if (inst.noreClient) {
+    progress({ stage: 'Instalowanie Nore Client', step: 'nore' });
+    await prepareNore(inst);
+  }
+  let javaBin = settings.javaPath;
+  if (!javaBin) {
+    const component = (installed.version.javaVersion && installed.version.javaVersion.component) || 'jre-legacy';
+    progress({ stage: 'Java (' + component + ')', step: 'java' });
+    javaBin = await java.ensureRuntime(component, { progress: (p) => progress({ ...p, step: 'java' }) });
+  }
+  return { installed, javaBin };
+}
+
+ipcMain.handle('game:prepare', async (e, instanceId) => {
+  if (busy) throw new Error('Trwa już przygotowywanie gry.');
+  busy = true;
+  try {
+    const inst = instances.get(instanceId);
+    if (!inst) throw new Error('Nie znaleziono instancji.');
+    await prepareGame(inst, store.get().settings, (p) => send('progress', p));
+    return true;
+  } finally {
+    busy = false;
+    send('progress', null);
+  }
+});
+
 ipcMain.handle('game:launch', async (e, instanceId) => {
   if (busy) throw new Error('Trwa już przygotowywanie gry.');
   if (game) throw new Error('Gra jest już uruchomiona.');
@@ -253,17 +287,7 @@ ipcMain.handle('game:launch', async (e, instanceId) => {
     const account = await readyAccount();
     const settings = store.get().settings;
 
-    const installed = await versions.installVersion(
-      { mcVersion: inst.mcVersion, loader: inst.loader, loaderVersion: inst.loaderVersion },
-      { progress, concurrency: settings.concurrency });
-    if (inst.loader === 'fabric' && !inst.loaderVersion) instances.update(inst.id, { loaderVersion: installed.loaderVersion });
-    if (inst.noreClient) await prepareNore(inst);
-
-    let javaBin = settings.javaPath;
-    if (!javaBin) {
-      const component = (installed.version.javaVersion && installed.version.javaVersion.component) || 'jre-legacy';
-      javaBin = await java.ensureRuntime(component, { progress });
-    }
+    const { installed, javaBin } = await prepareGame(inst, settings, progress);
 
     progress({ stage: 'Uruchamianie gry' });
     const started = Date.now();

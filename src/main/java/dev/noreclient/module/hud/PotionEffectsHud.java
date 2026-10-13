@@ -60,7 +60,7 @@ public class PotionEffectsHud extends HudModule {
             if (blink.isOn() && !e.isInfinite() && e.getDuration() < 200) {
                 alpha = 0.45f + 0.55f * (float) Math.abs(Math.sin(System.currentTimeMillis() / 200.0));
             }
-            if (background.isOn()) Render2D.roundedRect(ctx, 0, y, width, 22, Theme.radius() * 0.6f, 0x90101018);
+            if (background.isOn()) Render2D.roundedRect(ctx, 0, y, width, 22, Theme.radius() * 0.6f, 0x90140F0C);
             Render2D.rect(ctx, 0, y + 4, 2, 14, ColorUtil.withAlpha(type.value().getColor(), 255));
             if (icons.isOn()) {
                 Sprite sprite = mc.getStatusEffectSpriteManager().getSprite(type);

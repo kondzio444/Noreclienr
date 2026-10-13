@@ -305,7 +305,7 @@ function contentPage(key) {
       if (!res.hits.length) { results().innerHTML = `<div class="empty">${icon('search')}<div>Brak wyników dla „${esc(query)}” (${esc(i.mcVersion)}).</div></div>`; return; }
       const box = el('<div class="grid cols-2"></div>');
       box.innerHTML = res.hits.map(h => `<div class="card hover project" data-id="${h.project_id}">
-        <div class="icon">${h.icon_url ? `<img src="${esc(h.icon_url)}" data-fallback alt="">` : ''}${esc(h.title.charAt(0))}</div>
+        <div class="picon">${h.icon_url ? `<img src="${esc(h.icon_url)}" data-fallback alt="">` : ''}${esc(h.title.charAt(0))}</div>
         <div class="body"><h4>${esc(h.title)} <small>${esc(h.author)}</small></h4><p>${esc(h.description)}</p>
           <div class="stats"><span>${icon('download')} ${fmtNum(h.downloads)}</span><span>${icon('heart')} ${fmtNum(h.follows)}</span><span>${icon('clock')} ${fmtAgo(new Date(h.date_modified).getTime())}</span></div></div>
         <div class="side"><button class="btn sm" data-install>${icon('download')} Pobierz</button>

@@ -51,7 +51,7 @@ public class TargetHud extends HudModule {
         height = 38;
         float r = Theme.radius();
         Render2D.shadow(ctx, 0, 0, width, height, r, 4, 0x60000000);
-        Render2D.roundedRect(ctx, 0, 0, width, height, r, 0xE0101018);
+        Render2D.roundedRect(ctx, 0, 0, width, height, r, 0xE0140F0C);
 
         // avatar placeholder: initial in an accent circle
         Render2D.roundedGradient(ctx, 5, 5, 28, 28, r * 0.8f, Theme.accent(), Theme.accent2(), true);

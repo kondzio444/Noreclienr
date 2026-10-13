@@ -26,7 +26,7 @@ public class CompassHud extends HudModule {
         width = barWidth.floatValue();
         height = degrees.isOn() ? 26 : 16;
         float yaw = mc.player != null ? MathHelper.wrapDegrees(mc.player.getYaw(tickDelta)) : 0;
-        if (background.isOn()) Render2D.roundedRect(ctx, 0, 0, width, 16, Theme.radius() * 0.6f, 0x90101018);
+        if (background.isOn()) Render2D.roundedRect(ctx, 0, 0, width, 16, Theme.radius() * 0.6f, 0x90140F0C);
         float pxPerDeg = 1.4f;
         float center = width / 2f;
         for (int deg = -180; deg < 540; deg += 15) {

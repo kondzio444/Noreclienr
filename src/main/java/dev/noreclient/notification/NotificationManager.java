@@ -15,7 +15,7 @@ import java.util.List;
 /** Small animated toasts in the corner of the screen. */
 public final class NotificationManager {
     public enum Type {
-        INFO(0xFF60A5FA, "i"), SUCCESS(Theme.SUCCESS, "✔"), ERROR(Theme.ERROR, "✖"), WARNING(Theme.WARNING, "!");
+        INFO(0xFFFF8A1F, "i"), SUCCESS(Theme.SUCCESS, "✔"), ERROR(Theme.ERROR, "✖"), WARNING(Theme.WARNING, "!");
         final int color;
         final String icon;
 
@@ -63,8 +63,9 @@ public final class NotificationManager {
                 float w = Math.max(120, Math.max(Render2D.textWidth(n.title), Render2D.textWidth(n.message)) + 40);
                 float x = left ? 6 - (1 - p) * (w + 12) : sw - 6 - w + (1 - p) * (w + 12);
                 float r = Theme.radius();
-                Render2D.shadow(ctx, x, y, w, h, r, 4, ColorUtil.fade(0x70000000, p));
-                Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.fade(0xF0121320, p));
+                Render2D.shadow(ctx, x, y, w, h, r, 5, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 70), p));
+                Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.fade(0xF0140F0C, p));
+                Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 150), p));
                 Render2D.roundedRect(ctx, x + 6, y + 7, 16, 16, 8, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 60), p));
                 Render2D.centeredText(ctx, n.type.icon, x + 14, y + 11, ColorUtil.fade(n.type.color, p), false);
                 Render2D.text(ctx, n.title, x + 28, y + 6, ColorUtil.fade(Theme.TEXT, p), false);

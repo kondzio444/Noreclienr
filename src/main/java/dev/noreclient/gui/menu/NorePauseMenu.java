@@ -120,7 +120,7 @@ public class NorePauseMenu extends Screen {
         Render2D.gradientText(ctx, "PAUZA", lx + 26, ty, 2f, Theme.accent2(), Theme.accent(), true);
         String info = sessionInfo();
         float iw = Render2D.textWidth(info) + 20;
-        Render2D.roundedRect(ctx, cx - iw / 2, ty + 22, iw, 16, 8, 0xA0101018);
+        Render2D.roundedRect(ctx, cx - iw / 2, ty + 22, iw, 16, 8, 0xA0140F0C);
         Render2D.roundedOutline(ctx, cx - iw / 2, ty + 22, iw, 16, 8, 1, 0x25FFFFFF);
         Render2D.circle(ctx, cx - iw / 2 + 9, ty + 30, 2.5f, Theme.SUCCESS);
         Render2D.text(ctx, info, cx - iw / 2 + 15, ty + 26, Theme.TEXT_DIM, false);

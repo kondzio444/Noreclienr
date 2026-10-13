@@ -289,9 +289,9 @@ hr.sep { border: 0; height: 1px; background: var(--line); margin: 16px 0; }
 .seg button.on { color: #fff; }
 .seg .pill { position: absolute; top: 4px; bottom: 4px; border-radius: 9px; background: rgba(var(--accent-rgb), .2); border: 1px solid rgba(var(--accent-rgb), .6); box-shadow: var(--glow); transition: left .4s var(--ease-spring), width .4s var(--ease-spring); }
 .project { display: flex; gap: 14px; padding: 14px; align-items: flex-start; }
-.project .icon { width: 64px; height: 64px; border-radius: 14px; flex: none; background: rgba(255, 255, 255, .05) center/cover no-repeat; display: grid; place-items: center; font-family: 'Outfit'; font-weight: 800; font-size: 24px; color: var(--accent); border: 1px solid var(--line); overflow: hidden; }
-.project .icon { position: relative; }
-.project .icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.project .picon { width: 64px; height: 64px; border-radius: 14px; flex: none; background: rgba(255, 255, 255, .05) center/cover no-repeat; display: grid; place-items: center; font-family: 'Outfit'; font-weight: 800; font-size: 24px; color: var(--accent); border: 1px solid var(--line); overflow: hidden; }
+.project .picon { position: relative; }
+.project .picon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .project .body { flex: 1; min-width: 0; }
 .project h4 { font-size: 15px; display: flex; gap: 8px; align-items: baseline; }
 .project h4 small { font-weight: 400; color: var(--text-muted); font-size: 12px; }
@@ -424,3 +424,26 @@ input[type=range].slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
 .kbd { display: inline-block; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); background: rgba(255, 255, 255, .05); font-size: 12px; font-family: monospace; }
 .spinner { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(var(--accent-rgb), .25); border-top-color: var(--accent); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ------------------------------------------------------------------ install step (wizard) */
+.install-step { display: grid; grid-template-columns: 220px 1fr; gap: 34px; align-items: center; margin: 6px 0 4px; }
+.ring { position: relative; width: 210px; height: 210px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.ring .track { fill: none; stroke: rgba(255, 255, 255, .07); stroke-width: 10; }
+.ring .bar { fill: none; stroke: url(#ringGrad); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .5s var(--ease); filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), .9)); }
+.ring .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.ring .pct { font-family: 'Outfit'; font-size: 44px; font-weight: 800; text-shadow: 0 0 22px rgba(var(--accent-rgb), .6); }
+.ring .lbl { font-size: 11px; letter-spacing: .2em; color: var(--text-muted); font-weight: 700; }
+.ring.done .bar { stroke: var(--success); filter: drop-shadow(0 0 10px rgba(61, 220, 151, .9)); }
+.ring .orbit { position: absolute; inset: -6px; border-radius: 50%; border: 1px dashed rgba(var(--accent-rgb), .25); animation: spin 18s linear infinite; }
+.phases { display: flex; flex-direction: column; gap: 10px; }
+.phase { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .02); color: var(--text-muted); transition: all .4s var(--ease); }
+.phase .st { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); flex: none; transition: all .4s var(--ease); }
+.phase .st svg { width: 14px; height: 14px; }
+.phase b { font-weight: 600; font-size: 13.5px; }
+.phase small { display: block; font-size: 11.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+.phase.active { color: var(--text); border-color: rgba(var(--accent-rgb), .7); background: rgba(var(--accent-rgb), .08); box-shadow: var(--glow); transform: translateX(4px); }
+.phase.active .st { border-color: transparent; }
+.phase.done { color: var(--text-dim); }
+.phase.done .st { background: rgba(61, 220, 151, .16); border-color: rgba(61, 220, 151, .6); color: var(--success); box-shadow: 0 0 12px rgba(61, 220, 151, .4); animation: popDone .5s var(--ease-spring); }
+@keyframes popDone { from { transform: scale(.4); } }
