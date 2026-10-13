@@ -93,7 +93,7 @@ const LAUNCHER_ACTIVITY = { details: 'W launcherze', state: 'Wybiera, w co zagra
 
 function applyDiscord() {
   const s = store.get().settings;
-  discord.setClientId(s.discordRpc !== false ? s.discordAppId : '');
+  discord.setClientId(s.discordAppId || store.DISCORD_APP_ID);
 }
 
 app.on('before-quit', () => servers.stopAll());

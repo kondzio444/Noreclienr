@@ -12,7 +12,7 @@
     "dist": "electron-builder",
     "dist:win": "node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
     "dist:linux": "node scripts/copy-mod.js && electron-builder --linux AppImage",
-    "dist:mac": "node scripts/copy-mod.js && electron-builder --mac dmg",
+    "dist:mac": "node scripts/copy-mod.js && electron-builder --mac dmg zip",
     "predist": "node scripts/copy-mod.js"
   },
   "dependencies": {
@@ -89,7 +89,8 @@
     },
     "mac": {
       "target": [
-        "dmg"
+        "dmg",
+        "zip"
       ],
       "icon": "build/icon.png",
       "category": "public.app-category.games",

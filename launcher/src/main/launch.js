@@ -5,6 +5,7 @@ const { spawn } = require('child_process');
 const paths = require('./paths');
 const versions = require('./versions');
 const java = require('./java');
+const { DISCORD_APP_ID } = require('./store');
 
 const LAUNCHER_NAME = 'nore-launcher';
 const LAUNCHER_VERSION = require('../../package.json').version;
@@ -80,7 +81,7 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
     const f = version.logging.client.file;
     jvm.push(substitute(version.logging.client.argument, { path: path.join(paths.assets, 'log_configs', f.id) }));
   }
-  if (settings.discordRpc !== false && settings.discordAppId) jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId}`);
+  jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId || DISCORD_APP_ID}`);
   const extra = (settings.jvmArgs || '').trim();
   if (extra) jvm.push(...extra.split(/\s+/));
   if (process.platform === 'darwin') jvm.push('-XstartOnFirstThread');

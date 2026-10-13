@@ -11,11 +11,14 @@ import dev.noreclient.util.DiscordIpc;
 
 /**
  * Discord Rich Presence: shows Nore Client, the Minecraft version, what you are doing and for
- * how long. The Discord application id comes from this setting or from the launcher
- * (-Dnoreclient.discordAppId).
+ * how long. Always on; uses the built-in Nore Client Discord application unless another id is
+ * set here or passed by the launcher (-Dnoreclient.discordAppId).
  */
 public class DiscordRpc extends Module {
-    public final StringSetting appId = add(new StringSetting("Application ID", "ID aplikacji z discord.com/developers (puste = z launchera)", "", 24));
+    /** Discord application of Nore Client (Rich Presence assets "logo" and "minecraft"). */
+    public static final String DEFAULT_APP_ID = "1559570563339526175";
+
+    public final StringSetting appId = add(new StringSetting("Application ID", "Własne ID aplikacji Discord (puste = Nore Client)", "", 24));
     public final BooleanSetting showServer = add(new BooleanSetting("Show Server", "Pokazuj adres serwera", true));
     public final BooleanSetting showDimension = add(new BooleanSetting("Show Dimension", "Pokazuj wymiar (Overworld/Nether/End)", true));
     public final BooleanSetting showTime = add(new BooleanSetting("Show Time", "Pokazuj czas gry", true));
@@ -32,7 +35,7 @@ public class DiscordRpc extends Module {
     private String id() {
         String s = appId.get().trim();
         if (s.isEmpty()) s = System.getProperty("noreclient.discordAppId", "").trim();
-        return s;
+        return s.isEmpty() ? DEFAULT_APP_ID : s;
     }
 
     @Override
@@ -99,5 +102,8 @@ public class DiscordRpc extends Module {
     }
 
     @Override
-    public boolean persistsEnabled() { return true; }
+    public boolean persistsEnabled() { return false; }
+
+    @Override
+    public boolean isToggleable() { return false; }
 }
