@@ -235,7 +235,20 @@ Pages.instance = (root, { id, tab: startTab }) => {
   async function contentTab(page, i, key) {
     const cfg = CONTENT[key];
     page.innerHTML = `<div class="row" style="margin-bottom:14px"><span class="dim">${cfg.title} w tej instancji</span><span class="spacer"></span>
-      <button class="btn ghost sm" id="open">${icon('folder')} Folder</button><button class="btn sm" id="add">${icon('plus')} Dodaj z Modrinth</button></div><div id="list"></div>`;
+      <button class="btn ghost sm" id="upd">${icon('refresh')} Aktualizacje</button><button class="btn ghost sm" id="open">${icon('folder')} Folder</button><button class="btn sm" id="add">${icon('plus')} Dodaj z Modrinth</button></div>
+      ${cfg.kind === 'mod' ? `<div class="setting card" style="padding:10px 14px;margin-bottom:12px"><div class="col"><b>Aktualizuj mody automatycznie</b><span>Przy każdym uruchomieniu instancji (z Modrinth, zgodne z ${esc(i.mcVersion)})</span></div>
+        <label class="switch"><input type="checkbox" id="autoupd" ${i.autoUpdateMods ? 'checked' : ''}><i></i></label></div>` : ''}<div id="list"></div>`;
+    if ($('#autoupd', page)) $('#autoupd', page).onchange = (e) => nore.instances.update(i.id, { autoUpdateMods: e.target.checked }).then(() => toast('Zapisano', e.target.checked ? 'Mody będą aktualizowane przy starcie' : 'Automatyczne aktualizacje wyłączone', 'success'));
+    $('#upd', page).onclick = async () => {
+      toast('Aktualizacje', 'Sprawdzanie w Modrinth…');
+      const ups = await nore.content.updates({ instanceId: i.id, kind: cfg.kind }).catch(e => { errorToast(e); return null; });
+      if (!ups) return;
+      if (!ups.length) return toast('Wszystko aktualne', cfg.title, 'success');
+      if (!(await confirmModal(`Aktualizacje: ${ups.length}`, ups.map(u => `${u.oldFile} → ${u.version}`).join('\n'), { ok: 'Aktualizuj wszystko' }))) return;
+      await nore.content.applyUpdates({ instanceId: i.id, kind: cfg.kind, updates: ups }).catch(errorToast);
+      toast('Zaktualizowano', `${ups.length} plików`, 'success');
+      load();
+    };
     $('#open', page).onclick = () => nore.instances.folder(i.id, cfg.folder);
     $('#add', page).onclick = async () => { await nore.instances.select(i.id); await App.refresh(); go(key); };
     const load = async () => {

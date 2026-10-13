@@ -1,7 +1,7 @@
 {
   "name": "nore-launcher",
   "productName": "Nore Launcher",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Launcher Nore Client – wersje Minecraft, Fabric, mody, paczki zasobów, datapacki i shadery z Modrinth, konta premium i non-premium.",
   "main": "src/main/main.js",
   "author": "kondzio444",
@@ -16,7 +16,8 @@
     "predist": "node scripts/copy-mod.js"
   },
   "dependencies": {
-    "adm-zip": "0.5.16"
+    "adm-zip": "0.5.16",
+    "electron-updater": "6.6.2"
   },
   "devDependencies": {
     "electron": "39.8.10",
@@ -98,7 +99,8 @@
       {
         "provider": "github",
         "owner": "kondzio444",
-        "repo": "Noreclienr"
+        "repo": "Noreclienr",
+        "releaseType": "release"
       }
     ]
   },

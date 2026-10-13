@@ -303,6 +303,8 @@ function renderInstallStep(content, next) {
 
   App.info = await nore.info();
   await App.refresh();
+  nore.on('update:state', renderUpdate);
+  nore.update.state().then(renderUpdate).catch(() => {});
   document.body.classList.toggle('no-anim', !App.state.settings.animations);
   Embers.setEnabled(App.state.settings.animations);
 
@@ -316,3 +318,29 @@ function renderInstallStep(content, next) {
     setTimeout(async () => { await onboarding(); await App.refresh(); go('home'); }, 1100);
   }
 })();
+
+// ------------------------------------------------------------------ auto-update banner
+
+App.update = { state: 'idle' };
+function renderUpdate(u) {
+  App.update = u || App.update;
+  App.emit && App.emit();
+  let bar = $('#update-bar');
+  const show = ['downloading', 'ready', 'available'].includes(App.update.state);
+  if (!show) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = el('<div id="update-bar" class="update-bar"></div>');
+    document.body.appendChild(bar);
+  }
+  const u2 = App.update;
+  bar.innerHTML = u2.state === 'ready'
+    ? `<div class="ub-ico">${icon('sparkles')}</div><div class="ub-text"><b>Aktualizacja ${esc(u2.next)} gotowa</b><span>Zainstaluje się przy zamknięciu albo teraz</span></div>
+       <button class="btn sm" id="ub-go">${icon('refresh')} Uruchom ponownie</button>`
+    : u2.state === 'available'
+      ? `<div class="ub-ico">${icon('download')}</div><div class="ub-text"><b>Dostępna wersja ${esc(u2.next)}</b><span>Nore Launcher + Nore Client</span></div>
+       <button class="btn sm" id="ub-dl">${icon('download')} Pobierz</button>`
+      : `<div class="ub-ico">${icon('download')}</div><div class="ub-text"><b>Pobieranie aktualizacji ${esc(u2.next || '')}</b><span>${u2.percent || 0}%</span>
+         <div class="ub-progress"><i style="width:${u2.percent || 0}%"></i></div></div>`;
+  if ($('#ub-go', bar)) $('#ub-go', bar).onclick = () => nore.update.install().catch(e => errorToast(e, 'Aktualizacja'));
+  if ($('#ub-dl', bar)) $('#ub-dl', bar).onclick = () => nore.update.download().catch(e => errorToast(e, 'Aktualizacja'));
+}

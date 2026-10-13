@@ -515,6 +515,11 @@ Pages.settings = (root) => {
         <div class="field" style="margin-top:16px"><label>Dodatkowe argumenty JVM</label><input class="input" id="jvm" value="${esc(s.jvmArgs)}" placeholder="-XX:+UseG1GC"></div>
       </div>
       <div class="card panel">
+        <div class="section-title">${icon('refresh')} Aktualizacje</div>
+        <div class="setting"><div class="col"><b>Automatyczne aktualizacje</b><span>Pobieraj nowe wersje launchera i Nore Client w tle</span></div><label class="switch"><input type="checkbox" id="autoupd" ${s.autoUpdate !== false ? 'checked' : ''}><i></i></label></div>
+        <div class="setting"><div class="col"><b>Nore Launcher ${esc(App.info.version)}</b><span id="updstate">${updateText(App.update)}</span></div><button class="btn ghost sm" id="updcheck">${icon('refresh')} Sprawdź teraz</button></div>
+      </div>
+      <div class="card panel">
         <div class="section-title">${icon('globe')} Discord</div>
         <div class="setting"><div class="col"><b>Status w Discordzie (Rich Presence)</b><span>Pokazuj znajomym, w co grasz – w launcherze i w Nore Client</span></div><label class="switch"><input type="checkbox" id="drpc" ${s.discordRpc !== false ? 'checked' : ''}><i></i></label></div>
         <div class="field"><label>Discord Application ID</label><input class="input" id="dappid" value="${esc(s.discordAppId || '')}" placeholder="np. 1234567890123456789">
@@ -542,6 +547,12 @@ Pages.settings = (root) => {
   $('#h', root).onchange = (e) => save({ height: Math.max(240, parseInt(e.target.value, 10) || 720) });
   $('#java', root).onchange = (e) => save({ javaPath: e.target.value.trim() });
   $('#jvm', root).onchange = (e) => save({ jvmArgs: e.target.value });
+  $('#autoupd', root).onchange = (e) => save({ autoUpdate: e.target.checked });
+  $('#updcheck', root).onclick = async () => {
+    $('#updstate', root).textContent = 'Sprawdzanie…';
+    const st = await nore.update.check().catch(() => null);
+    $('#updstate', root).textContent = updateText(st || App.update);
+  };
   $('#drpc', root).onchange = (e) => save({ discordRpc: e.target.checked });
   $('#dappid', root).onchange = (e) => { save({ discordAppId: e.target.value.replace(/\D/g, '') }); toast('Zapisano Discord Application ID'); };
   $('#msid', root).onchange = (e) => { save({ msClientId: e.target.value.trim() }); toast('Zapisano Client ID'); };
@@ -586,3 +597,18 @@ Pages.console = (root) => {
   const off = App.onChange(() => { $('#kill', root).disabled = !App.running; });
   return () => { App.onLog = null; off(); };
 };
+
+function updateText(u) {
+  if (!u) return '';
+  switch (u.state) {
+    case 'dev': return 'Wersja deweloperska – aktualizacje działają w zainstalowanym launcherze';
+    case 'unsupported': return 'Ta kopia nie aktualizuje się sama – użyj instalatora .exe / AppImage';
+    case 'checking': return 'Sprawdzanie…';
+    case 'latest': return 'Masz najnowszą wersję';
+    case 'available': return `Dostępna wersja ${u.next}`;
+    case 'downloading': return `Pobieranie ${u.next || ''} – ${u.percent || 0}%`;
+    case 'ready': return `Wersja ${u.next} gotowa do instalacji`;
+    case 'error': return 'Błąd: ' + (u.message || 'nieznany');
+    default: return 'Aktualizacje sprawdzane automatycznie';
+  }
+}

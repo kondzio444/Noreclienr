@@ -21,6 +21,7 @@ const DEFAULTS = {
     showSnapshots: false,
     msClientId: '',
     discordRpc: true,
+    autoUpdate: true,
     discordAppId: '',
     animations: true,
     accent: '#ff8a1f',

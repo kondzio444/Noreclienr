@@ -15,6 +15,7 @@ const noreMods = require('./nore-mods');
 const net = require('./net');
 const servers = require('./servers');
 const discord = require('./discord');
+const updater = require('./updater');
 const serverContent = require('./server-content');
 const serverNet = require('./server-net');
 const AdmZip = require('adm-zip');
@@ -85,6 +86,7 @@ app.whenReady().then(() => {
   createWindow();
   applyDiscord();
   discord.setActivity(LAUNCHER_ACTIVITY);
+  updater.init(send, store.get().settings);
 });
 
 const LAUNCHER_ACTIVITY = { details: 'W launcherze', state: 'Wybiera, w co zagrać' };
@@ -130,7 +132,18 @@ ipcMain.handle('state:get', () => {
 ipcMain.handle('settings:set', (e, patch) => {
   store.update(d => Object.assign(d.settings, patch));
   if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
+  if ('autoUpdate' in patch) updater.configure(store.get().settings);
   return store.get().settings;
+});
+
+ipcMain.handle('update:state', () => updater.current());
+ipcMain.handle('update:check', () => updater.check());
+ipcMain.handle('update:download', () => updater.download());
+ipcMain.handle('update:install', () => {
+  if (game) throw new Error('Zamknij grę przed instalacją aktualizacji.');
+  servers.stopAll();
+  updater.install();
+  return true;
 });
 
 ipcMain.handle('onboarding:done', () => store.update(d => { d.firstRun = false; }) && true);
@@ -295,6 +308,19 @@ async function prepareGame(inst, settings, progress) {
     }
     instances.update(inst.id, { packInstalled: true });
   }
+  if (inst.autoUpdateMods && inst.loader === 'fabric') {
+    try {
+      progress({ stage: 'Aktualizacja modów', step: 'nore' });
+      const dir = path.join(inst.gameDir, 'mods');
+      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion);
+      if (ups.length) {
+        await modrinth.applyUpdates(dir, ups);
+        send('log', { line: `[Launcher] Zaktualizowano mody: ${ups.map(u => u.newFile).join(', ')}`, stream: 'out' });
+      }
+    } catch (e) {
+      send('log', { line: `[Launcher] Aktualizacja modów nie powiodła się: ${e.message}`, stream: 'err' });
+    }
+  }
   let javaBin = settings.javaPath;
   if (!javaBin) {
     const component = (installed.version.javaVersion && installed.version.javaVersion.component) || 'jre-legacy';
@@ -402,6 +428,12 @@ ipcMain.handle('content:installed', (e, { instanceId, kind, world }) => {
   if (kind === 'datapack' && !world) return [];
   return modrinth.listInstalled(contentDir(inst, kind, world), modrinth.KINDS[kind].ext);
 });
+
+ipcMain.handle('content:updates', (e, { instanceId, kind, world }) => {
+  const inst = instances.get(instanceId);
+  return modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion);
+});
+ipcMain.handle('content:applyUpdates', (e, { instanceId, kind, world, updates }) => modrinth.applyUpdates(contentDir(instances.get(instanceId), kind, world), updates));
 
 ipcMain.handle('content:toggle', async (e, { instanceId, kind, world, file }) => {
   const dir = contentDir(instances.get(instanceId), kind, world);

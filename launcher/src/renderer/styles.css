@@ -556,3 +556,11 @@ table.dns td { padding: 6px; border-top: 1px solid var(--line); font-family: 'Je
 .prop-row code { flex: 1; font-size: 12px; color: var(--text-dim); }
 .input.sm { height: 30px; font-size: 12.5px; width: 45%; }
 .empty .btn svg { width: 16px; height: 16px; margin: 0; opacity: 1; }
+.update-bar { position: fixed; right: 24px; bottom: 24px; z-index: 900; display: flex; align-items: center; gap: 14px; padding: 14px 16px; min-width: 340px;
+  border-radius: 16px; background: rgba(20, 15, 12, .92); border: 1px solid rgba(var(--accent-rgb), .55); box-shadow: 0 18px 40px rgba(0, 0, 0, .5), var(--glow);
+  backdrop-filter: blur(16px); animation: fadeUp .45s var(--ease-spring) both; }
+.update-bar .ub-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(var(--accent-rgb), .18); color: var(--accent); }
+.update-bar .ub-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.update-bar .ub-text span { font-size: 12px; color: var(--text-muted); }
+.ub-progress { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-top: 6px; }
+.ub-progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .4s var(--ease); }

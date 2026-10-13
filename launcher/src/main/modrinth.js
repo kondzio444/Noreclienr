@@ -89,4 +89,37 @@ async function listInstalled(dir, exts) {
   }
 }
 
-module.exports = { KINDS, search, project, compatibleVersions, install, listInstalled };
+const UPDATE_LOADERS = { mod: ['fabric'], resourcepack: ['minecraft'], shader: ['iris', 'optifine', 'canvas'], datapack: ['datapack'] };
+
+/** Newer Modrinth versions for the files in a content folder (matched by SHA-1). */
+async function checkUpdates(dir, kind, gameVersion) {
+  const ext = KINDS[kind].ext;
+  let files = [];
+  try { files = (await fsp.readdir(dir)).filter(f => ext.some(e => f.toLowerCase().endsWith(e))); } catch { return []; }
+  if (!files.length) return [];
+  const hashes = {};
+  for (const f of files) hashes[await net.sha1File(path.join(dir, f))] = f;
+  const res = await net.fetchWithRetry(`${API}/version_files/update`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: UPDATE_LOADERS[kind], game_versions: [gameVersion] }),
+  });
+  if (!res.ok) return [];
+  const map = await res.json();
+  const out = [];
+  for (const [hash, version] of Object.entries(map)) {
+    const file = primaryFile(version);
+    if (!file || file.hashes.sha1 === hash) continue;
+    out.push({ oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number });
+  }
+  return out;
+}
+
+async function applyUpdates(dir, updates) {
+  for (const u of updates) {
+    await net.download(u.url, path.join(dir, u.newFile), { sha1: u.sha1, size: u.size });
+    if (u.oldFile !== u.newFile) await fsp.rm(path.join(dir, u.oldFile), { force: true });
+  }
+  return updates.length;
+}
+
+module.exports = { KINDS, search, project, compatibleVersions, install, listInstalled, checkUpdates, applyUpdates };

@@ -95,10 +95,18 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('content:install'),
     installed: invoke('content:installed'),
     toggle: invoke('content:toggle'),
+    updates: invoke('content:updates'),
+    applyUpdates: invoke('content:applyUpdates'),
     remove: invoke('content:delete'),
   },
+  update: {
+    state: invoke('update:state'),
+    check: invoke('update:check'),
+    download: invoke('update:download'),
+    install: invoke('update:install'),
+  },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);
