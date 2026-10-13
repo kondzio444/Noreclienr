@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld('nore', {
     backupWorld: invoke('instances:backupWorld'),
     deleteScreenshot: invoke('instances:deleteScreenshot'),
     size: invoke('instances:size'),
+    media: invoke('instances:media'),
+    setMedia: invoke('instances:setMedia'),
+    stats: invoke('instances:stats'),
     duplicate: invoke('instances:duplicate'),
   },
   game: {

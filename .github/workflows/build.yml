@@ -91,7 +91,9 @@ jobs:
         with:
           name: noreclient-mod
           path: dist/mods
-      - run: npm ci
+      - name: Install dependencies
+        # the Electron binary download occasionally times out on hosted runners – retry
+        run: for i in 1 2 3; do npm ci && exit 0; echo "npm ci failed (attempt $i), retrying"; sleep 15; done; exit 1
       - run: npm test
       - name: Set version ${{ needs.version.outputs.version }}
         run: npm version "${{ needs.version.outputs.version }}" --no-git-tag-version --allow-same-version
@@ -139,9 +141,14 @@ jobs:
       - name: Remove stand-alone mod jars from releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.version.outputs.version }}
         run: |
+          # immutable releases do not allow removing single files – such an old release is
+          # deleted as a whole (newer releases already supersede it for auto-update)
           for t in $(gh release list --limit 100 --json tagName -q '.[].tagName'); do
+            [ "$t" = "v$V" ] && continue
             for a in $(gh release view "$t" --json assets -q '.assets[].name' | grep -E '^noreclient-.*\.jar$' || true); do
-              echo "Deleting $a from $t"; gh release delete-asset "$t" "$a" -y
+              echo "Removing $a from $t"
+              gh release delete-asset "$t" "$a" -y || gh release delete "$t" -y || echo "::warning::Could not remove $a from $t"
             done
           done

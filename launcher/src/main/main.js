@@ -550,11 +550,67 @@ ipcMain.handle('instances:deleteScreenshot', async (e, id, name) => {
   return true;
 });
 ipcMain.handle('instances:size', (e, id) => instances.dirSize(instances.get(id).gameDir));
+
+// custom icon / banner of an instance (stored in <instance>/.nore/), served as data URLs
+const MEDIA_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+async function mediaFile(inst, kind) {
+  const dir = path.join(inst.gameDir, '.nore');
+  for (const ext of Object.keys(MEDIA_TYPES)) {
+    const f = path.join(dir, kind + ext);
+    if (await net.exists(f)) return f;
+  }
+  return null;
+}
+async function mediaData(inst, kind) {
+  const f = await mediaFile(inst, kind);
+  if (!f) return null;
+  return `data:${MEDIA_TYPES[path.extname(f)]};base64,${(await fsp.readFile(f)).toString('base64')}`;
+}
+ipcMain.handle('instances:media', async () => {
+  const out = {};
+  for (const inst of instances.list()) {
+    const [icon, banner] = await Promise.all([mediaData(inst, 'icon'), mediaData(inst, 'banner')]);
+    if (icon || banner) out[inst.id] = { icon, banner };
+  }
+  return out;
+});
+ipcMain.handle('instances:setMedia', async (e, id, kind, clear) => {
+  const inst = instances.get(id);
+  if (!inst || !['icon', 'banner'].includes(kind)) return null;
+  const old = await mediaFile(inst, kind);
+  if (clear) { if (old) await fsp.rm(old, { force: true }); return null; }
+  const r = await dialog.showOpenDialog(win, { title: kind === 'icon' ? 'Ikona instancji' : 'Tło instancji', filters: [{ name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return undefined;
+  if ((await fsp.stat(r.filePaths[0])).size > 15 * 1024 * 1024) throw new Error('Obrazek jest za duży (maks. 15 MB).');
+  if (old) await fsp.rm(old, { force: true });
+  await fsp.mkdir(path.join(inst.gameDir, '.nore'), { recursive: true });
+  await fsp.copyFile(r.filePaths[0], path.join(inst.gameDir, '.nore', kind + path.extname(r.filePaths[0]).toLowerCase()));
+  return mediaData(inst, kind);
+});
+/** Quick numbers for instance cards: mods, resource packs, shaders, worlds, screenshots. */
+ipcMain.handle('instances:stats', async () => {
+  const count = async (dir, re) => { try { return (await fsp.readdir(dir)).filter(f => re.test(f)).length; } catch { return 0; } };
+  const out = {};
+  for (const inst of instances.list()) {
+    const d = inst.gameDir;
+    out[inst.id] = {
+      mods: await count(path.join(d, 'mods'), /\.jar$/i),
+      resourcepacks: await count(path.join(d, 'resourcepacks'), /\.zip$|^[^.]+$/i),
+      shaders: await count(path.join(d, 'shaderpacks'), /\.zip$/i),
+      worlds: (await instances.worlds(inst.id)).length,
+      screenshots: await count(path.join(d, 'screenshots'), /\.png$/i),
+    };
+  }
+  return out;
+});
 ipcMain.handle('instances:duplicate', async (e, id) => {
   const inst = instances.get(id);
   const copy = instances.create({ name: inst.name + ' (kopia)', mcVersion: inst.mcVersion, loader: inst.loader, modpack: inst.modpack, perfPack: inst.perfPack, color: inst.color });
   await fsp.cp(inst.gameDir, copy.gameDir, { recursive: true, force: true });
-  instances.update(copy.id, { packInstalled: inst.packInstalled, loaderVersion: inst.loaderVersion, memoryMb: inst.memoryMb, jvmArgs: inst.jvmArgs });
+  instances.update(copy.id, {
+    packInstalled: inst.packInstalled, loaderVersion: inst.loaderVersion, memoryMb: inst.memoryMb, jvmArgs: inst.jvmArgs,
+    noreClient: inst.noreClient, perfMods: inst.perfMods, pack: inst.pack, iconUrl: inst.iconUrl, bannerUrl: inst.bannerUrl, notes: inst.notes,
+  });
   return instances.get(copy.id);
 });
 

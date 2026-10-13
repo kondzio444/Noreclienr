@@ -53,6 +53,7 @@ async function installFile(file, meta = {}, onProgress = () => {}, concurrency =
       version: meta.version || index.versionId || '', summary: index.summary || '',
     },
     iconUrl: meta.icon || null,
+    bannerUrl: meta.banner || null,
     packInstalled: true,
     // Fabric packs on a version Nore Client supports run with Nore Client on top;
     // the pack brings its own performance mods, so the launcher's set is not added
@@ -113,7 +114,8 @@ async function install({ projectId, versionId }, onProgress = () => {}, concurre
   await net.download(file.url, tmp, { sha1: file.hashes && file.hashes.sha1, size: file.size });
   try {
     return await installFile(tmp, {
-      title: project.title, icon: project.icon_url, projectId: project.id, versionId: version.id, version: version.version_number,
+      title: project.title, icon: project.icon_url, projectId: project.id,
+      banner: ((project.gallery || []).find(g => g.featured) || (project.gallery || [])[0] || {}).url || null, versionId: version.id, version: version.version_number,
     }, onProgress, concurrency);
   } finally {
     await fsp.rm(tmp, { force: true });

@@ -8,6 +8,8 @@ const App = {
   progress: null,
   logs: [],
   running: null,
+  media: {},
+  stats: {},
   listeners: new Set(),
 
   async refresh() {
@@ -307,6 +309,7 @@ function renderInstallStep(content, next) {
   nore.on('update:state', renderUpdate);
   nore.update.state().then(renderUpdate).catch(() => {});
   await applyAppearance(App.state.settings);
+  loadInstanceMedia().then(() => App.emit());
   document.body.classList.toggle('no-anim', !App.state.settings.animations);
   Embers.setEnabled(App.state.settings.animations);
 
