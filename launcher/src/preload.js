@@ -92,6 +92,9 @@ contextBridge.exposeInMainWorld('nore', {
   content: {
     search: invoke('content:search'),
     project: invoke('content:project'),
+    details: invoke('content:details'),
+    identify: invoke('content:identify'),
+    categories: invoke('content:categories'),
     install: invoke('content:install'),
     installed: invoke('content:installed'),
     toggle: invoke('content:toggle'),
@@ -99,6 +102,11 @@ contextBridge.exposeInMainWorld('nore', {
     applyUpdates: invoke('content:applyUpdates'),
     remove: invoke('content:delete'),
   },
+  modpacks: {
+    install: invoke('modpacks:install'),
+    import: invoke('modpacks:import'),
+  },
+  loaders: { versions: invoke('loaders:versions') },
   update: {
     state: invoke('update:state'),
     check: invoke('update:check'),
@@ -106,7 +114,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state', 'modpack:progress'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);

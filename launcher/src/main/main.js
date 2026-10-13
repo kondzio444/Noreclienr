@@ -19,6 +19,8 @@ const updater = require('./updater');
 const serverContent = require('./server-content');
 const serverNet = require('./server-net');
 const AdmZip = require('adm-zip');
+const loaders = require('./loaders');
+const modpacks = require('./modpacks');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -286,10 +288,11 @@ async function prepareNore(inst) {
 /** Downloads everything an instance needs (game, loader, Java, Nore Client) without launching. */
 async function prepareGame(inst, settings, progress) {
   progress({ stage: 'Minecraft ' + inst.mcVersion, step: 'game' });
+  const javaFor = async (component) => settings.javaPath || java.ensureRuntime(component, { progress: (p) => progress({ ...p, step: 'java' }) });
   const installed = await versions.installVersion(
     { mcVersion: inst.mcVersion, loader: inst.loader, loaderVersion: inst.loaderVersion },
-    { progress: (p) => progress({ ...p, step: p.stage && p.stage.startsWith('Instalowanie Fabric') ? 'loader' : 'game' }), concurrency: settings.concurrency });
-  if (inst.loader === 'fabric' && !inst.loaderVersion) instances.update(inst.id, { loaderVersion: installed.loaderVersion });
+    { progress: (p) => progress({ ...p, step: p.stage && /^(Instalowanie|Pobieranie) (Fabric|Quilt|Forge|NeoForge)/.test(p.stage) ? 'loader' : 'game' }), concurrency: settings.concurrency, javaBin: javaFor });
+  if (inst.loader !== 'vanilla' && !inst.loaderVersion && installed.loaderVersion) instances.update(inst.id, { loaderVersion: installed.loaderVersion });
   if (inst.noreClient) {
     progress({ stage: 'Instalowanie Nore Client', step: 'nore' });
     await prepareNore(inst);
@@ -308,11 +311,11 @@ async function prepareGame(inst, settings, progress) {
     }
     instances.update(inst.id, { packInstalled: true });
   }
-  if (inst.autoUpdateMods && inst.loader === 'fabric') {
+  if (inst.autoUpdateMods && inst.loader !== 'vanilla') {
     try {
       progress({ stage: 'Aktualizacja modów', step: 'nore' });
       const dir = path.join(inst.gameDir, 'mods');
-      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion);
+      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion, inst.loader);
       if (ups.length) {
         await modrinth.applyUpdates(dir, ups);
         send('log', { line: `[Launcher] Zaktualizowano mody: ${ups.map(u => u.newFile).join(', ')}`, stream: 'out' });
@@ -410,15 +413,57 @@ function contentDir(inst, kind, world) {
 }
 
 ipcMain.handle('content:search', (e, opts) => modrinth.search(opts));
+ipcMain.handle('content:details', (e, id) => modrinth.details(id));
+ipcMain.handle('content:identify', (e, { instanceId, kind, world }) => {
+  const inst = instances.get(instanceId);
+  if (!inst || (kind === 'datapack' && !world)) return {};
+  return modrinth.identify(contentDir(inst, kind, world), modrinth.KINDS[kind].ext);
+});
+ipcMain.handle('content:categories', (e, kind) => modrinth.categories(kind));
+ipcMain.handle('loaders:versions', (e, loader, mc) => loaders.versions(loader, mc));
+
+// ------------------------------------------------------------------ IPC: modpacks
+
+/** Installs a modpack as a new instance, then downloads the game + loader so it is ready to play. */
+async function installPack(run) {
+  if (busy) throw new Error('Trwa już przygotowywanie gry.');
+  busy = true;
+  const progress = (p) => send('modpack:progress', p);
+  try {
+    const settings = store.get().settings;
+    const inst = await run(progress, settings.concurrency);
+    store.update(d => { d.selectedInstance = inst.id; });
+    try {
+      await prepareGame(instances.get(inst.id), settings, (p) => progress({ ...p, phase: 'game' }));
+    } catch (e) {
+      send('log', { line: `[Launcher] Paczka zainstalowana, ale pobieranie gry nie powiodło się: ${e.message}`, stream: 'err' });
+      return { instance: instances.get(inst.id), warning: e.message };
+    }
+    return { instance: instances.get(inst.id) };
+  } finally {
+    busy = false;
+    send('modpack:progress', null);
+  }
+}
+
+ipcMain.handle('modpacks:install', (e, { projectId, versionId }) =>
+  installPack((progress, concurrency) => modpacks.install({ projectId, versionId }, progress, concurrency)));
+
+ipcMain.handle('modpacks:import', async () => {
+  const r = await dialog.showOpenDialog(win, { title: 'Importuj modpack', filters: [{ name: 'Modpack Modrinth', extensions: ['mrpack'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const file = r.filePaths[0];
+  return installPack((progress, concurrency) => modpacks.installFile(file, {}, progress, concurrency));
+});
 ipcMain.handle('content:project', (e, id) => modrinth.project(id));
 
-ipcMain.handle('content:install', async (e, { instanceId, projectId, kind, world }) => {
+ipcMain.handle('content:install', async (e, { instanceId, projectId, kind, world, versionId }) => {
   const inst = instances.get(instanceId);
   if (!inst) throw new Error('Wybierz instancję.');
-  const loader = inst.loader === 'fabric' ? 'fabric' : null;
-  if (kind === 'mod' && !loader) throw new Error('Mody wymagają instancji z Fabric.');
+  const loader = inst.loader && inst.loader !== 'vanilla' ? inst.loader : null;
+  if (kind === 'mod' && !loader) throw new Error('Mody wymagają instancji z loaderem (Fabric, Quilt, Forge albo NeoForge).');
   return modrinth.install({
-    projectId, kind, gameVersion: inst.mcVersion, loader, targetDir: contentDir(inst, kind, world),
+    projectId, kind, gameVersion: inst.mcVersion, loader, targetDir: contentDir(inst, kind, world), versionId,
   }, (s) => send('content:status', { projectId, status: s }));
 });
 
@@ -431,7 +476,7 @@ ipcMain.handle('content:installed', (e, { instanceId, kind, world }) => {
 
 ipcMain.handle('content:updates', (e, { instanceId, kind, world }) => {
   const inst = instances.get(instanceId);
-  return modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion);
+  return modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion, inst.loader);
 });
 ipcMain.handle('content:applyUpdates', (e, { instanceId, kind, world, updates }) => modrinth.applyUpdates(contentDir(instances.get(instanceId), kind, world), updates));
 

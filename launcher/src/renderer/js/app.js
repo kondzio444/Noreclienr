@@ -36,6 +36,7 @@ const NAV = {
     { id: 'servers', label: 'Serwery', icon: 'globe', badge: 'BETA' },
   ],
   'nav-content': [
+    { id: 'modpacks', label: 'Modpacki', icon: 'box', badge: 'NOWE' },
     { id: 'mods', label: 'Mody', icon: 'puzzle' },
     { id: 'resourcepacks', label: 'Paczki zasobów', icon: 'image' },
     { id: 'shaders', label: 'Shadery', icon: 'sun' },

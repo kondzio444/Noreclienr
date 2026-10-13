@@ -204,27 +204,34 @@ async function assetTasks(version) {
  * Installs everything needed to launch an instance's version.
  * Returns the resolved version json + version id that should be launched.
  */
-async function installVersion({ mcVersion, loader, loaderVersion }, { progress, concurrency } = {}) {
+async function installVersion({ mcVersion, loader, loaderVersion }, { progress, concurrency, javaBin } = {}) {
   const step = (stage, extra = {}) => progress && progress({ stage, ...extra });
   step('Pobieranie informacji o wersji');
-  await fetchVanillaJson(mcVersion);
-  let launchId = mcVersion;
-  if (loader === 'fabric') {
-    if (!loaderVersion) {
-      const loaders = await getFabricLoaders(mcVersion);
-      const stable = loaders.find(l => l.stable) || loaders[0];
-      if (!stable) throw new Error(`Fabric nie wspiera wersji ${mcVersion}`);
-      loaderVersion = stable.version;
+  const vanilla = await fetchVanillaJson(mcVersion);
+  let launchId = mcVersion, ownJar = false;
+  if (loader && loader !== 'vanilla') {
+    if (loader === 'forge' || loader === 'neoforge') {
+      // the Forge / NeoForge installer needs the vanilla client jar in place
+      const c = vanilla.downloads && vanilla.downloads.client;
+      if (c) await net.download(c.url, path.join(versionDir(mcVersion), `${mcVersion}.jar`), { sha1: c.sha1, size: c.size });
     }
-    step('Instalowanie Fabric ' + loaderVersion);
-    launchId = await fetchFabricJson(mcVersion, loaderVersion);
+    const loaders = require('./loaders');
+    const r = await loaders.install({ loader, mcVersion, loaderVersion }, {
+      progress: (p) => step(p.stage, p),
+      javaBin: javaBin && (() => javaBin((vanilla.javaVersion && vanilla.javaVersion.component) || 'jre-legacy')),
+    });
+    launchId = r.launchId;
+    loaderVersion = r.loaderVersion;
+    ownJar = r.ownJar;
   }
   const version = await resolveVersion(launchId);
 
   const tasks = [];
   const client = version.downloads && version.downloads.client;
-  const jarPath = path.join(versionDir(mcVersion), `${mcVersion}.jar`);
-  if (client) tasks.push({ url: client.url, dest: jarPath, sha1: client.sha1, size: client.size, name: `${mcVersion}.jar` });
+  const vanillaJar = path.join(versionDir(mcVersion), `${mcVersion}.jar`);
+  if (client) tasks.push({ url: client.url, dest: vanillaJar, sha1: client.sha1, size: client.size, name: `${mcVersion}.jar` });
+  // Forge / NeoForge skip the game jar by its file name (<profile id>.jar), like the official launcher lays it out
+  const jarPath = ownJar ? path.join(versionDir(launchId), `${launchId}.jar`) : vanillaJar;
   const libs = collectLibraries(version);
   tasks.push(...libs.downloads);
   if (version.logging && version.logging.client) {
@@ -244,6 +251,7 @@ async function installVersion({ mcVersion, loader, loaderVersion }, { progress, 
       step('Pobieranie plików gry', p);
     },
   });
+  if (ownJar && !(await net.isValid(jarPath, client && client.sha1))) await fsp.copyFile(vanillaJar, jarPath);
   return { version, launchId, jarPath, libs, loaderVersion };
 }
 

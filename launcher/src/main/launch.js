@@ -2,6 +2,7 @@
 const fsp = require('fs/promises');
 const path = require('path');
 const { spawn } = require('child_process');
+const crypto = require('crypto');
 const paths = require('./paths');
 const versions = require('./versions');
 const java = require('./java');
@@ -9,6 +10,17 @@ const { DISCORD_APP_ID } = require('./store');
 
 const LAUNCHER_NAME = 'nore-launcher';
 const LAUNCHER_VERSION = require('../../package.json').version;
+
+// Nore Client refuses to run without a ticket signed with this key (see LaunchAuth in the mod)
+const SESSION_KEY = Buffer.from(['65a21dccdb7cc1c0', 'd27f3c431f20a116', 'c2823186b96ef785', 'ef73623d0c1dea4f'].join(''), 'hex');
+
+/** Short-lived signed ticket that lets Nore Client start (time.nonce.hmac). */
+function sessionTicket() {
+  const time = String(Date.now());
+  const nonce = crypto.randomBytes(12).toString('hex');
+  const sig = crypto.createHmac('sha256', SESSION_KEY).update(`nore:${time}:${nonce}`).digest('hex');
+  return `${time}.${nonce}.${sig}`;
+}
 
 function substitute(str, vars) {
   return str.replace(/\$\{([a-zA-Z_]+)\}/g, (m, k) => (k in vars ? vars[k] : m));
@@ -81,6 +93,7 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
     const f = version.logging.client.file;
     jvm.push(substitute(version.logging.client.argument, { path: path.join(paths.assets, 'log_configs', f.id) }));
   }
+  jvm.push(`-Dnoreclient.session=${sessionTicket()}`);
   jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId || DISCORD_APP_ID}`);
   const extra = (settings.jvmArgs || '').trim();
   if (extra) jvm.push(...extra.split(/\s+/));
@@ -127,4 +140,4 @@ async function launch(opts, { onLog, onExit } = {}) {
   return child;
 }
 
-module.exports = { buildCommand, launch, expandArgs, substitute };
+module.exports = { sessionTicket, buildCommand, launch, expandArgs, substitute };

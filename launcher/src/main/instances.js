@@ -30,14 +30,17 @@ function slug(name) {
 }
 
 /**
- * modpack: 'vanilla' (no loader), 'fabric' (plain Fabric) or 'nore' (Fabric + Nore Client,
- * supported versions only). perfPack adds the Nore performance/QoL mod pack from Modrinth and
+ * modpack: 'vanilla' (no loader), 'fabric' (plain Fabric), 'nore' (Fabric + Nore Client,
+ * supported versions only), 'loader' (plain Quilt / Forge / NeoForge) or 'pack' (a Modrinth modpack
+ * with its own loader). perfPack adds the Nore performance/QoL mod pack from Modrinth and
  * works on every version Fabric supports.
  */
 function create({ name, mcVersion, loader = 'vanilla', loaderVersion = null, noreClient = false, modpack = null, perfPack = false, color = 0 }) {
   if (!modpack) modpack = loader === 'fabric' ? (noreClient ? 'nore' : 'fabric') : 'vanilla';
   if (modpack === 'nore' && !NORE_VERSIONS.includes(mcVersion)) { modpack = 'fabric'; perfPack = true; }
-  if (modpack !== 'vanilla') loader = 'fabric';
+  if (modpack === 'loader' && (loader === 'vanilla' || loader === 'fabric')) modpack = loader;
+  if (modpack !== 'vanilla' && modpack !== 'pack' && modpack !== 'loader') loader = 'fabric';
+  if (modpack === 'vanilla') loader = 'vanilla';
   const inst = {
     id: slug(name), name: name.trim() || mcVersion, mcVersion, loader, loaderVersion,
     modpack, noreClient: modpack === 'nore', perfPack: !!perfPack && modpack !== 'vanilla', packInstalled: false,
@@ -56,11 +59,13 @@ function update(id, patch) {
     const i = d.instances.find(x => x.id === id);
     if (!i) return;
     const versionChanged = patch.mcVersion && patch.mcVersion !== i.mcVersion;
+    const loaderChanged = patch.loader && patch.loader !== i.loader;
     Object.assign(i, patch, { id });
+    if (loaderChanged && patch.loaderVersion === undefined) i.loaderVersion = null;
     if (versionChanged) { i.loaderVersion = null; i.packInstalled = false; i.perfModsInstalled = false; }
     if (patch.modpack) {
       if (i.modpack === 'nore' && !NORE_VERSIONS.includes(i.mcVersion)) { i.modpack = 'fabric'; i.perfPack = true; }
-      i.loader = i.modpack === 'vanilla' ? 'vanilla' : 'fabric';
+      if (i.modpack !== 'pack' && i.modpack !== 'loader') i.loader = i.modpack === 'vanilla' ? 'vanilla' : 'fabric';
       i.noreClient = i.modpack === 'nore';
       if (i.modpack === 'vanilla') i.perfPack = false;
       i.packInstalled = false;
