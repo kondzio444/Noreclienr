@@ -15,6 +15,8 @@ const noreMods = require('./nore-mods');
 const net = require('./net');
 const servers = require('./servers');
 const discord = require('./discord');
+const serverContent = require('./server-content');
+const serverNet = require('./server-net');
 const AdmZip = require('adm-zip');
 
 const FABRIC_API_ID = 'P7dR8mSH';
@@ -496,3 +498,90 @@ ipcMain.handle('servers:stop', (e, id) => servers.stop(id));
 ipcMain.handle('servers:command', (e, id, cmd) => servers.command(id, cmd));
 ipcMain.handle('servers:logs', (e, id) => servers.logs(id));
 ipcMain.handle('servers:folder', (e, id) => shell.openPath(servers.get(id).dir));
+ipcMain.handle('servers:restart', (e, id) => servers.restart(id));
+ipcMain.handle('servers:stats', (e, id) => servers.stats(id));
+ipcMain.handle('servers:properties', (e, id) => servers.readProperties(id));
+ipcMain.handle('servers:players', (e, id) => servers.players(id));
+ipcMain.handle('servers:playerList', (e, id, which, action, name) => servers.playerList(id, which, action, name));
+ipcMain.handle('servers:backup', (e, id) => servers.backup(id, 'manual'));
+ipcMain.handle('servers:backups', (e, id) => servers.listBackups(id));
+ipcMain.handle('servers:restoreBackup', (e, id, file) => servers.restoreBackup(id, file));
+ipcMain.handle('servers:deleteBackup', (e, id, file) => servers.deleteBackup(id, file));
+ipcMain.handle('servers:resetWorld', (e, id, seed) => servers.resetWorld(id, seed));
+ipcMain.handle('servers:reinstall', async (e, id) => {
+  try {
+    return await servers.install(servers.raw(id), (p) => send('server:progress', { id, ...p }));
+  } finally {
+    send('server:progress', { id, done: true });
+  }
+});
+ipcMain.handle('servers:setIcon', async (e, id) => {
+  const r = await dialog.showOpenDialog(win, { title: 'Ikona serwera', filters: [{ name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return false;
+  const img = nativeImage.createFromPath(r.filePaths[0]);
+  if (img.isEmpty()) throw new Error('Nie udało się wczytać obrazu.');
+  fs.writeFileSync(path.join(servers.get(id).dir, 'server-icon.png'), img.resize({ width: 64, height: 64, quality: 'best' }).toPNG());
+  return true;
+});
+ipcMain.handle('servers:icon', (e, id) => {
+  const f = path.join(servers.get(id).dir, 'server-icon.png');
+  return fs.existsSync(f) ? 'data:image/png;base64,' + fs.readFileSync(f).toString('base64') : null;
+});
+
+// server content (plugins / mods / datapacks / modpacks)
+ipcMain.handle('servers:contentKinds', (e, id) => serverContent.kindsFor(servers.get(id).type));
+ipcMain.handle('servers:contentSearch', (e, id, opts) => serverContent.search(servers.get(id), opts));
+ipcMain.handle('servers:contentInstall', async (e, id, opts) => {
+  const srv = servers.get(id);
+  if (opts.kind === 'modpack') {
+    if (srv.state !== 'stopped') throw new Error('Zatrzymaj serwer przed instalacją paczki.');
+    const r = await serverContent.installModpack(srv, opts.projectId, (stage) => send('server:progress', { id, stage }));
+    servers.update(id, { mcVersion: r.mcVersion, type: r.type });
+    send('server:progress', { id, done: true });
+    return r;
+  }
+  const files = await serverContent.install(srv, opts, (stage) => send('server:progress', { id, stage }));
+  send('server:progress', { id, done: true });
+  return files;
+});
+ipcMain.handle('servers:contentList', (e, id) => serverContent.listInstalled(servers.get(id)));
+ipcMain.handle('servers:contentToggle', (e, id, kind, file, enabled) => serverContent.setEnabled(servers.get(id), kind, file, enabled));
+ipcMain.handle('servers:contentRemove', (e, id, kind, file) => serverContent.remove(servers.get(id), kind, file));
+ipcMain.handle('servers:contentAddFiles', async (e, id) => {
+  const r = await dialog.showOpenDialog(win, { title: 'Dodaj pluginy, mody lub datapacki', filters: [{ name: 'Pliki', extensions: ['jar', 'zip'] }], properties: ['openFile', 'multiSelections'] });
+  if (r.canceled) return [];
+  return serverContent.addFiles(servers.get(id), r.filePaths);
+});
+ipcMain.handle('servers:contentUpdates', (e, id) => serverContent.checkUpdates(servers.get(id)));
+ipcMain.handle('servers:contentApplyUpdates', async (e, id, updates) => {
+  const n = await serverContent.applyUpdates(servers.get(id), updates, (stage) => send('server:progress', { id, stage }));
+  send('server:progress', { id, done: true });
+  return n;
+});
+
+// network & domain
+ipcMain.handle('servers:netInfo', async () => ({ lan: serverNet.lanAddresses(), publicIp: await serverNet.publicIp().catch(() => null) }));
+ipcMain.handle('servers:checkReachable', (e, host, port) => serverNet.checkReachable(host, port));
+ipcMain.handle('servers:upnp', async (e, id, open) => {
+  const srv = servers.get(id);
+  servers.update(id, { upnp: !!open });
+  return open ? serverNet.upnpOpen(srv.port, `Nore ${srv.name}`) : serverNet.upnpClose(srv.port);
+});
+ipcMain.handle('servers:applyDomain', async (e, id) => {
+  const srv = servers.raw(id);
+  const d = srv.domain;
+  if (!d || !d.provider) throw new Error('Najpierw ustaw domenę.');
+  const ip = await serverNet.publicIp();
+  if (d.provider === 'manual') return { host: d.name, ip, records: serverNet.manualRecords(d.name, ip, srv.port) };
+  const token = servers.decryptToken(d.token);
+  if (!token) throw new Error('Brak tokenu API.');
+  const host = d.provider === 'duckdns'
+    ? await serverNet.duckdnsUpdate(d.name, token, ip)
+    : await serverNet.cloudflareUpdate({ token, hostname: d.name, ip, port: srv.port });
+  return { host, ip, records: serverNet.manualRecords(host, ip, srv.port) };
+});
+ipcMain.handle('servers:dnsRecords', async (e, id, hostname) => {
+  const srv = servers.get(id);
+  const ip = await serverNet.publicIp().catch(() => null);
+  return serverNet.manualRecords(hostname, ip, srv.port);
+});
