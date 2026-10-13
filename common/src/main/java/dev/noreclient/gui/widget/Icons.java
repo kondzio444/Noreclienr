@@ -102,6 +102,32 @@ public final class Icons {
         g.mesh(Gfx.TRIANGLE_FAN, xy, cols, 10);
     }
 
+    public static void play(Gfx g, float cx, float cy, float s, int color) {
+        float[] xy = {cx - s * 0.32f, cy - s * 0.42f, cx - s * 0.32f, cy + s * 0.42f, cx + s * 0.42f, cy};
+        g.mesh(Gfx.TRIANGLES, xy, new int[]{color, color, color}, 3);
+    }
+
+    public static void globe(Gfx g, float cx, float cy, float s, int color) {
+        float r = s * 0.48f;
+        Render2D.ring(g, cx, cy, r, 1.1f, 0, 360, color);
+        Render2D.rect(g, cx - r, cy - 0.55f, r * 2, 1.1f, color);
+        Render2D.rect(g, cx - 0.55f, cy - r, 1.1f, r * 2, color);
+    }
+
+    public static void power(Gfx g, float cx, float cy, float s, int color) {
+        Render2D.ring(g, cx, cy + s * 0.05f, s * 0.42f, 1.2f, -50, 230, color);
+        Render2D.rect(g, cx - 0.6f, cy - s * 0.5f, 1.2f, s * 0.45f, color);
+    }
+
+    public static void gear(Gfx g, float cx, float cy, float s, int color) {
+        for (int i = 0; i < 8; i++) {
+            double a = Math.PI * 2 * i / 8;
+            Render2D.line(g, cx + (float) Math.cos(a) * s * 0.28f, cy + (float) Math.sin(a) * s * 0.28f,
+                    cx + (float) Math.cos(a) * s * 0.5f, cy + (float) Math.sin(a) * s * 0.5f, 1.6f, color);
+        }
+        Render2D.ring(g, cx, cy, s * 0.34f, 1.3f, 0, 360, color);
+    }
+
     public static void download(Gfx g, float cx, float cy, float s, int color) {
         Render2D.rect(g, cx - 0.6f, cy - s * 0.5f, 1.2f, s * 0.65f, color);
         Render2D.line(g, cx - s * 0.32f, cy, cx, cy + s * 0.3f, 1.2f, color);

@@ -23,6 +23,7 @@
     "ParticleManagerMixin",
     "PlayerListHudMixin",
     "SimpleOptionMixin",
+    "SplashOverlayMixin",
     "WorldMixin",
     "WorldRendererMixin",
     "skin.EntryListWidgetMixin",

@@ -445,6 +445,22 @@ public final class GameImpl implements Game {
         mc().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK.value(), pitch, 0.35f));
     }
 
+    @Override
+    public List<String[]> serverList() {
+        List<String[]> out = new ArrayList<>();
+        net.minecraft.client.option.ServerList list = new net.minecraft.client.option.ServerList(mc());
+        list.loadFile();
+        for (int i = 0; i < list.size(); i++) out.add(new String[]{list.get(i).name, list.get(i).address});
+        return out;
+    }
+
+    @Override
+    public void connect(String name, String address, Object parent) {
+        ServerInfo info = new ServerInfo(name, address, ServerInfo.ServerType.OTHER);
+        net.minecraft.client.gui.screen.multiplayer.ConnectScreen.connect(toScreen(parent), mc(),
+                net.minecraft.client.network.ServerAddress.parse(address), info, false, null);
+    }
+
     @Override public void openSingleplayer(Object parent) { mc().setScreen(new SelectWorldScreen(toScreen(parent))); }
     @Override public void openMultiplayer(Object parent) { mc().setScreen(new MultiplayerScreen(toScreen(parent))); }
     @Override public void openOptions(Object parent) { mc().setScreen(new OptionsScreen(toScreen(parent), mc().options)); }

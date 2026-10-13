@@ -226,6 +226,12 @@ public interface Game {
 
     void openSingleplayer(Object parent);
 
+    /** Entries of the multiplayer server list: {name, address}. */
+    List<String[]> serverList();
+
+    /** Joins a server directly (quick join). */
+    void connect(String name, String address, Object parent);
+
     void openMultiplayer(Object parent);
 
     void openOptions(Object parent);
