@@ -107,6 +107,7 @@ contextBridge.exposeInMainWorld('nore', {
     import: invoke('modpacks:import'),
   },
   loaders: { versions: invoke('loaders:versions') },
+  background: { custom: invoke('bg:custom'), pick: invoke('bg:pick') },
   update: {
     state: invoke('update:state'),
     check: invoke('update:check'),

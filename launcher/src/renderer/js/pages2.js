@@ -5,6 +5,8 @@
 
 function modpackLabel(inst) {
   if (inst.modpack === 'nore' || inst.noreClient) return 'Nore Client';
+  if (inst.modpack === 'pack') return `Modpack • ${loaderName(inst.loader)}`;
+  if (inst.loader && inst.loader !== 'fabric' && inst.loader !== 'vanilla') return loaderName(inst.loader);
   if (inst.loader === 'fabric') return inst.perfPack ? 'Fabric + Pakiet Nore' : 'Fabric';
   return 'Vanilla';
 }
@@ -16,7 +18,7 @@ createInstanceModal = async function () {
     <div class="field"><label>Rodzaj</label>
       <div class="grid cols-2" id="kinds" style="grid-template-columns:1fr 1fr;gap:10px">
         <div class="card hover kind-card" data-k="vanilla"><div class="row"><div class="kind-ico">${icon('box')}</div><div><b>Vanilla</b><div class="muted" style="font-size:12px">Czysta gra, każda wersja</div></div></div></div>
-        <div class="card hover kind-card" data-k="modded"><div class="row"><div class="kind-ico">${icon('zap')}</div><div><b>Z modami</b><div class="muted" style="font-size:12px">Fabric + Nore Client / Pakiet Nore</div></div></div></div>
+        <div class="card hover kind-card" data-k="modded"><div class="row"><div class="kind-ico">${icon('zap')}</div><div><b>Z modami</b><div class="muted" style="font-size:12px">Fabric, Quilt, Forge, NeoForge</div></div></div></div>
       </div></div>
     <div class="field"><div class="row"><label style="flex:1">Wersja Minecraft</label>
       <label class="row muted" style="font-size:12px;gap:8px">Snapshoty <span class="switch"><input type="checkbox" id="snap"><i></i></span></label></div>
@@ -28,7 +30,7 @@ createInstanceModal = async function () {
     <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="create">${icon('download')} Zainstaluj</button></div>`);
   m.el.style.width = 'min(640px, calc(100vw - 40px))';
   let kind = 'modded', version = noreVersions[noreVersions.length - 1], color = Math.floor(Math.random() * INSTANCE_COLORS.length), list = [];
-  let useNore = true, pack = false;
+  let useNore = true, pack = false, modLoader = 'fabric';
 
   const paintKinds = () => $$('.kind-card', m.el).forEach(c => c.classList.toggle('selected', c.dataset.k === kind));
   $$('.kind-card', m.el).forEach(c => c.onclick = () => { kind = c.dataset.k; paintKinds(); renderVersions(); });
@@ -46,17 +48,26 @@ createInstanceModal = async function () {
       box.innerHTML = `<div class="row">${icon('info', 'dim')}<span class="dim" style="font-size:13px">Oryginalny Minecraft ${esc(version)} bez żadnych modyfikacji.</span></div>`;
       return;
     }
+    const loaderRow = `<div class="setting" style="padding:4px 0 10px"><div class="col"><b>Loader modów</b><span>Fabric ma Nore Client i najwięcej modów wydajności</span></div><div id="o-loader"></div></div>`;
+    const mountLoader = () => $('#o-loader', box).appendChild(segmented(['fabric', 'quilt', 'forge', 'neoforge'].map(l => ({ value: l, label: loaderName(l) })), modLoader, (l) => { modLoader = l; renderOpts(); }));
+    if (modLoader !== 'fabric') {
+      box.innerHTML = loaderRow + `<div class="row">${icon('info', 'dim')}<span class="dim" style="font-size:13px">${loaderName(modLoader)} dla Minecraft ${esc(version)} zainstaluje się przy pierwszym uruchomieniu. Mody dodasz w zakładce Mody.</span></div>`;
+      mountLoader();
+      return;
+    }
     if (v && !v.fabric) {
-      box.innerHTML = `<div class="row" style="color:#ffcf6b">${icon('info')}<span style="font-size:13px">Fabric nie wspiera wersji ${esc(version)} — dla niej dostępna jest tylko wersja Vanilla.</span></div>`;
+      box.innerHTML = loaderRow + `<div class="row" style="color:#ffcf6b">${icon('info')}<span style="font-size:13px">Fabric nie wspiera wersji ${esc(version)} — wybierz inny loader albo Vanilla.</span></div>`;
+      mountLoader();
       return;
     }
     const noreOk = noreVersions.includes(version);
     if (!noreOk) useNore = false;
-    box.innerHTML = `
+    box.innerHTML = loaderRow + `
       <div class="setting" style="padding:8px 0"><div class="col"><b>Nore Client</b><span>${noreOk ? 'Nasz klient PvP: HUD, zoom, freelook, 75 modułów' : `Dostępny dla ${noreVersions.join(', ')} — tu użyj Pakietu Nore`}</span></div>
         <label class="switch"><input type="checkbox" id="o-nore" ${useNore && noreOk ? 'checked' : ''} ${noreOk ? '' : 'disabled'}><i></i></label></div>
       <div class="setting" style="padding:8px 0"><div class="col"><b>Pakiet Nore</b><span>Sodium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast, Zoomify, AppleSkin, Mod Menu</span></div>
         <label class="switch"><input type="checkbox" id="o-pack" ${pack || !noreOk ? 'checked' : ''}><i></i></label></div>`;
+    mountLoader();
     $('#o-nore', box).onchange = (e) => { useNore = e.target.checked; };
     $('#o-pack', box).onchange = (e) => { pack = e.target.checked; };
     if (!noreOk) pack = $('#o-pack', box).checked;
@@ -69,7 +80,7 @@ createInstanceModal = async function () {
     if (!shown.some(v => v.id === version) && shown[0]) version = shown[0].id;
     box.innerHTML = shown.map(v => {
       const tag = noreVersions.includes(v.id) ? '<small>NORE</small>' : '';
-      const dim = kind === 'modded' && !v.fabric ? 'style="opacity:.4"' : '';
+      const dim = kind === 'modded' && modLoader === 'fabric' && !v.fabric ? 'style="opacity:.4"' : '';
       return `<button data-v="${esc(v.id)}" class="${v.id === version ? 'on' : ''}" ${dim} title="${v.fabric ? 'Fabric dostępny' : 'Tylko vanilla'}">${esc(v.id)}${tag}</button>`;
     }).join('') || '<div class="muted">Brak wersji</div>';
     $$('button', box).forEach(b => b.onclick = () => { version = b.dataset.v; renderVersions(); });
@@ -88,13 +99,14 @@ createInstanceModal = async function () {
 
   $('#create', m.el).onclick = async () => {
     const v = current();
-    const modded = kind === 'modded' && (!v || v.fabric);
-    if (kind === 'modded' && v && !v.fabric) return toast('Tylko vanilla', `Fabric nie wspiera ${version}.`, 'error');
-    const modpack = !modded ? 'vanilla' : (useNore && noreVersions.includes(version) ? 'nore' : 'fabric');
-    const perfPack = modded && !!($('#o-pack', m.el) && $('#o-pack', m.el).checked);
-    const name = $('#name', m.el).value.trim() || (modpack === 'nore' ? `Nore Client ${version}` : modded ? `Fabric ${version}` : `Minecraft ${version}`);
+    const other = kind === 'modded' && modLoader !== 'fabric';
+    const modded = kind === 'modded' && (other || !v || v.fabric);
+    if (kind === 'modded' && !other && v && !v.fabric) return toast('Fabric niedostępny', `Fabric nie wspiera ${version} – wybierz inny loader.`, 'error');
+    const modpack = !modded ? 'vanilla' : other ? 'loader' : (useNore && noreVersions.includes(version) ? 'nore' : 'fabric');
+    const perfPack = modded && !other && !!($('#o-pack', m.el) && $('#o-pack', m.el).checked);
+    const name = $('#name', m.el).value.trim() || (modpack === 'nore' ? `Nore Client ${version}` : modded ? `${loaderName(other ? modLoader : 'fabric')} ${version}` : `Minecraft ${version}`);
     try {
-      const inst = await nore.instances.create({ name, mcVersion: version, loader: modded ? 'fabric' : 'vanilla', modpack, perfPack, color });
+      const inst = await nore.instances.create({ name, mcVersion: version, loader: !modded ? 'vanilla' : other ? modLoader : 'fabric', modpack, perfPack, color });
       await nore.instances.select(inst.id);
       await App.refresh();
       m.close();
@@ -189,7 +201,14 @@ Pages.instance = (root, { id, tab: startTab }) => {
       </div></div>`;
     stagger($('.grid', page));
     nore.instances.size(i.id).then(s => { if ($('#size', page)) $('#size', page).textContent = fmtBytes(s); });
-    const mp = segmented([{ value: 'vanilla', label: 'Vanilla' }, { value: 'fabric', label: 'Fabric' }, { value: 'nore', label: 'Nore Client' }], i.modpack || (i.noreClient ? 'nore' : i.loader), async (v) => {
+    const curKind = i.modpack === 'loader' || i.modpack === 'pack' ? i.loader : (i.modpack || (i.noreClient ? 'nore' : i.loader));
+    const mp = segmented([{ value: 'vanilla', label: 'Vanilla' }, { value: 'fabric', label: 'Fabric' }, { value: 'nore', label: 'Nore Client' },
+      { value: 'quilt', label: 'Quilt' }, { value: 'forge', label: 'Forge' }, { value: 'neoforge', label: 'NeoForge' }], curKind, async (v) => {
+      if (['quilt', 'forge', 'neoforge'].includes(v)) {
+        await nore.instances.update(i.id, { modpack: i.modpack === 'pack' ? 'pack' : 'loader', loader: v });
+        await App.refresh();
+        return toast('Zmieniono loader', loaderName(v), 'success');
+      }
       if (v === 'nore' && !(App.state.noreVersions || []).includes(i.mcVersion)) {
         toast('Niedostępne', `Nore Client działa na ${App.state.noreVersions.join(', ')}. Zmień wersję albo użyj Pakietu Nore.`, 'error');
         mp.setValue(i.modpack || 'fabric');

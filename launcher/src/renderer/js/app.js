@@ -306,6 +306,7 @@ function renderInstallStep(content, next) {
   await App.refresh();
   nore.on('update:state', renderUpdate);
   nore.update.state().then(renderUpdate).catch(() => {});
+  await applyAppearance(App.state.settings);
   document.body.classList.toggle('no-anim', !App.state.settings.animations);
   Embers.setEnabled(App.state.settings.animations);
 

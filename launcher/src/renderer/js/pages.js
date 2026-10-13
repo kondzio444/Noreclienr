@@ -30,8 +30,8 @@ function updateProgress(root) {
 }
 
 function instanceTags(inst) {
-  const loader = inst.loader === 'fabric' ? '<span class="tag accent">Fabric</span>' : '<span class="tag offline">Vanilla</span>';
-  const nore = inst.noreClient ? '<span class="tag accent">Nore Client</span>' : inst.perfPack ? '<span class="tag accent">Pakiet Nore</span>' : '';
+  const loader = inst.loader && inst.loader !== 'vanilla' ? `<span class="tag accent">${loaderName(inst.loader)}</span>` : '<span class="tag offline">Vanilla</span>';
+  const nore = inst.noreClient ? '<span class="tag accent">Nore Client</span>' : inst.modpack === 'pack' ? '<span class="tag accent">Modpack</span>' : inst.perfPack ? '<span class="tag accent">Pakiet Nore</span>' : '';
   return `<span class="tag offline">${esc(inst.mcVersion)}</span>${loader}${nore}`;
 }
 
@@ -100,7 +100,7 @@ Pages.home = (root) => {
   const render = () => {
     const inst = App.instance();
     $('#pick', root).innerHTML = inst
-      ? `${instIcon(inst)}<div class="meta"><b>${esc(inst.name)}</b><span>${esc(inst.mcVersion)} • ${inst.loader === 'fabric' ? 'Fabric' : 'Vanilla'}</span></div><span class="spacer"></span>${icon('arrowRight', 'dim')}`
+      ? `${instIcon(inst)}<div class="meta"><b>${esc(inst.name)}</b><span>${esc(inst.mcVersion)} • ${loaderName(inst.loader)}</span></div><span class="spacer"></span>${icon('arrowRight', 'dim')}`
       : `<div class="meta"><b>Brak instancji</b><span>Kliknij, aby utworzyć</span></div>`;
     const play = $('#play', root);
     const running = App.running && inst && App.running === inst.id;
@@ -127,7 +127,7 @@ function instancePickerModal() {
     <div class="foot"><button class="btn ghost" id="new">${icon('plus')} Nowa instancja</button><button class="btn ghost" data-close>Zamknij</button></div>`);
   const list = $('#list', m.el);
   list.innerHTML = s.instances.map(i => `<div class="card hover instance-picker ${i.id === s.selectedInstance ? 'selected' : ''}" data-id="${i.id}">
-    ${instIcon(i)}<div class="meta"><b>${esc(i.name)}</b><span>${esc(i.mcVersion)} • ${i.loader === 'fabric' ? 'Fabric' : 'Vanilla'}</span></div></div>`).join('');
+    ${instIcon(i)}<div class="meta"><b>${esc(i.name)}</b><span>${esc(i.mcVersion)} • ${loaderName(i.loader)}</span></div></div>`).join('');
   stagger(list);
   $$('[data-id]', list).forEach(c => c.onclick = async () => { await nore.instances.select(c.dataset.id); await App.refresh(); m.close(); });
   $('#new', m.el).onclick = () => { m.close(); createInstanceModal(); };
@@ -233,7 +233,7 @@ async function createInstanceModal() {
 }
 
 function editInstanceModal(inst) {
-  const m = modal(`<h3>Edytuj instancję</h3><p class="sub">${esc(inst.mcVersion)} • ${inst.loader === 'fabric' ? 'Fabric' : 'Vanilla'}</p>
+  const m = modal(`<h3>Edytuj instancję</h3><p class="sub">${esc(inst.mcVersion)} • ${loaderName(inst.loader)}</p>
     <div class="field"><label>Nazwa</label><input class="input" id="name" value="${esc(inst.name)}" maxlength="40"></div>
     <div class="field"><label>Pamięć RAM dla tej instancji (0 = jak w ustawieniach)</label>
       <div class="row"><input type="range" class="slider" id="mem" min="0" max="${Math.max(4096, App.info.totalMemMb - 1024)}" step="512" value="${inst.memoryMb || 0}" style="flex:1"><div class="value-pill" id="memv"></div></div></div>

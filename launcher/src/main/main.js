@@ -138,6 +138,32 @@ ipcMain.handle('settings:set', (e, patch) => {
   return store.get().settings;
 });
 
+// ------------------------------------------------------------------ IPC: custom background
+
+const BG_TYPES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+
+async function customBackground() {
+  const name = store.get().settings.bgCustom;
+  if (!name) return null;
+  try {
+    const data = await fsp.readFile(path.join(paths.root, name));
+    return `data:${BG_TYPES[path.extname(name).toLowerCase()] || 'image/png'};base64,${data.toString('base64')}`;
+  } catch { return null; }
+}
+
+ipcMain.handle('bg:custom', () => customBackground());
+ipcMain.handle('bg:pick', async () => {
+  const r = await dialog.showOpenDialog(win, { title: 'Wybierz tło', filters: [{ name: 'Obrazy', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'] }], properties: ['openFile'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const src = r.filePaths[0];
+  if ((await fsp.stat(src)).size > 25 * 1024 * 1024) throw new Error('Obrazek jest za duży (maks. 25 MB).');
+  const name = 'custom-background' + path.extname(src).toLowerCase();
+  for (const ext of Object.keys(BG_TYPES)) await fsp.rm(path.join(paths.root, 'custom-background' + ext), { force: true });
+  await fsp.copyFile(src, path.join(paths.root, name));
+  store.update(d => { d.settings.bgCustom = name; d.settings.bgScene = 'custom'; });
+  return customBackground();
+});
+
 ipcMain.handle('update:state', () => updater.current());
 ipcMain.handle('update:check', () => updater.check());
 ipcMain.handle('update:download', () => updater.download());

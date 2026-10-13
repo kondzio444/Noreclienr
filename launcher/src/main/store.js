@@ -28,6 +28,17 @@ const DEFAULTS = {
     discordAppId: DISCORD_APP_ID,
     animations: true,
     accent: '#ff8a1f',
+    // appearance (Settings → Wygląd)
+    bgScene: 'photo',
+    bgParticles: 'embers',
+    bgMotion: 'kenburns',
+    bgDensity: 1,
+    bgDim: 55,
+    bgBlur: 0,
+    bgSpeed: 1,
+    bgCustom: '',
+    pageTransition: 'rise',
+    accentPreset: 'orange',
   },
 };
 
