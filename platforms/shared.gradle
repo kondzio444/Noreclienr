@@ -41,9 +41,11 @@ jar {
 }
 
 // Copies the finished jar to /dist/mods/noreclient-<platform>.jar, which the launcher bundles.
+// (26.x+ builds are not remapped: the plain jar is the final one)
+def finalJar = tasks.names.contains('remapJar') ? tasks.named('remapJar') : tasks.named('jar')
 tasks.register('dist', Copy) {
-    dependsOn remapJar
-    from remapJar.archiveFile
+    dependsOn finalJar
+    from finalJar.flatMap { it.archiveFile }
     into '../../dist/mods'
     rename { "noreclient-${project.platform_name}.jar" }
 }

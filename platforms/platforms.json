@@ -52,5 +52,15 @@
     "versions": [
       "1.21.11"
     ]
+  },
+  {
+    "name": "fabric-26.1",
+    "loader": "fabric",
+    "java": 25,
+    "versions": [
+      "26.1",
+      "26.1.1",
+      "26.1.2"
+    ]
   }
 ]

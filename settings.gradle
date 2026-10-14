@@ -2,6 +2,7 @@
 // group of Minecraft versions) into dist/mods/noreclient-<name>.jar, which the launcher bundles.
 rootProject.name = 'noreclient'
 
-file('platforms').listFiles().findAll { new File(it, 'settings.gradle').exists() }.sort().each {
+// platforms with their own gradlew (26.x+, Gradle 9 / Java 25) are built separately by scripts/build-all.sh
+file('platforms').listFiles().findAll { new File(it, 'settings.gradle').exists() && !new File(it, 'gradlew').exists() }.sort().each {
     includeBuild(it)
 }
