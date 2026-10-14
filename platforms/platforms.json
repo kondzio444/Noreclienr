@@ -70,5 +70,13 @@
     "versions": [
       "26.2"
     ]
+  },
+  {
+    "name": "fabric-26.3",
+    "loader": "fabric",
+    "java": 25,
+    "versions": [
+      "26.3"
+    ]
   }
 ]
