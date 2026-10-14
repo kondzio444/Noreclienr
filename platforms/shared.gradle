@@ -51,6 +51,8 @@ build.finalizedBy dist
 
 // Dev runs (./gradlew -p platforms/<p> runClient) use run/<platform> in the repository root.
 loom {
+    // every platform ships noreclient.accesswidener (empty where nothing needs widening)
+    accessWidenerPath = file('src/main/resources/noreclient.accesswidener')
     runConfigs.configureEach {
         runDir = "../../run/${project.platform_name}"
     }

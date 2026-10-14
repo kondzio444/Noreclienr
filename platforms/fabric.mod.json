@@ -12,6 +12,7 @@
     "client": ["dev.noreclient.platform.NoreEntrypoint"]
   },
   "mixins": ["noreclient.mixins.json"],
+  "accessWidener": "noreclient.accesswidener",
   "custom": {
     "noreclient:platform": "${platform}"
   },
