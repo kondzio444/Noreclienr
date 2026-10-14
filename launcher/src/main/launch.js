@@ -95,6 +95,7 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
   }
   jvm.push(`-Dnoreclient.session=${sessionTicket()}`);
   jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId || DISCORD_APP_ID}`);
+  if (settings.chatBridge) jvm.push(`-Dnoreclient.chatBridge=${settings.chatBridge}`);
   const extra = (settings.jvmArgs || '').trim();
   if (extra) jvm.push(...extra.split(/\s+/));
   if (process.platform === 'darwin') jvm.push('-XstartOnFirstThread');

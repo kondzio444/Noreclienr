@@ -677,6 +677,23 @@ async function voiceSettingsModal() {
   startTest();
 }
 
+// presence for the in-game chat (Nore Client asks the launcher through the local bridge)
+let presenceTimer = null;
+Chat.on((what) => {
+  if (what !== 'presence' && what !== 'contacts') return;
+  clearTimeout(presenceTimer);
+  presenceTimer = setTimeout(() => {
+    const map = {};
+    for (const c of Chat.contacts) {
+      const l = Chat.links.get(c.hex);
+      map[c.hex] = l && l.authed ? { online: true, status: l.status || 'launcher', detail: l.detail || '' } : { online: false, status: 'offline', detail: '' };
+    }
+    nore.chat.presence(map).catch(() => {});
+  }, 300);
+});
+nore.on('chat:bridgeSend', ({ hex, text }) => { Chat.send(hex, text).then(() => Chat.reload()).catch(e => console.error('chat', e)); });
+nore.on('chat:bridgeRead', () => Chat.reload());
+
 // start with the launcher (after App has loaded its state)
 (function bootChat() {
   if (typeof App === 'undefined' || !App.state) return setTimeout(bootChat, 300);

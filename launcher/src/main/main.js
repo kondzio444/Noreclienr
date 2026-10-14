@@ -26,6 +26,7 @@ const modpacks = require('./modpacks');
 const doctor = require('./doctor');
 const social = require('./social');
 const chat = require('./chat');
+const chatBridge = require('./chat-bridge');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -96,6 +97,7 @@ app.whenReady().then(() => {
   });
   session.defaultSession.setPermissionCheckHandler((wc, permission) => ['media', 'notifications'].includes(permission));
   servers.setEmitter(send);
+  chatBridge.start(send);
   instances.ensureDefault();
   createWindow();
   applyDiscord();
@@ -408,7 +410,12 @@ ipcMain.handle('chat:requests', () => chat.requests());
 ipcMain.handle('chat:addRequest', (e, hex, pub, name, text) => chat.addRequest(hex, pub, name, text));
 ipcMain.handle('chat:decline', (e, hex, block) => chat.declineRequest(hex, block));
 ipcMain.handle('chat:history', (e, hex) => chat.history(hex));
-ipcMain.handle('chat:put', (e, hex, msg) => chat.putMessage(hex, msg));
+ipcMain.handle('chat:put', (e, hex, msg) => {
+  const saved = chat.putMessage(hex, msg);
+  if (saved && !msg.mine && msg.text) chatBridge.message(hex, saved);
+  return saved;
+});
+ipcMain.handle('chat:presence', (e, map) => { chatBridge.setPresence(map); return true; });
 ipcMain.handle('chat:read', (e, hex) => chat.markRead(hex));
 ipcMain.handle('chat:clear', (e, hex) => chat.clearHistory(hex));
 ipcMain.handle('chat:attention', () => { if (win && !win.isFocused()) win.flashFrame(true); return true; });
@@ -496,7 +503,8 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
     progress({ stage: 'Uruchamianie gry' });
     const started = Date.now();
     const tail = [];
-    const child = await launcher.launch({ instance: inst, account, settings, installed, javaBin }, {
+    // the in-game friends chat talks to the launcher through the local bridge
+    const child = await launcher.launch({ instance: inst, account, settings: { ...settings, chatBridge: inst.noreClient ? chatBridge.address() : null }, installed, javaBin }, {
       onLog: (line, stream) => {
         send('log', { line, stream });
         tail.push(line);

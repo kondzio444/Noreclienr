@@ -123,7 +123,7 @@ contextBridge.exposeInMainWorld('nore', {
     identity: invoke('chat:identity'), contacts: invoke('chat:contacts'), add: invoke('chat:add'), remove: invoke('chat:remove'),
     sign: invoke('chat:sign'), verify: invoke('chat:verify'), seen: invoke('chat:seen'), requests: invoke('chat:requests'),
     addRequest: invoke('chat:addRequest'), decline: invoke('chat:decline'), history: invoke('chat:history'), put: invoke('chat:put'),
-    read: invoke('chat:read'), clear: invoke('chat:clear'), attention: invoke('chat:attention'),
+    read: invoke('chat:read'), clear: invoke('chat:clear'), attention: invoke('chat:attention'), presence: invoke('chat:presence'),
   },
   curseforge: { status: invoke('curseforge:status'), setKey: invoke('curseforge:setKey') },
   modpacks: {
@@ -148,7 +148,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'chat:bridgeSend', 'chat:bridgeRead', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);
