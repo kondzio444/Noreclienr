@@ -140,6 +140,7 @@
     SPR.batA = sprite(BAT_A, BATPAL);
     SPR.batB = sprite(BAT_B, BATPAL);
     SPR.batLightA = sprite(BAT_A, { k: '#2d1a40', r: '#ff6a3a' });
+    SPR.batBadge = sprite(BAT_A, { k: '#9d6bff', r: '#ffb02e' });
     SPR.batLightB = sprite(BAT_B, { k: '#2d1a40', r: '#ff6a3a' });
     SPR.ghost = sprite(GHOST, { w: '#eeeaff', s: '#bdb4e6', k: '#2a1838' });
     SPR.kidA = sprite([...KID_TOP, ...KID_A], KIDPAL);
@@ -783,7 +784,7 @@
       pumpkin: url(SPR.pumpkin), small: url(SPR.smallPk), web: url(SPR.web), spider: url(SPR.spider),
       batA: url(SPR.batA), batB: url(SPR.batB), candy: url(SPR.candy), potion: url(SPR.potion), ghost: url(SPR.ghost),
       lantern: url(SPR.lantern), grave: url(SPR.grave), cauldron: url(SPR.cauldron), webSmall: url(SPR.webSmall),
-      badge: { pumpkin: url(SPR.pumpkin), bat: url(SPR.batA), king: url(SPR.king) },
+      badge: { pumpkin: url(SPR.pumpkin), bat: url(SPR.batBadge), king: url(SPR.king) },
       cape: { dynia: url(scaled(SPR.capes.dynia, 1)), nietoperz: url(SPR.capes.nietoperz), pajeczyna: url(SPR.capes.pajeczyna) },
     };
     const css = document.documentElement.style;
@@ -898,11 +899,11 @@
   function heroSky(hero) {
     const c = document.createElement('canvas');
     c.className = 'hw-hero-sky';
-    const w = 240, h = Math.max(90, Math.round(w * (hero.clientHeight || 300) / Math.max(400, hero.clientWidth || 900)));
+    const w = 240, h = clamp(Math.round(w * (hero.clientHeight || 300) / Math.max(280, (hero.clientWidth || 900) * 0.7)), 60, 260);
     c.width = w; c.height = h;
     const g = c.getContext('2d');
     const gy = h - 8;
-    drawNight(g, w, h, gy, 0, true, { stars: starField(21, w, gy - 20, Math.round(w * h / 160)), moonX: 0.3, moonY: 0.36, moonR: Math.round(h * 0.17) });
+    drawNight(g, w, h, gy, 0, true, { stars: starField(21, w, gy - 20, Math.round(w * h / 160)), moonX: 0.6, moonY: 0.17, moonR: Math.max(8, Math.round(h * 0.11)) });
     R(g, 0, gy, w, h - gy, '#120b1c');
     drawTree(g, Math.round(w * 0.56), gy, Math.round(h * 0.5), 8, '#0a0612');
     drawTree(g, Math.round(w * 0.97), gy, Math.round(h * 0.62), 13, '#0a0612');
@@ -1583,6 +1584,17 @@
     syncBgScene();
   } catch (e) { console.error('[halloween]', e); }
   setInterval(applyTheme, 10 * MIN);
+  // boot may already have rendered the chip, applied the appearance and opened Start before this
+  // script ran (the parser can yield between scripts) – catch up now and on every state change
+  try {
+    if (typeof App === 'object' && App.onChange) App.onChange(() => { syncTint(); decorateChip(); });
+    if (typeof App === 'object' && App.state) {
+      decorateChip();
+      const s = App.state.settings || {};
+      if (HW_ACCENTS[s.accentPreset] && typeof applyAppearance === 'function') applyAppearance(s);
+      if (App.page === 'home' && themeOn()) { const page = document.querySelector('#view .page'); if (page) injectHero(page); }
+    }
+  } catch (e) { console.error('[halloween]', e); }
 
   window.Halloween = { inSeason, themeOn, eventOpen, applyTheme, mode: getMode };
 })();
