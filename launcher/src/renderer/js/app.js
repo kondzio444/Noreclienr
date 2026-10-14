@@ -37,6 +37,7 @@ const NAV = {
     { id: 'home', label: 'Start', icon: 'home' },
     { id: 'instances', label: 'Instancje', icon: 'layers' },
     { id: 'servers', label: 'Serwery', icon: 'server', badge: 'BETA' },
+    { id: 'halloween', label: 'Halloween', icon: 'sparkles', badge: 'EVENT' },
   ],
   'nav-content': [
     { id: 'modpacks', label: 'Modpacki', icon: 'box' },

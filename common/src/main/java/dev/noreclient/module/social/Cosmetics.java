@@ -9,7 +9,7 @@ import dev.noreclient.util.Capes;
 /** Nore capes for the local player (also on the elytra). */
 public class Cosmetics extends Module {
     public final ModeSetting cape = add(new ModeSetting("Cape", "Peleryna Nore", "Nova 1.4", Capes.NAMES));
-    public final BooleanSetting animated = add(new BooleanSetting("Animation", "Animowane peleryny z kolekcji Historia Nore", true));
+    public final BooleanSetting animated = add(new BooleanSetting("Animation", "Animowane peleryny z kolekcji Historia Nore i Halloween", true));
     private String applied;
     private int ticks;
 

@@ -161,6 +161,28 @@ public final class Render2D {
         flush(g, Gfx.QUADS);
     }
 
+    /**
+     * Pixel-art sprite in a single draw call: each character of {@code rows} is one pixel of size p,
+     * coloured by its position in {@code keys} ({@code colors[i]}); characters not in keys are transparent.
+     */
+    public static void pixels(Gfx g, String[] rows, String keys, int[] colors, float x, float y, float p) {
+        reset();
+        for (int r = 0; r < rows.length; r++) {
+            String row = rows[r];
+            for (int c = 0; c < row.length(); c++) {
+                int k = keys.indexOf(row.charAt(c));
+                if (k < 0 || ColorUtil.alpha(colors[k]) == 0) continue;
+                int color = colors[k];
+                float px = x + c * p, py = y + r * p;
+                v(px, py, color);
+                v(px, py + p, color);
+                v(px + p, py + p, color);
+                v(px + p, py, color);
+            }
+        }
+        flush(g, Gfx.QUADS);
+    }
+
     public static void quadGradient(Gfx g, float x, float y, float w, float h, int tl, int tr, int br, int bl) {
         reset();
         v(x, y, tl);

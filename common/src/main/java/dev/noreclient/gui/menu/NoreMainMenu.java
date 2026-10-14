@@ -98,6 +98,13 @@ public class NoreMainMenu extends NoreScreen {
 
         // dark glass side panel
         float panelW = Math.max(170, Math.min(230, width * 0.34f));
+        boolean halloween = HalloweenDecor.active();
+        if (halloween) {
+            // bats over the panorama, drawn behind the panels and cards so they never cover text
+            ctx.setAlpha(stage(900, 900));
+            HalloweenDecor.bats(ctx, panelW - 10, 62, width + 10, Math.max(120, height * 0.7f));
+            ctx.setAlpha(1);
+        }
         float slide = (1 - stage(100, 700)) * -40;
         ctx.push();
         ctx.translate(slide, 0);
@@ -113,6 +120,11 @@ public class NoreMainMenu extends NoreScreen {
         Render2D.radial(ctx, pad + logoS / 2f, 26 + logoS / 2f, logoS * 1.3f, ColorUtil.withAlpha(Theme.accent(), 70), ColorUtil.withAlpha(Theme.accent(), 0));
         Render2D.logo(ctx, pad, 26, logoS, logoP);
         Render2D.gradientText(ctx, "NORE", pad + logoS + 8, 28, 1.9f, Theme.accent2(), Theme.accent(), true);
+        if (halloween) {
+            float px = pad + logoS + 13 + Render2D.textWidth("NORE") * 1.9f;
+            HalloweenDecor.pumpkin(ctx, px, 29.5f, 1.2f);
+            HalloweenDecor.titleBat(ctx, pad + 8, px + 14, 14);
+        }
         Render2D.scaledText(ctx, "CLIENT " + NoreClient.VERSION, pad + logoS + 9, 45, 0.7f, Theme.TEXT_MUTED, false);
         ctx.setAlpha(1);
 
