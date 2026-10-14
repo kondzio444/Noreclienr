@@ -119,6 +119,12 @@ contextBridge.exposeInMainWorld('nore', {
     updatesState: invoke('content:updatesState'),
     checkAll: invoke('content:checkAll'),
   },
+  chat: {
+    identity: invoke('chat:identity'), contacts: invoke('chat:contacts'), add: invoke('chat:add'), remove: invoke('chat:remove'),
+    sign: invoke('chat:sign'), verify: invoke('chat:verify'), seen: invoke('chat:seen'), requests: invoke('chat:requests'),
+    addRequest: invoke('chat:addRequest'), decline: invoke('chat:decline'), history: invoke('chat:history'), put: invoke('chat:put'),
+    read: invoke('chat:read'), clear: invoke('chat:clear'), attention: invoke('chat:attention'),
+  },
   curseforge: { status: invoke('curseforge:status'), setKey: invoke('curseforge:setKey') },
   modpacks: {
     install: invoke('modpacks:install'),

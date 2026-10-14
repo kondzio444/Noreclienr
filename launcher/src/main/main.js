@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage, nativeImage, session } = require('electron');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
@@ -25,6 +25,7 @@ const loaders = require('./loaders');
 const modpacks = require('./modpacks');
 const doctor = require('./doctor');
 const social = require('./social');
+const chat = require('./chat');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -87,6 +88,13 @@ function createWindow() {
 
 app.whenReady().then(() => {
   store.load();
+  // the friends voice chat needs the microphone; nothing else may ask for devices
+  session.defaultSession.setPermissionRequestHandler((wc, permission, done, details) => {
+    if (permission === 'notifications') return done(true);
+    if (permission === 'media') return done(!(details.mediaTypes || []).includes('video'));
+    done(false);
+  });
+  session.defaultSession.setPermissionCheckHandler((wc, permission) => ['media', 'notifications'].includes(permission));
   servers.setEmitter(send);
   instances.ensureDefault();
   createWindow();
@@ -387,6 +395,23 @@ async function crashRepair(inst, lines, code) {
 // ------------------------------------------------------------------ IPC: friends, gallery
 
 ipcMain.handle('friends:list', () => social.friends());
+
+// friends chat & voice (transport in the renderer, identity / history here – see chat.js)
+ipcMain.handle('chat:identity', () => chat.identity());
+ipcMain.handle('chat:contacts', () => chat.contacts());
+ipcMain.handle('chat:add', (e, id, name) => chat.addContact(id, name));
+ipcMain.handle('chat:remove', (e, hex) => chat.removeContact(hex));
+ipcMain.handle('chat:sign', (e, text) => chat.sign(text));
+ipcMain.handle('chat:verify', (e, hex, pub, text, sig) => chat.verify(hex, pub, text, sig));
+ipcMain.handle('chat:seen', (e, hex, pub, name) => chat.seen(hex, pub, name));
+ipcMain.handle('chat:requests', () => chat.requests());
+ipcMain.handle('chat:addRequest', (e, hex, pub, name, text) => chat.addRequest(hex, pub, name, text));
+ipcMain.handle('chat:decline', (e, hex, block) => chat.declineRequest(hex, block));
+ipcMain.handle('chat:history', (e, hex) => chat.history(hex));
+ipcMain.handle('chat:put', (e, hex, msg) => chat.putMessage(hex, msg));
+ipcMain.handle('chat:read', (e, hex) => chat.markRead(hex));
+ipcMain.handle('chat:clear', (e, hex) => chat.clearHistory(hex));
+ipcMain.handle('chat:attention', () => { if (win && !win.isFocused()) win.flashFrame(true); return true; });
 ipcMain.handle('friends:add', (e, name) => social.addFriend(name));
 ipcMain.handle('friends:remove', (e, name) => social.removeFriend(name));
 ipcMain.handle('gallery:list', () => social.gallery());

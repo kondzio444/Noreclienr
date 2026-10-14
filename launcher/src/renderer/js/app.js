@@ -47,6 +47,7 @@ const NAV = {
   ],
   'nav-social': [
     { id: 'friends', label: 'Znajomi', icon: 'users' },
+    { id: 'chat', label: 'Czat i głos', icon: 'activity' },
     { id: 'gallery', label: 'Galeria', icon: 'monitor' },
     { id: 'shop', label: 'Sklep', icon: 'crown', badge: 'WKRÓTCE' },
   ],
