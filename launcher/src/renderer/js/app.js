@@ -143,72 +143,296 @@ async function launchSelected(instance) {
   }
 }
 
-// ------------------------------------------------------------------ onboarding wizard ("installer" first-run experience)
+// ------------------------------------------------------------------ onboarding wizard 1.4 Beta (first-run experience)
 
+const WIZ_STEPS = [
+  { id: 'welcome', name: 'Witaj', desc: 'Nore Launcher 1.4 Beta', icon: 'sparkles' },
+  { id: 'account', name: 'Konto', desc: 'Premium lub non-premium', icon: 'user' },
+  { id: 'look', name: 'Wygląd', desc: 'Kolor akcentu i tło', icon: 'image' },
+  { id: 'memory', name: 'Pamięć RAM', desc: 'Ile pamięci dla gry', icon: 'cpu' },
+  { id: 'install', name: 'Instalacja', desc: 'Minecraft + Nore Client', icon: 'download' },
+  { id: 'done', name: 'Gotowe', desc: 'Czas na grę', icon: 'check' },
+];
+
+/** Full-window first-run wizard. Resolves once the player clicks "DO GRY". */
 function onboarding() {
   return new Promise((resolve) => {
-    const wiz = el(`<div class="wizard"><div class="box"><div class="steps"><i></i><i></i><i></i><i></i><i></i></div><div class="content"></div></div></div>`);
+    const wiz = el(`<div class="wizard wz14">
+      <div class="wz-aura"><i></i><i></i><i></i></div>
+      <aside class="wz-rail">
+        <div class="wz-brand"><img src="assets/logo.png" alt=""><div><b>NORE</b><small>LAUNCHER</small></div><span class="ver-chip">1.4 BETA</span></div>
+        <div class="wz-label">KREATOR KONFIGURACJI</div>
+        <nav class="wz-steps">
+          <div class="wz-line"><i></i></div>
+          ${WIZ_STEPS.map((s, i) => `<button class="wz-st" data-i="${i}" tabindex="-1"><span class="dot">${icon(s.icon)}<span class="num">${i + 1}</span></span><span class="txt"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></span></button>`).join('')}
+        </nav>
+        <div class="wz-rail-foot"><span id="wz-count"></span><span class="wz-hint"><span class="kbd">Enter</span> dalej</span></div>
+      </aside>
+      <section class="wz-main"><div class="wz-stage"></div></section>
+    </div>`);
     document.body.appendChild(wiz);
-    const content = $('.content', wiz);
-    let step = 0;
-    let memory = Math.min(8192, Math.max(2048, Math.round(App.info.totalMemMb / 4 / 512) * 512));
+    const stage = $('.wz-stage', wiz);
+    const total = App.info.totalMemMb;
+    const maxMem = Math.max(4096, total - 1024);
+    let step = 0, installed = false;
+    const installing = () => { const b = $('.wz-pane:not(.out) #w-go', stage); return !!(b && b.disabled); };
+    let memory = Math.min(8192, Math.max(2048, Math.round(total / 4 / 512) * 512));
+    memory = Math.min(memory, maxMem);
 
-    const render = () => {
-      $$('.steps i', wiz).forEach((s, i) => s.classList.toggle('done', i <= step));
-      if (step === 0) {
-        content.innerHTML = `<div class="step" style="text-align:center">
-          <img class="welcome-logo" src="assets/logo.png" alt="">
-          <h2>Witaj w <span>Nore</span></h2>
-          <p class="lead" style="margin:0 auto 26px">Launcher z własnym klientem PvP, przeglądarką modów, paczek zasobów,
-          shaderów i datapacków. Skonfigurujmy wszystko w trzech krótkich krokach.</p>
-          <button class="btn play" id="w-next">ZACZYNAMY ${icon('arrowRight')}</button></div>`;
-        $('#w-next', content).onclick = () => { step = 1; render(); };
-      } else if (step === 1) {
-        content.innerHTML = `<div class="step">
-          <h2>Twoje <span>konto</span></h2>
-          <p class="lead">Zaloguj się kontem Microsoft (premium) albo graj bez premium, podając tylko nick.</p>
-          <div class="login-options">
+    const go2 = (n) => {
+      if (n === step || n < 0 || n >= WIZ_STEPS.length) return;
+      const dir = n > step ? 'fwd' : 'back';
+      step = n;
+      render(dir);
+    };
+    const next = () => go2(step + 1);
+    const back = () => go2(step - 1);
+
+    // rail: completed steps before the install can be revisited
+    $$('.wz-st', wiz).forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      if (installing() || step > 4 || i >= step) return;
+      go2(i);
+    }));
+
+    const updateRail = () => {
+      $$('.wz-st', wiz).forEach((b, i) => {
+        b.classList.toggle('done', i < step);
+        b.classList.toggle('current', i === step);
+        b.classList.toggle('clickable', i < step && step <= 4 && !installing());
+      });
+      const line = $('.wz-line i', wiz);
+      line.style.transform = `scaleY(${step / (WIZ_STEPS.length - 1)})`;
+      $('#wz-count', wiz).textContent = `Krok ${step + 1} z ${WIZ_STEPS.length}`;
+    };
+
+    const render = (dir = 'fwd') => {
+      updateRail();
+      $$('.wz-pane:not(.out)', stage).forEach(p => {
+        p.classList.remove('in-fwd', 'in-back');
+        p.classList.add('out', 'out-' + dir);
+        setTimeout(() => p.remove(), 520);
+      });
+      const pane = el(`<div class="wz-pane in-${dir}" data-step="${WIZ_STEPS[step].id}"></div>`);
+      stage.appendChild(pane);
+      STEPS[step](pane);
+      stagger2(pane);
+    };
+
+    // children of .wz-body fade in one after another
+    const stagger2 = (pane) => {
+      $$('.wz-in', pane).forEach((c, i) => c.style.setProperty('--d', (120 + i * 70) + 'ms'));
+    };
+
+    const head = (eyebrow, title, lead) => `<div class="wz-eyebrow wz-in">${eyebrow}</div><h2 class="wz-in">${title}</h2>${lead ? `<p class="lead wz-in">${lead}</p>` : ''}`;
+    const navRow = (left, right) => `<div class="wz-nav wz-in">${left || '<span></span>'}${right || ''}</div>`;
+    const backBtn = `<button class="btn ghost" data-back>${icon('arrowLeft')} Wstecz</button>`;
+    const bind = (pane) => { $$('[data-back]', pane).forEach(b => b.addEventListener('click', back)); };
+
+    const saveSettings = async (patch) => {
+      try {
+        App.state.settings = await nore.setSettings(patch);
+        await applyAppearance(App.state.settings);
+      } catch (e) { errorToast(e, 'Ustawienia'); }
+    };
+
+    const STEPS = [
+      // 1 — welcome
+      (pane) => {
+        pane.innerHTML = `<div class="wz-body wz-welcome">
+          <div class="wz-logo wz-in"><span class="halo"></span><span class="ring"></span><img src="assets/logo.png" alt=""></div>
+          <div class="wz-eyebrow wz-in">${icon('sparkles')} NOWA WERSJA</div>
+          <h2 class="wz-in">Nore Launcher <span>1.4 Beta</span></h2>
+          <p class="lead wz-in">Nowy ekran główny, znajomi, galeria, auto-naprawa instancji i własny klient PvP.
+          Skonfigurujmy wszystko — zajmie to mniej niż minutę.</p>
+          <div class="wz-chips wz-in">
+            <div class="wz-chip"><span class="ic">${icon('zap')}</span><div><b>Nore Client</b><small>Klient PvP z HUD-em i FPS boostem</small></div></div>
+            <div class="wz-chip"><span class="ic">${icon('box')}</span><div><b>Modpacki</b><small>Tysiące paczek z Modrinth</small></div></div>
+            <div class="wz-chip"><span class="ic">${icon('users')}</span><div><b>Znajomi</b><small>Zobacz, w co grają inni</small></div></div>
+          </div>
+          <div class="wz-cta wz-in"><button class="btn play" data-enter id="w-next">ZACZYNAMY ${icon('arrowRight')}</button></div>
+        </div>`;
+        $('#w-next', pane).addEventListener('click', next);
+      },
+
+      // 2 — account
+      (pane) => {
+        const acc = App.account();
+        pane.innerHTML = `<div class="wz-body">
+          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Zaloguj się kontem Microsoft (premium) albo graj bez premium, podając tylko nick. Konto możesz zmienić później w zakładce Konta.')}
+          ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'Premium (Microsoft)' : 'Non-premium'} · zalogowano</small></div>${icon('check', 'ok')}</div>` : ''}
+          <div class="login-options wz-in">
             <div class="card hover login-option ms" id="w-ms">
               <div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
-              <h3>Microsoft (premium)</h3><p>Pełny dostęp do serwerów online-mode, Twój skin i peleryna.</p></div>
+              <h3>Microsoft (premium)</h3><p>Pełny dostęp do serwerów online-mode, Twój skin i peleryna.</p><span class="go">${icon('arrowRight')}</span></div>
             <div class="card hover login-option" id="w-off">
               <div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
-              <h3>Non-premium</h3><p>Gra z dowolnym nickiem — singleplayer, LAN i serwery offline-mode.</p></div>
+              <h3>Non-premium</h3><p>Gra z dowolnym nickiem — singleplayer, LAN i serwery offline-mode.</p><span class="go">${icon('arrowRight')}</span></div>
           </div>
-          <div class="nav-row"><button class="btn ghost" id="w-back">${icon('arrowLeft')} Wstecz</button><button class="btn ghost" id="w-skip">Pomiń</button></div></div>`;
-        $('#w-back', content).onclick = () => { step = 0; render(); };
-        $('#w-skip', content).onclick = () => { step = 2; render(); };
-        $('#w-off', content).onclick = () => offlineLoginModal(() => { step = 2; render(); });
-        $('#w-ms', content).onclick = () => microsoftLoginModal(() => { step = 2; render(); });
-      } else if (step === 2) {
-        content.innerHTML = `<div class="step">
-          <h2>Pamięć <span>RAM</span></h2>
-          <p class="lead">Ile pamięci przydzielić grze? Dla Nore Client z modami polecamy 4–6 GB.
-          Twój komputer ma ${(App.info.totalMemMb / 1024).toFixed(1)} GB.</p>
-          <div class="row"><input type="range" class="slider" id="w-mem" min="1024" max="${Math.max(4096, App.info.totalMemMb - 1024)}" step="512" value="${memory}" style="width:100%"><div class="value-pill" id="w-memv"></div></div>
-          <div class="nav-row"><button class="btn ghost" id="w-back">${icon('arrowLeft')} Wstecz</button><button class="btn" id="w-next">Dalej ${icon('arrowRight')}</button></div></div>`;
-        const r = $('#w-mem', content);
-        const upd = () => { memory = +r.value; $('#w-memv', content).textContent = (memory / 1024).toFixed(1) + ' GB'; sliderFill(r); };
-        r.oninput = upd; upd();
-        $('#w-back', content).onclick = () => { step = 1; render(); };
-        $('#w-next', content).onclick = async () => { await nore.setSettings({ memoryMb: memory }); step = 3; render(); };
-      } else if (step === 3) {
-        renderInstallStep(content, () => { step = 4; render(); });
-      } else {
-        content.innerHTML = `<div class="step" style="text-align:center">
-          <img class="welcome-logo" src="assets/logo.png" alt="">
-          <h2>Wszystko <span>gotowe!</span></h2>
-          <p class="lead" style="margin:0 auto 26px">Instancja <b>Nore Client 1.21.1</b> z Fabric jest gotowa.
-          Kliknij GRAJ na stronie głównej, aby zacząć.</p>
-          <button class="btn play" id="w-done">${icon('play')} DO GRY</button></div>`;
-        $('#w-done', content).onclick = async () => {
-          await nore.onboardingDone();
-          wiz.style.transition = 'opacity .4s'; wiz.style.opacity = 0;
-          setTimeout(() => { wiz.remove(); resolve(); }, 400);
+          ${navRow(backBtn, acc ? `<button class="btn" data-enter id="w-skip">Dalej ${icon('arrowRight')}</button>` : `<button class="btn ghost" data-enter id="w-skip">Pomiń ${icon('arrowRight')}</button>`)}
+        </div>`;
+        bind(pane);
+        $('#w-skip', pane).addEventListener('click', next);
+        $('#w-off', pane).addEventListener('click', () => offlineLoginModal(() => go2(2)));
+        $('#w-ms', pane).addEventListener('click', () => microsoftLoginModal(() => go2(2)));
+      },
+
+      // 3 — appearance
+      (pane) => {
+        const s = App.state.settings;
+        const scenes = Background.SCENES.filter(sc => sc.id !== 'custom');
+        const cur = scenes.some(sc => sc.id === s.bgScene) ? s.bgScene : 'photo';
+        pane.innerHTML = `<div class="wz-body">
+          ${head(`${icon('image')} KROK 3 · WYGLĄD`, 'Twój <span>styl</span>', 'Wybierz kolor akcentu i tło launchera. Zmiany widzisz od razu — także w tle za kreatorem.')}
+          <div class="wz-look wz-in">
+            <div class="wz-look-opts">
+              <div class="look-label">Kolor akcentu</div>
+              <div class="wz-accents">${Object.entries(ACCENTS).map(([k, a]) => `<button class="wz-acc ${k === (s.accentPreset || 'orange') ? 'on' : ''}" data-v="${k}" style="--c1:${a.b};--c2:${a.d}"><span class="sw"></span><small>${esc(a.name)}</small></button>`).join('')}</div>
+              <div class="look-label">Tło</div>
+              <div class="wz-scenes">${scenes.map(sc => `<button class="wz-scene ${sc.id === cur ? 'on' : ''}" data-v="${sc.id}" title="${esc(sc.desc)}"><span class="prev" style="background:${SCENE_PREVIEW[sc.id]}"></span><b>${esc(sc.name)}</b></button>`).join('')}</div>
+            </div>
+            <div class="wz-preview">
+              <div class="pv-screen" id="pv-screen" style="background:${SCENE_PREVIEW[cur]}">
+                <div class="pv-side"><img src="assets/logo.png" alt=""><i class="on"></i><i></i><i></i><i></i></div>
+                <div class="pv-main"><span class="pv-chip">1.4 BETA</span><b>Nore Client</b><small>1.21.1 · Fabric</small><span class="pv-play">${icon('play')} GRAJ</span></div>
+              </div>
+              <div class="pv-cap"><span id="pv-acc"></span> · <span id="pv-scene"></span></div>
+            </div>
+          </div>
+          ${navRow(backBtn, `<button class="btn" data-enter id="w-next">Dalej ${icon('arrowRight')}</button>`)}
+        </div>`;
+        bind(pane);
+        const caption = () => {
+          const st = App.state.settings;
+          $('#pv-acc', pane).textContent = (ACCENTS[st.accentPreset] || ACCENTS.orange).name;
+          const sc = scenes.find(x => x.id === st.bgScene) || scenes[0];
+          $('#pv-scene', pane).textContent = sc.name;
         };
-      }
+        caption();
+        $$('.wz-acc', pane).forEach(b => b.addEventListener('click', async () => {
+          $$('.wz-acc', pane).forEach(x => x.classList.toggle('on', x === b));
+          await saveSettings({ accentPreset: b.dataset.v });
+          caption();
+        }));
+        $$('.wz-scene', pane).forEach(b => b.addEventListener('click', async () => {
+          $$('.wz-scene', pane).forEach(x => x.classList.toggle('on', x === b));
+          const scr = $('#pv-screen', pane);
+          scr.style.background = SCENE_PREVIEW[b.dataset.v];
+          scr.classList.remove('flash'); void scr.offsetWidth; scr.classList.add('flash');
+          await saveSettings({ bgScene: b.dataset.v });
+          caption();
+        }));
+        $('#w-next', pane).addEventListener('click', next);
+      },
+
+      // 4 — memory
+      (pane) => {
+        const gb = (mb) => (mb / 1024).toFixed(mb % 1024 ? 1 : 0) + ' GB';
+        const rec = total <= 6144 ? 2048 : total <= 8192 ? 3072 : total <= 16384 ? 4096 : 6144;
+        const recMb = Math.min(rec, maxMem);
+        const presets = [2048, 4096, 6144, 8192];
+        pane.innerHTML = `<div class="wz-body">
+          ${head(`${icon('cpu')} KROK 4 · PAMIĘĆ`, 'Pamięć <span>RAM</span>', `Ile pamięci przydzielić grze? Twój komputer ma <b>${(total / 1024).toFixed(1)} GB</b>. Dla Nore Client z modami polecamy 4–6 GB.`)}
+          <div class="wz-mem wz-in">
+            <div class="wz-mem-top"><div class="big" id="w-memv"></div><div class="state" id="w-mems"></div></div>
+            <input type="range" class="slider" id="w-mem" min="1024" max="${maxMem}" step="512" value="${memory}">
+            <div class="wz-membar"><div class="track"><i id="w-memfill"></i></div><div class="lbls"><span><b class="g"></b>Gra</span><span><b></b>Pamięć komputera: ${(total / 1024).toFixed(1)} GB</span></div></div>
+            <div class="wz-presets">${presets.map(p => `<button class="lchip" data-v="${p}" ${p > maxMem ? 'disabled title="Za mało pamięci w komputerze"' : ''}>${gb(p)}</button>`).join('')}</div>
+          </div>
+          <div class="wz-rec wz-in">${icon('info')}<span>Rekomendacja dla Twojego komputera: <b>${gb(recMb)}</b></span><button class="btn sm ghost" id="w-rec">Ustaw</button></div>
+          ${navRow(backBtn, `<button class="btn" data-enter id="w-next">Dalej ${icon('arrowRight')}</button>`)}
+        </div>`;
+        bind(pane);
+        const r = $('#w-mem', pane);
+        const upd = () => {
+          memory = +r.value;
+          $('#w-memv', pane).textContent = gb(memory);
+          $('#w-memfill', pane).style.width = Math.min(100, memory / total * 100) + '%';
+          const st = $('#w-mems', pane);
+          const [cls, txt] = memory > total * 0.75 ? ['warn', 'Zostawiasz mało pamięci systemowi']
+            : memory < 3072 ? ['low', 'Wystarczy do vanilli, z modami może przycinać'] : ['ok', 'Optymalnie dla Nore Client'];
+          st.className = 'state ' + cls; st.textContent = txt;
+          $$('.wz-presets .lchip', pane).forEach(b => b.classList.toggle('on', +b.dataset.v === memory));
+          sliderFill(r);
+        };
+        r.addEventListener('input', upd); upd();
+        $$('.wz-presets .lchip', pane).forEach(b => b.addEventListener('click', () => { r.value = b.dataset.v; upd(); }));
+        $('#w-rec', pane).addEventListener('click', () => { r.value = recMb; upd(); });
+        $('#w-next', pane).addEventListener('click', async () => {
+          try { App.state.settings = await nore.setSettings({ memoryMb: memory }); } catch (e) { errorToast(e, 'Ustawienia'); }
+          next();
+        });
+      },
+
+      // 5 — install (logic lives in renderInstallStep)
+      (pane) => {
+        renderInstallStep(pane, next);
+        const goBtn = $('#w-go', pane);
+        if (goBtn) {
+          goBtn.dataset.enter = '';
+          goBtn.addEventListener('click', () => { installed = true; setTimeout(updateRail); });
+        }
+        const step = $('.step', pane);
+        if (step) step.insertAdjacentHTML('afterbegin', `<div class="wz-eyebrow">${icon('download')} KROK 5 · INSTALACJA</div>`);
+        const skip = $('#w-skip', pane);
+        if (skip) skip.addEventListener('click', () => { installed = false; });
+      },
+
+      // 6 — done
+      (pane) => {
+        const acc = App.account();
+        const st = App.state.settings;
+        const ac = ACCENTS[st.accentPreset] || ACCENTS.orange;
+        const sc = Background.SCENES.find(x => x.id === st.bgScene) || Background.SCENES[0];
+        const inst = App.instance();
+        pane.innerHTML = `<div class="wz-body wz-done">
+          <div class="wz-confetti"></div>
+          <div class="wz-logo small wz-in"><span class="halo"></span><span class="ring"></span><img src="assets/logo.png" alt=""></div>
+          <h2 class="wz-in">Wszystko <span>gotowe!</span></h2>
+          <p class="lead wz-in">${installed ? `Instancja <b>${esc(inst ? inst.name : 'Nore Client')}</b> jest zainstalowana.` : 'Brakujące pliki pobiorą się przy pierwszym uruchomieniu.'} Kliknij GRAJ na stronie głównej, aby zacząć.</p>
+          <div class="wz-summary wz-in">
+            <div class="sum"><span class="ic">${icon('user')}</span><div><small>Konto</small><b>${acc ? esc(acc.name) : 'Dodasz później'}</b><em>${acc ? (acc.type === 'microsoft' ? 'Premium' : 'Non-premium') : 'Zakładka Konta'}</em></div></div>
+            <div class="sum"><span class="ic sw" style="--c1:${ac.b};--c2:${ac.d}"></span><div><small>Wygląd</small><b>${esc(ac.name)}</b><em>Tło: ${esc(sc.name)}</em></div></div>
+            <div class="sum"><span class="ic">${icon('cpu')}</span><div><small>Pamięć RAM</small><b>${(memory / 1024).toFixed(memory % 1024 ? 1 : 0)} GB</b><em>z ${(total / 1024).toFixed(1)} GB</em></div></div>
+          </div>
+          <div class="wz-cta wz-in"><button class="btn play" data-enter id="w-done">${icon('play')} DO GRY</button></div>
+        </div>`;
+        if (!document.body.classList.contains('no-anim')) {
+          const box = $('.wz-confetti', pane);
+          const colors = [ac.a, ac.b, ac.d, '#ffffff', '#ffe08a'];
+          let html = '';
+          for (let i = 0; i < 46; i++) {
+            const x = Math.round(Math.random() * 100), d = (Math.random() * 1.4).toFixed(2), dur = (2.4 + Math.random() * 2).toFixed(2);
+            const rot = Math.round(Math.random() * 720 - 360), drift = Math.round(Math.random() * 120 - 60);
+            const shape = i % 3 === 0 ? 'spark' : i % 3 === 1 ? 'bit' : 'dot';
+            html += `<i class="${shape}" style="left:${x}%;--d:${d}s;--t:${dur}s;--r:${rot}deg;--dx:${drift}px;--c:${colors[i % colors.length]}"></i>`;
+          }
+          box.innerHTML = html;
+        }
+        $('#w-done', pane).addEventListener('click', async (e) => {
+          e.currentTarget.disabled = true;
+          try { await nore.onboardingDone(); } catch (err) { console.error(err); }
+          document.removeEventListener('keydown', onKey, true);
+          wiz.classList.add('closing');
+          setTimeout(() => { wiz.remove(); resolve(); }, 450);
+        });
+      },
+    ];
+
+    // Enter = primary action of the current step; Esc intentionally does nothing
+    const onKey = (e) => {
+      if (e.key === 'Escape') { if (!$('.modal-backdrop')) { e.preventDefault(); e.stopPropagation(); } return; }
+      if (e.key !== 'Enter' || e.repeat || $('.modal-backdrop')) return;
+      const t = e.target;
+      if (t && (t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && t.type !== 'range'))) return;
+      if (t && t.tagName === 'BUTTON' && (!wiz.contains(t) || t.hasAttribute('data-back'))) return;
+      const pane = $('.wz-pane:not(.out)', stage);
+      const btn = pane && $('[data-enter]', pane);
+      if (btn && !btn.disabled) { e.preventDefault(); btn.click(); }
     };
-    render();
+    document.addEventListener('keydown', onKey, true);
+
+    render('fwd');
   });
 }
 
