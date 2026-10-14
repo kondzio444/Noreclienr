@@ -41,6 +41,8 @@ public final class Capes {
     private static final int[] EDGES = {0, 0x1A1410, 0x3A0C04, 0x140A34};
     private static final Map<String, TextureRef> CACHE = new HashMap<String, TextureRef>();
     private static final int S = 4, W = 10 * S, H = 16 * S;
+    /** Animation frames of the collection capes (one loop). */
+    public static final int FRAMES = 16;
 
     private Capes() {}
 
@@ -56,6 +58,9 @@ public final class Capes {
         return i > 0 && i < HISTORY_END ? TAGLINES[i] : "";
     }
 
+    /** True when the cape has animation frames. */
+    public static boolean isAnimated(String name) { return isHistory(name); }
+
     private static int index(String name) {
         for (int i = 0; i < NAMES.length; i++) if (NAMES[i].equals(name)) return i;
         return 0;
@@ -66,45 +71,87 @@ public final class Capes {
     }
 
     /** Texture of the named cape (render thread); null for "Brak". */
-    public static TextureRef texture(String name) {
+    public static TextureRef texture(String name) { return texture(name, 0); }
+
+    /** One animation frame of the cape (frame is ignored for still capes). */
+    public static TextureRef texture(String name, int frame) {
         if (name == null || name.equals(NAMES[0])) return null;
-        TextureRef t = CACHE.get(name);
-        if (t == null) {
-            byte[] png = png(name);
-            if (png == null) return null;
-            t = Platform.game().loadTexture("cape/" + id(name), png);
-            if (t != null) CACHE.put(name, t);
+        frame = isAnimated(name) ? Math.floorMod(frame, FRAMES) : 0;
+        return load(CACHE, "cape/", name, frame, false);
+    }
+
+    /** Encoded frames waiting to be uploaded (key "prefix name#frame"). */
+    private static final Map<String, byte[]> READY = new java.util.concurrent.ConcurrentHashMap<String, byte[]>();
+    private static final java.util.Set<String> PENDING = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<String, Boolean>());
+    private static final java.util.concurrent.ExecutorService WORKER = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread th = new Thread(r, "Nore cape renderer");
+        th.setDaemon(true);
+        th.setPriority(Thread.MIN_PRIORITY);
+        return th;
+    });
+
+    /**
+     * Frame 0 is drawn right away; the other frames are drawn on a background thread and only uploaded here,
+     * so the animation never stalls the render thread. Until a frame is ready the nearest earlier one is shown.
+     */
+    private static TextureRef load(Map<String, TextureRef> cache, String prefix, String name, int frame, boolean front) {
+        String key = name + "#" + frame;
+        TextureRef t = cache.get(key);
+        if (t != null) return t;
+        byte[] png = READY.remove(prefix + key);
+        if (png == null && frame == 0) png = draw(name, 0, front);
+        if (png == null) {
+            if (PENDING.add(prefix + name)) {
+                WORKER.execute(() -> {
+                    for (int f = 1; f < FRAMES; f++) {
+                        byte[] b = draw(name, f, front);
+                        if (b != null) READY.put(prefix + name + "#" + f, b);
+                    }
+                });
+            }
+            for (int f = frame - 1; f >= 0; f--) {
+                TextureRef prev = cache.get(name + "#" + f);
+                if (prev != null) return prev;
+            }
+            return frame > 0 ? load(cache, prefix, name, 0, front) : null;
         }
+        t = Platform.game().loadTexture(prefix + id(name) + "_f" + frame, png);
+        if (t != null) cache.put(key, t);
         return t;
+    }
+
+    private static byte[] draw(String name, int frame, boolean front) {
+        float time = frame / (float) FRAMES;
+        return front ? encode(front(name, time)) : png(name, time);
     }
 
     private static final Map<String, TextureRef> PREVIEWS = new HashMap<String, TextureRef>();
 
     /** Only the front of the cape (for the cosmetics menu). */
-    public static TextureRef preview(String name) {
+    public static TextureRef preview(String name) { return preview(name, 0); }
+
+    public static TextureRef preview(String name, int frame) {
         if (name == null || name.equals(NAMES[0])) return null;
-        TextureRef t = PREVIEWS.get(name);
-        if (t == null) {
-            byte[] front = encode(front(name));
-            if (front == null) return null;
-            t = Platform.game().loadTexture("capeprev/" + id(name), front);
-            if (t != null) PREVIEWS.put(name, t);
-        }
-        return t;
+        frame = isAnimated(name) ? Math.floorMod(frame, FRAMES) : 0;
+        return load(PREVIEWS, "capeprev/", name, frame, true);
     }
 
-    /** Just the outer face, 40x64. */
-    static BufferedImage front(String name) {
+    /** Just the outer face, 40x64, at animation time t (0..1). */
+    static BufferedImage front(String name, float t) {
         int idx = index(name);
         if (idx == 0) return null;
         BufferedImage img = new BufferedImage(W, H, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = graphics(img);
-        design(g, idx);
+        design(g, idx, t);
         g.dispose();
         return img;
     }
 
-    static byte[] png(String name) {
+    static BufferedImage front(String name) { return front(name, 0); }
+
+    static byte[] png(String name) { return png(name, 0); }
+
+    static byte[] png(String name, float t) {
         int idx = index(name);
         if (idx == 0) return null;
         BufferedImage img = new BufferedImage(64 * S, 32 * S, BufferedImage.TYPE_INT_ARGB);
@@ -115,10 +162,10 @@ public final class Capes {
         g.fillRect(0, 0, 22 * S, 17 * S);
         // elytra box: front (24,2 10x20), back (36,2 10x20) and its edges
         g.fillRect(22 * S, 0, 24 * S, 22 * S);
-        paint(g, idx, S, S, 1f, false);
-        paint(g, idx, 12 * S, S, 1f, true);
-        paint(g, idx, 24 * S, 2 * S, 1.25f, false);
-        paint(g, idx, 36 * S, 2 * S, 1.25f, false);
+        paint(g, idx, t, S, S, 1f, false);
+        paint(g, idx, t, 12 * S, S, 1f, true);
+        paint(g, idx, t, 24 * S, 2 * S, 1.25f, false);
+        paint(g, idx, t, 36 * S, 2 * S, 1.25f, false);
         g.dispose();
         return encode(img);
     }
@@ -144,13 +191,13 @@ public final class Capes {
     }
 
     /** Draws the 40x64 design at (x, y), stretched vertically by sy; the inner side is darkened. */
-    private static void paint(Graphics2D g, int idx, int x, int y, float sy, boolean inner) {
+    private static void paint(Graphics2D g, int idx, float t, int x, int y, float sy, boolean inner) {
         AffineTransform old = g.getTransform();
         Shape clip = g.getClip();
         g.translate(x, y);
         g.scale(1, sy);
         g.clipRect(0, 0, W, H);
-        design(g, idx);
+        design(g, idx, t);
         if (inner) {
             g.setColor(new Color(0, 0, 0, 120));
             g.fillRect(0, 0, W, H);
@@ -159,141 +206,210 @@ public final class Capes {
         g.setClip(clip);
     }
 
-    private static void design(Graphics2D g, int idx) {
+    private static void design(Graphics2D g, int idx, float t) {
         switch (idx) {
-            case 1: genesis(g); break;
-            case 2: forge(g); break;
-            case 3: nova(g); break;
+            case 1: genesis(g, t); break;
+            case 2: forge(g, t); break;
+            case 3: nova(g, t); break;
             default: classic(g, idx);
         }
     }
 
     // ---------------------------------------------------------------- Genesis (1.0)
 
+    private static final int[][] GENESIS_N = {
+            {0, 0}, {0, 1}, {0, 4},
+            {1, 0}, {1, 1}, {1, 2}, {1, 4},
+            {2, 0}, {2, 2}, {2, 3}, {2, 4},
+            {3, 0}, {3, 3}, {3, 4},
+            {4, 0}, {4, 4}};
+
     /** Where it all began: the Nore "N" built from blocks, HUD editor brackets and ClickGUI module tiles. */
-    private static void genesis(Graphics2D g) {
+    private static void genesis(Graphics2D g, float t) {
+        double ph = t * Math.PI * 2;
         g.setPaint(new GradientPaint(0, 0, new Color(0x2E241D), 0, H, new Color(0x0D0A08)));
         g.fillRect(0, 0, W, H);
         // faint block grid
         g.setColor(new Color(255, 255, 255, 9));
         for (int i = 4; i < W; i += 4) g.fill(new Rectangle2D.Float(i, 0, 0.5f, H));
         for (int i = 4; i < H; i += 4) g.fill(new Rectangle2D.Float(0, i, W, 0.5f));
-        // ClickGUI title bar
+        // ClickGUI title bar with blinking window dots
         g.setPaint(new GradientPaint(0, 0, new Color(0xFFB547), W, 0, new Color(0xFF5A1A)));
         g.fillRect(0, 0, W, 4);
+        for (int i = 0; i < 3; i++) {
+            boolean lit = (int) (t * 6) % 3 == i;
+            g.setColor(lit ? new Color(0xFFF3D6) : new Color(0x2A1A10));
+            g.fill(new Ellipse2D.Float(W - 5 - i * 3.5f, 1.25f, 1.5f, 1.5f));
+        }
         g.setColor(new Color(0x2A1A10));
-        for (int i = 0; i < 3; i++) g.fill(new Ellipse2D.Float(W - 5 - i * 3.5f, 1.25f, 1.5f, 1.5f));
         g.fill(new Rectangle2D.Float(3, 1.5f, 8, 1));
-        glow(g, 20, 24, 20, new Color(255, 138, 31, 150));
-        // HUD editor corner brackets
+        // breathing glow behind the logo
+        glow(g, 20, 24, 19 + (float) Math.sin(ph) * 2, new Color(255, 138, 31, (int) (130 + 50 * Math.sin(ph))));
+        // HUD editor: brackets and a selection scan line
         g.setColor(new Color(255, 255, 255, 200));
         brackets(g, 6, 10, 28, 29, 5, 1);
         g.setColor(new Color(255, 181, 71, 90));
         dashed(g, 8, 12, 24, 25);
-        // the block "N"
-        int[][] n = {{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {1, 1}, {2, 2}, {3, 3}, {0, 4}, {1, 4}, {2, 4}, {3, 4}, {4, 4}};
-        for (int[] c : n) block(g, 10 + c[1] * 4, 14 + c[0] * 4, 4, new Color(0xFFD27A), new Color(0xFF6A1A));
-        // version stamp
+        float sy = 12 + t * 23;
+        g.setPaint(new GradientPaint(0, sy - 3, new Color(255, 210, 120, 0), 0, sy, new Color(255, 210, 120, 70)));
+        g.fill(new Rectangle2D.Float(8.5f, sy - 3, 23, 3));
+        g.setColor(new Color(255, 236, 190, 150));
+        g.fill(new Rectangle2D.Float(8.5f, sy, 23, 0.5f));
+        // the bold block "N"; a light sweep runs over it
+        for (int[] c : GENESIS_N) {
+            float bx = 10 + c[1] * 4, by = 14 + c[0] * 4;
+            block(g, bx, by, 4, new Color(0xFFD27A), new Color(0xFF6A1A));
+            float d = Math.abs(((c[0] + c[1]) / 8f) - t * 1.6f + 0.3f);
+            if (d < 0.18f) {
+                g.setColor(new Color(255, 255, 255, (int) (150 * (1 - d / 0.18f))));
+                g.fill(new Rectangle2D.Float(bx, by, 4, 4));
+            }
+        }
         pixelText(g, "1.0", 20, 42, 1.5f, new Color(0xFFE7C2), true);
-        // 2x2 module tiles, two toggled on
+        // 2x2 module tiles: two on, one off and one that keeps toggling
+        float k = (float) Math.max(0, Math.min(1, 0.5 + Math.sin(ph) * 1.5));
         for (int i = 0; i < 4; i++) {
             float tx = 4 + (i % 2) * 17, ty = 51 + (i / 2) * 6.5f;
-            boolean on = i == 0 || i == 3;
+            float on = i == 0 || i == 3 ? 1 : i == 1 ? k : 0;
             g.setColor(new Color(0x221A15));
             g.fill(new RoundRectangle2D.Float(tx, ty, 15, 5, 2, 2));
-            g.setColor(on ? new Color(255, 138, 31, 140) : new Color(255, 255, 255, 30));
+            g.setColor(mix(new Color(255, 255, 255, 30), new Color(255, 138, 31, 150), on));
             g.draw(new RoundRectangle2D.Float(tx + 0.25f, ty + 0.25f, 14.5f, 4.5f, 2, 2));
-            g.setColor(new Color(255, 255, 255, on ? 150 : 70));
+            g.setColor(new Color(255, 255, 255, (int) (70 + 80 * on)));
             g.fill(new Rectangle2D.Float(tx + 1.5f, ty + 2, 6, 1));
-            g.setColor(on ? new Color(0xFF8A1F) : new Color(0x4A403A));
+            g.setColor(mix(new Color(0x4A403A), new Color(0xFF8A1F), on));
             g.fill(new RoundRectangle2D.Float(tx + 9.5f, ty + 1.25f, 4.5f, 2.5f, 2.5f, 2.5f));
             g.setColor(Color.WHITE);
-            g.fill(new Ellipse2D.Float(on ? tx + 11.75f : tx + 9.75f, ty + 1.5f, 2, 2));
+            g.fill(new Ellipse2D.Float(tx + 9.75f + 2 * on, ty + 1.5f, 2, 2));
         }
         frame(g, new Color(255, 138, 31, 150), new Color(255, 181, 71, 40));
+        spark(g, t, new Color(255, 230, 170));
     }
 
     // ---------------------------------------------------------------- Kuźnia 2.1
 
     /** The 2.1 update: launcher and Auto Craft – a crafting grid forging a red-hot pickaxe over the flames. */
-    private static void forge(Graphics2D g) {
+    private static void forge(Graphics2D g, float t) {
+        double ph = t * Math.PI * 2;
         g.setPaint(new LinearGradientPaint(0, 0, 0, H, new float[]{0f, 0.55f, 1f},
                 new Color[]{new Color(0x1C0603), new Color(0x4A1406), new Color(0xA8340A)}));
         g.fillRect(0, 0, W, H);
-        glow(g, 20, 70, 42, new Color(255, 122, 0, 210));
-        // flames
+        glow(g, 20, 70, 40 + (float) Math.sin(ph * 2) * 3, new Color(255, 122, 0, 210));
+        // flickering flames
         Random r = new Random(5);
         for (int i = 0; i < 9; i++) {
             float fx = -2 + i * 5.5f + r.nextFloat() * 2, fh = 9 + r.nextFloat() * 11, fw = 6 + r.nextFloat() * 3;
+            fh *= 1 + 0.18f * (float) Math.sin(ph * (2 + i % 2) + i * 1.7);
             flame(g, fx, H + 1, fw, fh, i % 2 == 0 ? new Color(255, 196, 64) : new Color(255, 120, 30));
         }
-        // embers
+        // embers rising and looping
         r = new Random(21);
         for (int i = 0; i < 46; i++) {
-            float t = r.nextFloat();
-            float ex = r.nextFloat() * W, ey = H - (float) Math.pow(t, 0.7) * H, d = 0.5f + r.nextFloat() * 1.1f;
-            int a = (int) (60 + 190 * (1 - t));
-            g.setColor(r.nextBoolean() ? new Color(255, 214, 120, a) : new Color(255, 120, 40, a));
-            g.fill(new Rectangle2D.Float(ex, ey, d, d));
+            float y0 = r.nextFloat() * H, ex = r.nextFloat() * W, d = 0.5f + r.nextFloat() * 1.1f;
+            int speed = 1 + r.nextInt(2);
+            boolean yellow = r.nextBoolean();
+            float ey = ((y0 - t * H * speed) % H + H) % H;
+            float drift = (float) Math.sin(ph * speed + i) * 1.2f;
+            int a = (int) (40 + 210 * (ey / H));
+            g.setColor(yellow ? new Color(255, 214, 120, a) : new Color(255, 120, 40, a));
+            g.fill(new Rectangle2D.Float(ex + drift, ey, d, d));
         }
         // crafting table plate
         g.setColor(new Color(24, 10, 6, 225));
         g.fill(new RoundRectangle2D.Float(4.5f, 2.5f, 31, 31, 3, 3));
         g.setColor(new Color(255, 138, 31, 120));
         g.draw(new RoundRectangle2D.Float(5, 3, 30, 30, 3, 3));
-        // 3x3 grid with the pickaxe recipe (3 ingots + 2 sticks)
+        // 3x3 grid with the pickaxe recipe (3 ingots + 2 sticks); Auto Craft fills it slot by slot
+        int filled = (int) (t * 10);
+        int n = 0;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 3; col++) {
                 float cx = 7 + col * 9, cy = 5 + row * 9;
                 slot(g, cx, cy, 8);
+                boolean item = row == 0 || col == 1;
+                if (!item) continue;
+                boolean shown = n++ < filled || filled >= 8;
+                if (!shown) continue;
                 if (row == 0) ingot(g, cx + 1, cy + 2);
-                else if (col == 1) stick(g, cx + 1, cy + 1);
+                else stick(g, cx + 1, cy + 1);
             }
         }
         // arrow down to the result
+        float bob = (float) Math.sin(ph * 2) * 0.8f;
         g.setColor(new Color(0xFFD27A));
-        g.fill(new Rectangle2D.Float(19.25f, 34.5f, 1.5f, 2.5f));
+        g.fill(new Rectangle2D.Float(19.25f, 34.5f + bob, 1.5f, 2.5f));
         Path2D head = new Path2D.Float();
-        head.moveTo(17, 37);
-        head.lineTo(23, 37);
-        head.lineTo(20, 40);
+        head.moveTo(17, 37 + bob);
+        head.lineTo(23, 37 + bob);
+        head.lineTo(20, 40 + bob);
         head.closePath();
         g.fill(head);
         // result slot with the glowing pickaxe
-        glow(g, 20, 47, 13, new Color(255, 214, 90, 200));
+        glow(g, 20, 47, 12 + (float) Math.sin(ph) * 2, new Color(255, 214, 90, (int) (160 + 60 * Math.sin(ph))));
         slot(g, 14, 41, 12);
         g.setColor(new Color(255, 200, 80, 170));
         g.draw(new Rectangle2D.Float(13.75f, 40.75f, 12.5f, 12.5f));
         pickaxe(g, 16, 43, 1f);
+        float shine = (t * 1.5f) % 1.5f;
+        if (shine < 1) {
+            Shape clip = g.getClip();
+            g.clip(new Rectangle2D.Float(15, 42, 10, 10));
+            g.setColor(new Color(255, 255, 255, 120));
+            g.rotate(0.6, 20, 47);
+            g.fill(new Rectangle2D.Float(12 + shine * 16, 38, 1.5f, 18));
+            g.rotate(-0.6, 20, 47);
+            g.setClip(clip);
+        }
         g.setColor(new Color(28, 8, 2, 200));
         g.fill(new RoundRectangle2D.Float(11, 54.5f, 18, 10, 3, 3));
         pixelText(g, "2.1", 20, 56, 1.4f, new Color(0xFFE08A), true);
         frame(g, new Color(255, 160, 60, 160), new Color(255, 80, 20, 50));
+        spark(g, t, new Color(255, 236, 160));
     }
 
     // ---------------------------------------------------------------- Nova 1.4
 
     /** 1.4 Beta: the night sky over the panorama, the multiplayer globe with a server flag and friends as a constellation. */
-    private static void nova(Graphics2D g) {
+    private static void nova(Graphics2D g, float t) {
+        double ph = t * Math.PI * 2;
         g.setPaint(new LinearGradientPaint(0, 0, 0, H, new float[]{0f, 0.5f, 1f},
                 new Color[]{new Color(0x0B0620), new Color(0x2A1260), new Color(0x0A2350)}));
         g.fillRect(0, 0, W, H);
-        // aurora bands
-        aurora(g, 9, 3.5f, 0.32f, new Color(80, 255, 210), 110);
-        aurora(g, 15, 2.5f, 0.45f, new Color(190, 120, 255), 90);
-        // stars
+        // drifting aurora bands
+        aurora(g, 9, 3.5f, 0.32f, (float) ph, new Color(80, 255, 210), 110);
+        aurora(g, 15, 2.5f, 0.45f, (float) -ph, new Color(190, 120, 255), 90);
+        // twinkling stars
         Random r = new Random(14);
         for (int i = 0; i < 60; i++) {
             float sx = r.nextFloat() * W, sy = r.nextFloat() * H, d = 0.4f + r.nextFloat() * 0.8f;
-            g.setColor(new Color(255, 255, 255, 70 + r.nextInt(170)));
+            int base = 70 + r.nextInt(170);
+            double tw = 0.55 + 0.45 * Math.sin(ph * (1 + i % 2) + i * 2.3);
+            g.setColor(new Color(255, 255, 255, (int) (base * tw)));
             g.fill(new Ellipse2D.Float(sx, sy, d, d));
         }
-        sparkle(g, 6, 6, 2.5f, new Color(255, 255, 255, 230));
-        sparkle(g, 34, 20, 2f, new Color(200, 230, 255, 210));
-        sparkle(g, 33, 60, 1.6f, new Color(255, 214, 160, 200));
-        // the globe
+        sparkle(g, 6, 6, 2f + 0.8f * (float) Math.sin(ph), new Color(255, 255, 255, 230));
+        sparkle(g, 34, 20, 1.6f + 0.6f * (float) Math.sin(ph + 2), new Color(200, 230, 255, 210));
+        sparkle(g, 33, 60, 1.3f + 0.5f * (float) Math.sin(ph + 4), new Color(255, 214, 160, 200));
+        // shooting star
+        if (t > 0.55f && t < 0.8f) {
+            float k = (t - 0.55f) / 0.25f, x = 4 + k * 30, y = 3 + k * 9;
+            g.setPaint(new GradientPaint(x - 7, y - 2, new Color(255, 255, 255, 0), x, y, new Color(255, 255, 255, (int) (230 * (1 - k)))));
+            g.setStroke(new BasicStroke(0.75f));
+            g.draw(new Line2D.Float(x - 7, y - 2.1f, x, y));
+        }
         float gx = 20, gy = 28, gr = 10;
         glow(g, gx, gy, 18, new Color(110, 140, 255, 120));
+        // satellite on the orbit: drawn behind the globe on the far half
+        double a = ph;
+        boolean behind = Math.sin(a) < 0;
+        AffineTransform at = g.getTransform();
+        g.rotate(-0.35, gx, gy);
+        g.setStroke(new BasicStroke(0.75f));
+        g.setColor(new Color(255, 138, 31, 200));
+        g.draw(new java.awt.geom.Arc2D.Float(gx - 15, gy - 4, 30, 8, 0, 180, java.awt.geom.Arc2D.OPEN));
+        if (behind) satellite(g, gx, gy, a);
+        g.setTransform(at);
+        // the globe with slowly turning meridians
         g.setPaint(new RadialGradientPaint(gx - 3, gy - 4, gr * 1.6f, new float[]{0f, 1f},
                 new Color[]{new Color(0x3F7BFF), new Color(0x10184A)}));
         Ellipse2D globe = new Ellipse2D.Float(gx - gr, gy - gr, gr * 2, gr * 2);
@@ -302,40 +418,47 @@ public final class Capes {
         g.clip(globe);
         g.setStroke(new BasicStroke(0.5f));
         g.setColor(new Color(127, 227, 255, 110));
-        for (float k : new float[]{0.35f, 0.75f}) g.draw(new Ellipse2D.Float(gx - gr * k, gy - gr, gr * 2 * k, gr * 2));
-        g.draw(new Line2D.Float(gx, gy - gr, gx, gy + gr));
+        for (int m = 0; m < 4; m++) {
+            double lon = ph / 4 + m * Math.PI / 4;
+            float w = (float) Math.abs(Math.cos(lon)) * gr;
+            g.draw(new Ellipse2D.Float(gx - w, gy - gr, w * 2, gr * 2));
+        }
         for (float k : new float[]{-0.55f, 0f, 0.55f}) g.draw(new Line2D.Float(gx - gr, gy + gr * k, gx + gr, gy + gr * k));
         g.setClip(clip);
         g.setStroke(new BasicStroke(0.75f));
         g.setColor(new Color(127, 227, 255, 220));
         g.draw(globe);
-        // orbit ring with a "server" satellite
-        AffineTransform at = g.getTransform();
         g.rotate(-0.35, gx, gy);
         g.setColor(new Color(255, 138, 31, 200));
-        g.draw(new Ellipse2D.Float(gx - 15, gy - 4, 30, 8));
-        g.setColor(new Color(0xFFD27A));
-        g.fill(new Ellipse2D.Float(gx + 13, gy - 1.25f, 2.5f, 2.5f));
+        g.draw(new java.awt.geom.Arc2D.Float(gx - 15, gy - 4, 30, 8, 180, 180, java.awt.geom.Arc2D.OPEN));
+        if (!behind) satellite(g, gx, gy, a);
         g.setTransform(at);
-        // flag pinned on the globe (server location)
+        // flag pinned on the globe (server location), waving
         g.setColor(new Color(0xE8E8F0));
         g.fill(new Rectangle2D.Float(23, 17, 0.75f, 9));
-        g.setColor(Color.WHITE);
-        g.fill(new Rectangle2D.Float(23.75f, 17, 6, 2));
-        g.setColor(new Color(0xDC143C));
-        g.fill(new Rectangle2D.Float(23.75f, 19, 6, 2));
+        for (int c = 0; c < 6; c++) {
+            float wy = (float) Math.sin(ph * 2 - c * 0.9) * 0.45f * (c / 5f);
+            g.setColor(Color.WHITE);
+            g.fill(new Rectangle2D.Float(23.75f + c, 17 + wy, 1.05f, 2));
+            g.setColor(new Color(0xDC143C));
+            g.fill(new Rectangle2D.Float(23.75f + c, 19 + wy, 1.05f, 2));
+        }
         g.setColor(new Color(0xFF8A1F));
         g.fill(new Ellipse2D.Float(22.4f, 25.4f, 2, 2));
-        // friends constellation
+        // friends constellation; "you" sends out a pulse
         float[][] nodes = {{5, 46}, {12, 50}, {20, 45}, {28, 50}, {35, 43}, {20, 40}};
         int[][] links = {{0, 1}, {1, 2}, {2, 3}, {3, 4}, {2, 5}, {0, 2}};
         g.setStroke(new BasicStroke(0.5f));
         g.setColor(new Color(200, 180, 255, 150));
         for (int[] l : links) g.draw(new Line2D.Float(nodes[l[0]][0], nodes[l[0]][1], nodes[l[1]][0], nodes[l[1]][1]));
+        float pr = 1.5f + t * 7;
+        g.setColor(new Color(255, 138, 31, (int) (200 * (1 - t))));
+        g.draw(new Ellipse2D.Float(nodes[2][0] - pr, nodes[2][1] - pr, pr * 2, pr * 2));
         for (int i = 0; i < nodes.length - 1; i++) {
             boolean you = i == 2;
             Color c = you ? new Color(0xFF8A1F) : new Color(0xD9C8FF);
-            glow(g, nodes[i][0], nodes[i][1], you ? 4 : 2.5f, new Color(c.getRed(), c.getGreen(), c.getBlue(), 160));
+            float lit = you ? 1 : (float) (0.6 + 0.4 * Math.sin(ph + i * 1.3));
+            glow(g, nodes[i][0], nodes[i][1], you ? 4 : 2.5f, new Color(c.getRed(), c.getGreen(), c.getBlue(), (int) (160 * lit)));
             g.setColor(c);
             float d = you ? 2.2f : 1.5f;
             g.fill(new Ellipse2D.Float(nodes[i][0] - d / 2, nodes[i][1] - d / 2, d, d));
@@ -343,6 +466,14 @@ public final class Capes {
         g.setStroke(new BasicStroke(1f));
         pixelText(g, "1.4β", 20, 54.5f, 1.4f, new Color(0xF2E9FF), true);
         frame(g, new Color(169, 107, 255, 170), new Color(127, 227, 255, 50));
+        spark(g, t, new Color(200, 240, 255));
+    }
+
+    private static void satellite(Graphics2D g, float gx, float gy, double a) {
+        float sx = gx + 15 * (float) Math.cos(a), sy = gy + 4 * (float) Math.sin(a);
+        glow(g, sx, sy, 3, new Color(255, 210, 122, 180));
+        g.setColor(new Color(0xFFD27A));
+        g.fill(new Ellipse2D.Float(sx - 1.25f, sy - 1.25f, 2.5f, 2.5f));
     }
 
     // ---------------------------------------------------------------- classic
@@ -487,16 +618,32 @@ public final class Capes {
         g.fill(p);
     }
 
-    private static void aurora(Graphics2D g, float y, float amp, float freq, Color c, int alpha) {
+    private static void aurora(Graphics2D g, float y, float amp, float freq, float phase, Color c, int alpha) {
         Path2D p = new Path2D.Float();
         p.moveTo(0, y + 6);
-        for (int x = 0; x <= W; x++) p.lineTo(x, y + (float) Math.sin(x * freq) * amp);
-        p.lineTo(W, y + 6 + (float) Math.sin(W * freq + 1) * amp * 0.5f);
-        for (int x = W; x >= 0; x--) p.lineTo(x, y + 6 + (float) Math.sin(x * freq + 1) * amp * 0.5f);
+        for (int x = 0; x <= W; x++) p.lineTo(x, y + (float) Math.sin(x * freq + phase) * amp);
+        for (int x = W; x >= 0; x--) p.lineTo(x, y + 6 + (float) Math.sin(x * freq + 1 + phase) * amp * 0.5f);
         p.closePath();
         g.setPaint(new GradientPaint(0, y - amp, new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha), 0, y + 6 + amp,
                 new Color(c.getRed(), c.getGreen(), c.getBlue(), 0)));
         g.fill(p);
+    }
+
+    /** A bright spark running once around the frame per loop. */
+    private static void spark(Graphics2D g, float t, Color c) {
+        float per = 2 * (W + H), d = t * per, x, y;
+        if (d < W) { x = d; y = 0.5f; }
+        else if (d < W + H) { x = W - 0.5f; y = d - W; }
+        else if (d < 2 * W + H) { x = W - (d - W - H); y = H - 0.5f; }
+        else { x = 0.5f; y = H - (d - 2 * W - H); }
+        glow(g, x, y, 4, new Color(c.getRed(), c.getGreen(), c.getBlue(), 200));
+        g.setColor(Color.WHITE);
+        g.fill(new Ellipse2D.Float(x - 0.75f, y - 0.75f, 1.5f, 1.5f));
+    }
+
+    private static Color mix(Color a, Color b, float k) {
+        return new Color((int) (a.getRed() + (b.getRed() - a.getRed()) * k), (int) (a.getGreen() + (b.getGreen() - a.getGreen()) * k),
+                (int) (a.getBlue() + (b.getBlue() - a.getBlue()) * k), (int) (a.getAlpha() + (b.getAlpha() - a.getAlpha()) * k));
     }
 
     /** Four-point star. */

@@ -56,7 +56,7 @@ public class CosmeticsScreen extends PanelScreen {
                 Render2D.roundedOutline(g, px, py, pw, ph, 3, 1, 0x40FFFFFF);
                 Render2D.line(g, px + 4, py + 4, px + pw - 4, py + ph - 4, 1.2f, 0x60FF6B6B);
             } else {
-                TextureRef t = Capes.preview(name);
+                TextureRef t = Capes.preview(name, c.animated.isOn() ? (int) (System.currentTimeMillis() / 150 % Capes.FRAMES) : 0);
                 Render2D.shadow(g, px, py, pw, ph, 2, 4, 0x80000000);
                 if (t != null) Render2D.texture(g, t, px, py, pw, ph, 1f);
             }

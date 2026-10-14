@@ -210,8 +210,8 @@ Pages.shop = (root) => {
     <div class="card shop-free stagger">
       <div style="--i:0"><div class="section-title">${icon('sparkles')} Za darmo już teraz: kolekcja „Historia Nore”</div>
         <p class="muted">Trzy peleryny upamiętniające aktualizacje, które zbudowały projekt: <b>Genesis</b> (1.0), <b>Kuźnia 2.1</b> i <b>Nova 1.4</b>.
-          Załóż je w grze: menu główne → kafelek <b>Kosmetyki</b>. Widać je w widoku F5 i na elytrze.</p></div>
-      <img src="assets/capes-historia.png" alt="Peleryny Historia Nore" style="--i:1">
+          Załóż je w grze: menu główne → kafelek <b>Kosmetyki</b>. Są animowane i widać je w widoku F5 oraz na elytrze.</p></div>
+      <img src="assets/capes-historia.gif" alt="Peleryny Historia Nore" style="--i:1">
     </div>`;
   stagger(root);
 };
