@@ -297,7 +297,12 @@ async function prepareNore(inst) {
   const present = await fsp.readdir(mods).catch(() => []);
   if (!present.some(f => /^fabric-api-.*\.jar$/.test(f))) {
     send('progress', { stage: 'Pobieranie Fabric API' });
-    await modrinth.install({ projectId: FABRIC_API_ID, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
+    try {
+      await modrinth.install({ projectId: FABRIC_API_ID, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
+    } catch (e) {
+      // Nore Client does not need Fabric API; a brand-new Minecraft version may not have it yet
+      send('log', { line: `[Launcher] Fabric API niedostępne dla ${inst.mcVersion} (${e.message}) – gram bez niego.`, stream: 'out' });
+    }
   }
   if (inst.perfMods !== false && !inst.perfModsInstalled) {
     let i = 0;

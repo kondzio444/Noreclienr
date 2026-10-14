@@ -6,6 +6,7 @@ const NEWS_14 = [
   ['globe', 'Nowy Multiplayer', 'Flagi krajów serwerów, ping, gracze online i podgląd serwera przy szybkim dołączaniu.'],
   ['users', 'Znajomi i peleryny', 'Lista znajomych wspólna z grą, kolekcja peleryn „Historia Nore” i galeria zrzutów.'],
   ['shield', 'Auto naprawa', 'Launcher sam wykrywa zduplikowane mody, złe wersje i błędne loadery, zanim gra się wysypie.'],
+  ['layers', 'Minecraft 1.21.1 – 26.3', 'Nore Client działa na wszystkich wersjach od 1.21.1 do najnowszej 26.3 – wybierz dowolną przy tworzeniu instancji.'],
 ];
 
 const QUICK_14 = [
