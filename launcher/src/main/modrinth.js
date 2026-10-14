@@ -127,8 +127,15 @@ async function listInstalled(dir, exts) {
 
 const UPDATE_LOADERS = { mod: ['fabric'], resourcepack: ['minecraft'], shader: ['iris', 'optifine', 'canvas'], datapack: ['datapack'] };
 
+/** Version types allowed by the update channel: 'all' (alpha/beta too), 'beta' or 'release'. */
+function channelTypes(channel) {
+  if (channel === 'release') return ['release'];
+  if (channel === 'beta') return ['release', 'beta'];
+  return ['release', 'beta', 'alpha'];
+}
+
 /** Newer Modrinth versions for the files in a content folder (matched by SHA-1). */
-async function checkUpdates(dir, kind, gameVersion, loader) {
+async function checkUpdates(dir, kind, gameVersion, loader, channel = 'all') {
   const ext = KINDS[kind].ext;
   let files = [];
   try { files = (await fsp.readdir(dir)).filter(f => ext.some(e => f.toLowerCase().endsWith(e))); } catch { return []; }
@@ -137,7 +144,10 @@ async function checkUpdates(dir, kind, gameVersion, loader) {
   for (const f of files) hashes[await net.sha1File(path.join(dir, f))] = f;
   const res = await net.fetchWithRetry(`${API}/version_files/update`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: kind === 'mod' && loader && loader !== 'vanilla' ? modLoaders(loader) : UPDATE_LOADERS[kind], game_versions: [gameVersion] }),
+    body: JSON.stringify({
+      hashes: Object.keys(hashes), algorithm: 'sha1', loaders: kind === 'mod' && loader && loader !== 'vanilla' ? modLoaders(loader) : UPDATE_LOADERS[kind],
+      game_versions: [gameVersion], version_types: channelTypes(channel),
+    }),
   });
   if (!res.ok) return [];
   const map = await res.json();
@@ -145,16 +155,50 @@ async function checkUpdates(dir, kind, gameVersion, loader) {
   for (const [hash, version] of Object.entries(map)) {
     const file = primaryFile(version);
     if (!file || file.hashes.sha1 === hash) continue;
-    out.push({ oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number });
+    out.push({
+      oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size,
+      version: version.version_number, type: version.version_type, versionId: version.id, projectId: version.project_id,
+    });
   }
   return out;
 }
 
-async function applyUpdates(dir, updates) {
-  for (const u of updates) {
-    await net.download(u.url, path.join(dir, u.newFile), { sha1: u.sha1, size: u.size });
-    if (u.oldFile !== u.newFile) await fsp.rm(path.join(dir, u.oldFile), { force: true });
+const BACKUP_DIR = '.nore-backup';
+
+/** Removes old backups, keeping the `keep` newest folders whose name matches `re`. */
+async function pruneBackups(gameDir, re, keep = 3) {
+  const root = path.join(gameDir, BACKUP_DIR);
+  let names = [];
+  try { names = (await fsp.readdir(root)).filter(n => re.test(n)).sort(); } catch { return; }
+  for (const n of names.slice(0, Math.max(0, names.length - keep))) await fsp.rm(path.join(root, n), { recursive: true, force: true }).catch(() => {});
+}
+
+function stamp() {
+  return new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
+}
+
+/**
+ * Installs updates: the new file is downloaded first, only then the old one is moved to
+ * <gameDir>/.nore-backup/<time>/<folder>/ (the 3 newest backups are kept). Without gameDir old files are deleted.
+ */
+async function applyUpdates(dir, updates, { gameDir } = {}) {
+  let backup = null;
+  if (gameDir && updates.length) {
+    const rel = path.relative(gameDir, dir);
+    backup = path.join(gameDir, BACKUP_DIR, stamp(), rel.startsWith('..') ? path.basename(dir) : rel);
   }
+  for (const u of updates) {
+    const oldFile = path.basename(u.oldFile), newFile = path.basename(u.newFile);
+    await net.download(u.url, path.join(dir, newFile), { sha1: u.sha1, size: u.size });
+    if (oldFile === newFile) continue;
+    if (backup) {
+      await fsp.mkdir(backup, { recursive: true });
+      await fsp.rename(path.join(dir, oldFile), path.join(backup, oldFile)).catch(() => fsp.rm(path.join(dir, oldFile), { force: true }));
+    } else {
+      await fsp.rm(path.join(dir, oldFile), { force: true });
+    }
+  }
+  if (backup) await pruneBackups(gameDir, /^\d{4}-\d\d-\d\d_[\d-]+$/);
   return updates.length;
 }
 
@@ -201,4 +245,7 @@ async function identify(dir, exts) {
   return out;
 }
 
-module.exports = { identify, KINDS, search, categories, details, primaryFile, project, compatibleVersions, install, listInstalled, checkUpdates, applyUpdates };
+module.exports = {
+  identify, KINDS, search, categories, details, primaryFile, project, compatibleVersions, install, listInstalled, checkUpdates, applyUpdates,
+  channelTypes, pruneBackups, stamp, BACKUP_DIR,
+};

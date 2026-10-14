@@ -37,6 +37,33 @@ function loaderTag(l) {
   return `<span class="ltag" style="--lc:${c}"><i></i>${loaderName(l)}</span>`;
 }
 
+/** True when the background check found a new modpack version or mod / pack / shader updates. */
+function hasContentUpdates(u) {
+  return !!(u && (u.pack || u.mods || u.resourcepacks || u.shaders));
+}
+
+/** "3 mody, 1 shader" – individual content updates of an instance. */
+function contentUpdatesText(u) {
+  if (!u) return '';
+  return [[u.mods, 'mod', 'mody', 'modów'], [u.resourcepacks, 'paczka zasobów', 'paczki zasobów', 'paczek zasobów'], [u.shaders, 'shader', 'shadery', 'shaderów']]
+    .filter(([n]) => n).map(([n, a, b, c]) => `${n} ${plural(n, a, b, c)}`).join(', ');
+}
+
+/** Updates mods / resource packs / shaders of an instance (files of its modpack are left to the modpack). */
+async function updateInstanceContent(inst) {
+  let total = 0;
+  for (const kind of ['mod', 'resourcepack', 'shader']) {
+    const ups = await nore.content.updates({ instanceId: inst.id, kind, skipPack: inst.modpack === 'pack' });
+    if (!ups.length) continue;
+    total += await nore.content.applyUpdates({ instanceId: inst.id, kind, updates: ups });
+  }
+  // main re-checks the instance in the background; hide the counts right away
+  const u = App.contentUpdates[inst.id];
+  if (u) { App.contentUpdates = { ...App.contentUpdates, [inst.id]: { ...u, mods: 0, resourcepacks: 0, shaders: 0 } }; App.emit(); }
+  toast(total ? 'Zaktualizowano' : 'Wszystko aktualne', total ? `${inst.name}: ${total} ${plural(total, 'plik', 'pliki', 'plików')} (stare w .nore-backup)` : inst.name, 'success');
+  return total;
+}
+
 /** Short description under the instance name. */
 function instSubtitle(i) {
   if (i.modpack === 'pack' && i.pack) return `Modpack • ${i.pack.title || i.name}${i.pack.version ? ' ' + i.pack.version : ''}`;
@@ -142,12 +169,13 @@ Pages.instances = (root) => {
     const st = App.stats[i.id] || {};
     const running = App.running === i.id;
     const selected = i.id === App.state.selectedInstance;
+    const upd = hasContentUpdates(App.contentUpdates[i.id]);
     const stats = [['puzzle', st.mods, 'modów'], ['image', st.resourcepacks, 'paczek'], ['globe', st.worlds, 'światów'], ['monitor', st.screenshots, 'zrzutów']]
       .filter(([, n]) => n).map(([ic, n, l]) => `<span title="${n} ${l}">${icon(ic)}${n}</span>`).join('');
     if (instView.view === 'list') {
       return `<div class="irow2 ${selected ? 'selected' : ''} ${running ? 'running' : ''}" data-id="${i.id}">
         ${instIcon(i, 46)}
-        <div class="iname2"><b>${esc(i.name)}${i.pinned ? ` <span class="pin-on">${icon('sparkles')}</span>` : ''}</b><span>${esc(instSubtitle(i))}</span></div>
+        <div class="iname2"><b>${esc(i.name)}${i.pinned ? ` <span class="pin-on">${icon('sparkles')}</span>` : ''}${upd ? ' <span class="tag upd">AKTUALIZACJA</span>' : ''}</b><span>${esc(instSubtitle(i))}</span></div>
         <div class="itags">${instanceTags(i)}</div>
         <div class="istats">${stats}</div>
         <div class="itime"><b>${fmtDuration(i.playTime || 0)}</b><span>${fmtAgo(i.lastPlayed)}</span></div>
@@ -156,7 +184,7 @@ Pages.instances = (root) => {
     }
     return `<div class="icard ${selected ? 'selected' : ''} ${running ? 'running' : ''}" data-id="${i.id}">
       <div class="ibanner" style="background:${instBanner(i)}"></div>
-      <div class="ibadges">${running ? '<span class="tag premium running-dot">● W GRZE</span>' : ''}${selected ? '<span class="tag accent">WYBRANA</span>' : ''}</div>
+      <div class="ibadges">${upd ? `<span class="tag upd" title="${esc(App.contentUpdates[i.id].pack ? 'Nowa wersja modpacka' : contentUpdatesText(App.contentUpdates[i.id]))}">${icon('download')} AKTUALIZACJA</span>` : ''}${running ? '<span class="tag premium running-dot">● W GRZE</span>' : ''}${selected ? '<span class="tag accent">WYBRANA</span>' : ''}</div>
       <button class="ipin ${i.pinned ? 'on' : ''}" data-act="pin" title="${i.pinned ? 'Odepnij' : 'Przypnij'}">${icon('sparkles')}</button>
       <div class="ihead">${instIcon(i, 58)}<div class="ititle"><h3>${esc(i.name)}</h3><span>${esc(instSubtitle(i))}</span></div></div>
       <div class="itags">${instanceTags(i)}</div>
@@ -265,15 +293,169 @@ Pages.instance = (root, opts) => {
       const pi = el(`<div class="card panel pack-info" id="packinfo">
         <div class="section-title">${icon('box')} Modpack</div>
         <div class="row" style="gap:14px;margin-top:10px">${inst.iconUrl ? `<img src="${esc(inst.iconUrl)}" data-fallback alt="" class="pack-ico">` : ''}
-          <div style="flex:1;min-width:0"><b>${esc(inst.pack.title || inst.name)}</b><div class="muted" style="font-size:12.5px">Wersja ${esc(inst.pack.version || '?')} • Minecraft ${esc(inst.mcVersion)} • ${loaderName(inst.loader)}${inst.noreClient ? ' • z Nore Client' : ''}</div></div>
-          ${inst.pack.projectId ? `<button class="btn ghost sm" id="pweb">${icon('external')} Strona paczki</button>` : ''}</div></div>`);
+          <div style="flex:1;min-width:0"><b>${esc(inst.pack.title || inst.name)}</b><div class="muted" style="font-size:12.5px" id="pver"></div></div>
+          ${inst.pack.projectId ? `<button class="btn ghost sm" id="pweb">${icon('external')} Strona paczki</button>` : ''}</div>
+        <div class="pack-upd" id="pupd"></div></div>`);
       $('#tabc .grid', root).prepend(pi);
       if ($('#pweb', pi)) $('#pweb', pi).onclick = () => go('modpacks', { project: inst.pack.projectId });
     }
+    renderPackUpdate();
   };
+
+  // modpack version + update row inside the pack card
+  let checkingPack = false;
+  const renderPackUpdate = () => {
+    const inst = App.state.instances.find(i => i.id === id);
+    const box = $('#pupd', root);
+    if (!inst || !inst.pack || !box) return;
+    const up = (App.contentUpdates[id] || {}).pack || null;
+    const sig = JSON.stringify([inst.pack.versionId, inst.mcVersion, inst.loader, up && up.versionId, checkingPack]);
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    $('#pver', root).innerHTML = `Wersja ${esc(inst.pack.version || '?')} ${versionTypeTag(inst.pack.type)} • Minecraft ${esc(inst.mcVersion)} • ${loaderName(inst.loader)}${inst.noreClient ? ' • z Nore Client' : ''}`;
+    if (!inst.pack.projectId) {
+      box.innerHTML = `<div class="muted pu-note">${icon('info')} Paczka zaimportowana z pliku – nie da się sprawdzić jej aktualizacji.</div>`;
+      return;
+    }
+    box.innerHTML = up
+      ? `<div class="pu-new"><span class="ic">${icon('sparkles')}</span><div class="t"><b>Nowa wersja ${esc(up.version)} ${versionTypeTag(up.type)}</b>
+          <small>${up.mcChanged ? `Minecraft ${esc(inst.mcVersion)} → ${esc(up.mcVersion)} • ` : ''}${fmtAgo(Date.parse(up.date))}</small></div>
+          <button class="btn sm" id="pgo">${icon('download')} Aktualizuj modpack</button></div>`
+      : `<div class="row" style="gap:8px"><span class="muted pu-note" style="flex:1">${icon('check')} ${checkingPack ? 'Sprawdzanie…' : 'Brak nowszej wersji na wybranym kanale'}</span>
+          <button class="btn ghost sm" id="pcheck" ${checkingPack ? 'disabled' : ''}>${checkingPack ? '<span class="spinner"></span>' : icon('refresh')} Sprawdź aktualizacje</button>
+          <button class="btn ghost sm" id="pvers">${icon('layers')} Zmień wersję</button></div>`;
+    if ($('#pgo', box)) $('#pgo', box).onclick = () => packUpdateModal(inst, up);
+    if ($('#pvers', box)) $('#pvers', box).onclick = () => packUpdateModal(inst, null);
+    if ($('#pcheck', box)) $('#pcheck', box).onclick = async () => {
+      checkingPack = true; renderPackUpdate();
+      try {
+        const r = await nore.modpacks.checkUpdate(id);
+        if (!r) toast('Modpack jest aktualny', inst.pack.title || inst.name, 'success');
+      } catch (e) { errorToast(e, 'Sprawdzanie aktualizacji'); }
+      checkingPack = false; renderPackUpdate();
+    };
+  };
+  const offUpd = App.onChange(renderPackUpdate);
+  if (opts.packUpdate) {
+    const inst = App.state.instances.find(i => i.id === id);
+    if (inst && inst.pack) setTimeout(() => packUpdateModal(inst, (App.contentUpdates[id] || {}).pack || null), 250);
+  }
   const mo = new MutationObserver(() => { mo.disconnect(); decorate(); mo.observe(root, { childList: true, subtree: true }); });
   decorate();
   mo.observe(root, { childList: true, subtree: true });
   if (!Object.keys(App.media).length) loadInstanceMedia().then(decorate);
-  return () => { mo.disconnect(); if (cleanup) cleanup(); };
+  return () => { mo.disconnect(); offUpd(); if (cleanup) cleanup(); };
 };
+
+// ------------------------------------------------------------------ modpack update modal
+
+/** Version picker + changelog + world backup option, then the update with live progress. */
+function packUpdateModal(inst, up) {
+  const pack = inst.pack;
+  const m = modal(`<div class="pu-modal">
+      <div class="mp-head">${projectIcon(inst.iconUrl, pack.title || inst.name, 56)}<div><h3>${up ? 'Aktualizacja modpacka' : 'Wersja modpacka'}</h3>
+        <p class="sub">${esc(pack.title || inst.name)} • zainstalowana ${esc(pack.version || '?')} ${versionTypeTag(pack.type)}</p></div></div>
+      <div class="pu-form">
+        <div class="field"><label>Wersja</label><select class="input" id="pu-ver"><option>Wczytywanie wersji…</option></select></div>
+        <div id="pu-warn"></div>
+        <div class="field"><label>Lista zmian</label><div class="pu-log" id="pu-log"><span class="muted">Wczytywanie…</span></div></div>
+        <label class="pu-check" id="pu-bwrow"><span class="switch"><input type="checkbox" id="pu-bw" checked><i></i></span>
+          <span><b>Kopia zapasowa światów</b><small id="pu-bwhint"></small></span></label>
+        <div class="pu-safe">${icon('shield')}<span>Światy, zrzuty ekranu, ustawienia gry, zmienione przez Ciebie configi i Twoje własne mody zostaną zachowane.
+          Usunięte i zastąpione pliki paczki trafią do folderu <b>.nore-backup</b> w instancji.</span></div>
+      </div>
+      <div class="pu-run" hidden>
+        <div class="mp-steps"><div class="mp-step active" data-s="pack"><span class="dot"></span>Pliki paczki</div><div class="mp-step" data-s="game"><span class="dot"></span>Minecraft i loader</div><div class="mp-step" data-s="done"><span class="dot"></span>Gotowe</div></div>
+        <div class="pu-bar"><i id="pu-bar"></i></div>
+        <div class="muted pu-stage" id="pu-stage">&nbsp;</div>
+        <div class="pu-result" id="pu-result" hidden></div>
+      </div>
+      <div class="foot"><button class="btn ghost" id="pu-cancel" data-close>Anuluj</button><button class="btn" id="pu-go" disabled>${icon('download')} Aktualizuj</button></div></div>`, { dismissable: false });
+  const sel = $('#pu-ver', m.el);
+  let list = [];
+  const chosen = () => list.find(v => v.id === sel.value);
+  const cmpMc = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+
+  const paint = () => {
+    const v = chosen();
+    const go = $('#pu-go', m.el);
+    if (!v) return;
+    go.disabled = v.current;
+    go.innerHTML = v.current ? `${icon('check')} Zainstalowana` : `${icon('download')} ${list.indexOf(v) > list.findIndex(x => x.current) && list.some(x => x.current) ? 'Zmień wersję' : 'Aktualizuj'}`;
+    const mcChanged = v.mcVersion && v.mcVersion !== inst.mcVersion;
+    const older = mcChanged && cmpMc(v.mcVersion, inst.mcVersion) < 0;
+    $('#pu-warn', m.el).innerHTML = mcChanged
+      ? `<div class="pu-warn ${older ? 'bad' : ''}">${icon('info')}<span>Minecraft zmieni się z <b>${esc(inst.mcVersion)}</b> na <b>${esc(v.mcVersion)}</b> –
+          ${older ? 'starsza wersja gry może nie otworzyć światów zapisanych w nowszej.' : 'światy zostaną przekonwertowane przy pierwszym otwarciu.'}
+          Kopia zapasowa zostanie zapisana w .nore-backup.</span></div>`
+      : '';
+    const bw = $('#pu-bw', m.el);
+    bw.disabled = !mcChanged;
+    $('#pu-bwrow', m.el).classList.toggle('on', !!mcChanged);
+    $('#pu-bwhint', m.el).textContent = mcChanged ? 'Kopia folderu saves przed zmianą wersji Minecrafta (zalecane)' : 'Ta wersja nie zmienia Minecrafta – światy nie są modyfikowane';
+    const log = (v.changelog || (up && up.versionId === v.id ? up.changelog : '') || '').trim();
+    $('#pu-log', m.el).textContent = log || 'Autor nie dodał listy zmian.';
+  };
+
+  nore.modpacks.versions(inst.id).then((vers) => {
+    list = vers;
+    if (!list.length) { sel.innerHTML = '<option>Brak wersji</option>'; $('#pu-log', m.el).textContent = 'Nie udało się wczytać wersji paczki.'; return; }
+    sel.innerHTML = list.map(v => `<option value="${esc(v.id)}">${esc(v.number)}${v.type !== 'release' ? ` [${esc(v.type.toUpperCase())}]` : ''} • MC ${esc(v.mcVersion || '?')} • ${new Date(v.date).toLocaleDateString('pl-PL')}${v.current ? ' (zainstalowana)' : ''}</option>`).join('');
+    sel.value = (up && list.some(v => v.id === up.versionId) ? up.versionId : (list.find(v => v.current) || list[0]).id);
+    paint();
+  }).catch((e) => { $('#pu-log', m.el).textContent = 'Nie udało się wczytać wersji: ' + e.message; });
+  sel.onchange = paint;
+
+  $('#pu-go', m.el).onclick = async () => {
+    const v = chosen();
+    if (!v || v.current) return;
+    const backupWorlds = $('#pu-bw', m.el).checked;
+    $('.pu-form', m.el).hidden = true;
+    $('.pu-run', m.el).hidden = false;
+    $('#pu-go', m.el).disabled = true;
+    $('#pu-cancel', m.el).disabled = true;
+    const bar = $('#pu-bar', m.el);
+    bar.classList.add('indet');
+    const step = (s2) => {
+      const order = ['pack', 'game', 'done'];
+      $$('.mp-step', m.el).forEach(x => {
+        const i = order.indexOf(x.dataset.s), cur = order.indexOf(s2);
+        x.className = 'mp-step' + (i < cur ? ' done' : i === cur ? ' active' : '');
+      });
+    };
+    const off = nore.on('modpack:progress', (p) => {
+      if (!p) return;
+      step(p.phase === 'game' ? 'game' : 'pack');
+      const frac = p.total ? (p.totalBytes ? p.bytes / p.totalBytes : p.done / p.total) : null;
+      bar.classList.toggle('indet', frac == null);
+      bar.style.width = frac == null ? '' : Math.round(frac * 100) + '%';
+      $('#pu-stage', m.el).textContent = [p.stage, p.current || (p.total ? `${p.done || 0} / ${p.total}` : '')].filter(Boolean).join(' • ');
+    });
+    try {
+      const r = await nore.modpacks.update({ instanceId: inst.id, versionId: v.id, backupWorlds });
+      off();
+      await App.refresh();
+      step('done');
+      bar.classList.remove('indet');
+      bar.style.width = '100%';
+      $('#pu-stage', m.el).textContent = r.warning ? 'Paczka zaktualizowana – gra pobierze się przy pierwszym uruchomieniu.' : 'Instancja jest gotowa do gry!';
+      const res = $('#pu-result', m.el);
+      res.hidden = false;
+      res.innerHTML = `<div>${icon('check')} <b>${esc(pack.version || '?')} → ${esc(r.instance.pack.version)}</b> ${versionTypeTag(r.instance.pack.type)} • Minecraft ${esc(r.instance.mcVersion)}</div>
+        <div class="muted">Nowe pliki: ${r.added} • usunięte: ${r.removed}${r.kept ? ` • zachowane Twoje zmiany: ${r.kept}` : ''}</div>
+        ${r.backup ? `<button class="btn ghost sm" id="pu-bk">${icon('folder')} Otwórz kopię zapasową</button>` : ''}`;
+      if ($('#pu-bk', res)) $('#pu-bk', res).onclick = () => nore.openFolder(r.backup);
+      toast('Zaktualizowano modpack', `${r.instance.name} → ${r.instance.pack.version}`, 'success');
+    } catch (e) {
+      off();
+      errorToast(e, 'Aktualizacja modpacka nie powiodła się');
+      $('#pu-stage', m.el).textContent = 'Przywrócono poprzednie pliki – instancja działa jak wcześniej.';
+      bar.classList.remove('indet');
+      bar.style.width = '0';
+    }
+    const cancel = $('#pu-cancel', m.el);
+    cancel.disabled = false;
+    cancel.textContent = 'Zamknij';
+    $('#pu-go', m.el).hidden = true;
+  };
+}

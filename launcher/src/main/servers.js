@@ -1,9 +1,10 @@
 'use strict';
 /*
- * Local Minecraft servers: Vanilla, Paper, Purpur, Folia, Fabric, Forge and NeoForge. Install,
- * start / stop with a live console, auto-restart after crashes, backups, player lists
- * (whitelist / ops / bans), server.properties, resource stats and making the server reachable
- * from the internet (UPnP + domains, see server-net.js).
+ * Local Minecraft servers: Vanilla, Paper, Purpur, Folia, Fabric, Quilt, Forge and NeoForge. Install
+ * (newest or a chosen loader version), start / stop with a live console, auto-restart after crashes,
+ * backups, player lists (whitelist / ops / bans), server.properties, resource stats and making the
+ * server reachable from the internet (UPnP / NAT-PMP, domains, playit.gg tunnel – server-net.js,
+ * server-tunnel.js).
  */
 const fs = require('fs');
 const fsp = require('fs/promises');
@@ -17,9 +18,12 @@ const net = require('./net');
 const versions = require('./versions');
 const java = require('./java');
 const serverNet = require('./server-net');
+const tunnel = require('./server-tunnel');
+// server-content requires nothing from here, loaded lazily to keep the module graph simple
+const serverContent = () => require('./server-content');
 
-const TYPES = ['vanilla', 'paper', 'purpur', 'folia', 'fabric', 'forge', 'neoforge'];
-const running = new Map(); // id -> { child, state, players:Set, log:[], started, stopping }
+const TYPES = ['vanilla', 'paper', 'purpur', 'folia', 'fabric', 'quilt', 'forge', 'neoforge'];
+const running = new Map(); // id -> { child, state, players:Set, log:[], started, stopping, timers:[], tunnel }
 const restarts = new Map(); // id -> [timestamps]
 let emit = () => {};
 
@@ -31,7 +35,7 @@ function publicView(s) {
   const rt = running.get(s.id);
   const domain = s.domain ? { ...s.domain, token: undefined, hasToken: !!s.domain.token } : null;
   return {
-    ...s, domain, dir: dir(s.id),
+    ...s, domain, dir: dir(s.id), net: rt ? rt.net || null : null,
     state: rt ? rt.state : 'stopped',
     players: rt ? [...rt.players] : [],
     startedAt: rt ? rt.started : null,
@@ -57,6 +61,7 @@ function create({ name, mcVersion, type = 'paper', memoryMb = 2048, port = 25565
   const srv = {
     id, name: name || `Serwer ${mcVersion}`, mcVersion, type, memoryMb, port, eula: !!eula, props: { ...DEFAULT_PROPS },
     created: Date.now(), installed: false, autoRestart: true, backupOnStart: false, backupKeep: 10, upnp: false, domain: null, jvmArgs: '',
+    loaderVersion: '', tunnel: null, disableClientMods: true,
   };
   store.update(d => { (d.servers = d.servers || []).push(srv); });
   fs.mkdirSync(dir(id), { recursive: true });
@@ -74,8 +79,9 @@ function update(id, patch) {
       s.domain = { ...patch.domain, token };
       delete patch.domain;
     }
-    if (patch.mcVersion && patch.mcVersion !== s.mcVersion) s.installed = false;
-    if (patch.type && patch.type !== s.type) s.installed = false;
+    if (patch.mcVersion && patch.mcVersion !== s.mcVersion) { s.installed = false; if (patch.loaderVersion === undefined) s.loaderVersion = ''; }
+    if (patch.type && patch.type !== s.type) { s.installed = false; if (patch.loaderVersion === undefined) s.loaderVersion = ''; }
+    if (patch.loaderVersion !== undefined && patch.loaderVersion !== s.loaderVersion) s.installed = false;
     Object.assign(s, patch, { id });
   });
   return get(id);
@@ -128,9 +134,9 @@ async function javaFor(srv, progress) {
   return bin;
 }
 
-function runInstaller(bin, installer, cwd, progress) {
+function runInstaller(bin, installer, cwd, progress, args = ['--installServer']) {
   return new Promise((resolve, reject) => {
-    const child = spawn(bin, ['-jar', installer, '--installServer'], { cwd, windowsHide: true });
+    const child = spawn(bin, ['-jar', installer, ...args], { cwd, windowsHide: true });
     let last = '';
     const onData = (d) => {
       last = d.toString().trim().split(/\r?\n/).pop() || last;
@@ -141,6 +147,33 @@ function runInstaller(bin, installer, cwd, progress) {
     child.on('error', reject);
     child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error('Instalator zakończył się błędem: ' + last))));
   });
+}
+
+/** Loader versions for the version picker: [{ version, stable }] newest first ('' = newest stable). */
+async function loaderVersions(type, mcVersion) {
+  if (type === 'fabric') return (await versions.getFabricLoaders(mcVersion)).map(l => ({ version: l.version, stable: !!l.stable }));
+  if (type === 'quilt') {
+    const list = await net.getJson(`https://meta.quiltmc.org/v3/versions/loader/${encodeURIComponent(mcVersion)}`).catch(() => []);
+    const num = (v) => v.split(/[.-]/).map(x => (/^\d+$/.test(x) ? +x : -1));
+    const cmp = (a, b) => { const x = num(a), y = num(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { const d = (y[i] ?? 0) - (x[i] ?? 0); if (d) return d; } return 0; };
+    return list.map(l => l.loader.version).sort(cmp).map(v => ({ version: v, stable: !/beta|pre|rc/i.test(v) }));
+  }
+  if (type === 'neoforge') return neoforgeVersions(mcVersion).then(l => l.reverse().map(v => ({ version: v, stable: !/beta|alpha/i.test(v) })));
+  if (type === 'forge') {
+    const meta = await net.getJson('https://files.minecraftforge.net/net/minecraftforge/forge/maven-metadata.json').catch(() => ({}));
+    const promos = (await net.getJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json').catch(() => ({}))).promos || {};
+    const rec = promos[`${mcVersion}-recommended`];
+    return (meta[mcVersion] || []).slice().reverse().map(v => ({ version: v.slice(mcVersion.length + 1), stable: v.endsWith('-' + rec) }));
+  }
+  return [];
+}
+
+/** NeoForge versions for a Minecraft version (1.20.2+: "21.1.x" for 1.21.1, 26.x: "26.1.x.y"). */
+async function neoforgeVersions(mcVersion) {
+  const all = (await net.getJson('https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge')).versions || [];
+  const parts = mcVersion.split('.');
+  const prefix = parts[0] === '1' ? `${parts[1]}.${parts[2] || '0'}.` : `${parts[0]}.${parts[1]}.${parts[2] || '0'}.`;
+  return all.filter(v => v.startsWith(prefix) && !/snapshot/i.test(v));
 }
 
 function argsFileFor(base, loaderPath) {
@@ -172,26 +205,40 @@ async function install(srv, progress) {
     await net.download(`https://api.purpurmc.org/v2/purpur/${encodeURIComponent(srv.mcVersion)}/latest/download`, jar);
   } else if (srv.type === 'fabric') {
     const loaders = await versions.getFabricLoaders(srv.mcVersion);
-    const loader = (loaders.find(l => l.stable) || loaders[0]);
+    const loader = (srv.loaderVersion && loaders.find(l => l.version === srv.loaderVersion)) || loaders.find(l => l.stable) || loaders[0];
     if (!loader) throw new Error(`Fabric nie wspiera wersji ${srv.mcVersion}`);
     const installers = await net.getJson('https://meta.fabricmc.net/v2/versions/installer');
     const inst = installers.find(i => i.stable) || installers[0];
     await fsp.rm(jar, { force: true });
     await net.download(`https://meta.fabricmc.net/v2/versions/loader/${srv.mcVersion}/${loader.version}/${inst.version}/server/jar`, jar);
+    update(srv.id, { installedLoader: loader.version });
+  } else if (srv.type === 'quilt') {
+    const loaders = await loaderVersions('quilt', srv.mcVersion);
+    const loader = (srv.loaderVersion && loaders.find(l => l.version === srv.loaderVersion)) || loaders.find(l => l.stable) || loaders[0];
+    if (!loader) throw new Error(`Quilt nie wspiera wersji ${srv.mcVersion}`);
+    const metaXml = await (await net.fetchWithRetry('https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml')).text();
+    const iv = (/<release>([^<]+)<\/release>/.exec(metaXml) || /<latest>([^<]+)<\/latest>/.exec(metaXml) || [])[1];
+    if (!iv) throw new Error('Nie znaleziono instalatora Quilt');
+    const installer = path.join(base, 'quilt-installer.jar');
+    await net.download(`https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/${iv}/quilt-installer-${iv}.jar`, installer);
+    const bin = await javaFor(srv, progress);
+    progress({ stage: `Instalowanie Quilt ${loader.version}` });
+    await runInstaller(bin, 'quilt-installer.jar', base, progress, ['install', 'server', srv.mcVersion, loader.version, '--download-server', '--install-dir=.']);
+    await fsp.rm(installer, { force: true });
+    if (!fs.existsSync(path.join(base, 'quilt-server-launch.jar'))) throw new Error('Instalator Quilt nie utworzył pliku startowego');
+    launch = { mode: 'jar', jar: 'quilt-server-launch.jar' };
+    update(srv.id, { installedLoader: loader.version });
   } else if (srv.type === 'neoforge' || srv.type === 'forge') {
     let installerUrl, loaderPath, fullVersion;
     if (srv.type === 'neoforge') {
-      const [, minor, patch = '0'] = srv.mcVersion.split('.');
-      const prefix = `${minor}.${patch}.`;
-      const all = (await net.getJson('https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge')).versions || [];
-      const matching = all.filter(v => v.startsWith(prefix));
-      fullVersion = matching.filter(v => !/beta|alpha/i.test(v)).pop() || matching.pop();
+      const matching = await neoforgeVersions(srv.mcVersion);
+      fullVersion = (srv.loaderVersion && matching.includes(srv.loaderVersion) && srv.loaderVersion) || matching.filter(v => !/beta|alpha/i.test(v)).pop() || matching.pop();
       if (!fullVersion) throw new Error(`NeoForge nie wspiera wersji ${srv.mcVersion}`);
       installerUrl = `https://maven.neoforged.net/releases/net/neoforged/neoforge/${fullVersion}/neoforge-${fullVersion}-installer.jar`;
       loaderPath = `net/neoforged/neoforge/${fullVersion}`;
     } else {
       const promos = (await net.getJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json')).promos || {};
-      const forge = promos[`${srv.mcVersion}-recommended`] || promos[`${srv.mcVersion}-latest`];
+      const forge = srv.loaderVersion || promos[`${srv.mcVersion}-recommended`] || promos[`${srv.mcVersion}-latest`];
       if (!forge) throw new Error(`Forge nie wspiera wersji ${srv.mcVersion}`);
       fullVersion = `${srv.mcVersion}-${forge}`;
       installerUrl = `https://maven.minecraftforge.net/net/minecraftforge/forge/${fullVersion}/forge-${fullVersion}-installer.jar`;
@@ -202,6 +249,7 @@ async function install(srv, progress) {
     const bin = await javaFor(srv, progress);
     progress({ stage: `Instalowanie ${srv.type === 'forge' ? 'Forge' : 'NeoForge'} ${fullVersion}` });
     await runInstaller(bin, 'installer.jar', base, progress);
+    update(srv.id, { installedLoader: fullVersion });
     await fsp.rm(installer, { force: true });
     await fsp.rm(installer + '.log', { force: true });
     const argsFile = argsFileFor(base, loaderPath);
@@ -262,25 +310,76 @@ function log(id, line, stream = 'cmd') {
   emit('server:log', { id, line, stream });
 }
 
-/** Port forwarding and DNS update before the server starts (failures only warn). */
-async function prepareNetwork(srv) {
+/** Domain → current public IP with the server's provider (DuckDNS / No-IP / Dynu / Cloudflare). */
+async function applyDomain(srv, ip) {
+  const d = srv.domain;
+  if (!d || !d.provider || d.provider === 'none') throw new Error('Najpierw ustaw domenę.');
+  ip = ip || await serverNet.publicIp();
+  if (d.provider === 'manual') return { host: d.name, ip, records: serverNet.manualRecords(d.name, ip, srv.port) };
+  const secret = decryptToken(d.token);
+  if (!secret) throw new Error(d.provider === 'noip' || d.provider === 'dynu' ? 'Brak hasła do konta.' : 'Brak tokenu API.');
+  const host = await serverNet.updateDomain(d, secret, ip, srv.port);
+  store.update(x => { const s2 = (x.servers || []).find(v => v.id === srv.id); if (s2 && s2.domain) s2.domain.lastIp = ip; });
+  return { host, ip, records: serverNet.manualRecords(host, ip, srv.port) };
+}
+
+/**
+ * Network for a running server (failures only warn): port forwarding (UPnP / NAT-PMP, renewed
+ * while it runs), the domain kept pointed at the current IP and the playit.gg tunnel.
+ */
+async function prepareNetwork(srv, rt) {
+  rt.net = {};
+  const every = (ms, fn) => rt.timers.push(setInterval(() => { if (running.get(srv.id) === rt) fn().catch(() => {}); }, ms));
   if (srv.upnp) {
-    try {
+    const open = async (quiet) => {
       const r = await serverNet.upnpOpen(srv.port, `Nore ${srv.name}`);
-      log(srv.id, `[Launcher] UPnP: otwarto port ${srv.port} na routerze ${r.router}${r.external ? ` (publiczne IP ${r.external})` : ''}`);
-    } catch (e) { log(srv.id, `[Launcher] UPnP: ${e.message}`, 'err'); }
+      rt.net.forward = r;
+      if (!quiet) {
+        log(srv.id, `[Launcher] ${r.method === 'natpmp' ? 'NAT-PMP' : 'UPnP'}: otwarto port ${srv.port} na routerze ${r.router} → ${r.client}${r.external ? ` (IP routera ${r.external})` : ''}`);
+        if (r.cgnat) log(srv.id, `[Launcher] Uwaga: router ma niepubliczny adres ${r.external} (CGNAT) – znajomi z internetu nie połączą się przez IP. Włącz tunel playit.gg w zakładce „Sieć i domena”.`, 'err');
+      }
+      return r;
+    };
+    try {
+      const r = await open(false);
+      // NAT-PMP leases expire; UPnP entries can be dropped by router reboots – renew both
+      every(r.method === 'natpmp' ? Math.max(60, (r.lifetime || 7200) / 2) * 1000 : 30 * 60000, () => open(true));
+    } catch (e) {
+      rt.net.forwardError = e.message;
+      log(srv.id, `[Launcher] ${e.message}`, 'err');
+    }
   }
   const d = srv.domain;
-  if (d && d.auto && d.provider && d.provider !== 'manual') {
-    try {
+  if (d && d.auto && d.provider && !['manual', 'none'].includes(d.provider)) {
+    let lastIp = null;
+    const refresh = async (first) => {
       const ip = await serverNet.publicIp();
-      const token = decryptToken(d.token);
-      const host = d.provider === 'duckdns'
-        ? await serverNet.duckdnsUpdate(d.name, token, ip)
-        : await serverNet.cloudflareUpdate({ token, hostname: d.name, ip, port: srv.port });
-      log(srv.id, `[Launcher] Domena ${host} → ${ip}`);
-    } catch (e) { log(srv.id, `[Launcher] Domena: ${e.message}`, 'err'); }
+      if (!first && ip === lastIp) return;
+      const r = await applyDomain(raw(srv.id) || srv, ip);
+      lastIp = ip;
+      log(srv.id, `[Launcher] Domena ${r.host} → ${ip}${first ? '' : ' (zmiana IP)'}`);
+    };
+    try { await refresh(true); } catch (e) { log(srv.id, `[Launcher] Domena: ${e.message}`, 'err'); }
+    every(10 * 60000, () => refresh(false));
   }
+  if (srv.tunnel && srv.tunnel.enabled) startTunnel(srv, rt).catch(e => log(srv.id, `[Launcher] Tunel playit.gg: ${e.message}`, 'err'));
+}
+
+async function startTunnel(srv, rt) {
+  const secret = decryptToken((store.get().playit || {}).secret);
+  if (!secret) throw new Error('połącz konto playit.gg w zakładce „Sieć i domena”');
+  let t = srv.tunnel;
+  if (!t.id) {
+    const made = await tunnel.ensureTunnel(secret, `nore-${srv.id}`.slice(0, 40));
+    t = { ...t, id: made.id, address: made.address };
+    update(srv.id, { tunnel: t });
+  }
+  rt.tunnel = await tunnel.run(secret, t.id, srv.port, (line) => {
+    if (/error|failed|warn/i.test(line)) log(srv.id, '[playit] ' + line, 'err');
+  });
+  rt.tunnel.on('exit', (code) => { if (running.get(srv.id) === rt && !rt.stopping) log(srv.id, `[Launcher] Tunel playit.gg zakończył się (kod ${code})`, 'err'); });
+  rt.net.tunnel = t.address;
+  log(srv.id, `[Launcher] Tunel playit.gg: znajomi łączą się przez ${t.address}`);
 }
 
 async function start(id, progress = () => {}) {
@@ -292,6 +391,9 @@ async function start(id, progress = () => {}) {
   const bin = await javaFor(srv, progress);
   fs.writeFileSync(path.join(dir(id), 'eula.txt'), '# Zaakceptowano w Nore Launcher (https://aka.ms/MinecraftEULA)\neula=true\n');
   writeProperties(srv);
+  if (srv.disableClientMods !== false) {
+    for (const f of await serverContent().disableClientOnly(publicView(srv)).catch(() => [])) log(id, `[Launcher] Wyłączono mod tylko dla klienta (wysypałby serwer): ${f}`, 'err');
+  }
   if (srv.backupOnStart && fs.existsSync(path.join(dir(id), worldName(srv)))) {
     progress({ stage: 'Kopia zapasowa świata' });
     await backup(id, 'auto');
@@ -304,10 +406,10 @@ async function start(id, progress = () => {}) {
   progress({ stage: 'Uruchamianie serwera' });
 
   const child = spawn(bin, args, { cwd: dir(id), windowsHide: true });
-  const rt = { child, state: 'starting', players: new Set(), log: [], started: Date.now(), stopping: false };
+  const rt = { child, state: 'starting', players: new Set(), log: [], started: Date.now(), stopping: false, timers: [], tunnel: null };
   running.set(id, rt);
   emit('server:state', { id, state: 'starting' });
-  prepareNetwork(srv);
+  prepareNetwork(srv, rt).finally(() => emit('server:state', { id, state: rt.state }));
   const onLine = (line, stream) => {
     line = line.replace(/\x1b\[[0-9;]*m/g, ''); // NeoForge / Forge colour codes
     log(id, line, stream);
@@ -331,6 +433,8 @@ async function start(id, progress = () => {}) {
   }
   child.on('exit', (code) => {
     running.delete(id);
+    for (const t of rt.timers) clearInterval(t);
+    if (rt.tunnel) { try { rt.tunnel.kill(); } catch { /* gone */ } }
     emit('server:state', { id, state: 'stopped', code });
     const s = raw(id);
     if (s && s.upnp) serverNet.upnpClose(s.port).catch(() => {});
@@ -533,5 +637,6 @@ async function resetWorld(id, seed) {
 
 module.exports = {
   TYPES, DEFAULT_PROPS, setEmitter, list, get, create, update, remove, install, start, stop, restart, command, logs, stopAll, stats,
-  readProperties, players, playerList, backup, listBackups, restoreBackup, deleteBackup, resetWorld, decryptToken, raw,
+  readProperties, players, playerList, backup, listBackups, restoreBackup, deleteBackup, resetWorld, decryptToken, encryptToken, raw,
+  loaderVersions, applyDomain, isRunning: (id) => running.has(id),
 };

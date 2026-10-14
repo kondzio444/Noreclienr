@@ -10,6 +10,7 @@ const App = {
   running: null,
   media: {},
   stats: {},
+  contentUpdates: {}, // { [instanceId]: { pack, mods, resourcepacks, shaders, checked } }
   listeners: new Set(),
 
   async refresh() {
@@ -536,6 +537,8 @@ function renderInstallStep(content, next) {
   App.info = await nore.info();
   await App.refresh();
   nore.on('update:state', renderUpdate);
+  nore.on('content:updatesState', onContentUpdates);
+  nore.content.updatesState().then(onContentUpdates).catch(() => {});
   nore.update.state().then(renderUpdate).catch(() => {});
   await applyAppearance(App.state.settings);
   loadInstanceMedia().then(() => App.emit());
@@ -577,4 +580,16 @@ function renderUpdate(u) {
          <div class="ub-progress"><i style="width:${u2.percent || 0}%"></i></div></div>`;
   if ($('#ub-go', bar)) $('#ub-go', bar).onclick = () => nore.update.install().catch(e => errorToast(e, 'Aktualizacja'));
   if ($('#ub-dl', bar)) $('#ub-dl', bar).onclick = () => nore.update.download().catch(e => errorToast(e, 'Aktualizacja'));
+}
+
+// ------------------------------------------------------------------ modpack / mod updates (background check in main)
+
+let contentUpdatesToasted = false;
+function onContentUpdates(state) {
+  App.contentUpdates = state || {};
+  App.emit();
+  const n = App.state ? App.state.instances.filter(i => hasContentUpdates(App.contentUpdates[i.id])).length : 0;
+  if (!n || contentUpdatesToasted) return;
+  contentUpdatesToasted = true;
+  toast('Dostępne aktualizacje', `${n} ${plural(n, 'instancja ma', 'instancje mają', 'instancji ma')} nowe wersje modpacka lub modów – zobacz stronę główną.`, 'info', 6500);
 }

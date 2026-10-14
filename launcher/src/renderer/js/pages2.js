@@ -263,7 +263,7 @@ Pages.instance = (root, { id, tab: startTab }) => {
       const ups = await nore.content.updates({ instanceId: i.id, kind: cfg.kind }).catch(e => { errorToast(e); return null; });
       if (!ups) return;
       if (!ups.length) return toast('Wszystko aktualne', cfg.title, 'success');
-      if (!(await confirmModal(`Aktualizacje: ${ups.length}`, ups.map(u => `${u.oldFile} → ${u.version}`).join('\n'), { ok: 'Aktualizuj wszystko' }))) return;
+      if (!(await updatesConfirm(`Aktualizacje: ${ups.length}`, ups))) return;
       await nore.content.applyUpdates({ instanceId: i.id, kind: cfg.kind, updates: ups }).catch(errorToast);
       toast('Zaktualizowano', `${ups.length} plików`, 'success');
       load();

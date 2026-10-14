@@ -1,18 +1,26 @@
 'use strict';
 /*
  * Content for local servers from Modrinth: plugins (Paper / Purpur / Folia), server mods (Fabric /
- * Forge / NeoForge), datapacks and whole modpacks (.mrpack), plus update checks for installed jars.
+ * Quilt / Forge / NeoForge), datapacks and whole modpacks (.mrpack from Modrinth or a file, server
+ * pack .zip), safe modpack updates, client-only mod detection and update checks for installed jars.
  */
 const fs = require('fs');
 const fsp = require('fs/promises');
 const path = require('path');
 const AdmZip = require('adm-zip');
 const net = require('./net');
+const store = require('./store');
 
 const API = 'https://api.modrinth.com/v2';
 
 const PLUGIN_LOADERS = { paper: ['paper', 'spigot', 'bukkit', 'purpur'], purpur: ['purpur', 'paper', 'spigot', 'bukkit'], folia: ['folia'] };
-const MOD_LOADERS = { fabric: ['fabric'], forge: ['forge'], neoforge: ['neoforge'] };
+const MOD_LOADERS = { fabric: ['fabric'], quilt: ['quilt', 'fabric'], forge: ['forge'], neoforge: ['neoforge'] };
+
+/** Version types allowed by Settings → update channel ('all' also takes alpha / beta). */
+function versionTypes() {
+  const ch = (store.get().settings || {}).updateChannel || 'all';
+  return ch === 'release' ? ['release'] : ch === 'beta' ? ['release', 'beta'] : ['release', 'beta', 'alpha'];
+}
 
 /** Which kinds of content a server type can use. */
 function kindsFor(type) {
@@ -95,7 +103,13 @@ function describeJar(file) {
       return { name: get('name'), version: get('version'), description: get('description') };
     }
     const fmj = text('fabric.mod.json');
-    if (fmj) { const j = JSON.parse(fmj); return { name: j.name || j.id, version: j.version, description: j.description }; }
+    if (fmj) { const j = JSON.parse(fmj); return { name: j.name || j.id, version: j.version, description: j.description, clientOnly: j.environment === 'client' }; }
+    const qmj = text('quilt.mod.json');
+    if (qmj) {
+      const j = JSON.parse(qmj);
+      const q = j.quilt_loader || {};
+      return { name: (q.metadata && q.metadata.name) || q.id, version: q.version, description: q.metadata && q.metadata.description, clientOnly: (j.minecraft && j.minecraft.environment) === 'client' };
+    }
     const toml = text('META-INF/neoforge.mods.toml') || text('META-INF/mods.toml');
     if (toml) {
       const get = (k) => { const m = new RegExp(`^\\s*${k}\\s*=\\s*"([^"]+)"`, 'm').exec(toml); return m ? m[1] : null; };
@@ -121,10 +135,25 @@ async function listInstalled(srv) {
       const full = path.join(dir, f.name);
       const st = await fsp.stat(full);
       const info = isJar ? describeJar(full) : {};
-      out.push({ kind, file: f.name, name: info.name || base.replace(/\.(jar|zip)$/i, ''), version: info.version || '', description: info.description || '', enabled, size: st.size, dir: f.isDirectory() });
+      out.push({ kind, file: f.name, name: info.name || base.replace(/\.(jar|zip)$/i, ''), version: info.version || '', description: info.description || '', enabled, size: st.size, dir: f.isDirectory(), clientOnly: !!info.clientOnly });
     }
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Disables mods that only work on the client (they crash a dedicated server); returns their names. */
+async function disableClientOnly(srv) {
+  if (!MOD_LOADERS[srv.type]) return [];
+  const dir = folderFor(srv, 'mod');
+  let files = [];
+  try { files = (await fsp.readdir(dir)).filter(f => f.toLowerCase().endsWith('.jar')); } catch { return []; }
+  const off = [];
+  for (const f of files) {
+    if (!describeJar(path.join(dir, f)).clientOnly) continue;
+    await fsp.rename(path.join(dir, f), path.join(dir, f + '.disabled'));
+    off.push(f);
+  }
+  return off;
 }
 
 async function setEnabled(srv, kind, file, enabled) {
@@ -146,7 +175,7 @@ async function addFiles(srv, files) {
     const lower = f.toLowerCase();
     let kind;
     if (lower.endsWith('.jar')) kind = PLUGIN_LOADERS[srv.type] ? 'plugin' : MOD_LOADERS[srv.type] ? 'mod' : null;
-    else if (lower.endsWith('.zip')) kind = 'datapack';
+    else if (lower.endsWith('.zip')) kind = isServerPack(f) ? null : 'datapack';
     if (!kind) continue;
     const dir = folderFor(srv, kind);
     await fsp.mkdir(dir, { recursive: true });
@@ -171,14 +200,14 @@ async function checkUpdates(srv) {
     for (const f of files) hashes[await net.sha1File(path.join(dir, f))] = f;
     const res = await net.fetchWithRetry(`${API}/version_files/update`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: loadersFor(srv, kind), game_versions: [srv.mcVersion] }),
+      body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: loadersFor(srv, kind), game_versions: [srv.mcVersion], version_types: versionTypes() }),
     });
     if (!res.ok) continue;
     const map = await res.json();
     for (const [hash, version] of Object.entries(map)) {
       const file = primaryFile(version);
       if (!file || file.hashes.sha1 === hash) continue;
-      updates.push({ kind, oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number, projectId: version.project_id });
+      updates.push({ kind, oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number, type: version.version_type, projectId: version.project_id });
     }
   }
   return updates;
@@ -189,48 +218,175 @@ async function applyUpdates(srv, updates, onStatus) {
     const dir = folderFor(srv, u.kind);
     onStatus && onStatus(`Aktualizacja ${u.newFile}`);
     await net.download(u.url, path.join(dir, u.newFile), { sha1: u.sha1, size: u.size });
-    if (u.oldFile !== u.newFile) await fsp.rm(path.join(dir, u.oldFile), { force: true });
+    if (u.oldFile !== u.newFile) await moveToBackup(srv, path.join(dir, u.oldFile), 'aktualizacja');
   }
   return updates.length;
 }
 
-// ------------------------------------------------------------------ modpacks (.mrpack)
-
-/**
- * Installs a Modrinth modpack on the server: server-side files from modrinth.index.json plus
- * overrides / server-overrides. Returns the Minecraft version and loader the pack needs.
- */
-async function installModpack(srv, projectId, onStatus) {
-  const version = await bestVersion(projectId, { loaders: loadersFor(srv, 'modpack') });
-  if (!version) throw new Error('Ta paczka nie ma wersji dla ' + srv.type);
-  const file = primaryFile(version);
-  const tmp = path.join(srv.dir, '.nore-modpack.mrpack');
-  onStatus && onStatus(`Pobieranie paczki ${file.filename}`);
-  await net.download(file.url, tmp, { sha1: file.hashes && file.hashes.sha1, size: file.size });
-  const zip = new AdmZip(tmp);
-  const index = JSON.parse(zip.readAsText('modrinth.index.json'));
-  const files = (index.files || []).filter(f => !f.env || f.env.server !== 'unsupported');
-  let i = 0;
-  for (const f of files) {
-    const dest = path.resolve(srv.dir, f.path);
-    if (!dest.startsWith(path.resolve(srv.dir) + path.sep)) continue; // never write outside the server
-    onStatus && onStatus(`Pliki paczki ${++i}/${files.length}`);
-    await fsp.mkdir(path.dirname(dest), { recursive: true });
-    await net.download(f.downloads[0], dest, { sha1: f.hashes && f.hashes.sha1, size: f.fileSize });
-  }
-  for (const prefix of ['overrides/', 'server-overrides/']) {
-    for (const e of zip.getEntries()) {
-      if (e.isDirectory || !e.entryName.startsWith(prefix)) continue;
-      const dest = path.resolve(srv.dir, e.entryName.slice(prefix.length));
-      if (!dest.startsWith(path.resolve(srv.dir) + path.sep)) continue;
-      await fsp.mkdir(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, e.getData());
-    }
-  }
-  await fsp.rm(tmp, { force: true });
-  const deps = index.dependencies || {};
-  const type = deps['fabric-loader'] ? 'fabric' : deps.neoforge ? 'neoforge' : deps.forge ? 'forge' : srv.type;
-  return { mcVersion: deps.minecraft || srv.mcVersion, type, name: index.name, files: files.length };
+/** Old files go to .nore-backup/<label-date>/ instead of being deleted (keeps the newest 5). */
+async function moveToBackup(srv, file, label) {
+  const rel = path.relative(srv.dir, file);
+  if (rel.startsWith('..') || !fs.existsSync(file)) return;
+  const root = path.join(srv.dir, '.nore-backup');
+  const stamp = `${label}-${new Date().toISOString().slice(0, 13).replace(/[:T]/g, '-')}`;
+  const dest = path.join(root, stamp, rel);
+  await fsp.mkdir(path.dirname(dest), { recursive: true });
+  await fsp.rename(file, dest).catch(async () => { await fsp.cp(file, dest, { recursive: true }); await fsp.rm(file, { recursive: true, force: true }); });
+  const all = (await fsp.readdir(root)).sort();
+  for (const old of all.slice(0, Math.max(0, all.length - 5))) await fsp.rm(path.join(root, old), { recursive: true, force: true });
 }
 
-module.exports = { kindsFor, search, install, listInstalled, setEnabled, remove, addFiles, checkUpdates, applyUpdates, installModpack };
+// ------------------------------------------------------------------ modpacks (.mrpack / server pack .zip)
+
+function sha1(buf) { return require('crypto').createHash('sha1').update(buf).digest('hex'); }
+
+function inside(base, rel) {
+  const dest = path.resolve(base, rel);
+  return dest.startsWith(path.resolve(base) + path.sep) ? dest : null; // never write outside the server
+}
+
+/** Versions of a modpack usable on this server's loader: [{ id, number, type, date, mcVersion }]. */
+async function modpackVersions(srv, projectId) {
+  const params = new URLSearchParams({ loaders: JSON.stringify(MOD_LOADERS[srv.type] || ['fabric', 'quilt', 'forge', 'neoforge']) });
+  const list = await net.getJson(`${API}/project/${encodeURIComponent(projectId)}/version?${params}`);
+  return list.filter(v => v.files.some(f => f.filename.endsWith('.mrpack'))).map(v => ({
+    id: v.id, number: v.version_number, name: v.name, type: v.version_type, date: v.date_published,
+    mcVersion: (v.game_versions || [])[0], gameVersions: v.game_versions || [], loaders: v.loaders, changelog: (v.changelog || '').slice(0, 3000),
+  }));
+}
+
+/** Newest pack version allowed by the update channel, or null when the server is up to date. */
+async function modpackUpdate(srv) {
+  if (!srv.pack || !srv.pack.projectId) return null;
+  const types = versionTypes();
+  // packs publish parallel builds per Minecraft version – an update keeps the server's version
+  const list = (await modpackVersions(srv, srv.pack.projectId)).filter(v => types.includes(v.type) && v.gameVersions.includes(srv.mcVersion));
+  const newest = list.sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+  if (!newest || newest.id === srv.pack.versionId) return null;
+  const current = list.find(v => v.id === srv.pack.versionId);
+  if (current && new Date(current.date) >= new Date(newest.date)) return null;
+  return { ...newest, mcChanged: newest.mcVersion && newest.mcVersion !== srv.mcVersion };
+}
+
+function loaderOf(deps, fallback) {
+  return deps['fabric-loader'] ? 'fabric' : deps['quilt-loader'] ? 'quilt' : deps.neoforge ? 'neoforge' : deps.forge ? 'forge' : fallback;
+}
+
+/** Overrides land unless the server owner changed that file since the pack wrote it. */
+function overrideAction(rel, existingHash, oldHash, firstInstall) {
+  if (/^(world|world_nether|world_the_end)\//.test(rel)) return 'skip';
+  if (existingHash == null || firstInstall) return 'write';
+  if (/^(mods|plugins)\//.test(rel)) return 'write';
+  return oldHash && existingHash === oldHash ? 'write' : 'keep';
+}
+
+/**
+ * Installs or updates a Modrinth modpack on the server. source: { projectId, versionId } or
+ * { file } (local .mrpack). Files of the previous pack version that the new one dropped are moved
+ * to .nore-backup, worlds are never touched and configs the owner edited are kept.
+ */
+async function installModpack(srv, source, onStatus = () => {}) {
+  let file = source.file, version = null, tmp = null;
+  if (!file) {
+    if (source.versionId) version = await net.getJson(`${API}/version/${encodeURIComponent(source.versionId)}`);
+    else {
+      const list = await modpackVersions(srv, source.projectId);
+      const pick = list.find(v => v.type === 'release') || list[0];
+      if (pick) version = await net.getJson(`${API}/version/${encodeURIComponent(pick.id)}`);
+    }
+    if (!version) throw new Error('Ta paczka nie ma wersji dla ' + srv.type);
+    const f = version.files.find(x => x.primary && x.filename.endsWith('.mrpack')) || version.files.find(x => x.filename.endsWith('.mrpack'));
+    if (!f) throw new Error('Ta wersja nie zawiera pliku .mrpack');
+    tmp = file = path.join(srv.dir, '.nore-modpack.mrpack');
+    onStatus(`Pobieranie paczki ${f.filename}`);
+    await net.download(f.url, tmp, { sha1: f.hashes && f.hashes.sha1, size: f.size });
+  }
+  try {
+    const zip = new AdmZip(file);
+    const entry = zip.getEntry('modrinth.index.json');
+    if (!entry) throw new Error('To nie jest paczka Modrinth (.mrpack)');
+    const index = JSON.parse(entry.getData().toString('utf8'));
+    const deps = index.dependencies || {};
+    const old = srv.pack || {};
+    const files = (index.files || []).filter(f => (!f.env || f.env.server !== 'unsupported') && f.downloads && f.downloads.length && inside(srv.dir, f.path));
+    const newPaths = new Set(files.map(f => f.path));
+
+    // drop files the previous pack version installed and this one no longer has
+    for (const rel of old.files || []) {
+      if (newPaths.has(rel)) continue;
+      const p = inside(srv.dir, rel);
+      if (p) { await moveToBackup(srv, p, 'modpack'); await moveToBackup(srv, p + '.disabled', 'modpack'); }
+    }
+    let i = 0;
+    await net.downloadAll(files.map(f => ({ url: f.downloads[0], dest: inside(srv.dir, f.path), sha1: f.hashes && f.hashes.sha1, size: f.fileSize, name: path.basename(f.path) })), {
+      concurrency: 8, progress: (p) => { if (p.done !== i) { i = p.done; onStatus(`Pliki paczki ${p.done}/${p.total}`); } },
+    });
+    const overrides = {};
+    for (const prefix of ['overrides/', 'server-overrides/']) {
+      for (const e of zip.getEntries()) {
+        if (e.isDirectory || !e.entryName.startsWith(prefix)) continue;
+        const rel = e.entryName.slice(prefix.length);
+        const dest = inside(srv.dir, rel);
+        if (!dest) continue;
+        const data = e.getData();
+        const existing = fs.existsSync(dest) ? sha1(fs.readFileSync(dest)) : null;
+        const act = overrideAction(rel, existing, (old.overrides || {})[rel], !old.files);
+        overrides[rel] = sha1(data);
+        if (act !== 'write') continue;
+        await fsp.mkdir(path.dirname(dest), { recursive: true });
+        fs.writeFileSync(dest, data);
+      }
+    }
+    return {
+      name: index.name, mcVersion: deps.minecraft || srv.mcVersion, type: loaderOf(deps, srv.type), files: files.length,
+      loaderVersion: deps['fabric-loader'] || deps['quilt-loader'] || deps.neoforge || (deps.forge ? deps.forge : '') || '',
+      pack: {
+        projectId: source.projectId || (version && version.project_id) || null, versionId: version ? version.id : null,
+        version: version ? version.version_number : index.versionId || '', title: index.name,
+        files: [...newPaths], overrides,
+      },
+    };
+  } finally {
+    if (tmp) await fsp.rm(tmp, { force: true });
+  }
+}
+
+/** A CurseForge / FTB style server pack: a zip with mods/ (maybe inside one top folder). */
+function isServerPack(file) {
+  try {
+    const names = new AdmZip(file).getEntries().map(e => e.entryName);
+    return names.some(n => /^([^/]+\/)?mods\/[^/]+\.jar$/i.test(n));
+  } catch { return false; }
+}
+
+/** Unpacks a server pack zip into the server folder (one shared top folder is stripped). */
+async function installServerPack(srv, file, onStatus = () => {}) {
+  const zip = new AdmZip(file);
+  const entries = zip.getEntries().filter(e => !e.isDirectory);
+  const tops = new Set(entries.map(e => e.entryName.split('/')[0]));
+  const strip = tops.size === 1 && entries.every(e => e.entryName.includes('/')) ? [...tops][0] + '/' : '';
+  let n = 0, loader = null, mc = null;
+  for (const e of entries) {
+    const rel = e.entryName.slice(strip.length);
+    if (!rel || /^(world|world_nether|world_the_end)\//.test(rel) || /^(eula\.txt|server\.properties)$/i.test(rel)) continue;
+    const dest = inside(srv.dir, rel);
+    if (!dest) continue;
+    await fsp.mkdir(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, e.getData());
+    if (++n % 50 === 0) onStatus(`Rozpakowywanie ${n}/${entries.length}`);
+    const m = /^(neoforge|forge)-(\d+\.\d+(?:\.\d+)?)-?([\d.]*)-installer\.jar$/i.exec(path.basename(rel)) || /^(fabric)-server-mc\.([\d.]+)-loader/i.exec(path.basename(rel));
+    if (m) { loader = m[1].toLowerCase(); mc = m[1].toLowerCase() === 'neoforge' ? null : m[2]; }
+  }
+  const vars = path.join(srv.dir, 'variables.txt');
+  if (fs.existsSync(vars)) {
+    const t = fs.readFileSync(vars, 'utf8');
+    mc = mc || (/MINECRAFT_VERSION=([\d.]+)/.exec(t) || [])[1] || null;
+    loader = loader || ((/MODLOADER=(\w+)/.exec(t) || [])[1] || '').toLowerCase() || null;
+  }
+  return { files: n, type: MOD_LOADERS[loader] ? loader : null, mcVersion: mc };
+}
+
+module.exports = {
+  kindsFor, search, install, listInstalled, setEnabled, remove, addFiles, checkUpdates, applyUpdates, disableClientOnly,
+  installModpack, modpackVersions, modpackUpdate, isServerPack, installServerPack, overrideAction,
+};

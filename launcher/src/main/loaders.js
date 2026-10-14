@@ -59,9 +59,11 @@ async function versions(loader, mc) {
       const all = (await net.getJson('https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/forge')).versions || [];
       return all.filter(v => v.startsWith('1.20.1-')).map(v => v.slice(7)).sort((a, b) => cmpVersion(b, a)).map(v => ({ version: v, stable: true }));
     }
-    const [, minor, patch = '0'] = mc.split('.');
+    // 1.21.1 → "21.1.x", 26.1 → "26.1.0.x" (the year-based versions keep all three parts)
+    const p = mc.split('.');
+    const prefix = p[0] === '1' ? `${p[1]}.${p[2] || '0'}.` : `${p[0]}.${p[1]}.${p[2] || '0'}.`;
     const all = (await net.getJson('https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge')).versions || [];
-    return all.filter(v => v.startsWith(`${minor}.${patch}.`)).sort((a, b) => cmpVersion(b, a))
+    return all.filter(v => v.startsWith(prefix) && !/snapshot/i.test(v)).sort((a, b) => cmpVersion(b, a))
       .map(v => ({ version: v, stable: !/beta|alpha/i.test(v) }));
   }
   return [];

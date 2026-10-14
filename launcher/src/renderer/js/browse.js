@@ -599,10 +599,11 @@ function browsePage(key) {
         if (!ups.length) { b.innerHTML = `${icon('check')} Wszystko aktualne`; return; }
         for (const u of ups) {
           const r = box.querySelector(`.irow[data-file="${CSS.escape(u.oldFile)}"] .iupd`);
-          if (r) { r.hidden = false; r.textContent = '→ ' + u.version; }
+          if (r) { r.hidden = false; r.innerHTML = `→ ${esc(u.version)} ${versionTypeTag(u.type)}`; }
         }
         b.innerHTML = `${icon('download')} Aktualizuj (${ups.length})`;
         b.onclick = async () => {
+          if (!(await updatesConfirm(`Aktualizacje: ${ups.length}`, ups))) return;
           b.disabled = true; b.innerHTML = '<span class="spinner"></span> Aktualizowanie';
           try {
             await nore.content.applyUpdates({ instanceId: i.id, kind: cfg.kind, world, updates: ups });

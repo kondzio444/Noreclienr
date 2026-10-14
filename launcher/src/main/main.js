@@ -18,6 +18,7 @@ const discord = require('./discord');
 const updater = require('./updater');
 const serverContent = require('./server-content');
 const serverNet = require('./server-net');
+const serverTunnel = require('./server-tunnel');
 const AdmZip = require('adm-zip');
 const loaders = require('./loaders');
 const modpacks = require('./modpacks');
@@ -137,6 +138,7 @@ ipcMain.handle('settings:set', (e, patch) => {
   store.update(d => Object.assign(d.settings, patch));
   if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
   if ('autoUpdate' in patch) updater.configure(store.get().settings);
+  if ('updateChannel' in patch || 'notifyContentUpdates' in patch) scheduleUpdateChecks(1500);
   return store.get().settings;
 });
 
@@ -348,9 +350,10 @@ async function prepareGame(inst, settings, progress) {
     try {
       progress({ stage: 'Aktualizacja modów', step: 'nore' });
       const dir = path.join(inst.gameDir, 'mods');
-      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion, inst.loader);
+      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion, inst.loader, settings.updateChannel);
       if (ups.length) {
-        await modrinth.applyUpdates(dir, ups);
+        await modrinth.applyUpdates(dir, ups, { gameDir: inst.gameDir });
+        remapPackFiles(inst, dir, ups);
         send('log', { line: `[Launcher] Zaktualizowano mody: ${ups.map(u => u.newFile).join(', ')}`, stream: 'out' });
       }
     } catch (e) {
@@ -561,6 +564,150 @@ ipcMain.handle('modpacks:import', async () => {
   const file = r.filePaths[0];
   return installPack((progress, concurrency) => modpacks.installFile(file, {}, progress, concurrency));
 });
+
+ipcMain.handle('modpacks:checkUpdate', async (e, instanceId) => {
+  const inst = instances.get(instanceId);
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  const up = await modpacks.checkUpdate(inst, store.get().settings.updateChannel);
+  setInstanceUpdates(instanceId, { ...(contentUpdates[instanceId] || { mods: 0, resourcepacks: 0, shaders: 0 }), pack: up, checked: Date.now() });
+  return up;
+});
+ipcMain.handle('modpacks:versions', (e, instanceId) => modpacks.versions(instances.get(instanceId)));
+
+/** Updates (or changes the version of) a modpack instance in place, then downloads the game + loader. */
+ipcMain.handle('modpacks:update', async (e, { instanceId, versionId, backupWorlds = true }) => {
+  if (game && game.instanceId === instanceId) throw new Error('Zamknij grę przed aktualizacją modpacka.');
+  if (busy) throw new Error('Trwa już przygotowywanie gry.');
+  busy = true;
+  const progress = (p) => send('modpack:progress', p);
+  try {
+    const settings = store.get().settings;
+    const inst = instances.get(instanceId);
+    if (!inst) throw new Error('Nie znaleziono instancji.');
+    if (!versionId) {
+      const up = await modpacks.checkUpdate(inst, settings.updateChannel);
+      if (!up) throw new Error('Paczka jest już aktualna.');
+      versionId = up.versionId;
+    }
+    const r = await modpacks.update(instanceId, versionId, progress, { backupWorlds: backupWorlds !== false, concurrency: settings.concurrency });
+    send('log', { line: `[Launcher] Zaktualizowano modpack ${inst.name}: ${inst.pack.version} → ${r.instance.pack.version}${r.backup ? ` (kopia: ${r.backup})` : ''}`, stream: 'out' });
+    recheckInstance(instanceId);
+    const out = { ...r, kept: r.kept.length };
+    try {
+      await prepareGame(instances.get(instanceId), settings, (p) => progress({ ...p, phase: 'game' }));
+    } catch (err) {
+      send('log', { line: `[Launcher] Paczka zaktualizowana, ale pobieranie gry nie powiodło się: ${err.message}`, stream: 'err' });
+      return { ...out, instance: instances.get(instanceId), warning: err.message };
+    }
+    return { ...out, instance: instances.get(instanceId) };
+  } finally {
+    busy = false;
+    send('modpack:progress', null);
+  }
+});
+
+// ------------------------------------------------------------------ content updates (background check)
+
+const UPDATE_CHECK_EVERY = 6 * 3600 * 1000;
+let contentUpdates = {}; // { [instanceId]: { pack, mods, resourcepacks, shaders, checked } }
+let updatesRun = null;
+let updatesTimer = null;
+const pause = (ms) => new Promise(r => setTimeout(r, ms));
+
+function updatesState() {
+  const ids = new Set(instances.list().map(i => i.id));
+  return Object.fromEntries(Object.entries(contentUpdates).filter(([id]) => ids.has(id)));
+}
+
+function setInstanceUpdates(id, value) {
+  contentUpdates = { ...contentUpdates, [id]: value };
+  send('content:updatesState', updatesState());
+}
+
+/** Paths of a modpack instance that belong to the pack (null when unknown – older installs). */
+function packFileSet(inst) {
+  if (inst.modpack !== 'pack' || !inst.pack) return new Set();
+  return Array.isArray(inst.pack.files) ? new Set(inst.pack.files) : null;
+}
+
+/** Updates of files a modpack brought are left to the modpack itself. */
+function withoutPackFiles(inst, kind, ups) {
+  const set = packFileSet(inst);
+  if (!set) return inst.modpack === 'pack' ? [] : ups;
+  const folder = modrinth.KINDS[kind].folder;
+  return ups.filter(u => !set.has(`${folder}/${u.oldFile}`));
+}
+
+/** Keeps a modpack's file list in sync when one of its files is updated on its own. */
+function remapPackFiles(inst, dir, updates) {
+  if (!inst.pack || !Array.isArray(inst.pack.files)) return;
+  const rel = path.relative(inst.gameDir, dir).split(path.sep).join('/');
+  const files = [...inst.pack.files], ids = { ...(inst.pack.ids || {}) };
+  let changed = false;
+  for (const u of updates) {
+    const from = `${rel}/${u.oldFile}`, to = `${rel}/${u.newFile}`;
+    const k = files.indexOf(from);
+    if (k < 0 || from === to) continue;
+    files[k] = to;
+    if (ids[from]) { ids[to] = ids[from]; delete ids[from]; }
+    changed = true;
+  }
+  if (changed) instances.update(inst.id, { pack: { ...instances.get(inst.id).pack, files, ids } });
+}
+
+/** Modpack + mod / resource pack / shader updates of one instance (sequential, gentle on the API). */
+async function checkInstanceUpdates(inst) {
+  const channel = store.get().settings.updateChannel || 'all';
+  const out = { pack: null, mods: 0, resourcepacks: 0, shaders: 0, checked: Date.now() };
+  if (inst.modpack === 'pack' && inst.pack && inst.pack.projectId) {
+    try { out.pack = await modpacks.checkUpdate(inst, channel); } catch { /* offline */ }
+    await pause(400);
+  }
+  for (const [kind, key] of [['mod', 'mods'], ['resourcepack', 'resourcepacks'], ['shader', 'shaders']]) {
+    if (kind === 'mod' && (!inst.loader || inst.loader === 'vanilla')) continue;
+    const dir = path.join(inst.gameDir, modrinth.KINDS[kind].folder);
+    if (!fs.existsSync(dir)) continue;
+    try {
+      out[key] = withoutPackFiles(inst, kind, await modrinth.checkUpdates(dir, kind, inst.mcVersion, inst.loader, channel)).length;
+    } catch { /* offline */ }
+    await pause(400);
+  }
+  return out;
+}
+
+function recheckInstance(id) {
+  const inst = instances.get(id);
+  if (!inst || store.get().settings.notifyContentUpdates === false) return;
+  checkInstanceUpdates(inst).then(r => setInstanceUpdates(id, r)).catch(() => {});
+}
+
+function checkAllUpdates() {
+  if (updatesRun) return updatesRun;
+  updatesRun = (async () => {
+    for (const inst of instances.list()) {
+      try { contentUpdates[inst.id] = await checkInstanceUpdates(inst); } catch { /* next instance */ }
+    }
+    const state = updatesState();
+    contentUpdates = state;
+    send('content:updatesState', state);
+    return state;
+  })().finally(() => { updatesRun = null; });
+  return updatesRun;
+}
+
+/** First check 15 s after start, then every 6 h (when notifications are on). */
+function scheduleUpdateChecks(delay = 15000) {
+  clearTimeout(updatesTimer);
+  updatesTimer = setTimeout(async function tick() {
+    if (store.get().settings.notifyContentUpdates !== false) await checkAllUpdates().catch(() => {});
+    else { contentUpdates = {}; send('content:updatesState', {}); }
+    updatesTimer = setTimeout(tick, UPDATE_CHECK_EVERY);
+  }, delay);
+}
+app.whenReady().then(() => scheduleUpdateChecks());
+
+ipcMain.handle('content:updatesState', () => updatesState());
+ipcMain.handle('content:checkAll', () => checkAllUpdates());
 ipcMain.handle('content:project', (e, id) => modrinth.project(id));
 
 ipcMain.handle('content:install', async (e, { instanceId, projectId, kind, world, versionId }) => {
@@ -580,11 +727,19 @@ ipcMain.handle('content:installed', (e, { instanceId, kind, world }) => {
   return modrinth.listInstalled(contentDir(inst, kind, world), modrinth.KINDS[kind].ext);
 });
 
-ipcMain.handle('content:updates', (e, { instanceId, kind, world }) => {
+ipcMain.handle('content:updates', async (e, { instanceId, kind, world, skipPack }) => {
   const inst = instances.get(instanceId);
-  return modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion, inst.loader);
+  const ups = await modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion, inst.loader, store.get().settings.updateChannel);
+  return skipPack ? withoutPackFiles(inst, kind, ups) : ups;
 });
-ipcMain.handle('content:applyUpdates', (e, { instanceId, kind, world, updates }) => modrinth.applyUpdates(contentDir(instances.get(instanceId), kind, world), updates));
+ipcMain.handle('content:applyUpdates', async (e, { instanceId, kind, world, updates }) => {
+  const inst = instances.get(instanceId);
+  const dir = contentDir(inst, kind, world);
+  const n = await modrinth.applyUpdates(dir, updates, { gameDir: inst.gameDir });
+  remapPackFiles(inst, dir, updates);
+  recheckInstance(instanceId);
+  return n;
+});
 
 ipcMain.handle('content:toggle', async (e, { instanceId, kind, world, file }) => {
   const dir = contentDir(instances.get(instanceId), kind, world);
@@ -770,27 +925,68 @@ ipcMain.handle('servers:icon', (e, id) => {
 // server content (plugins / mods / datapacks / modpacks)
 ipcMain.handle('servers:contentKinds', (e, id) => serverContent.kindsFor(servers.get(id).type));
 ipcMain.handle('servers:contentSearch', (e, id, opts) => serverContent.search(servers.get(id), opts));
-ipcMain.handle('servers:contentInstall', async (e, id, opts) => {
+/** Installs / updates a modpack on a stopped server; the world is backed up first. */
+async function serverModpack(id, run) {
   const srv = servers.get(id);
-  if (opts.kind === 'modpack') {
-    if (srv.state !== 'stopped') throw new Error('Zatrzymaj serwer przed instalacją paczki.');
-    const r = await serverContent.installModpack(srv, opts.projectId, (stage) => send('server:progress', { id, stage }));
-    servers.update(id, { mcVersion: r.mcVersion, type: r.type });
-    send('server:progress', { id, done: true });
+  if (srv.state !== 'stopped') throw new Error('Zatrzymaj serwer przed instalacją paczki.');
+  const progress = (stage) => send('server:progress', { id, stage });
+  try {
+    if (fs.existsSync(path.join(srv.dir, (srv.props && srv.props['level-name']) || 'world'))) {
+      progress('Kopia zapasowa świata');
+      await servers.backup(id, 'modpack');
+    }
+    const r = await run(srv, progress);
+    const patch = {};
+    if (r.mcVersion) patch.mcVersion = r.mcVersion;
+    if (r.type) patch.type = r.type;
+    if (r.loaderVersion !== undefined) patch.loaderVersion = r.loaderVersion;
+    if (r.pack) patch.pack = r.pack;
+    servers.update(id, patch);
     return r;
+  } finally {
+    send('server:progress', { id, done: true });
   }
+}
+
+ipcMain.handle('servers:contentInstall', async (e, id, opts) => {
+  if (opts.kind === 'modpack') return serverModpack(id, (srv, p) => serverContent.installModpack(srv, { projectId: opts.projectId, versionId: opts.versionId }, p));
+  const srv = servers.get(id);
   const files = await serverContent.install(srv, opts, (stage) => send('server:progress', { id, stage }));
   send('server:progress', { id, done: true });
   return files;
 });
+ipcMain.handle('servers:modpackVersions', (e, id, projectId) => serverContent.modpackVersions(servers.get(id), projectId || (servers.get(id).pack || {}).projectId));
+ipcMain.handle('servers:modpackUpdate', (e, id) => serverContent.modpackUpdate(servers.get(id)));
+ipcMain.handle('servers:modpackApply', (e, id, versionId) => {
+  const pack = servers.get(id).pack;
+  if (!pack || !pack.projectId) throw new Error('Ten serwer nie ma paczki z Modrinth.');
+  return serverModpack(id, (srv, p) => serverContent.installModpack(srv, { projectId: pack.projectId, versionId }, p));
+});
+ipcMain.handle('servers:loaderVersions', (e, type, mcVersion) => servers.loaderVersions(type, mcVersion));
+
+/** Files dropped or picked for a server: .mrpack / server pack .zip install a pack, the rest go to plugins / mods / datapacks. */
+async function addServerFiles(id, files) {
+  files = files.filter(f => typeof f === 'string' && fs.existsSync(f) && fs.statSync(f).isFile());
+  const out = { added: [], pack: null };
+  for (const f of files) {
+    if (f.toLowerCase().endsWith('.mrpack')) {
+      out.pack = await serverModpack(id, (srv, p) => serverContent.installModpack(srv, { file: f }, p));
+    } else if (f.toLowerCase().endsWith('.zip') && serverContent.isServerPack(f)) {
+      out.pack = await serverModpack(id, (srv, p) => serverContent.installServerPack(srv, f, p).then(r => ({ ...r, name: path.basename(f) })));
+    }
+  }
+  out.added = await serverContent.addFiles(servers.get(id), files.filter(f => !/\.mrpack$/i.test(f)));
+  return out;
+}
 ipcMain.handle('servers:contentList', (e, id) => serverContent.listInstalled(servers.get(id)));
 ipcMain.handle('servers:contentToggle', (e, id, kind, file, enabled) => serverContent.setEnabled(servers.get(id), kind, file, enabled));
 ipcMain.handle('servers:contentRemove', (e, id, kind, file) => serverContent.remove(servers.get(id), kind, file));
 ipcMain.handle('servers:contentAddFiles', async (e, id) => {
-  const r = await dialog.showOpenDialog(win, { title: 'Dodaj pluginy, mody lub datapacki', filters: [{ name: 'Pliki', extensions: ['jar', 'zip'] }], properties: ['openFile', 'multiSelections'] });
-  if (r.canceled) return [];
-  return serverContent.addFiles(servers.get(id), r.filePaths);
+  const r = await dialog.showOpenDialog(win, { title: 'Dodaj pluginy, mody, datapacki lub modpack', filters: [{ name: 'Pluginy, mody, paczki', extensions: ['jar', 'zip', 'mrpack'] }], properties: ['openFile', 'multiSelections'] });
+  if (r.canceled) return { added: [], pack: null };
+  return addServerFiles(id, r.filePaths);
 });
+ipcMain.handle('servers:contentAddPaths', (e, id, files) => addServerFiles(id, Array.isArray(files) ? files : []));
 ipcMain.handle('servers:contentUpdates', (e, id) => serverContent.checkUpdates(servers.get(id)));
 ipcMain.handle('servers:contentApplyUpdates', async (e, id, updates) => {
   const n = await serverContent.applyUpdates(servers.get(id), updates, (stage) => send('server:progress', { id, stage }));
@@ -798,26 +994,57 @@ ipcMain.handle('servers:contentApplyUpdates', async (e, id, updates) => {
   return n;
 });
 
-// network & domain
-ipcMain.handle('servers:netInfo', async () => ({ lan: serverNet.lanAddresses(), publicIp: await serverNet.publicIp().catch(() => null) }));
+// network, domain & tunnel
+ipcMain.handle('servers:netInfo', async () => ({
+  lan: serverNet.lanAddresses(), publicIp: await serverNet.publicIp().catch(() => null),
+  platform: process.platform, tunnelSupported: serverTunnel.supported(), playitLinked: !!(store.get().playit || {}).secret,
+}));
 ipcMain.handle('servers:checkReachable', (e, host, port) => serverNet.checkReachable(host, port));
 ipcMain.handle('servers:upnp', async (e, id, open) => {
   const srv = servers.get(id);
   servers.update(id, { upnp: !!open });
   return open ? serverNet.upnpOpen(srv.port, `Nore ${srv.name}`) : serverNet.upnpClose(srv.port);
 });
-ipcMain.handle('servers:applyDomain', async (e, id) => {
+ipcMain.handle('servers:diagnose', (e, id) => {
+  const srv = servers.get(id);
+  return serverNet.diagnose({ port: srv.port, running: srv.state === 'running', domain: srv.domain, tunnel: srv.tunnel && srv.tunnel.enabled ? srv.tunnel : null });
+});
+ipcMain.handle('servers:firewall', (e, id) => serverNet.firewallAllow(servers.get(id).port));
+ipcMain.handle('servers:dnsCheck', (e, id) => {
+  const srv = servers.get(id);
+  if (!srv.domain || !srv.domain.name) throw new Error('Najpierw ustaw domenę.');
+  return serverNet.dnsCheck(srv.domain.name, srv.port);
+});
+ipcMain.handle('servers:applyDomain', (e, id) => servers.applyDomain(servers.raw(id)));
+
+// playit.gg: link the agent once (browser), then a tunnel per server
+let playitClaim = null;
+ipcMain.handle('servers:tunnelLink', async () => {
+  if (playitClaim) return { url: playitClaim.url, pending: true };
+  const c = await serverTunnel.claimStart();
+  playitClaim = c;
+  shell.openExternal(c.url);
+  serverTunnel.claimFinish(c.code).then((secret) => {
+    store.update(d => { d.playit = { secret: servers.encryptToken(secret), linked: Date.now() }; });
+    send('server:tunnel', { linked: true });
+  }).catch((err) => send('server:tunnel', { linked: false, error: err.message })).finally(() => { playitClaim = null; });
+  return { url: c.url, pending: true };
+});
+ipcMain.handle('servers:tunnelUnlink', () => {
+  store.update(d => { d.playit = null; for (const s of d.servers || []) if (s.tunnel) s.tunnel = { enabled: false }; });
+  return true;
+});
+ipcMain.handle('servers:tunnel', async (e, id, enabled) => {
   const srv = servers.raw(id);
-  const d = srv.domain;
-  if (!d || !d.provider) throw new Error('Najpierw ustaw domenę.');
-  const ip = await serverNet.publicIp();
-  if (d.provider === 'manual') return { host: d.name, ip, records: serverNet.manualRecords(d.name, ip, srv.port) };
-  const token = servers.decryptToken(d.token);
-  if (!token) throw new Error('Brak tokenu API.');
-  const host = d.provider === 'duckdns'
-    ? await serverNet.duckdnsUpdate(d.name, token, ip)
-    : await serverNet.cloudflareUpdate({ token, hostname: d.name, ip, port: srv.port });
-  return { host, ip, records: serverNet.manualRecords(host, ip, srv.port) };
+  if (enabled) {
+    const secret = servers.decryptToken((store.get().playit || {}).secret);
+    if (!secret) throw new Error('Najpierw połącz konto playit.gg.');
+    const t = await serverTunnel.ensureTunnel(secret, `nore-${id}`.slice(0, 40));
+    servers.update(id, { tunnel: { enabled: true, id: t.id, address: t.address } });
+    return { enabled: true, address: t.address, restart: servers.isRunning(id) };
+  }
+  servers.update(id, { tunnel: { ...(srv.tunnel || {}), enabled: false } });
+  return { enabled: false, restart: servers.isRunning(id) };
 });
 ipcMain.handle('servers:dnsRecords', async (e, id, hostname) => {
   const srv = servers.get(id);

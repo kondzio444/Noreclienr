@@ -158,6 +158,30 @@ function confirmModal(title, text, { ok = 'Potwierdź', danger = false } = {}) {
   });
 }
 
+/** BETA / ALPHA tag for a Modrinth version type (nothing for releases). */
+function versionTypeTag(type) {
+  return type && type !== 'release' ? `<span class="tag vt ${esc(type)}">${esc(String(type).toUpperCase())}</span>` : '';
+}
+
+/** Confirmation with a list of content updates (file → version + BETA/ALPHA). Resolves true/false. */
+function updatesConfirm(title, ups, { ok = 'Aktualizuj wszystko' } = {}) {
+  return new Promise((resolve) => {
+    let done = false;
+    const m = modal(`<h3>${esc(title)}</h3><p class="sub">Stare pliki trafią do folderu .nore-backup w instancji – nic nie zostanie utracone.</p>
+      <div class="upd-list">${ups.map(u => `<div class="upd-item"><span class="from">${esc(u.oldFile)}</span>${icon('arrowRight')}<b>${esc(u.version)}</b>${versionTypeTag(u.type)}</div>`).join('')}</div>
+      <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="m-ok">${icon('download')} ${esc(ok)}</button></div>`,
+    { onClose: () => { if (!done) resolve(false); } });
+    $('#m-ok', m.el).addEventListener('click', () => { done = true; resolve(true); m.close(); });
+  });
+}
+
+/** Polish plural: plural(3, 'mod', 'mody', 'modów') → 'mody'. */
+function plural(n, one, few, many) {
+  if (n === 1) return one;
+  const d = n % 10, t = n % 100;
+  return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
+}
+
 /** Animated segmented control: buttons [{value,label}] → element; onChange(value). */
 function segmented(options, value, onChange) {
   const root = el(`<div class="seg"><span class="pill"></span>${options.map(o => `<button data-v="${esc(o.value)}">${o.label}</button>`).join('')}</div>`);

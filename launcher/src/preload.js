@@ -1,5 +1,5 @@
 'use strict';
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const invoke = (ch) => (...args) => ipcRenderer.invoke(ch, ...args);
 
@@ -86,6 +86,18 @@ contextBridge.exposeInMainWorld('nore', {
     contentAddFiles: invoke('servers:contentAddFiles'),
     contentUpdates: invoke('servers:contentUpdates'),
     contentApplyUpdates: invoke('servers:contentApplyUpdates'),
+    contentAddPaths: invoke('servers:contentAddPaths'),
+    pathForFile: (file) => { try { return webUtils.getPathForFile(file); } catch { return null; } },
+    modpackVersions: invoke('servers:modpackVersions'),
+    modpackUpdate: invoke('servers:modpackUpdate'),
+    modpackApply: invoke('servers:modpackApply'),
+    loaderVersions: invoke('servers:loaderVersions'),
+    diagnose: invoke('servers:diagnose'),
+    firewall: invoke('servers:firewall'),
+    dnsCheck: invoke('servers:dnsCheck'),
+    tunnelLink: invoke('servers:tunnelLink'),
+    tunnelUnlink: invoke('servers:tunnelUnlink'),
+    tunnel: invoke('servers:tunnel'),
     netInfo: invoke('servers:netInfo'),
     checkReachable: invoke('servers:checkReachable'),
     upnp: invoke('servers:upnp'),
@@ -104,10 +116,15 @@ contextBridge.exposeInMainWorld('nore', {
     updates: invoke('content:updates'),
     applyUpdates: invoke('content:applyUpdates'),
     remove: invoke('content:delete'),
+    updatesState: invoke('content:updatesState'),
+    checkAll: invoke('content:checkAll'),
   },
   modpacks: {
     install: invoke('modpacks:install'),
     import: invoke('modpacks:import'),
+    checkUpdate: invoke('modpacks:checkUpdate'),
+    update: invoke('modpacks:update'),
+    versions: invoke('modpacks:versions'),
   },
   loaders: { versions: invoke('loaders:versions') },
   background: { custom: invoke('bg:custom'), pick: invoke('bg:pick') },
@@ -124,7 +141,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'update:state', 'modpack:progress', 'doctor:report'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);

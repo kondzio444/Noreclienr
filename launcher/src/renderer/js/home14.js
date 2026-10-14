@@ -58,6 +58,7 @@ Pages.home = (root) => {
           </section>
         </div>
         <div class="col" style="gap:18px;min-width:0">
+          <section class="card h14-sec h14-upd" id="h-upd" style="--i:2" hidden></section>
           <section class="card h14-sec news" style="--i:2">
             <div class="section-title">${icon('sparkles')} Nowe w 1.4 Beta</div>
             ${NEWS_14.map(n => `<div class="news-item"><div class="ico">${icon(n[0])}</div><div><b>${n[1]}</b><p>${n[2]}</p></div></div>`).join('')}
@@ -147,7 +148,46 @@ Pages.home = (root) => {
         };
       });
     }
+    renderUpdates();
     updateProgress(root);
+  };
+
+  // instances with a new modpack version or mod / resource pack / shader updates
+  const busyUpd = new Set();
+  const renderUpdates = () => {
+    const box = $('#h-upd', root);
+    if (!box) return;
+    const list = App.state.instances.filter(i => hasContentUpdates(App.contentUpdates[i.id]));
+    const sig = JSON.stringify(list.map(i => [i.id, App.contentUpdates[i.id], busyUpd.has(i.id)]));
+    if (box.dataset.sig === sig) return;
+    box.dataset.sig = sig;
+    box.hidden = !list.length;
+    if (!list.length) { box.innerHTML = ''; return; }
+    box.innerHTML = `<div class="row"><div class="section-title" style="flex:1">${icon('download')} Dostępne aktualizacje</div>
+        <button class="btn ghost sm icon" id="upd-re" title="Sprawdź ponownie">${icon('refresh')}</button></div>
+      ${list.map(i => {
+        const u = App.contentUpdates[i.id];
+        const other = contentUpdatesText(u);
+        return `<div class="h14-ui" data-id="${esc(i.id)}">${instIcon(i, 34)}
+          <div class="meta"><b>${esc(i.name)}</b><span>${u.pack ? `Modpack ${esc(u.pack.version)} ${versionTypeTag(u.pack.type)}${u.pack.mcChanged ? ` • MC ${esc(u.pack.mcVersion)}` : ''}` : ''}${u.pack && other ? '<br>' : ''}${esc(other)}</span></div>
+          <div class="acts">${u.pack ? `<button class="btn sm" data-pack>${icon('box')} Aktualizuj</button>` : ''}
+          ${other ? `<button class="btn ${u.pack ? 'ghost ' : ''}sm" data-mods ${busyUpd.has(i.id) ? 'disabled' : ''}>${busyUpd.has(i.id) ? '<span class="spinner"></span>' : icon('puzzle')} Aktualizuj mody</button>` : ''}</div></div>`;
+      }).join('')}`;
+    $('#upd-re', box).onclick = async (e) => {
+      const b = e.currentTarget;
+      b.disabled = true; b.innerHTML = '<span class="spinner"></span>';
+      try { await nore.content.checkAll(); } catch (err) { errorToast(err, 'Sprawdzanie aktualizacji'); }
+      if (b.isConnected) { b.disabled = false; b.innerHTML = icon('refresh'); }
+    };
+    $$('.h14-ui', box).forEach(r => {
+      const inst = App.state.instances.find(i => i.id === r.dataset.id);
+      if ($('[data-pack]', r)) $('[data-pack]', r).onclick = () => go('instance', { id: inst.id, packUpdate: true });
+      if ($('[data-mods]', r)) $('[data-mods]', r).onclick = async () => {
+        busyUpd.add(inst.id); renderUpdates();
+        try { await updateInstanceContent(inst); } catch (err) { errorToast(err, 'Aktualizacja modów'); }
+        busyUpd.delete(inst.id); renderUpdates();
+      };
+    });
   };
   render();
   return App.onChange(render);

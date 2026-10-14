@@ -62,7 +62,12 @@ function update(id, patch) {
     const loaderChanged = patch.loader && patch.loader !== i.loader;
     Object.assign(i, patch, { id });
     if (loaderChanged && patch.loaderVersion === undefined) i.loaderVersion = null;
-    if (versionChanged) { i.loaderVersion = null; i.packInstalled = false; i.perfModsInstalled = false; }
+    if (versionChanged) {
+      // an explicit loaderVersion / packInstalled in the same patch wins (modpack updates set both)
+      if (patch.loaderVersion === undefined) i.loaderVersion = null;
+      if (patch.packInstalled === undefined) i.packInstalled = false;
+      i.perfModsInstalled = false;
+    }
     if (patch.modpack) {
       if (i.modpack === 'nore' && !NORE_VERSIONS.includes(i.mcVersion)) { i.modpack = 'fabric'; i.perfPack = true; }
       if (i.modpack !== 'pack' && i.modpack !== 'loader') i.loader = i.modpack === 'vanilla' ? 'vanilla' : 'fabric';

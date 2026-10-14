@@ -28,6 +28,8 @@ const DEFAULTS = {
     discordRpc: true,
     autoUpdate: true,
     autoRepair: true,
+    updateChannel: 'all', // all (alpha/beta too) | beta | release – mods and modpacks
+    notifyContentUpdates: true,
     discordAppId: DISCORD_APP_ID,
     animations: true,
     accent: '#ff8a1f',
