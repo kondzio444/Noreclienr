@@ -27,6 +27,8 @@ public class FriendsModule extends Module {
 
     @Override
     public void onTick() {
+        dev.noreclient.NoreClient nc = dev.noreclient.NoreClient.get();
+        if (nc != null) nc.modules().get(FriendsChat.class).poll();
         if (timer-- > 0) return;
         timer = 40;
         Friends.refresh();

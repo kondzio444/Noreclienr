@@ -25,6 +25,7 @@ public final class ExtraModules {
         m.add(new dev.noreclient.module.utility.Screenshots());
         m.add(new dev.noreclient.module.hud.ServerInfoHud());
         m.add(new dev.noreclient.module.social.FriendsModule());
+        m.add(new dev.noreclient.module.social.FriendsChat());
         m.add(new dev.noreclient.module.social.Cosmetics());
         m.add(new dev.noreclient.module.render.Hitboxes());
         m.add(new dev.noreclient.module.utility.AutoGG());
@@ -35,7 +36,7 @@ public final class ExtraModules {
     /** Names of modules added in the current release (shown with a NEW badge). */
     public static boolean isNew(Module module) {
         String n = module.getName();
-        return n.equals("Screenshots") || n.equals("Server Info") || n.equals("Friends") || n.equals("Cosmetics") || n.equals("Hitboxes")
+        return n.equals("Screenshots") || n.equals("Server Info") || n.equals("Friends") || n.equals("Friends Chat") || n.equals("Cosmetics") || n.equals("Hitboxes")
                 || n.equals("Auto GG") || n.equals("Dynamic FPS") || n.equals("Waypoint");
     }
 }
