@@ -89,7 +89,21 @@ Pages.home = (root) => {
       ? `<div class="h14-heads">${list.slice(0, 9).map(n => `<span title="${esc(n)}"><b>${esc(n.charAt(0).toUpperCase())}</b><img src="https://mc-heads.net/avatar/${encodeURIComponent(n)}/48" alt="" data-fallback></span>`).join('')}
           ${list.length > 9 ? `<span class="more">+${list.length - 9}</span>` : ''}</div><small class="muted">${list.length} na liście • podświetleni w grze</small>`
       : `<div class="muted" style="font-size:12.5px">Dodaj znajomych – Nore Client podświetli ich nicki i powiadomi, gdy wejdą na serwer.</div>`;
+    drawChatFriends();
   }).catch(() => {});
+  // friends online in the launcher chat (P2P), shown under the nick list
+  const drawChatFriends = () => {
+    const box = $('#h-friends', root);
+    if (!box || typeof Chat === 'undefined' || !Chat.contacts.length) return;
+    let row = $('.h14-chat', box);
+    if (!row) { row = el('<div class="h14-chat"></div>'); box.appendChild(row); }
+    const on = Chat.contacts.filter(c => Chat.online(c.hex));
+    const unread = Chat.unread();
+    row.innerHTML = `<button class="btn ghost sm" data-chat>${icon('activity')} Czat: ${on.length ? `${on.length} online` : 'nikt online'}${unread ? ` • <b>${unread} nowe</b>` : ''}</button>
+      ${on.slice(0, 5).map(c => `<span class="h14-con" title="${esc(c.name)}"><img src="https://mc-heads.net/avatar/${encodeURIComponent(c.name)}/32" alt="" data-fallback></span>`).join('')}`;
+    $('[data-chat]', row).onclick = () => go('chat');
+  };
+  const offChat = typeof Chat !== 'undefined' ? Chat.on((w) => { if (w === 'presence' || w === 'contacts') drawChatFriends(); }) : () => {};
   nore.gallery.list().then(list => {
     const box = $('#h-shots', root);
     if (!box) return;
@@ -190,7 +204,8 @@ Pages.home = (root) => {
     });
   };
   render();
-  return App.onChange(render);
+  const offApp = App.onChange(render);
+  return () => { offApp(); offChat(); };
 };
 
 // ------------------------------------------------------------------ sidebar mini player

@@ -1528,3 +1528,5 @@ body.sb-collapsed .account-chip .meta { display: none; }
 .vs-meter i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--success), #ffc43d, var(--danger)); transition: width .08s; }
 @media (max-width: 1000px) { .ch-wrap { grid-template-columns: 240px 1fr; } .ch-feat { grid-template-columns: 1fr; } }
 .ch-add .input { width: 100%; }
+.h14-chat { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.h14-con img { width: 22px; height: 22px; border-radius: 6px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--success); }
