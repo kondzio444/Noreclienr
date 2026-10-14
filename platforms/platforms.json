@@ -1,3 +1,21 @@
 [
-  { "name": "fabric-1.21.1", "loader": "fabric", "java": 21, "versions": ["1.21", "1.21.1"] }
+  {
+    "name": "fabric-1.21.1",
+    "loader": "fabric",
+    "java": 21,
+    "versions": [
+      "1.21",
+      "1.21.1"
+    ]
+  },
+  {
+    "name": "fabric-1.21.4",
+    "loader": "fabric",
+    "java": 21,
+    "versions": [
+      "1.21.2",
+      "1.21.3",
+      "1.21.4"
+    ]
+  }
 ]
