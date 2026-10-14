@@ -5,7 +5,7 @@
  * file) and recognising installed files by fingerprint for badges and updates.
  *
  * The official API (api.curseforge.com) needs a free key from console.curseforge.com – the user's
- * own key from Settings, or one baked into the build (cf-key.json / NORE_CF_KEY). Without a key
+ * own key from Settings, or one baked into the build from a CI secret (scripts/cf-key.js). Without a key
  * only modpack files can be imported: each file is then fetched through the public
  * curseforge.com download redirect.
  */
@@ -32,9 +32,13 @@ const rawId = (id) => Number(String(id).replace(/^cf:/, ''));
 
 // ------------------------------------------------------------------ key
 
+/** Key baked in at build time by scripts/cf-key.js (never stored in git). */
 function bundledKey() {
   if (process.env.NORE_CF_KEY) return process.env.NORE_CF_KEY;
-  try { return JSON.parse(fs.readFileSync(path.join(__dirname, 'cf-key.json'), 'utf8')).key || null; } catch { return null; }
+  try {
+    const [mask, data] = fs.readFileSync(path.join(__dirname, 'cf-key.bin'), 'utf8').trim().split('.').map(x => Buffer.from(x, 'base64'));
+    return Buffer.from(data.map((b, i) => b ^ mask[i])).toString('utf8') || null;
+  } catch { return null; }
 }
 
 function decrypt(value) {

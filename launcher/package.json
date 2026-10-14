@@ -9,10 +9,10 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test",
-    "dist": "electron-builder",
-    "dist:win": "node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
-    "dist:linux": "node scripts/copy-mod.js && electron-builder --linux AppImage",
-    "dist:mac": "node scripts/copy-mod.js && electron-builder --mac dmg zip",
+    "dist": "node scripts/cf-key.js && electron-builder",
+    "dist:win": "node scripts/cf-key.js && node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
+    "dist:linux": "node scripts/cf-key.js && node scripts/copy-mod.js && electron-builder --linux AppImage",
+    "dist:mac": "node scripts/cf-key.js && node scripts/copy-mod.js && electron-builder --mac dmg zip",
     "predist": "node scripts/copy-mod.js"
   },
   "dependencies": {
