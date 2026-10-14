@@ -31,7 +31,7 @@ public class ScreenAdapter extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // since 1.21.6 renderWithTooltip draws the background (and the once-per-frame blur) itself
         GfxImpl g = new GfxImpl(context);
         CurrentGfx.set(g);
         screen.render(g, mouseX, mouseY, delta);
