@@ -654,13 +654,14 @@
   function drawNight(g, W, H, gy, t, still, st) {
     drawSky(g, W, gy - 6, ['#090616', '#0e0920', '#140d2b', '#1b1136', '#241540', '#2e1a49']);
     drawStars(g, st.stars, t, still);
-    const mr = Math.max(10, Math.round(H * 0.13));
-    drawMoon(g, Math.round(W * 0.8), Math.round(H * 0.3), mr);
+    const mr = st.moonR || Math.max(10, Math.round(H * 0.13));
+    const mx = Math.round(W * (st.moonX || 0.8)), my = Math.round(H * (st.moonY || 0.3));
+    drawMoon(g, mx, my, mr);
     drawClouds(g, W, t, Math.round(H * 0.16), still);
     if (!still) {
       for (let i = 0; i < 2; i++) {
         const a = t * 0.0007 + i * 3.1;
-        drawBat(g, W * 0.8 + Math.cos(a) * (mr + 14 + i * 6), H * 0.3 + Math.sin(a * 1.3) * (mr * 0.6 + 4), t + i * 50, true);
+        drawBat(g, mx + Math.cos(a) * (mr + 14 + i * 6), my + Math.sin(a * 1.3) * (mr * 0.6 + 4), t + i * 50, true);
       }
     }
     drawHills(g, W, H, gy);
@@ -901,7 +902,7 @@
     c.width = w; c.height = h;
     const g = c.getContext('2d');
     const gy = h - 8;
-    drawNight(g, w, h, gy, 0, true, { stars: starField(21, w, gy - 20, Math.round(w * h / 160)) });
+    drawNight(g, w, h, gy, 0, true, { stars: starField(21, w, gy - 20, Math.round(w * h / 160)), moonX: 0.3, moonY: 0.36, moonR: Math.round(h * 0.17) });
     R(g, 0, gy, w, h - gy, '#120b1c');
     drawTree(g, Math.round(w * 0.56), gy, Math.round(h * 0.5), 8, '#0a0612');
     drawTree(g, Math.round(w * 0.97), gy, Math.round(h * 0.62), 13, '#0a0612');
@@ -1048,7 +1049,7 @@
 
     const fit = () => {
       const cw = stage.clientWidth || 700;
-      S = clamp(Math.floor(cw / 330), 2, 4);
+      S = clamp(Math.floor(cw / 420), 2, 4);
       W = Math.ceil(cw / S); H = 132;
       cv.width = W; cv.height = H;
       cv.style.width = W * S + 'px'; cv.style.height = H * S + 'px';
@@ -1119,6 +1120,7 @@
       drawNight(g, W, H, gy, t, still, { stars });
       drawTree(g, 16, gy, 64, 4, '#0d0816');
       drawTree(g, W - 20, gy, 70, 9, '#0d0816');
+      if (W > 420 && view !== 'street') { drawTree(g, Math.round(W * 0.2), gy, 52, 6, '#120a1c'); drawTree(g, Math.round(W * 0.84), gy, 46, 12, '#120a1c'); }
       drawGround(g, W, H, gy, 7);
       const green = st.greenUntil > Date.now();
       let door = null;

@@ -83,9 +83,9 @@ final class HalloweenDecor {
 
     private static final int[] BAT_COLORS = new int[2];
 
-    private static void bat(Gfx g, float x, float y, float p, int pose, int alpha) {
+    private static void bat(Gfx g, float x, float y, float p, int pose, int body, int alpha) {
         String[] rows = BAT[FLAP[pose & 3]];
-        BAT_COLORS[0] = ColorUtil.withAlpha(0xFF120A1C, (int) (alpha * 0.9f));
+        BAT_COLORS[0] = ColorUtil.withAlpha(body, (int) (alpha * 0.92f));
         BAT_COLORS[1] = ColorUtil.withAlpha(0xFFFF9A2A, alpha);
         Render2D.pixels(g, rows, "Xe", BAT_COLORS, x - 4.5f * p, y - 2.5f * p, p);
     }
@@ -96,7 +96,8 @@ final class HalloweenDecor {
         double a = (now % 9000L) / 9000.0 * Math.PI * 2;
         float x = (x0 + x1) / 2f + (float) Math.sin(a) * (x1 - x0) / 2f;
         float by = y + (float) Math.sin(a * 2) * 3.5f;
-        bat(g, x, by, 1f, (int) ((now / 120) % 4), 215);
+        // lighter than the panorama bats, so it stays visible on the dark side panel
+        bat(g, x, by, 1f, (int) ((now / 120) % 4), 0xFF4A3466, 230);
     }
 
     /** {period ms, phase offset, flight band top (0..1 of the band height), size, direction}. */
@@ -122,7 +123,7 @@ final class HalloweenDecor {
             int alpha = (int) (230 * Math.min(1, Math.min(u, 1 - u) * 8));
             if (alpha < 8) continue;
             int pose = (int) ((now / 110 + i * 3) % 4);
-            bat(g, x, y, f[3], pose, alpha);
+            bat(g, x, y, f[3], pose, 0xFF24162F, alpha);
         }
     }
 }
