@@ -139,11 +139,17 @@ jobs:
             if [ -n "$PREV" ]; then git log --no-merges --pretty='- %s' "$PREV..HEAD" | head -40; else git log --no-merges --pretty='- %s' -15; fi
           } > notes.md
           ls -la out
-          if gh release view "v$V" >/dev/null 2>&1; then
-            gh release upload "v$V" out/* --clobber
-          else
-            gh release create "v$V" out/* --target "$GITHUB_SHA" --title "Nore Launcher $V" --notes-file notes.md --latest
-          fi
+          # the releases API sometimes answers a transient 403 / 5xx – retry before failing the job
+          for i in 1 2 3 4; do
+            if gh release view "v$V" >/dev/null 2>&1; then
+              gh release upload "v$V" out/* --clobber && exit 0
+            else
+              gh release create "v$V" out/* --target "$GITHUB_SHA" --title "Nore Launcher $V" --notes-file notes.md --latest && exit 0
+            fi
+            echo "Publishing the release failed (attempt $i), retrying in $((i * 20)) s"
+            sleep $((i * 20))
+          done
+          exit 1
       - name: Remove stand-alone mod jars from releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
