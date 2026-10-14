@@ -119,6 +119,7 @@ contextBridge.exposeInMainWorld('nore', {
     updatesState: invoke('content:updatesState'),
     checkAll: invoke('content:checkAll'),
   },
+  curseforge: { status: invoke('curseforge:status'), setKey: invoke('curseforge:setKey') },
   modpacks: {
     install: invoke('modpacks:install'),
     import: invoke('modpacks:import'),

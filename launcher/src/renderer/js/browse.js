@@ -1,7 +1,7 @@
 'use strict';
 /*
- * Content browser (mods, resource packs, shaders, datapacks, modpacks): Modrinth search with a
- * filter panel, grid / list views, installed badges, and a full project page with description,
+ * Content browser (mods, resource packs, shaders, datapacks, modpacks): Modrinth or CurseForge search
+ * with a filter panel, grid / list views, installed badges, and a full project page with description,
  * gallery, versions (install any of them), changelog and dependencies.
  */
 
@@ -84,6 +84,9 @@ function sanitizeHtml(html) {
 
 function richText(md) { return sanitizeHtml(mdToHtml(md)); }
 
+/** Project description: CurseForge sends HTML, Modrinth Markdown. */
+function projectBody(p) { return p.bodyHtml ? sanitizeHtml(p.bodyHtml) : richText(p.body || p.description); }
+
 function hookLinks(root) {
   root.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-ext]');
@@ -94,6 +97,27 @@ function hookLinks(root) {
 }
 
 // ================================================================== shared bits
+
+const SOURCES = [{ value: 'modrinth', label: 'Modrinth' }, { value: 'curseforge', label: 'CurseForge' }];
+const SOURCE_NAME = { modrinth: 'Modrinth', curseforge: 'CurseForge' };
+
+/** CurseForge API key form (Settings and the browser's empty state). onSaved(available). */
+function cfKeyForm(box, onSaved) {
+  box.innerHTML = `<ol class="steps"><li>Zaloguj się na <a href="#" data-url="https://console.curseforge.com/">console.curseforge.com</a> (konto CurseForge / Google, za darmo).</li>
+      <li>Otwórz „API keys” i skopiuj swój klucz.</li><li>Wklej go poniżej – launcher sprawdzi go i zapisze zaszyfrowany.</li></ol>
+    <div class="row" style="gap:8px;margin-top:10px"><input class="input" id="cfkey" type="password" autocomplete="off" placeholder="$2a$10$… (klucz API CurseForge)" style="flex:1">
+      <button class="btn sm" id="cfsave">${icon('check')} Zapisz</button></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">Bez klucza możesz nadal importować paczki CurseForge (.zip) – pliki pobiorą się przez publiczne linki CurseForge.</div>`;
+  $$('[data-url]', box).forEach(a => a.onclick = (e) => { e.preventDefault(); nore.open(a.dataset.url); });
+  $('#cfsave', box).onclick = async (e) => {
+    const b = e.currentTarget, v = $('#cfkey', box).value.trim();
+    if (!v) return toast('Wklej klucz', '', 'error');
+    b.disabled = true; b.innerHTML = '<span class="spinner"></span> Sprawdzanie';
+    try { const ok = await nore.curseforge.setKey(v); toast('CurseForge połączony', 'Możesz przeglądać i instalować z CurseForge', 'success'); onSaved && onSaved(ok); }
+    catch (err) { errorToast(err, 'CurseForge'); }
+    b.disabled = false; b.innerHTML = `${icon('check')} Zapisz`;
+  };
+}
 
 const BROWSE = {
   mods: { kind: 'mod', title: 'Mody', sub: 'Mody z Modrinth dla wybranej instancji – zależności instalują się same.', icon: 'puzzle', folder: 'mods', search: 'Szukaj modów…' },
@@ -223,7 +247,7 @@ function projectPage(root, id, ctx) {
                 : best
                   ? `<button class="btn play" id="pd-install">${icon('download')} Zainstaluj</button><span class="muted">${esc(best.number)} • ${esc(inst ? inst.name : '')}</span>`
                   : `<button class="btn" disabled>${icon('ban')} Brak zgodnej wersji</button><span class="muted">${inst ? `Dla ${esc(inst.mcVersion)} ${esc(LOADER_NAMES[inst.loader] || '')}` : ''}</span>`}
-            <button class="btn ghost sm" id="pd-web">${icon('external')} Modrinth</button>
+            <button class="btn ghost sm" id="pd-web">${icon('external')} ${p.source === 'curseforge' ? 'CurseForge' : 'Modrinth'}</button>
           </div>
         </div>
       </div>
@@ -250,7 +274,7 @@ function projectPage(root, id, ctx) {
         </aside>
       </div></div>`;
     $('#pd-back', root).onclick = () => ctx.back();
-    $('#pd-web', root).onclick = () => nore.open(`https://modrinth.com/${p.project_type}/${p.slug}`);
+    $('#pd-web', root).onclick = () => nore.open(p.web_url || `https://modrinth.com/${p.project_type}/${p.slug}`);
     $$('[data-link]', root).forEach(b => b.onclick = () => nore.open(b.dataset.link));
     const ib = $('#pd-install', root);
     if (ib) ib.onclick = () => {
@@ -276,7 +300,7 @@ function projectPage(root, id, ctx) {
     const p = data.project;
     box.classList.remove('fade-in'); void box.offsetWidth; box.classList.add('fade-in');
     if (tab === 'desc') {
-      box.innerHTML = `<div class="md">${richText(p.body || p.description)}</div>`;
+      box.innerHTML = `<div class="md">${projectBody(p)}</div>`;
     } else if (tab === 'gallery') {
       const g = p.gallery || [];
       box.innerHTML = g.length ? `<div class="gallery">${g.map((x, i) => `<figure data-i="${i}"><img src="${esc(x.url)}" loading="lazy" data-fallback alt=""><figcaption>${esc(x.title || '')}</figcaption></figure>`).join('')}</div>`
@@ -304,6 +328,9 @@ function projectPage(root, id, ctx) {
           else ctx.install(p.id, v.id, `${p.title} ${v.number}`, e.currentTarget);
         };
       });
+    } else if (tab === 'changelog' && p.source === 'curseforge') {
+      box.innerHTML = `<div class="empty small">${icon('list')}<div>Listy zmian są na stronie projektu.</div><button class="btn ghost sm" style="margin-top:10px" id="cl-web">${icon('external')} Otwórz na CurseForge</button></div>`;
+      $('#cl-web', box).onclick = () => nore.open(`${p.web_url}/files`);
     } else if (tab === 'changelog') {
       const list = data.versions.slice(0, 15);
       box.innerHTML = list.length ? list.map(v => `<div class="cl-item"><div class="cl-head"><span class="vtype ${VTYPE[v.type] ? VTYPE[v.type][1] : ''}">${VTYPE[v.type] ? VTYPE[v.type][0] : ''}</span><b>${esc(v.number)}</b><span class="muted">${new Date(v.date).toLocaleDateString('pl-PL')}</span></div><div class="md">${richText(v.changelog || '_Brak opisu zmian._')}</div></div>`).join('')
@@ -354,15 +381,18 @@ function browsePage(key) {
     const mem = browseMemory[key] || (browseMemory[key] = {
       tab: 'browse', query: '', sort: 'relevance', offset: 0, view: 'grid', cats: [], compat: true, env: '', mc: '', loaders: [], limit: 24,
     });
+    if (!mem.source) mem.source = 'modrinth';
+    let cfReady = null;
     let alive = true, timer = null, world = '', installedIds = new Set(), detailCleanup = null, lastRes = null;
     const installing = new Set();
     const inst = () => (isPack ? null : App.instance());
 
     root.innerHTML = `<div class="browse">
       <div class="page-head"><div><h2>${icon(cfg.icon)} ${cfg.title}</h2><p>${cfg.sub}</p></div>
-        <div class="actions">${isPack ? `<button class="btn ghost" id="import">${icon('upload')} Importuj .mrpack</button>` : '<div class="instance-picker" id="pick" style="min-width:230px;padding:6px 12px"></div>'}</div></div>
+        <div class="actions">${isPack ? `<button class="btn ghost" id="import" title="Modrinth .mrpack albo CurseForge .zip">${icon('upload')} Importuj paczkę</button>` : '<div class="instance-picker" id="pick" style="min-width:230px;padding:6px 12px"></div>'}</div></div>
       <div class="br-top card">
         <div id="tabs"></div>
+        <div id="src" class="br-src"></div>
         <div class="search" id="sbox">${icon('search')}<input id="q" placeholder="${cfg.search}" value="${esc(mem.query)}"><button class="clear" id="qx" title="Wyczyść">${icon('x')}</button></div>
         <select class="input" id="sort">${SORTS.map(([v, l]) => `<option value="${v}" ${v === mem.sort ? 'selected' : ''}>${l}</option>`).join('')}</select>
         <select class="input" id="world" style="display:none;min-width:170px"></select>
@@ -390,6 +420,7 @@ function browsePage(key) {
     const tabs = isPack ? [{ value: 'browse', label: 'Przeglądaj' }]
       : [{ value: 'browse', label: 'Przeglądaj' }, { value: 'installed', label: 'Zainstalowane' }];
     $('#tabs', root).appendChild(segmented(tabs, mem.tab, (v) => { mem.tab = v; mem.offset = 0; load(); }));
+    $('#src', root).appendChild(segmented(SOURCES, mem.source, (v) => { mem.source = v; mem.offset = 0; mem.cats = []; renderFilters(); load(); }));
     $('#q', root).oninput = (e) => { clearTimeout(timer); timer = setTimeout(() => { mem.query = e.target.value; mem.offset = 0; load(); }, 280); };
     $('#qx', root).onclick = () => { $('#q', root).value = ''; mem.query = ''; mem.offset = 0; load(); };
     $('#sort', root).onchange = (e) => { mem.sort = e.target.value; mem.offset = 0; load(); };
@@ -403,7 +434,7 @@ function browsePage(key) {
       const f = $('#filters', root);
       const i = inst();
       let cats = [];
-      try { cats = await nore.content.categories(cfg.kind); } catch { /* offline */ }
+      try { cats = mem.source === 'curseforge' && !cfReady ? [] : await nore.content.categories(cfg.kind, mem.source); } catch { /* offline / no key */ }
       if (!alive) return;
       const groups = {};
       for (const c of cats) (groups[c.header] = groups[c.header] || []).push(c.name);
@@ -412,7 +443,7 @@ function browsePage(key) {
         ${isPack ? `<div class="fgroup"><div class="ftitle">Loader</div>${['fabric', 'quilt', 'forge', 'neoforge'].map(l => `<label class="fcheck"><input type="checkbox" data-loader="${l}" ${mem.loaders.includes(l) ? 'checked' : ''}><i></i>${LOADER_NAMES[l]}</label>`).join('')}</div>
           <div class="fgroup"><div class="ftitle">Wersja Minecraft</div><select class="input" id="fmc"><option value="">Wszystkie</option></select></div>`
           : `<div class="fgroup"><div class="ftitle">Zgodność</div><label class="fcheck"><input type="checkbox" id="fcompat" ${mem.compat ? 'checked' : ''}><i></i>Tylko dla ${i ? esc(i.mcVersion) + (cfg.kind === 'mod' ? ' ' + esc(LOADER_NAMES[i.loader] || '') : '') : 'instancji'}</label>
-            ${cfg.kind === 'mod' ? `<label class="fcheck"><input type="checkbox" id="fenv" ${mem.env === 'client' ? 'checked' : ''}><i></i>Działa po stronie klienta</label>` : ''}</div>`}
+            ${cfg.kind === 'mod' && mem.source === 'modrinth' ? `<label class="fcheck"><input type="checkbox" id="fenv" ${mem.env === 'client' ? 'checked' : ''}><i></i>Działa po stronie klienta</label>` : ''}</div>`}
         ${Object.entries(groups).map(([h, list]) => `<div class="fgroup"><div class="ftitle">${esc(groupName[h] || h)}</div>${list.map(c => `<label class="fcheck"><input type="checkbox" data-cat="${esc(c)}" ${mem.cats.includes(c) ? 'checked' : ''}><i></i>${esc(catLabel(c))}</label>`).join('')}</div>`).join('')}
         <button class="btn ghost sm" id="freset" style="width:100%">${icon('refresh')} Wyczyść filtry</button>`;
       $$('[data-cat]', f).forEach(c => c.onchange = () => { mem.cats = $$('[data-cat]:checked', f).map(x => x.dataset.cat); mem.offset = 0; load(); });
@@ -456,11 +487,21 @@ function browsePage(key) {
       if (!alive) return;
       const i = inst();
       const browsing = mem.tab === 'browse';
-      $('#sbox', root).style.display = $('#sort', root).style.display = $("#vmode", root).style.display = browsing ? '' : 'none';
+      $('#sbox', root).style.display = $('#sort', root).style.display = $("#vmode", root).style.display = $('#src', root).style.display = browsing ? '' : 'none';
       $('#filters', root).style.display = browsing ? '' : 'none';
       browseEl.classList.toggle('no-filters', !browsing);
       if (!isPack && !i) { $('#info', root).textContent = ''; results().innerHTML = `<div class="empty">${icon('layers')}<div>Najpierw utwórz instancję.</div></div>`; return; }
       if (!browsing) return loadInstalled(i);
+      if (mem.source === 'curseforge') {
+        if (cfReady === null) { cfReady = (await nore.curseforge.status().catch(() => ({}))).available; if (cfReady) renderFilters(); }
+        if (!cfReady) {
+          $('#info', root).textContent = '';
+          results().innerHTML = `<div class="card cf-setup"><div class="cf-head"><div class="cf-logo">${icon('key')}</div><div><h3>Połącz CurseForge</h3>
+            <p class="muted">CurseForge udostępnia wyszukiwanie tylko z kluczem API. Klucz jest darmowy i zostaje na tym komputerze.</p></div></div><div id="cfform"></div></div>`;
+          cfKeyForm($('#cfform', root), (ok) => { cfReady = ok; renderFilters(); load(); });
+          return;
+        }
+      }
       $('#info', root).innerHTML = '<span class="spinner"></span> Szukanie…';
       results().innerHTML = `<div class="${mem.view === 'grid' ? 'pgrid' : 'plist'}">` + '<div class="skeleton pcard-sk"></div>'.repeat(8) + '</div>';
       try {
@@ -468,14 +509,14 @@ function browsePage(key) {
           query: mem.query, kind: cfg.kind, sort: mem.sort, offset: mem.offset, limit: mem.limit, categories: mem.cats,
           gameVersion: isPack ? (mem.mc || null) : (mem.compat ? i.mcVersion : null),
           loader: !isPack && mem.compat && i.loader !== 'vanilla' ? i.loader : null,
-          loaders: isPack ? mem.loaders : null, environment: mem.env || null,
+          loaders: isPack ? mem.loaders : null, environment: mem.source === 'modrinth' ? mem.env || null : null, source: mem.source,
         });
         if (!alive) return;
         lastRes = res;
         renderResults(res);
       } catch (e) {
         $('#info', root).textContent = '';
-        results().innerHTML = `<div class="empty">${icon('globe')}<div>Nie udało się połączyć z Modrinth.</div><div class="muted" style="margin-top:6px">${esc(e.message)}</div></div>`;
+        results().innerHTML = `<div class="empty">${icon('globe')}<div>Nie udało się połączyć z ${SOURCE_NAME[mem.source]}.</div><div class="muted" style="margin-top:6px">${esc(e.message)}</div></div>`;
       }
     }
 
@@ -486,7 +527,7 @@ function browsePage(key) {
       return `<div class="pcard ${inst2 ? 'is-installed' : ''}" data-id="${h.project_id}">
         ${mem.view === 'grid' ? `<div class="pc-banner" ${h.featured_gallery || h.gallery && h.gallery[0] ? `style="background-image:url('${esc(h.featured_gallery || h.gallery[0])}')"` : ''}></div>` : ''}
         <div class="pc-top">${projectIcon(h.icon_url, h.title, mem.view === 'grid' ? 54 : 48)}
-          <div class="pc-title"><h4>${esc(h.title)}</h4><small>${esc(h.author)}</small></div></div>
+          <div class="pc-title"><h4>${esc(h.title)}</h4><small>${esc(h.author)}${h.source === 'curseforge' ? ' • <span class="src-cf">CurseForge</span>' : ''}</small></div></div>
         <p class="pc-desc">${esc(h.description)}</p>
         <div class="pc-tags">${cats.map(c => `<span class="chip">${esc(catLabel(c))}</span>`).join('')}${isPack ? loadersOf.map(l => `<span class="chip on">${LOADER_NAMES[l]}</span>`).join('') : ''}</div>
         <div class="pc-foot"><span>${icon('download')} ${fmtNum(h.downloads)}</span><span>${icon('heart')} ${fmtNum(h.follows)}</span><span>${icon('clock')} ${fmtAgo(new Date(h.date_modified).getTime())}</span>
@@ -670,3 +711,25 @@ Pages.modpacks = browsePage('modpacks');
 Pages.resourcepacks = browsePage('resourcepacks');
 Pages.shaders = browsePage('shaders');
 Pages.datapacks = browsePage('datapacks');
+
+// ================================================================== CurseForge key in Settings
+
+const _settingsCf = Pages.settings;
+Pages.settings = (root) => {
+  const cleanup = _settingsCf(root);
+  const card = el(`<div class="card panel" style="margin-top:16px"><div class="section-title">${icon('box')} CurseForge</div>
+    <p class="muted" style="font-size:13px;margin:6px 0 10px">Mody, modpacki, paczki zasobów i shadery z CurseForge obok Modrinth – w każdej zakładce zawartości przełącznik „Modrinth / CurseForge”.</p>
+    <div id="cfstate"></div></div>`);
+  root.appendChild(card);
+  const draw = async () => {
+    const st = await nore.curseforge.status().catch(() => ({}));
+    const box = $('#cfstate', card);
+    if (st.available) {
+      box.innerHTML = `<div class="setting" style="padding:6px 0"><div class="col"><b>${icon('check')} Połączono</b><span>${st.own ? 'Twój klucz API (zaszyfrowany)' : 'Klucz wbudowany w launcher'}</span></div>
+        ${st.own ? `<button class="btn ghost sm" id="cfdel">${icon('x')} Usuń klucz</button>` : ''}</div>`;
+      if ($('#cfdel', box)) $('#cfdel', box).onclick = async () => { await nore.curseforge.setKey(''); draw(); };
+    } else cfKeyForm(box, draw);
+  };
+  draw();
+  return cleanup;
+};

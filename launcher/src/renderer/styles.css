@@ -1448,3 +1448,13 @@ body.sb-collapsed .account-chip .meta { display: none; }
 .drop-hint span { font-size: 12.5px; color: var(--text-dim); }
 .dropping .drop-hint { display: flex; }
 .srv-changelog { max-height: 220px; overflow: auto; white-space: pre-wrap; font-size: 12.5px; color: var(--text-dim); padding: 10px 12px; border-radius: 10px; background: rgba(0, 0, 0, .25); border: 1px solid var(--line); user-select: text; }
+
+/* ---------- CurseForge source ---------- */
+.br-src .seg button { font-size: 12.5px; }
+.src-cf { color: #f16436; font-weight: 600; }
+.cf-setup { max-width: 640px; margin: 20px auto; padding: 22px 24px; }
+.cf-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 10px; }
+.cf-head h3 { margin: 0 0 4px; }
+.cf-logo { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none;
+  background: linear-gradient(135deg, #f16436, #c2410c); color: #fff; box-shadow: 0 0 20px rgba(241, 100, 54, .35); }
+.cf-logo svg { width: 22px; height: 22px; }

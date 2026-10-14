@@ -15,6 +15,7 @@ const paths = require('./paths');
 const net = require('./net');
 const instances = require('./instances');
 const modrinth = require('./modrinth');
+const cf = require('./curseforge');
 
 const API = 'https://api.modrinth.com/v2';
 
@@ -105,7 +106,13 @@ async function readPack(file) {
  * onProgress({ stage, done, total, current }).
  */
 async function installFile(file, meta = {}, onProgress = () => {}, concurrency = 12) {
+  if (cf.readManifest(file) && !new AdmZip(file).getEntry('modrinth.index.json')) return installCurseForge(file, meta, onProgress, concurrency);
   const { zip, index } = await readPack(file);
+  return installIndex(zip, index, meta, onProgress, concurrency);
+}
+
+/** Creates the instance for an index (Modrinth, or CurseForge converted by curseforge.toIndex). */
+async function installIndex(zip, index, meta, onProgress, concurrency = 12) {
   const deps = index.dependencies || {};
   if (!deps.minecraft) throw new Error('Paczka nie podaje wersji Minecraft.');
   const { loader, loaderVersion } = loaderOf(deps);
@@ -116,7 +123,7 @@ async function installFile(file, meta = {}, onProgress = () => {}, concurrency =
     pack: {
       projectId: meta.projectId || null, versionId: meta.versionId || null, title: meta.title || index.name,
       version: meta.version || index.versionId || '', summary: index.summary || '',
-      type: meta.type || null, date: meta.date || null, ...packRecord(index, zip),
+      type: meta.type || null, date: meta.date || null, source: meta.source || 'modrinth', ...packRecord(index, zip),
     },
     iconUrl: meta.icon || null,
     bannerUrl: meta.banner || null,
@@ -159,6 +166,38 @@ async function installFile(file, meta = {}, onProgress = () => {}, concurrency =
   return instances.get(inst.id);
 }
 
+/**
+ * CurseForge modpack (.zip with manifest.json). With an API key it goes through the same path as
+ * .mrpack (exact file list → safe updates later); without one every file is fetched through the
+ * public curseforge.com download link and its folder is recognised from the file itself.
+ */
+async function installCurseForge(file, meta = {}, onProgress = () => {}, concurrency = 12) {
+  const parsed = cf.readManifest(file);
+  if (!parsed) throw new Error('To nie jest paczka CurseForge (brak manifest.json).');
+  const { zip, manifest } = parsed;
+  meta = { ...meta, source: 'curseforge', title: meta.title || manifest.name, version: meta.version || manifest.version };
+  if (cf.available()) return installIndex(zip, await cf.toIndex(manifest, onProgress), meta, onProgress, concurrency);
+  const { loader, loaderVersion } = cf.loaderOf(manifest);
+  const mc = manifest.minecraft.version;
+  const inst = instances.create({ name: meta.title || 'Modpack', mcVersion: mc, loader, loaderVersion, modpack: 'pack' });
+  try {
+    const r = await cf.installPackInto(file, inst.gameDir, onProgress, Math.min(8, concurrency));
+    instances.update(inst.id, {
+      pack: {
+        projectId: meta.projectId || null, versionId: meta.versionId || null, title: meta.title, version: meta.version || '',
+        summary: manifest.author ? `Autor: ${manifest.author}` : '', type: meta.type || null, date: meta.date || null,
+        source: 'curseforge', files: r.files, ids: {}, overrides: r.overrides,
+      },
+      iconUrl: meta.icon || null, bannerUrl: meta.banner || null, packInstalled: true,
+      noreClient: loader === 'fabric' && instances.NORE_VERSIONS.includes(mc), perfMods: false,
+    });
+  } catch (e) {
+    await instances.remove(inst.id, true);
+    throw e;
+  }
+  return instances.get(inst.id);
+}
+
 function mrpackFile(version) {
   const file = (version.files || []).find(f => f.primary && f.filename.endsWith('.mrpack')) || (version.files || []).find(f => f.filename.endsWith('.mrpack'));
   if (!file) throw new Error('Ta wersja nie zawiera pliku .mrpack.');
@@ -168,6 +207,16 @@ function mrpackFile(version) {
 /** Downloads a pack version from Modrinth (newest release when versionId is empty) and installs it. */
 async function install({ projectId, versionId }, onProgress = () => {}, concurrency) {
   onProgress({ stage: 'Pobieranie informacji o paczce' });
+  if (cf.isCf(projectId)) {
+    const d = await cf.downloadPack(projectId, versionId, path.join(paths.cache, 'modpacks'));
+    try {
+      return await installCurseForge(d.file, {
+        title: d.title, icon: d.icon, banner: d.banner, projectId, versionId: String(d.fileId), version: d.version, type: d.type, date: d.date,
+      }, onProgress, concurrency);
+    } finally {
+      await fsp.rm(d.file, { force: true });
+    }
+  }
   const project = await net.getJson(`${API}/project/${encodeURIComponent(projectId)}`);
   let version;
   if (versionId) version = await net.getJson(`${API}/version/${encodeURIComponent(versionId)}`);
@@ -222,6 +271,17 @@ function describe(v, inst) {
  */
 async function checkUpdate(inst, channel = 'all') {
   if (!inst || !inst.pack || !inst.pack.projectId) return null;
+  if (cf.isCf(inst.pack.projectId)) {
+    if (!cf.available()) return null;
+    const types = modrinth.channelTypes(channel);
+    const list = await cf.packVersions(inst.pack.projectId);
+    const best = list.find(v => types.includes(v.type) && v.gameVersions.includes(inst.mcVersion));
+    if (!best || best.id === inst.pack.versionId) return null;
+    const cur = list.find(v => v.id === inst.pack.versionId);
+    const curDate = cur ? Date.parse(cur.date) : Date.parse(inst.pack.date || '') || 0;
+    if (curDate && Date.parse(best.date) <= curDate) return null;
+    return cfDescribe(best, inst);
+  }
   const list = await packVersions(inst.pack.projectId);
   const types = modrinth.channelTypes(channel);
   const best = list.find(v => types.includes(v.version_type) && (v.game_versions || []).includes(inst.mcVersion));
@@ -233,8 +293,19 @@ async function checkUpdate(inst, channel = 'all') {
 }
 
 /** Every version of the instance's pack for the version picker. */
+function cfDescribe(v, inst) {
+  const mcVersion = v.gameVersions.includes(inst.mcVersion) ? inst.mcVersion : v.gameVersions[v.gameVersions.length - 1] || null;
+  return {
+    versionId: v.id, version: v.number, name: v.name, type: v.type, date: v.date, changelog: '', mcVersion, loaders: [],
+    mcChanged: !!mcVersion && mcVersion !== inst.mcVersion, current: inst.pack.version || null,
+  };
+}
+
 async function versions(inst) {
   if (!inst || !inst.pack || !inst.pack.projectId) return [];
+  if (cf.isCf(inst.pack.projectId)) {
+    return (await cf.packVersions(inst.pack.projectId)).slice(0, 80).map(v => ({ ...cfDescribe(v, inst), id: v.id, number: v.number, current: v.id === inst.pack.versionId }));
+  }
   const list = await packVersions(inst.pack.projectId);
   return list.slice(0, 80).map(v => ({
     id: v.id, number: v.version_number, name: v.name, type: v.version_type, date: v.date_published,
@@ -280,6 +351,7 @@ async function update(instId, versionId, onProgress = () => {}, { backupWorlds =
   const temp = [];
   try {
     onProgress({ stage: 'Pobieranie informacji o wersji' });
+    if (cf.isCf(inst.pack.projectId)) return await updateCurseForge(inst, versionId, onProgress, { backupWorlds, concurrency, temp });
     const version = await net.getJson(`${API}/version/${encodeURIComponent(versionId)}`);
     if (inst.pack.projectId && version.project_id !== inst.pack.projectId) throw new Error('Ta wersja należy do innej paczki.');
     onProgress({ stage: `Pobieranie ${mrpackFile(version).filename}` });
@@ -307,6 +379,30 @@ async function update(instId, versionId, onProgress = () => {}, { backupWorlds =
   } finally {
     for (const t of temp) await fsp.rm(t, { force: true }).catch(() => {});
   }
+}
+
+/** update() for CurseForge packs: the new version is converted to an index and swapped the same way. */
+async function updateCurseForge(inst, versionId, onProgress, { backupWorlds, concurrency, temp }) {
+  if (!cf.available()) throw new cf.NoKeyError();
+  const d = await cf.downloadPack(inst.pack.projectId, versionId, path.join(paths.cache, 'modpacks'));
+  temp.push(d.file);
+  const { zip, manifest } = cf.readManifest(d.file);
+  const index = await cf.toIndex(manifest, onProgress);
+  const deps = index.dependencies;
+  const p = inst.pack;
+  const old = { files: p.files || [], ids: p.ids || {}, overrides: p.overrides || {} };
+  const rec = packRecord(index, zip);
+  const { loader, loaderVersion } = loaderOf(deps);
+  const noreClient = loader === 'fabric' && instances.NORE_VERSIONS.includes(deps.minecraft);
+  const result = await swapFiles(inst.gameDir, { zip, index, rec, old, onProgress, concurrency,
+    backupWorlds: backupWorlds && deps.minecraft !== inst.mcVersion, dropNore: inst.noreClient && !noreClient,
+    label: { from: p.version, to: d.version, mcFrom: inst.mcVersion, mcTo: deps.minecraft } });
+  instances.update(inst.id, {
+    mcVersion: deps.minecraft, loader, loaderVersion, packInstalled: true, noreClient,
+    pack: { ...p, versionId: String(d.fileId), version: d.version, type: d.type, date: d.date, ...rec, updated: Date.now() },
+  });
+  onProgress({ stage: 'Gotowe', done: 1, total: 1 });
+  return { instance: instances.get(inst.id), ...result };
 }
 
 /** Swaps the old pack files for the new ones (see update). Returns { added, removed, replaced, kept, backup }. */
@@ -446,4 +542,4 @@ async function inspect(file) {
   return { name: index.name, version: index.versionId, mcVersion: deps.minecraft, ...loaderOf(deps), files: (index.files || []).length };
 }
 
-module.exports = { install, installFile, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };
+module.exports = { install, installFile, installCurseForge, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };

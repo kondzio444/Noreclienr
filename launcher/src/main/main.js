@@ -10,6 +10,7 @@ const java = require('./java');
 const auth = require('./auth');
 const launcher = require('./launch');
 const modrinth = require('./modrinth');
+const curseforge = require('./curseforge');
 const instances = require('./instances');
 const noreMods = require('./nore-mods');
 const net = require('./net');
@@ -521,14 +522,24 @@ function contentDir(inst, kind, world) {
   return path.join(inst.gameDir, modrinth.KINDS[kind].folder);
 }
 
-ipcMain.handle('content:search', (e, opts) => modrinth.search(opts));
-ipcMain.handle('content:details', (e, id) => modrinth.details(id));
-ipcMain.handle('content:identify', (e, { instanceId, kind, world }) => {
+// Modrinth and CurseForge share one browser: CurseForge ids are "cf:<number>"
+ipcMain.handle('content:search', (e, opts) => (opts && opts.source === 'curseforge' ? curseforge.search(opts) : modrinth.search(opts)));
+ipcMain.handle('content:details', (e, id) => (curseforge.isCf(id) ? curseforge.details(id) : modrinth.details(id)));
+ipcMain.handle('content:identify', async (e, { instanceId, kind, world }) => {
   const inst = instances.get(instanceId);
   if (!inst || (kind === 'datapack' && !world)) return {};
-  return modrinth.identify(contentDir(inst, kind, world), modrinth.KINDS[kind].ext);
+  const dir = contentDir(inst, kind, world);
+  const mr = await modrinth.identify(dir, modrinth.KINDS[kind].ext).catch(() => ({}));
+  const cfMap = await curseforge.identify(dir, modrinth.KINDS[kind].ext, new Set(Object.keys(mr))).catch(() => ({}));
+  return { ...cfMap, ...mr };
 });
-ipcMain.handle('content:categories', (e, kind) => modrinth.categories(kind));
+ipcMain.handle('content:categories', (e, kind, source) => (source === 'curseforge' ? curseforge.categories(kind) : modrinth.categories(kind)));
+ipcMain.handle('curseforge:status', () => ({ available: curseforge.available(), own: !!store.get().settings.curseforgeKey }));
+ipcMain.handle('curseforge:setKey', async (e, k) => {
+  k = String(k || '').trim();
+  if (k) await curseforge.testKey(k);
+  return curseforge.setKey(k);
+});
 ipcMain.handle('loaders:versions', (e, loader, mc) => loaders.versions(loader, mc));
 
 // ------------------------------------------------------------------ IPC: modpacks
@@ -559,7 +570,7 @@ ipcMain.handle('modpacks:install', (e, { projectId, versionId }) =>
   installPack((progress, concurrency) => modpacks.install({ projectId, versionId }, progress, concurrency)));
 
 ipcMain.handle('modpacks:import', async () => {
-  const r = await dialog.showOpenDialog(win, { title: 'Importuj modpack', filters: [{ name: 'Modpack Modrinth', extensions: ['mrpack'] }], properties: ['openFile'] });
+  const r = await dialog.showOpenDialog(win, { title: 'Importuj modpack', filters: [{ name: 'Modpack (Modrinth .mrpack, CurseForge .zip)', extensions: ['mrpack', 'zip'] }], properties: ['openFile'] });
   if (r.canceled || !r.filePaths[0]) return null;
   const file = r.filePaths[0];
   return installPack((progress, concurrency) => modpacks.installFile(file, {}, progress, concurrency));
@@ -708,14 +719,14 @@ app.whenReady().then(() => scheduleUpdateChecks());
 
 ipcMain.handle('content:updatesState', () => updatesState());
 ipcMain.handle('content:checkAll', () => checkAllUpdates());
-ipcMain.handle('content:project', (e, id) => modrinth.project(id));
+ipcMain.handle('content:project', (e, id) => (curseforge.isCf(id) ? curseforge.project(id) : modrinth.project(id)));
 
 ipcMain.handle('content:install', async (e, { instanceId, projectId, kind, world, versionId }) => {
   const inst = instances.get(instanceId);
   if (!inst) throw new Error('Wybierz instancję.');
   const loader = inst.loader && inst.loader !== 'vanilla' ? inst.loader : null;
   if (kind === 'mod' && !loader) throw new Error('Mody wymagają instancji z loaderem (Fabric, Quilt, Forge albo NeoForge).');
-  return modrinth.install({
+  return (curseforge.isCf(projectId) ? curseforge : modrinth).install({
     projectId, kind, gameVersion: inst.mcVersion, loader, targetDir: contentDir(inst, kind, world), versionId,
   }, (s) => send('content:status', { projectId, status: s }));
 });
@@ -729,7 +740,14 @@ ipcMain.handle('content:installed', (e, { instanceId, kind, world }) => {
 
 ipcMain.handle('content:updates', async (e, { instanceId, kind, world, skipPack }) => {
   const inst = instances.get(instanceId);
-  const ups = await modrinth.checkUpdates(contentDir(inst, kind, world), kind, inst.mcVersion, inst.loader, store.get().settings.updateChannel);
+  const dir = contentDir(inst, kind, world);
+  const channel = store.get().settings.updateChannel;
+  const ups = await modrinth.checkUpdates(dir, kind, inst.mcVersion, inst.loader, channel);
+  // files Modrinth does not know may come from CurseForge (needs an API key)
+  if (curseforge.available() && kind !== 'datapack') {
+    const known = new Set(Object.keys(await modrinth.identify(dir, modrinth.KINDS[kind].ext).catch(() => ({}))));
+    ups.push(...await curseforge.checkUpdates(dir, kind, inst.mcVersion, inst.loader, modrinth.channelTypes(channel), known).catch(() => []));
+  }
   return skipPack ? withoutPackFiles(inst, kind, ups) : ups;
 });
 ipcMain.handle('content:applyUpdates', async (e, { instanceId, kind, world, updates }) => {
