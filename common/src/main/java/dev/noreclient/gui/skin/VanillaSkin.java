@@ -36,12 +36,12 @@ public final class VanillaSkin {
         CurrentGfx.set(g);
         float r = Math.min(Theme.radius(), h / 2f);
         if (!active) {
-            Render2D.roundedRect(g, x, y, w, h, r, 0x90100D0B);
+            Render2D.roundedRect(g, x, y, w, h, r, 0x900E0A16);
             Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x14FFFFFF);
             return;
         }
         float hv = hover(widget, hovered);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8140F0C);
+        Render2D.roundedRect(g, x, y, w, h, r, 0xC8160F26);
         Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x2AFFFFFF);
         if (hv > 0.01f) Widgets.glowBox(g, x, y, w, h, r, Theme.accent(), hv * 0.85f, hv);
         if (hv > 0.01f) Render2D.roundedRect(g, x + 3, y + h / 2f - 4 * hv, 2, 8 * hv, 1, Theme.accent());
@@ -52,7 +52,7 @@ public final class VanillaSkin {
         CurrentGfx.set(g);
         float r = Math.min(Theme.radius(), h / 2f);
         float hv = hover(widget, hovered && active);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8140F0C);
+        Render2D.roundedRect(g, x, y, w, h, r, 0xC8160F26);
         float fill = (float) Math.max(0, Math.min(1, value)) * w;
         if (fill > 1 && active) {
             Render2D.roundedGradient(g, x, y, Math.max(r * 2, fill), h, r,

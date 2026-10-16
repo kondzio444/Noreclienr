@@ -19,7 +19,7 @@ public class KeystrokesHud extends HudModule {
     public final BooleanSetting space = add(new BooleanSetting("Space Bar", "Pokazuj spację", true));
     public final BooleanSetting accentPress = add(new BooleanSetting("Accent Press", "Wciśnięty klawisz w kolorze motywu", true));
     public final ColorSetting pressedColor = add(new ColorSetting("Pressed Color", "Kolor wciśniętego klawisza", 0xE0FFFFFF));
-    public final ColorSetting idleColor = add(new ColorSetting("Idle Color", "Kolor tła klawisza", 0x90140F0C));
+    public final ColorSetting idleColor = add(new ColorSetting("Idle Color", "Kolor tła klawisza", 0x90160F26));
     public final ColorSetting textColor = add(new ColorSetting("Text Color", "Kolor tekstu", 0xFFFFFFFF));
     public final ColorSetting pressedText = add(new ColorSetting("Pressed Text", "Kolor tekstu po wciśnięciu", 0xFF101018));
     public final BooleanSetting outline = add(new BooleanSetting("Outline", "Obramowanie klawiszy", false));

@@ -73,7 +73,7 @@ public class FriendsScreen extends PanelScreen {
             boolean hov = Render2D.hovered(mx, my, x, ry, lw, row);
             float a = anim("f" + n).target(hov ? 1 : 0).update();
             boolean on = online.contains(n.toLowerCase(Locale.ROOT));
-            Render2D.roundedRect(g, x, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA0140F0C, 0xD01C1611, a));
+            Render2D.roundedRect(g, x, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA0160F26, 0xD0201634, a));
             Render2D.roundedOutline(g, x, ry, lw, row, Theme.radius(), 1, on ? ColorUtil.withAlpha(Theme.SUCCESS, 140) : ColorUtil.lerp(0x18FFFFFF, ColorUtil.withAlpha(Theme.accent(), 120), a));
             TextureRef head = Heads.get(n);
             if (head != null) Render2D.texture(g, head, x + 5, ry + 5, 20, 20, 1f);

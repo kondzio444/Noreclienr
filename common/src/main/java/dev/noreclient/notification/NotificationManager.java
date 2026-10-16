@@ -64,7 +64,7 @@ public final class NotificationManager {
                 float x = left ? 6 - (1 - p) * (w + 12) : sw - 6 - w + (1 - p) * (w + 12);
                 float r = Theme.radius();
                 Render2D.shadow(ctx, x, y, w, h, r, 5, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 70), p));
-                Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.fade(0xF0140F0C, p));
+                Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.fade(0xF0160F26, p));
                 Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 150), p));
                 Render2D.roundedRect(ctx, x + 6, y + 7, 16, 16, 8, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 60), p));
                 Render2D.centeredText(ctx, n.type.icon, x + 14, y + 11, ColorUtil.fade(n.type.color, p), false);

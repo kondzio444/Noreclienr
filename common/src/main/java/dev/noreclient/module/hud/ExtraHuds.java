@@ -24,7 +24,7 @@ public final class ExtraHuds {
         public final BooleanSetting hotbar = add(new BooleanSetting("Show Hotbar", "Dodatkowy rząd z paskiem szybkiego wyboru", false));
         public final BooleanSetting background = add(new BooleanSetting("Background", "Tło za ekwipunkiem", true));
         public final BooleanSetting slots = add(new BooleanSetting("Slot Frames", "Ramki pól", true));
-        public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90140F0C));
+        public final ColorSetting backgroundColor = add(new ColorSetting("Background Color", "Kolor tła", 0x90160F26));
 
         public InventoryHud() {
             super("Inventory HUD", "Podgląd ekwipunku na ekranie", 0.5f, 0.02f);

@@ -13,7 +13,7 @@ import dev.noreclient.util.Render2D;
 final class HalloweenDecor {
     private HalloweenDecor() {}
 
-    /** Nore events are always on (Halloween and Christmas run all year and cannot be switched off). */
+    /** The Halloween event is forced on and cannot be switched off. */
     static boolean active() { return true; }
 
     private static final String[] PUMPKIN = {

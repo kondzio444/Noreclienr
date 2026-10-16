@@ -53,7 +53,7 @@ public class WaypointHud extends HudModule {
         String label = name.get() + "  " + (int) dist + " m";
         width = Render2D.textWidth(label) + 30;
         height = 20;
-        Render2D.roundedRect(g, 0, 0, width, height, Theme.radius() * 0.8f, 0x90140F0C);
+        Render2D.roundedRect(g, 0, 0, width, height, Theme.radius() * 0.8f, 0x90160F26);
         Render2D.roundedOutline(g, 0, 0, width, height, Theme.radius() * 0.8f, 1, ColorUtil.withAlpha(Theme.accent(), 80));
         float cx = 11, cy = 10;
         double a = Math.toRadians(angle);

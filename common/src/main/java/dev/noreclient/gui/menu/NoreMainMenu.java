@@ -30,10 +30,10 @@ import java.util.Locale;
  */
 public class NoreMainMenu extends NoreScreen {
     private static final String[] NEWS = {
-            "Nowy Multiplayer z flagami i podglądem",
-            "Znajomi, peleryny i galeria zrzutów",
-            "Panorama Minecrafta i nowe menu",
-            "Dynamic FPS, Auto GG, Waypoint, Hitboxy",
+            "Radialne menu 3D pod Prawym Shiftem",
+            "Edytor scen: pora dnia, drzewa, kamera",
+            "Szatnia: Kapelusz Wiedźmy i skrzydła",
+            "Halloween trwa – zima od 10 grudnia",
     };
 
     /** Shortcut tiles in the top-right corner. */
@@ -70,7 +70,7 @@ public class NoreMainMenu extends NoreScreen {
         final NoreMainMenu self = this;
         nav.add("Singleplayer", "Twoje światy", SideNav.PLAY, SideNav.PRIMARY, () -> go(() -> game().openSingleplayer(self)))
                 .add("Multiplayer", "Serwery", SideNav.GLOBE, SideNav.NORMAL, () -> go(() -> game().openMultiplayer(self)))
-                .add("Moduły klienta", NoreClient.get().modules().getModules().size() + " modułów", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new ClickGuiScreen(self)))
+                .add("Menu Nore", "radialne menu 3D", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new dev.noreclient.gui.click.RadialMenuScreen(self)))
                 .add("Edytor HUD", "Nakładki", SideNav.HUD, SideNav.NORMAL, () -> go(() -> game().openScreen(new HudEditorScreen(self))))
                 .add("Opcje", "Ustawienia gry", SideNav.GEAR, SideNav.NORMAL, () -> go(() -> game().openOptions(self)))
                 .add("Wyjdź", null, SideNav.POWER, SideNav.DANGER, () -> go(() -> game().quit()));
@@ -105,15 +105,17 @@ public class NoreMainMenu extends NoreScreen {
             HalloweenDecor.bats(ctx, panelW - 10, 62, width + 10, Math.max(120, height * 0.7f));
             ctx.setAlpha(1);
         }
-        // Christmas runs together with Halloween all year: snow behind the panels
-        ctx.setAlpha(stage(600, 1200));
-        ChristmasDecor.snow(ctx, width, height);
-        ctx.setAlpha(1);
+        // winter event (from 10 December 2026): snow behind the panels
+        if (ChristmasDecor.active()) {
+            ctx.setAlpha(stage(600, 1200));
+            ChristmasDecor.snow(ctx, width, height);
+            ctx.setAlpha(1);
+        }
         float slide = (1 - stage(100, 700)) * -40;
         ctx.push();
         ctx.translate(slide, 0);
-        Render2D.quadGradient(ctx, 0, 0, panelW + 60, height, 0xE6080605, 0x00080605, 0x00080605, 0xE6080605);
-        Render2D.rect(ctx, 0, 0, panelW, height, 0x70080605);
+        Render2D.quadGradient(ctx, 0, 0, panelW + 60, height, 0xE60A0614, 0x000A0614, 0x000A0614, 0xE60A0614);
+        Render2D.rect(ctx, 0, 0, panelW, height, 0x700A0614);
         Render2D.quadGradient(ctx, panelW - 1, 0, 1, height / 2f, 0, ColorUtil.withAlpha(Theme.accent(), 0), ColorUtil.withAlpha(Theme.accent(), 120), ColorUtil.withAlpha(Theme.accent(), 120));
         Render2D.quadGradient(ctx, panelW - 1, height / 2f, 1, height / 2f, ColorUtil.withAlpha(Theme.accent(), 120), ColorUtil.withAlpha(Theme.accent(), 120), 0, 0);
 
@@ -131,9 +133,11 @@ public class NoreMainMenu extends NoreScreen {
         }
         Render2D.scaledText(ctx, "CLIENT " + NoreClient.VERSION, pad + logoS + 9, 45, 0.7f, Theme.TEXT_MUTED, false);
         ctx.setAlpha(1);
-        ctx.setAlpha(stage(1000, 900));
-        ChristmasDecor.garland(ctx, -6, width + 6, -2);
-        ctx.setAlpha(1);
+        if (ChristmasDecor.active()) {
+            ctx.setAlpha(stage(1000, 900));
+            ChristmasDecor.garland(ctx, -6, width + 6, -2);
+            ctx.setAlpha(1);
+        }
 
         // navigation
         // rows shrink on small windows so the list never runs into the account card
@@ -150,7 +154,7 @@ public class NoreMainMenu extends NoreScreen {
         float accP = stage(800, 500);
         ctx.setAlpha(accP);
         float ay = height - 38;
-        Render2D.roundedRect(ctx, navX, ay, navW, 28, Theme.radius(), 0x90140F0C);
+        Render2D.roundedRect(ctx, navX, ay, navW, 28, Theme.radius(), 0x90160F26);
         Render2D.roundedOutline(ctx, navX, ay, navW, 28, Theme.radius(), 1, 0x22FFFFFF);
         Icons.tile(ctx, dev.noreclient.module.Category.PLAYER, navX + 5, ay + 5, 18, 0);
         Render2D.text(ctx, Render2D.trim(game().username(), (int) navW - 40), navX + 28, ay + 6, Theme.TEXT, false);
@@ -173,7 +177,7 @@ public class NoreMainMenu extends NoreScreen {
             float ty = tilesY + (1 - tp) * -12 - h * 2;
             ctx.setAlpha(rp * tp);
             if (h > 0.01f) Render2D.shadow(ctx, tx, ty, tileSize, tileSize, 6, 5, ColorUtil.withAlpha(Theme.accent(), (int) (90 * h)));
-            Render2D.roundedRect(ctx, tx, ty, tileSize, tileSize, 6, ColorUtil.lerp(0xC8120E0B, 0xE01C1611, h));
+            Render2D.roundedRect(ctx, tx, ty, tileSize, tileSize, 6, ColorUtil.lerp(0xC8120E0B, 0xE0201634, h));
             Render2D.roundedOutline(ctx, tx, ty, tileSize, tileSize, 6, 1, ColorUtil.lerp(0x30FFFFFF, ColorUtil.withAlpha(Theme.accent(), 200), h));
             SideNav.icon(ctx, TILE_ICONS[i], tx + tileSize / 2f, ty + tileSize / 2f, 10, ColorUtil.lerp(0xFFE4D8CE, Theme.accent2(), h));
             if (i == 5) {

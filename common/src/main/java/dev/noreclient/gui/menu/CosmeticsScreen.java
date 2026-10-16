@@ -45,7 +45,7 @@ public class CosmeticsScreen extends PanelScreen {
             boolean hov = Render2D.hovered(mx, my, cx, cy, cw, ch);
             float a = anim("c" + i).target(hov ? 1 : 0).update();
             if (sel || a > 0.01f) Render2D.shadow(g, cx, cy, cw, ch, Theme.radius(), 5, ColorUtil.withAlpha(Theme.accent(), (int) (50 + 50 * a)));
-            Render2D.roundedRect(g, cx, cy, cw, ch, Theme.radius(), ColorUtil.lerp(0xB0140F0C, 0xD01C1611, a));
+            Render2D.roundedRect(g, cx, cy, cw, ch, Theme.radius(), ColorUtil.lerp(0xB0160F26, 0xD0201634, a));
             Render2D.roundedOutline(g, cx, cy, cw, ch, Theme.radius(), 1, sel ? ColorUtil.withAlpha(Theme.accent(), 220) : ColorUtil.lerp(0x20FFFFFF, ColorUtil.withAlpha(Theme.accent(), 140), a));
             float pw = 30, ph = 48, px = cx + (cw - pw) / 2f, py = cy + 10 - a * 2;
             if (locked) {

@@ -4,8 +4,20 @@ import dev.noreclient.api.Gfx;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.Render2D;
 
-/** Christmas event decorations for the Nore menus: drifting snow and a twinkling garland. Always on. */
+/** Christmas event decorations for the Nore menus: drifting snow and a twinkling garland. Forced on from 10 December 2026. */
 final class ChristmasDecor {
+    /** 2026-12-10 00:00 local time – the winter event starts here and cannot be switched off. */
+    private static final long START;
+
+    static {
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        c.clear();
+        c.set(2026, java.util.Calendar.DECEMBER, 10, 0, 0, 0);
+        START = c.getTimeInMillis();
+    }
+
+    static boolean active() { return System.currentTimeMillis() >= START; }
+
     private static final int FLAKES = 90;
     private static final float[][] SNOW = new float[FLAKES][4];
 

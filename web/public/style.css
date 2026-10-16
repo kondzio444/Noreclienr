@@ -162,6 +162,7 @@ input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 
 .ev-body { position: relative; padding: 24px; }
 .ev-body h3 { margin-top: 10px; }
 .ev-body p { color: var(--haze); font-size: 14.5px; margin-top: 6px; max-width: 46ch; }
+.badge.soon { background: rgba(127, 208, 255, .12); color: #9fdcff; border-color: rgba(127, 208, 255, .3); }
 .badge { font-size: 10.5px; letter-spacing: .18em; padding: 4px 9px; border-radius: 6px; background: rgba(61, 220, 151, .14); color: #74f0b9; border: 1px solid rgba(61, 220, 151, .3); }
 
 /* launcher frame tilts flat as it scrolls in */

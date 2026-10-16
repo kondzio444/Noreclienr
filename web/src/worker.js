@@ -102,11 +102,13 @@ async function latest(env, ctx) {
   return shapeRelease(r);
 }
 
-/** Halloween and Christmas run all year in Nore – they cannot be switched off. */
+/** Nore events are forced on (cannot be switched off); the winter event starts on 10 December 2026. */
+const WINTER_START = '2026-12-10T00:00:00+01:00';
 function events() {
+  const winter = Date.now() >= Date.parse(WINTER_START);
   return [
-    { id: 'halloween', name: 'Halloween w Nore', forced: true, accent: '#ff8a1f', features: ['Dyniowe dekoracje', 'Peleryny Halloween', 'Kapelusz Wiedźmy', 'Skrzydła Nietoperza', 'Mini-gra Cukierek albo psikus'] },
-    { id: 'christmas', name: 'Święta w Nore', forced: true, accent: '#ff4d6d', features: ['Śnieg w menu', 'Świąteczne lampki', 'Zimowy motyw launchera'] },
+    { id: 'halloween', name: 'Halloween w Nore', forced: true, active: true, accent: '#ff8a1f', features: ['Dyniowe dekoracje', 'Peleryny Halloween', 'Kapelusz Wiedźmy', 'Skrzydła Nietoperza', 'Mini-gra Cukierek albo psikus'] },
+    { id: 'christmas', name: 'Święta w Nore', forced: true, active: winter, startsAt: WINTER_START, accent: '#ff4d6d', features: ['Śnieg w menu', 'Świąteczne lampki', 'Zimowy motyw launchera'] },
   ];
 }
 

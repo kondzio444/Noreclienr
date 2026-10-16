@@ -36,7 +36,7 @@ public class NorePauseMenu extends NoreScreen {
         nav.clear();
         final NorePauseMenu self = this;
         nav.add("Powrót do gry", "Esc", SideNav.BACK, SideNav.PRIMARY, this::close)
-                .add("Moduły klienta", "Prawy Shift", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new ClickGuiScreen(self)))
+                .add("Menu Nore", "Prawy Shift", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new dev.noreclient.gui.click.RadialMenuScreen(self)))
                 .add("Edytor HUD", "H", SideNav.HUD, SideNav.NORMAL, () -> game().openScreen(new HudEditorScreen(self)))
                 .add("Postępy", null, SideNav.CHART, SideNav.NORMAL, () -> game().openAdvancements(self))
                 .add("Zrzuty ekranu", null, SideNav.CAMERA, SideNav.NORMAL, () -> game().openScreen(new ScreenshotsScreen(self)))
@@ -69,7 +69,7 @@ public class NorePauseMenu extends NoreScreen {
         float slide = (1 - stage(0)) * -50 + (1 - o) * -30;
         ctx.push();
         ctx.translate(slide, 0);
-        Render2D.quadGradient(ctx, 0, 0, panelW + 70, height, 0xF0080605, 0x00080605, 0x00080605, 0xF0080605);
+        Render2D.quadGradient(ctx, 0, 0, panelW + 70, height, 0xF00A0614, 0x000A0614, 0x000A0614, 0xF00A0614);
         Render2D.quadGradient(ctx, panelW - 1, 0, 1, height, ColorUtil.withAlpha(Theme.accent(), 0), ColorUtil.withAlpha(Theme.accent(), 0), ColorUtil.withAlpha(Theme.accent(), 140), ColorUtil.withAlpha(Theme.accent(), 140));
 
         float pad = 16;

@@ -1,7 +1,7 @@
 package dev.noreclient.module.client;
 
 import dev.noreclient.api.Keys;
-import dev.noreclient.gui.click.ClickGuiScreen;
+import dev.noreclient.gui.click.RadialMenuScreen;
 import dev.noreclient.module.Category;
 import dev.noreclient.module.Module;
 import dev.noreclient.setting.BooleanSetting;
@@ -16,13 +16,13 @@ public class ClickGuiModule extends Module {
     public final KeybindSetting hudEditorKey = add(new KeybindSetting("HUD Editor Key", "Klawisz edytora HUD", Keys.H));
 
     public ClickGuiModule() {
-        super("Click GUI", "Menu klienta z wszystkimi modułami", Category.CLIENT, Keys.RIGHT_SHIFT);
+        super("Click GUI", "Radialne menu klienta (3D) z wszystkimi modułami", Category.CLIENT, Keys.RIGHT_SHIFT);
     }
 
     @Override
     protected void onEnable() {
         setEnabled(false);
-        if (!game().screenOpen()) game().openScreen(new ClickGuiScreen(null));
+        if (!game().screenOpen()) game().openScreen(new RadialMenuScreen(null));
     }
 
     @Override

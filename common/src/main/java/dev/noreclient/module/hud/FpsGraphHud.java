@@ -44,7 +44,7 @@ public class FpsGraphHud extends HudModule {
         float top = stats.isOn() ? 11 : 0;
         width = w;
         height = h + top;
-        if (background.isOn()) Render2D.roundedRect(ctx, 0, 0, w, height, Theme.radius() * 0.6f, 0x90140F0C);
+        if (background.isOn()) Render2D.roundedRect(ctx, 0, 0, w, height, Theme.radius() * 0.6f, 0x90160F26);
         float min = Float.MAX_VALUE, max = 0, sum = 0;
         for (int i = 0; i < n; i++) {
             float v = samples[(head - 1 - i + samples.length) % samples.length];

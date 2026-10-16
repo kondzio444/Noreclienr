@@ -107,7 +107,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         hitRects.clear();
         hitActions.clear();
         MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x70080605);
+        Render2D.rect(g, 0, 0, width, height, 0x700A0614);
         float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 450f);
         boolean inputOk = dialog == 0;
 

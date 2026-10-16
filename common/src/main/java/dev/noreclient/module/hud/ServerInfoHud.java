@@ -31,7 +31,7 @@ public class ServerInfoHud extends HudModule {
         width = Math.max(110, Math.max(Render2D.textWidth(name), Render2D.textWidth(players) + (country != null ? Render2D.textWidth(country) * 0.7f + 22 : 0)) + 36);
         height = showMotd.isOn() ? 40 : 28;
         if (background.isOn()) {
-            Render2D.roundedRect(g, 0, 0, width, height, Theme.radius() * 0.8f, 0x90140F0C);
+            Render2D.roundedRect(g, 0, 0, width, height, Theme.radius() * 0.8f, 0x90160F26);
             Render2D.roundedOutline(g, 0, 0, width, height, Theme.radius() * 0.8f, 1, ColorUtil.withAlpha(Theme.accent(), 70));
         }
         if (info != null && info.favicon != null) Render2D.texture(g, info.favicon, 4, 4, 20, 20, 1f);

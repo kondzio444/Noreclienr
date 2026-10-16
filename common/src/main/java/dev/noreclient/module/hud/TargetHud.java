@@ -46,7 +46,7 @@ public class TargetHud extends HudModule {
         height = 38;
         float r = Theme.radius();
         Render2D.shadow(g, 0, 0, width, height, r, 4, 0x60000000);
-        Render2D.roundedRect(g, 0, 0, width, height, r, 0xE0140F0C);
+        Render2D.roundedRect(g, 0, 0, width, height, r, 0xE0160F26);
         Render2D.roundedGradient(g, 5, 5, 28, 28, r * 0.8f, Theme.accent(), Theme.accent2(), true);
         Render2D.centeredText(g, name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase(), 19, 15, 0xFFFFFFFF, true);
         Render2D.text(g, name, 38, 6, 0xFFFFFFFF, true);

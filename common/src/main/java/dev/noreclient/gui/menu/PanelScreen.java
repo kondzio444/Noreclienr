@@ -61,7 +61,7 @@ public abstract class PanelScreen extends NoreScreen {
         hitRects.clear();
         hitActions.clear();
         if (!game().inWorld()) MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x80080605);
+        Render2D.rect(g, 0, 0, width, height, 0x800A0614);
         float in = intro(0);
         g.setAlpha(in);
         float pad = 14;

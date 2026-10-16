@@ -7,15 +7,15 @@ import dev.noreclient.module.client.ClientSettings;
 public final class Theme {
     private Theme() {}
 
-    public static final int BG = 0xF2100D0B;
-    public static final int SIDEBAR = 0xFF14100D;
-    public static final int PANEL = 0xFF1A1512;
-    public static final int CARD = 0xFF201A16;
-    public static final int CARD_HOVER = 0xFF2A221C;
+    public static final int BG = 0xF20E0A16;
+    public static final int SIDEBAR = 0xFF120D1C;
+    public static final int PANEL = 0xFF171024;
+    public static final int CARD = 0xFF1D1530;
+    public static final int CARD_HOVER = 0xFF271C40;
     public static final int OUTLINE = 0x22FFFFFF;
-    public static final int TEXT = 0xFFF6EFE8;
-    public static final int TEXT_DIM = 0xFFB4A395;
-    public static final int TEXT_MUTED = 0xFF75675C;
+    public static final int TEXT = 0xFFF2ECFF;
+    public static final int TEXT_DIM = 0xFFB0A3CF;
+    public static final int TEXT_MUTED = 0xFF746891;
     public static final int SUCCESS = 0xFF34D399;
     public static final int ERROR = 0xFFF87171;
     public static final int WARNING = 0xFFFBBF24;

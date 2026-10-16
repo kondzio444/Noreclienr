@@ -29,7 +29,7 @@ public class ShopScreen extends PanelScreen {
         for (int i = 0; i < ITEMS.length; i++) {
             float cx = x + (i % cols) * (cw + 8), cy = gy + (i / cols) * (ch + 8) + (1 - intro(i * 40L)) * 10;
             if (cy > y + h) break;
-            Render2D.roundedRect(g, cx, cy, cw, ch, Theme.radius(), 0xB0140F0C);
+            Render2D.roundedRect(g, cx, cy, cw, ch, Theme.radius(), 0xB0160F26);
             Render2D.roundedOutline(g, cx, cy, cw, ch, Theme.radius(), 1, 0x22FFFFFF);
             Render2D.roundedGradient(g, cx + 8, cy + 8, 34, 34, 8, ColorUtil.withAlpha(Theme.accent2(), 90), ColorUtil.withAlpha(Theme.accent(), 40), true);
             Render2D.roundedOutline(g, cx + 19, cy + 23, 12, 10, 2, 1.2f, 0xFFFFFFFF);

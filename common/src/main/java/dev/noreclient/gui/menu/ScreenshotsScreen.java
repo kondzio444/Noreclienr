@@ -63,7 +63,7 @@ public class ScreenshotsScreen extends NoreScreen {
     public void render(Gfx g, int mx, int my, float delta) {
         CurrentGfx.set(g);
         if (!game().inWorld()) MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x90080605);
+        Render2D.rect(g, 0, 0, width, height, 0x900A0614);
         float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 400f);
 
         // header

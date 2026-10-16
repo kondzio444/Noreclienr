@@ -28,6 +28,13 @@ public final class MenuBackground {
         parX += (tx - parX) * 0.05f;
         parY += (ty - parY) * 0.05f;
         String mode = mode();
+        if (mode.startsWith("Scena")) {
+            dev.noreclient.module.client.ClientSettings cs = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class);
+            NoreScene.render(g, width, height, cs.sceneMinutes());
+            Render2D.quadGradient(g, 0, 0, width, height, 0x700A0614, 0x200A0614, 0x200A0614, 0x700A0614);
+            Render2D.quadGradient(g, 0, height * 0.62f, width, height * 0.38f, 0, 0, 0x90050308, 0x90050308);
+            return;
+        }
         if (mode.startsWith("Panorama")) {
             // Minecraft's own rotating panorama with the Nore colour grade
             Platform.game().renderPanorama(g, 1f);
@@ -48,7 +55,7 @@ public final class MenuBackground {
             float y = (height - dh) / 2f - parY * height * 0.04f;
             g.texture(tex, x, y, dw, dh, 1f);
         } else {
-            Render2D.rect(g, 0, 0, width, height, 0xFF0C0A09);
+            Render2D.rect(g, 0, 0, width, height, 0xFF0B0812);
         }
         Render2D.quadGradient(g, 0, 0, width, height, 0x99080812, 0x80080812, 0xE0050508, 0xE0050508);
         Render2D.quadGradient(g, 0, 0, width, height, ColorUtil.withAlpha(Theme.accent(), 45), 0, ColorUtil.withAlpha(Theme.accent2(), 40), 0);

@@ -42,7 +42,7 @@ public class WatermarkHud extends HudModule {
         height = 18;
         float r = Theme.radius();
         if (style.is("Glow")) Render2D.shadow(g, 0, 0, width, height, r, 6, ColorUtil.withAlpha(Theme.accent(), 120));
-        Render2D.roundedRect(g, 0, 0, width, height, r, 0xD0140F0C);
+        Render2D.roundedRect(g, 0, 0, width, height, r, 0xD0160F26);
         Render2D.roundedGradient(g, 0, 0, 4 + logoW + 8, height, r, Theme.accent(), Theme.accent2(), false);
         Render2D.text(g, logo, 6, 5, 0xFFFFFFFF, true);
         if (infoW > 0) Render2D.text(g, info.toString(), 4 + logoW + 8 + 6, 5, 0xFFE6E6F0, false);

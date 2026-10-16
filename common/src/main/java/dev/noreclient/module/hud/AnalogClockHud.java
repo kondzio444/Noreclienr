@@ -41,7 +41,7 @@ public class AnalogClockHud extends HudModule {
             h = now.get(Calendar.HOUR_OF_DAY) + m / 60.0;
         }
         if (glow.isOn()) Render2D.radial(ctx, r, r, r * 1.35f, ColorUtil.withAlpha(Theme.accent(), 60), 0);
-        Render2D.circle(ctx, r, r, r, 0xD0140F0C);
+        Render2D.circle(ctx, r, r, r, 0xD0160F26);
         Render2D.ring(ctx, r, r, r, 1.2f, 0, 360, ColorUtil.withAlpha(Theme.accent(), 200));
         if (ticks.isOn()) {
             for (int i = 0; i < 12; i++) {

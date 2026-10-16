@@ -101,7 +101,7 @@ public class FriendsChatScreen extends PanelScreen {
             boolean sel = c.hex.equals(hex);
             boolean hov = Render2D.hovered(mx, my, x, ry, lw, 26);
             float a = anim("c" + c.hex).target(sel ? 1 : hov ? 0.5f : 0).update();
-            Render2D.roundedRect(g, x, ry, lw, 26, Theme.radius(), ColorUtil.lerp(0xA0140F0C, ColorUtil.withAlpha(Theme.accent(), 70), a));
+            Render2D.roundedRect(g, x, ry, lw, 26, Theme.radius(), ColorUtil.lerp(0xA0160F26, ColorUtil.withAlpha(Theme.accent(), 70), a));
             if (sel) Render2D.roundedOutline(g, x, ry, lw, 26, Theme.radius(), 1, ColorUtil.withAlpha(Theme.accent(), 170));
             TextureRef head = Heads.get(c.name);
             if (head != null) Render2D.texture(g, head, x + 4, ry + 4, 18, 18, 1f);
@@ -163,7 +163,7 @@ public class FriendsChatScreen extends PanelScreen {
             tw = Math.max(tw, Render2D.textWidth(meta) * 0.6f);
             float bw = tw + 12;
             float bx = m.mine ? cx + cw - bw - 8 : cx + 8;
-            Render2D.roundedRect(g, bx, by, bw, bh, 5, m.mine ? ColorUtil.withAlpha(Theme.accent(), 215) : 0xE0262019);
+            Render2D.roundedRect(g, bx, by, bw, bh, 5, m.mine ? ColorUtil.withAlpha(Theme.accent(), 215) : 0xE02A2040);
             int tc = m.mine ? 0xFF1A1008 : Theme.TEXT;
             for (int k = 0; k < lines.get(i).size(); k++) Render2D.scaledText(g, lines.get(i).get(k), bx + 6, by + 4 + k * 8.5f, 0.8f, tc, false);
             Render2D.scaledText(g, meta, bx + bw - Render2D.textWidth(meta) * 0.6f - 5, by + bh - 7.5f, 0.6f, m.mine ? 0xB01A1008 : Theme.TEXT_MUTED, false);

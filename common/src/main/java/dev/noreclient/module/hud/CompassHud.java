@@ -32,7 +32,7 @@ public class CompassHud extends HudModule {
         width = barWidth.floatValue();
         height = degrees.isOn() ? 26 : 16;
         float yaw = inGame() ? wrap(game().yaw(tickDelta)) : 0;
-        if (background.isOn()) Render2D.roundedRect(g, 0, 0, width, 16, Theme.radius() * 0.6f, 0x90140F0C);
+        if (background.isOn()) Render2D.roundedRect(g, 0, 0, width, 16, Theme.radius() * 0.6f, 0x90160F26);
         float pxPerDeg = 1.4f, center = width / 2f;
         for (int deg = 0; deg < 360; deg += 15) {
             float diff = wrap(deg - yaw);
