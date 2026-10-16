@@ -6,17 +6,12 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 
 // ------------------------------------------------------------------ IPC guard
-// Every invoke handler (also those registered by other modules) only answers our own renderer page,
-// and until a premium (Microsoft) account is verified only the login channels work.
+// Every invoke handler (also those registered by other modules) only answers our own renderer page.
 const RENDERER_URL = pathToFileURL(path.join(__dirname, '..', 'renderer')).href + '/';
-const OPEN_CHANNELS = new Set(['app:info', 'auth:status', 'auth:logout', 'accounts:msStart', 'accounts:msPoll', 'accounts:msCancel',
-  'shell:open', 'update:state', 'update:check', 'update:download', 'update:install']);
-let authed = false;
 const rawHandle = ipcMain.handle.bind(ipcMain);
 ipcMain.handle = (channel, fn) => rawHandle(channel, (e, ...args) => {
   const url = e.senderFrame ? e.senderFrame.url : '';
   if (!url.startsWith(RENDERER_URL)) throw new Error('Odrzucono żądanie spoza launchera');
-  if (!authed && !OPEN_CHANNELS.has(channel)) throw new Error('Zaloguj się kontem Microsoft (premium), aby korzystać z launchera.');
   return fn(e, ...args);
 });
 const paths = require('./paths');
@@ -223,8 +218,14 @@ ipcMain.handle('dialog:java', async () => {
 
 // ------------------------------------------------------------------ IPC: accounts
 
-ipcMain.handle('accounts:offline', () => {
-  throw new Error('Nore Launcher działa tylko z kontem premium (Microsoft).');
+ipcMain.handle('accounts:offline', (e, name) => {
+  const acc = auth.createOffline(name);
+  store.update(d => {
+    d.accounts = d.accounts.filter(a => a.id !== acc.id);
+    d.accounts.push({ id: acc.id, type: 'offline', name: acc.name, uuid: acc.uuid });
+    d.selectedAccount = acc.id;
+  });
+  return publicAccount(acc);
 });
 
 ipcMain.handle('accounts:msStart', async () => {
@@ -243,11 +244,10 @@ ipcMain.handle('accounts:msPoll', async (e, deviceCode, userCode, expiresIn, int
     const acc = { id: 'ms-' + mc.uuid, type: 'microsoft', name: mc.name, uuid: mc.uuid, skin: mc.skin, verifiedAt: Date.now() };
     const secret = seal({ accessToken: mc.accessToken, refreshToken: token.refresh_token, expiresAt: mc.expiresAt }, acc.id);
     store.update(d => {
-      d.accounts = d.accounts.filter(a => a.id !== acc.id && a.type === 'microsoft');
+      d.accounts = d.accounts.filter(a => a.id !== acc.id);
       d.accounts.push({ ...acc, secret });
       d.selectedAccount = acc.id;
     });
-    authed = true;
     return publicAccount(acc);
   } finally {
     msLogins.delete(deviceCode);
@@ -260,17 +260,10 @@ ipcMain.handle('accounts:msCancel', (e, deviceCode) => {
 });
 
 ipcMain.handle('accounts:select', (e, id) => {
-  if (!store.get().accounts.some(a => a.id === id && a.type === 'microsoft')) throw new Error('Nie ma takiego konta');
+  if (!store.get().accounts.some(a => a.id === id)) throw new Error('Nie ma takiego konta');
   store.update(d => { d.selectedAccount = id; });
   return true;
 });
-
-function logoutIfNoAccount() {
-  if (store.get().accounts.some(a => a.type === 'microsoft')) return false;
-  authed = false;
-  send('auth:logout', {});
-  return true;
-}
 
 ipcMain.handle('accounts:remove', (e, id) => {
   volatileSecrets.delete(id);
@@ -278,74 +271,53 @@ ipcMain.handle('accounts:remove', (e, id) => {
     d.accounts = d.accounts.filter(a => a.id !== id);
     if (d.selectedAccount === id) d.selectedAccount = d.accounts[0] ? d.accounts[0].id : null;
   });
-  logoutIfNoAccount();
   return true;
 });
 
 ipcMain.handle('auth:logout', () => {
   volatileSecrets.clear();
   store.update(d => { d.accounts = []; d.selectedAccount = null; });
-  authed = false;
   session.defaultSession.clearStorageData({ storages: ['cookies'] }).catch(() => {});
   return true;
 });
 
 /**
- * Verifies the premium session on start: the Minecraft token is refreshed when it is close to
- * expiring and the profile is checked with Mojang. Without internet a session verified within the
- * last 7 days still opens the launcher (the game then also starts with the cached token).
+ * Checks the selected Microsoft session on start: the Minecraft token is refreshed when it is close
+ * to expiring and the profile is checked with Mojang. Never blocks the launcher – non-premium
+ * accounts (and no account at all) are fine; an expired premium session is reported.
  */
 ipcMain.handle('auth:status', async () => {
-  store.update(d => {
-    // older launchers allowed non-premium accounts – they are no longer usable
-    d.accounts = d.accounts.filter(a => a.type === 'microsoft');
-    if (!d.accounts.some(a => a.id === d.selectedAccount)) d.selectedAccount = d.accounts[0] ? d.accounts[0].id : null;
-  });
   const d = store.get();
   const acc = d.accounts.find(a => a.id === d.selectedAccount);
-  if (!acc) { authed = false; return { loggedIn: false }; }
+  if (!acc) return { loggedIn: false };
+  if (acc.type !== 'microsoft') return { loggedIn: true, account: publicAccount(acc) };
   try {
     const ready = await readyAccount();
-    const ok = await auth.checkProfile(ready.accessToken);
-    if (!ok) {
+    if (!(await auth.checkProfile(ready.accessToken))) {
       const fresh = await readyAccount({ force: true });
       if (!(await auth.checkProfile(fresh.accessToken))) throw Object.assign(new Error('Sesja premium wygasła – zaloguj się ponownie.'), { auth: true });
     }
     store.update(s => { const a = s.accounts.find(x => x.id === acc.id); if (a) a.verifiedAt = Date.now(); });
-    authed = true;
     return { loggedIn: true, account: publicAccount(acc) };
   } catch (e) {
     const network = !e.auth && /fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network/i.test(String(e.message || e));
-    if (network && acc.verifiedAt && Date.now() - acc.verifiedAt < 7 * 86400000) {
-      authed = true;
-      return { loggedIn: true, offline: true, account: publicAccount(acc) };
-    }
-    authed = false;
-    return { loggedIn: false, error: network ? 'Brak połączenia z Microsoft – sprawdź internet.' : String(e.message || e) };
+    return { loggedIn: true, offline: network, expired: !network, error: String(e.message || e), account: publicAccount(acc) };
   }
 });
 
-/** Returns a launch-ready premium account (refreshing the Microsoft tokens when needed). */
+/** Returns a launch-ready account (refreshing Microsoft tokens when needed). */
 async function readyAccount({ force = false } = {}) {
   const d = store.get();
   const acc = d.accounts.find(a => a.id === d.selectedAccount);
-  if (!acc || acc.type !== 'microsoft') throw new Error('Zaloguj się kontem Microsoft (premium), zanim uruchomisz grę.');
+  if (!acc) throw new Error('Wybierz albo dodaj konto, zanim uruchomisz grę.');
+  if (acc.type === 'offline') return { ...acc, accessToken: '0' };
   let secret = unseal(acc.secret, acc.id);
   if (!secret.refreshToken && !secret.accessToken) {
-    store.update(s => { s.accounts = s.accounts.filter(a => a.id !== acc.id); s.selectedAccount = s.accounts[0] ? s.accounts[0].id : null; });
-    authed = false;
-    send('auth:logout', {});
     throw Object.assign(new Error('Sesja premium wygasła – zaloguj się ponownie.'), { auth: true });
   }
   if (force || !secret.accessToken || !secret.expiresAt || secret.expiresAt - Date.now() < 10 * 60 * 1000) {
     send('progress', { stage: 'Odświeżanie sesji Microsoft' });
-    let refreshed;
-    try {
-      refreshed = await auth.refreshMicrosoft({ ...acc, ...secret }, msClientId());
-    } catch (e) {
-      if (e.auth) { authed = false; send('auth:logout', {}); }
-      throw e;
-    }
+    const refreshed = await auth.refreshMicrosoft({ ...acc, ...secret }, msClientId());
     secret = { accessToken: refreshed.accessToken, refreshToken: refreshed.refreshToken, expiresAt: refreshed.expiresAt };
     store.update(s => {
       const a = s.accounts.find(x => x.id === acc.id);

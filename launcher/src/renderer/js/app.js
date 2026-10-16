@@ -262,17 +262,21 @@ function onboarding() {
       (pane) => {
         const acc = App.account();
         pane.innerHTML = `<div class="wz-body">
-          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Jesteś zalogowany kontem premium. Możesz dodać kolejne konto Microsoft – przełączysz się między nimi w zakładce Konta.')}
+          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Zaloguj się kontem Microsoft (premium) albo graj bez premium, podając tylko nick. Konto możesz zmienić później w zakładce Konta.')}
           ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'Premium (Microsoft)' : 'Non-premium'} · zalogowano</small></div>${icon('check', 'ok')}</div>` : ''}
           <div class="login-options wz-in">
             <div class="card hover login-option ms" id="w-ms">
               <div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
               <h3>Microsoft (premium)</h3><p>Pełny dostęp do serwerów online-mode, Twój skin i peleryna.</p><span class="go">${icon('arrowRight')}</span></div>
+            <div class="card hover login-option" id="w-off">
+              <div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
+              <h3>Non-premium</h3><p>Gra z dowolnym nickiem — singleplayer, LAN i serwery offline-mode.</p><span class="go">${icon('arrowRight')}</span></div>
           </div>
           ${navRow(backBtn, acc ? `<button class="btn" data-enter id="w-skip">Dalej ${icon('arrowRight')}</button>` : `<button class="btn ghost" data-enter id="w-skip">Pomiń ${icon('arrowRight')}</button>`)}
         </div>`;
         bind(pane);
         $('#w-skip', pane).addEventListener('click', next);
+        $('#w-off', pane).addEventListener('click', () => offlineLoginModal(() => go2(2)));
         $('#w-ms', pane).addEventListener('click', () => microsoftLoginModal(() => go2(2)));
       },
 
@@ -532,9 +536,9 @@ function renderInstallStep(content, next) {
     await App.refresh();
   });
 
-  await LoginGate.ensure();
   App.info = await nore.info();
   await App.refresh();
+  LoginGate.check();
   nore.on('update:state', renderUpdate);
   nore.on('content:updatesState', onContentUpdates);
   nore.content.updatesState().then(onContentUpdates).catch(() => {});

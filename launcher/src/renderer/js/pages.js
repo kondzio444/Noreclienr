@@ -418,12 +418,12 @@ Pages.datapacks = contentPage('datapacks');
 Pages.accounts = (root) => {
   const render = () => {
     const s = App.state;
-    root.innerHTML = `<div class="page-head"><div><h2>Konta</h2><p>Nore Launcher działa tylko z kontami premium (Microsoft). Możesz dodać kilka i przełączać się między nimi.</p></div></div>
+    root.innerHTML = `<div class="page-head"><div><h2>Konta</h2><p>Logowanie premium (Microsoft) i non-premium (dowolny nick).</p></div></div>
       <div class="login-options stagger" style="margin-bottom:26px">
         <div class="card hover login-option ms" id="ms" style="--i:0"><div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
-          <h3>Dodaj konto Microsoft</h3><p>Kolejne konto premium z Minecraft: Java Edition.</p></div>
-        <div class="card hover login-option" id="logout-all" style="--i:1"><div class="ico" style="background:rgba(var(--danger-rgb),.14);color:var(--danger)">${icon('shield')}</div>
-          <h3>Wyloguj wszędzie</h3><p>Usuwa wszystkie konta i zaszyfrowane tokeny z tego komputera. Launcher wróci do ekranu logowania.</p></div>
+          <h3>Dodaj konto Microsoft</h3><p>Konto premium z Minecraft: Java Edition — serwery online-mode, skin i peleryna.</p></div>
+        <div class="card hover login-option" id="off" style="--i:1"><div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
+          <h3>Dodaj konto non-premium</h3><p>Wpisz tylko nick — singleplayer, LAN i serwery z wyłączonym online-mode.</p></div>
       </div>
       <div class="section-title" style="margin-bottom:12px">${icon('users')} Twoje konta</div>
       <div class="col" id="list" style="gap:10px"></div>`;
@@ -435,9 +435,7 @@ Pages.accounts = (root) => {
       : `<div class="card empty">${icon('user')}<div>Nie dodano jeszcze żadnego konta.</div></div>`;
     stagger(list);
     $('#ms', root).onclick = () => microsoftLoginModal();
-    $('#logout-all', root).onclick = async () => {
-      if (await confirmModal('Wylogować wszystkie konta?', 'Launcher wróci do ekranu logowania premium.', { ok: 'Wyloguj', danger: true })) { await nore.auth.logout(); location.reload(); }
-    };
+    $('#off', root).onclick = () => offlineLoginModal();
     $$('.acc-card', list).forEach(c => {
       const id = c.dataset.id;
       const sel = $('[data-sel]', c);
@@ -453,38 +451,28 @@ Pages.accounts = (root) => {
   return App.onChange(render);
 };
 
-async function microsoftLoginModal(done) {
-  let session = null, cancelled = false;
-  const m = modal(`<h3>Logowanie Microsoft</h3><p class="sub">Łączenie z Microsoft…</p><div id="body" class="col" style="align-items:center;padding:20px"><span class="spinner"></span></div>
-    <div class="foot"><button class="btn ghost" data-close>Anuluj</button></div>`, {
-    onClose: () => { cancelled = true; if (session) nore.accounts.msCancel(session.deviceCode); },
-  });
-  try {
-    session = await nore.accounts.msStart();
-  } catch (e) {
-    $('#body', m.el).innerHTML = `<div class="empty" style="padding:10px">${icon('key')}<div style="color:var(--text)">${esc(String(e.message).replace(/^Error invoking remote method '[^']+': (Error: )?/, ''))}</div>
-      <div class="muted" style="margin-top:8px;font-size:12.5px;line-height:1.5">Spróbuj ponownie za chwilę.
-      </div></div>`;
-    $('.sub', m.el).textContent = 'Brak konfiguracji';
-    return;
-  }
-  $('.sub', m.el).textContent = 'Otwórz stronę Microsoft i wpisz poniższy kod:';
-  $('#body', m.el).innerHTML = `<div class="code-box" id="code" title="Kliknij, aby skopiować">${esc(session.userCode)}</div>
-    <button class="btn" id="open" style="margin-top:16px">${icon('external')} Otwórz ${esc(session.uri.replace('https://', ''))}</button>
-    <div class="row muted" style="margin-top:16px;font-size:12.5px"><span class="spinner"></span> Czekam na zalogowanie…</div>`;
-  $('#code', m.el).onclick = () => { navigator.clipboard.writeText(session.userCode); toast('Skopiowano kod', session.userCode); };
-  $('#open', m.el).onclick = () => nore.open(session.uri);
-  nore.open(session.uri);
-  try {
-    const acc = await nore.accounts.msPoll(session.deviceCode, session.userCode, session.expiresIn, session.interval);
-    if (cancelled) return;
-    await App.refresh();
-    m.close();
-    toast('Zalogowano', acc.name + ' (premium)', 'success');
-    done && done();
-  } catch (e) {
-    if (!cancelled) { m.close(); errorToast(e, 'Logowanie nie powiodło się'); }
-  }
+function offlineLoginModal(done) {
+  const m = modal(`<h3>Konto non-premium</h3><p class="sub">Podaj nick (3–16 znaków: litery, cyfry, _).</p>
+    <div class="field"><input class="input" id="nick" maxlength="16" placeholder="Steve" autofocus></div>
+    <div class="field"><span class="hint">${icon('info')} Konto non-premium działa w singleplayer, LAN i na serwerach z wyłączonym online-mode.</span></div>
+    <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="ok">${icon('check')} Dodaj</button></div>`);
+  const input = $('#nick', m.el);
+  setTimeout(() => input.focus(), 50);
+  const submit = async () => {
+    try {
+      const acc = await nore.accounts.offline(input.value.trim());
+      await App.refresh();
+      m.close();
+      toast('Dodano konto', acc.name, 'success');
+      done && done();
+    } catch (e) { errorToast(e, 'Nieprawidłowy nick'); input.focus(); }
+  };
+  input.onkeydown = (e) => { if (e.key === 'Enter') submit(); };
+  $('#ok', m.el).onclick = submit;
+}
+
+function microsoftLoginModal(done) {
+  LoginGate.microsoft(done);
 }
 
 // ================================================================== SETTINGS
@@ -531,7 +519,7 @@ Pages.settings = (root) => {
       </div>
       <div class="card panel">
         <div class="section-title">${icon('key')} Konta Microsoft</div>
-        <div class="setting"><div class="col"><b>Logowanie premium</b><span>Wbudowane – sesja szyfrowana systemowo i sprawdzana w Mojang przy starcie</span></div><span class="tag premium">${icon('shield')} AKTYWNE</span></div>
+        <div class="setting"><div class="col"><b>Logowanie Microsoft</b><span>Wbudowane – tokeny szyfrowane systemowo, sesja sprawdzana w Mojang przy starcie</span></div><span class="tag premium">${icon('shield')} GOTOWE</span></div>
         <div class="setting"><div class="col"><b>Folder danych launchera</b><span>${esc(App.info.root)}</span></div><button class="btn ghost sm" id="root">${icon('folder')} Otwórz</button></div>
         <div class="setting"><div class="col"><b>Wersja</b><span>Nore Launcher ${esc(App.info.version)}</span></div><button class="btn ghost sm" id="wizard">${icon('sparkles')} Kreator startowy</button></div>
       </div>

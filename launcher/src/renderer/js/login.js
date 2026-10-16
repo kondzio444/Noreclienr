@@ -1,9 +1,8 @@
 'use strict';
 /*
- * Premium login gate. Nore Launcher only opens for a verified Minecraft: Java Edition account:
- * on start the main process checks the session with Microsoft/Mojang, and until that succeeds this
- * full-screen gate is all there is (the main process also refuses every other request).
- * The password is only ever typed on microsoft.com – the launcher receives tokens, encrypted at rest.
+ * Microsoft (premium) login screen. Optional – the launcher also works with non-premium nicks.
+ * The password is only ever typed on microsoft.com – the launcher receives tokens, encrypted at rest,
+ * and the session is checked with Mojang on every start.
  */
 const LoginGate = (() => {
   const clean = (e) => String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
@@ -21,7 +20,7 @@ const LoginGate = (() => {
         <div class="lg-side">
           ${ring()}
           <h1>NORE<span>CLIENT</span></h1>
-          <p class="lg-tag">Launcher tylko dla kont <b>Minecraft Premium</b></p>
+          <p class="lg-tag">Logowanie kontem <b>Minecraft Premium</b></p>
           <ul class="lg-points">
             <li>${icon('shield')}<span>Hasło wpisujesz wyłącznie na stronie Microsoft – launcher nigdy go nie widzi.</span></li>
             <li>${icon('key')}<span>Tokeny sesji są szyfrowane przez system (Windows DPAPI / Keychain).</span></li>
@@ -30,9 +29,11 @@ const LoginGate = (() => {
         </div>
         <div class="lg-main" id="lg-main"></div>
       </div>
+      <button class="lg-close" id="lg-close" title="Zamknij"><svg viewBox="0 0 24 24" class="i"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       <div class="lg-foot">Nore Client nie jest powiązany z Mojang Studios ani Microsoft.</div>
     </div>`);
     document.body.appendChild(root);
+    $('#lg-close', root).onclick = () => leave(null);
     stars($('.lg-stars', root));
     start($('#lg-main', root), note);
     return root;
@@ -46,7 +47,9 @@ const LoginGate = (() => {
       ${note ? `<div class="lg-alert">${icon('info')}<span>${esc(note)}</span></div>` : ''}
       <button class="lg-ms" id="lg-go"><span class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></span>Zaloguj przez Microsoft</button>
       <div class="lg-flow">${['Microsoft', 'Xbox Live', 'Minecraft'].map((t, i) => `<div class="lg-flow-step" style="--i:${i}"><i></i><span>${t}</span></div>`).join('<b></b>')}</div>
+      <button class="lg-link" id="lg-offline">Nie masz premium? Graj na nicku</button>
     </div>`;
+    $('#lg-offline', main).onclick = () => { leave(null); offlineLoginModal(() => { if (resolveGate) resolveGate(App.account()); }); };
   }
 
   let resolveGate = null;
@@ -104,13 +107,16 @@ const LoginGate = (() => {
     main.innerHTML = `<div class="lg-step in lg-done">
       <div class="lg-avatar">${avatarHtml(acc)}<i>${icon('check')}</i></div>
       <h2>Witaj, ${esc(acc.name)}!</h2>
-      <p class="lg-sub">Konto premium zweryfikowane. Uruchamianie launchera…</p>
+      <p class="lg-sub">Konto premium zweryfikowane.</p>
     </div>`;
-    setTimeout(() => {
-      const gate = $('#login-gate');
-      gate.classList.add('leave');
-      setTimeout(() => { gate.remove(); if (resolveGate) resolveGate(acc); }, 700);
-    }, 1300);
+    setTimeout(() => leave(acc), 1300);
+  }
+
+  function leave(acc) {
+    const gate = $('#login-gate');
+    if (!gate) return;
+    gate.classList.add('leave');
+    setTimeout(() => { gate.remove(); const r = resolveGate; resolveGate = null; if (r && acc) r(acc); }, 650);
   }
 
   function stars(canvas) {
@@ -132,19 +138,20 @@ const LoginGate = (() => {
     requestAnimationFrame(frame);
   }
 
-  /** Resolves once the launcher may open (a verified premium session). */
-  async function ensure() {
+  /** Checks the saved premium session on start (never blocks – non-premium works without it). */
+  async function check() {
     let st;
-    try { st = await nore.auth.status(); } catch (e) { st = { loggedIn: false, error: clean(e) }; }
-    if (st.loggedIn) {
-      if (st.offline) setTimeout(() => toast('Tryb offline', 'Nie można teraz sprawdzić sesji w Mojang – używam ostatniej weryfikacji.', 'info', 6000), 1500);
-      return st.account;
-    }
-    $('#splash') && $('#splash').classList.add('hide');
-    return new Promise((resolve) => { resolveGate = resolve; build(st.error); });
+    try { st = await nore.auth.status(); } catch { return; }
+    if (st.offline) toast('Tryb offline', 'Nie można teraz sprawdzić sesji Microsoft – gra użyje ostatniego tokenu.', 'info', 6000);
+    else if (st.expired) toast('Sesja premium wygasła', 'Zaloguj się ponownie w zakładce Konta.', 'error', 7000);
   }
 
-  nore.on('auth:logout', () => location.reload());
+  /** Full-screen Microsoft login; done(account) runs after a successful login. */
+  function microsoft(done) {
+    if ($('#login-gate')) return;
+    resolveGate = async (acc) => { await App.refresh(); toast('Zalogowano', acc.name + ' (premium)', 'success'); done && done(acc); };
+    build();
+  }
 
-  return { ensure };
+  return { check, microsoft };
 })();

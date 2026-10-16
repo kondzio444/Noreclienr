@@ -6,6 +6,9 @@
   animation: lg-in .8s cubic-bezier(.22, 1, .36, 1) both;
   -webkit-app-region: drag;
 }
+.lg-close { position: absolute; top: 18px; right: 18px; width: 38px; height: 38px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .05); color: #d8ccf5; cursor: pointer; display: grid; place-items: center; -webkit-app-region: no-drag; transition: background .2s; }
+.lg-close:hover { background: rgba(255, 255, 255, .12); }
+.lg-close .i { width: 18px; height: 18px; }
 #login-gate.leave { animation: lg-out .7s cubic-bezier(.65, 0, .35, 1) both; }
 #login-gate button, #login-gate .lg-code { -webkit-app-region: no-drag; }
 @keyframes lg-in { from { opacity: 0; transform: scale(1.04); filter: blur(8px); } }
