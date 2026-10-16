@@ -29,6 +29,7 @@ import dev.noreclient.module.render.LowFire;
 import dev.noreclient.module.render.NoHurtCam;
 import dev.noreclient.module.render.Particles;
 import dev.noreclient.module.render.SelfNametag;
+import dev.noreclient.module.render.SkyStyle;
 import dev.noreclient.module.render.TimeChanger;
 import dev.noreclient.module.render.Zoom;
 import dev.noreclient.module.utility.ChatMacros;
@@ -112,6 +113,7 @@ public class ModuleManager {
         add(new LowFire());
         add(new TimeChanger());
         add(new ClearWeather());
+        add(new SkyStyle());
         add(new Particles());
         add(new FogControl());
         add(new HandCustomizer());
