@@ -170,6 +170,16 @@ public final class Capes {
     static byte[] png(String name) { return png(name, 0); }
 
     static byte[] png(String name, float t) {
+        return encode(image(name, t));
+    }
+
+    /** Full 64x32 cape texture (4x resolution) of one animation frame, for the wardrobe preview. */
+    public static BufferedImage image(String name, int frame) {
+        frame = isAnimated(name) ? Math.floorMod(frame, FRAMES) : 0;
+        return image(name, frame / (float) FRAMES);
+    }
+
+    static BufferedImage image(String name, float t) {
         int idx = index(name);
         if (idx == 0) return null;
         BufferedImage img = new BufferedImage(64 * S, 32 * S, BufferedImage.TYPE_INT_ARGB);
@@ -185,7 +195,7 @@ public final class Capes {
         paint(g, idx, t, 24 * S, 2 * S, 1.25f, false);
         paint(g, idx, t, 36 * S, 2 * S, 1.25f, false);
         g.dispose();
-        return encode(img);
+        return img;
     }
 
     private static Graphics2D graphics(BufferedImage img) {

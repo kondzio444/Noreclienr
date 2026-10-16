@@ -4,17 +4,20 @@ import dev.noreclient.module.Category;
 import dev.noreclient.module.Module;
 import dev.noreclient.setting.BooleanSetting;
 import dev.noreclient.setting.ModeSetting;
+import dev.noreclient.cosmetic.Wardrobe;
 import dev.noreclient.util.Capes;
 
-/** Nore capes for the local player (also on the elytra). */
+/** Nore capes (also on the elytra), wings and hats from the wardrobe for the local player. */
 public class Cosmetics extends Module {
     public final ModeSetting cape = add(new ModeSetting("Cape", "Peleryna Nore", "Nova 1.4", Capes.NAMES));
+    public final ModeSetting wings = add(new ModeSetting("Wings", "Skrzydła (Szatnia)", Wardrobe.NONE, Wardrobe.WINGS));
+    public final ModeSetting hat = add(new ModeSetting("Hat", "Czapka (Szatnia) – chowa się pod hełmem", Wardrobe.NONE, Wardrobe.HATS));
     public final BooleanSetting animated = add(new BooleanSetting("Animation", "Animowane peleryny z kolekcji Historia Nore i Halloween", true));
     private String applied;
     private int ticks;
 
     public Cosmetics() {
-        super("Cosmetics", "Peleryny Nore Client", Category.CLIENT);
+        super("Cosmetics", "Szatnia: peleryny, skrzydła i czapki Nore Client", Category.CLIENT);
         setEnabled(true);
     }
 
