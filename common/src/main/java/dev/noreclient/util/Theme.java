@@ -29,7 +29,7 @@ public final class Theme {
 
     public static int accent(long offset) {
         ClientSettings s = settings();
-        if (s == null) return 0xFFFF8A1F;
+        if (s == null) return 0xFF9D5CFF;
         if (s.accentMode.is("Rainbow")) return ColorUtil.rainbow(offset, 0.6f, 0.65f, 1f, 255);
         if (s.accentMode.is("Wave")) return ColorUtil.wave(s.accent.get(), s.accent2.get(), offset, 0.8f);
         return s.accent.getColor(offset);
@@ -37,7 +37,7 @@ public final class Theme {
 
     public static int accent2() {
         ClientSettings s = settings();
-        if (s == null) return 0xFFFFB547;
+        if (s == null) return 0xFFC8A8FF;
         if (s.accentMode.is("Rainbow")) return ColorUtil.rainbow(1500, 0.6f, 0.65f, 1f, 255);
         return s.accent2.getColor();
     }

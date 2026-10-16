@@ -62,7 +62,8 @@
     const m = d.getMonth(), day = d.getDate();
     return (m === 9 && day >= 15) || (m === 10 && day <= 3);
   }
-  const getMode = () => { const m = LS.get(KEY_MODE, 'auto'); return ['auto', 'on', 'off'].includes(m) ? m : 'auto'; };
+  // the event is always on – it cannot be switched off
+  const getMode = () => 'on';
   const themeOn = () => { const m = getMode(); return m === 'on' || (m === 'auto' && inSeason()); };
   const eventOpen = () => inSeason() || getMode() === 'on';
 
@@ -949,17 +950,9 @@
         <button class="btn ghost sm" id="hw-open">${icon('sparkles')} Otwórz wydarzenie</button></div>
     </div>`);
     const stateText = () => {
-      const m = getMode();
-      $('#hw-set-state', card).textContent = m === 'auto'
-        ? `Włącza się sam od 15 października do 3 listopada · teraz ${themeOn() ? 'aktywny' : 'nieaktywny'}`
-        : m === 'on' ? 'Zawsze włączony – dekoracje, nietoperze i wydarzenie przez cały rok' : 'Wyłączony – launcher wygląda jak zwykle';
-      $('#hw-open', card).hidden = !eventOpen();
+      $('#hw-set-state', card).textContent = 'Wydarzenie Nore – zawsze włączone: dekoracje, nietoperze i nagrody przez cały rok';
     };
-    $('#hw-mode', card).appendChild(segmented([{ value: 'auto', label: 'Automatycznie' }, { value: 'on', label: 'Zawsze' }, { value: 'off', label: 'Wyłączony' }], getMode(), (v) => {
-      LS.set(KEY_MODE, v);
-      applyTheme();
-      stateText();
-    }));
+    $('#hw-mode', card).innerHTML = '<span class="tag premium">ZAWSZE WŁĄCZONY</span>';
     stateText();
     $$('#hw-badges .lchip', card).forEach(b => b.addEventListener('click', () => {
       const s2 = load(); s2.equip.badge = b.dataset.b; save(s2);

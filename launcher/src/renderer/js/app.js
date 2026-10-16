@@ -262,21 +262,17 @@ function onboarding() {
       (pane) => {
         const acc = App.account();
         pane.innerHTML = `<div class="wz-body">
-          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Zaloguj się kontem Microsoft (premium) albo graj bez premium, podając tylko nick. Konto możesz zmienić później w zakładce Konta.')}
+          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Jesteś zalogowany kontem premium. Możesz dodać kolejne konto Microsoft – przełączysz się między nimi w zakładce Konta.')}
           ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'Premium (Microsoft)' : 'Non-premium'} · zalogowano</small></div>${icon('check', 'ok')}</div>` : ''}
           <div class="login-options wz-in">
             <div class="card hover login-option ms" id="w-ms">
               <div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
               <h3>Microsoft (premium)</h3><p>Pełny dostęp do serwerów online-mode, Twój skin i peleryna.</p><span class="go">${icon('arrowRight')}</span></div>
-            <div class="card hover login-option" id="w-off">
-              <div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
-              <h3>Non-premium</h3><p>Gra z dowolnym nickiem — singleplayer, LAN i serwery offline-mode.</p><span class="go">${icon('arrowRight')}</span></div>
           </div>
           ${navRow(backBtn, acc ? `<button class="btn" data-enter id="w-skip">Dalej ${icon('arrowRight')}</button>` : `<button class="btn ghost" data-enter id="w-skip">Pomiń ${icon('arrowRight')}</button>`)}
         </div>`;
         bind(pane);
         $('#w-skip', pane).addEventListener('click', next);
-        $('#w-off', pane).addEventListener('click', () => offlineLoginModal(() => go2(2)));
         $('#w-ms', pane).addEventListener('click', () => microsoftLoginModal(() => go2(2)));
       },
 
@@ -290,7 +286,7 @@ function onboarding() {
           <div class="wz-look wz-in">
             <div class="wz-look-opts">
               <div class="look-label">Kolor akcentu</div>
-              <div class="wz-accents">${Object.entries(ACCENTS).map(([k, a]) => `<button class="wz-acc ${k === (s.accentPreset || 'orange') ? 'on' : ''}" data-v="${k}" style="--c1:${a.b};--c2:${a.d}"><span class="sw"></span><small>${esc(a.name)}</small></button>`).join('')}</div>
+              <div class="wz-accents">${Object.entries(ACCENTS).map(([k, a]) => `<button class="wz-acc ${k === (s.accentPreset || 'nore') ? 'on' : ''}" data-v="${k}" style="--c1:${a.b};--c2:${a.d}"><span class="sw"></span><small>${esc(a.name)}</small></button>`).join('')}</div>
               <div class="look-label">Tło</div>
               <div class="wz-scenes">${scenes.map(sc => `<button class="wz-scene ${sc.id === cur ? 'on' : ''}" data-v="${sc.id}" title="${esc(sc.desc)}"><span class="prev" style="background:${SCENE_PREVIEW[sc.id]}"></span><b>${esc(sc.name)}</b></button>`).join('')}</div>
             </div>
@@ -536,6 +532,7 @@ function renderInstallStep(content, next) {
     await App.refresh();
   });
 
+  await LoginGate.ensure();
   App.info = await nore.info();
   await App.refresh();
   nore.on('update:state', renderUpdate);

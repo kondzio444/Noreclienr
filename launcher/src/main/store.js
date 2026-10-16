@@ -43,7 +43,7 @@ const DEFAULTS = {
     bgSpeed: 1,
     bgCustom: '',
     pageTransition: 'rise',
-    accentPreset: 'orange',
+    accentPreset: 'nore',
   },
 };
 
@@ -56,6 +56,8 @@ function load() {
     // older versions stored an empty id / RPC switch – the Nore Client application is now always used
     if (!data.settings.discordAppId) data.settings.discordAppId = DISCORD_APP_ID;
     data.settings.discordRpc = true;
+    // the new Nore look is violet: move everyone off the old default orange once
+    if (!data.settings.violetMigrated) { if (data.settings.accentPreset === 'orange') data.settings.accentPreset = 'nore'; data.settings.violetMigrated = true; }
   } catch {
     data = structuredClone(DEFAULTS);
   }
@@ -65,7 +67,8 @@ function load() {
 function save() {
   fs.mkdirSync(path.dirname(paths.configFile), { recursive: true });
   const tmp = paths.configFile + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+  // tokens inside are encrypted, but the file is still private to the user
+  fs.writeFileSync(tmp, JSON.stringify(data, null, 2), { mode: 0o600 });
   fs.renameSync(tmp, paths.configFile);
 }
 

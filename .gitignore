@@ -15,5 +15,7 @@ launcher/resources/mods/
 dist/
 # CurseForge API key – only injected at build time
 launcher/cf-key.local
+launcher/keys.local.json
+launcher/src/main/keys.bin
 launcher/src/main/cf-key.bin
 launcher/src/main/cf-key.json

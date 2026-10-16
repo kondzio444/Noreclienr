@@ -9,10 +9,11 @@
 
 [hidden] { display: none !important; }
 :root {
-  --accent: #ff8a1f;
-  --accent-2: #ffb547;
-  --accent-deep: #ff5a1a;
-  --accent-rgb: 255, 138, 31;
+  --accent: #9d5cff;
+  --accent-2: #c8a8ff;
+  --accent-deep: #6a2fe0;
+  --accent-rgb: 157, 92, 255;
+  --logo-hue: 238deg;
   --bg: #0c0a09;
   --surface: rgba(24, 19, 16, 0.72);
   --surface-2: rgba(34, 27, 22, 0.78);
@@ -1530,3 +1531,6 @@ body.sb-collapsed .account-chip .meta { display: none; }
 .ch-add .input { width: 100%; }
 .h14-chat { display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
 .h14-con img { width: 22px; height: 22px; border-radius: 6px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--success); }
+
+/* the logo follows the accent colour everywhere (artwork is orange, recoloured by hue) */
+img[src$="assets/logo.png"] { filter: hue-rotate(var(--logo-hue)) drop-shadow(0 0 12px rgba(var(--accent-rgb), .45)) !important; transition: filter .6s var(--ease); }

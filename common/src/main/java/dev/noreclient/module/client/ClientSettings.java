@@ -9,11 +9,11 @@ import dev.noreclient.setting.NumberSetting;
 
 /** Always-on module holding the theme and global client options. */
 public class ClientSettings extends Module {
-    public final ModeSetting preset = add(new ModeSetting("Theme Preset", "Gotowy zestaw kolorów (Custom = własne)", "Nore Orange",
-            "Nore Orange", "Crimson", "Violet", "Ocean", "Emerald", "Sakura", "Gold", "Ice", "Custom"));
+    public final ModeSetting preset = add(new ModeSetting("Theme Preset", "Gotowy zestaw kolorów (Custom = własne)", "Nore Violet",
+            "Nore Violet", "Crimson", "Violet", "Ocean", "Emerald", "Sakura", "Gold", "Ice", "Ember", "Custom"));
     public final ModeSetting accentMode = add(new ModeSetting("Accent Mode", "Sposób kolorowania akcentu", "Gradient", "Static", "Gradient", "Wave", "Rainbow"));
-    public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFFFF8A1F));
-    public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFFFB547));
+    public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFF9D5CFF));
+    public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFC8A8FF));
     public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów GUI", 6, 0, 12, 1, "px"));
     public final ModeSetting menuBackground = add(new ModeSetting("Menu Background", "Tło menu głównego i ekranów Nore", "Panorama", "Panorama", "Mgławica", "Panorama + gwiazdy"));
     public final BooleanSetting welcomeGuide = add(new BooleanSetting("Welcome Guide", "Pokaż poradnik powitalny przy następnym otwarciu menu", true));
@@ -28,20 +28,17 @@ public class ClientSettings extends Module {
         setEnabled(true);
     }
 
-    private static final String[] PRESETS = {"Nore Orange", "Crimson", "Violet", "Ocean", "Emerald", "Sakura", "Gold", "Ice"};
+    private static final String[] PRESETS = {"Nore Violet", "Crimson", "Violet", "Ocean", "Emerald", "Sakura", "Gold", "Ice", "Ember"};
     private static final int[][] COLORS = {
-            {0xFFFF8A1F, 0xFFFFB547}, {0xFFFF3B4E, 0xFFFF8A65}, {0xFF9B5CFF, 0xFFD58CFF}, {0xFF2E8BFF, 0xFF4FE3FF},
-            {0xFF10C978, 0xFF8BF56A}, {0xFFFF5FA2, 0xFFFFB0D0}, {0xFFE8B300, 0xFFFFE27A}, {0xFF7FD7FF, 0xFFE0F7FF}};
+            {0xFF9D5CFF, 0xFFC8A8FF}, {0xFFFF3B4E, 0xFFFF8A65}, {0xFF9B5CFF, 0xFFD58CFF}, {0xFF2E8BFF, 0xFF4FE3FF},
+            {0xFF10C978, 0xFF8BF56A}, {0xFFFF5FA2, 0xFFFFB0D0}, {0xFFE8B300, 0xFFFFE27A}, {0xFF7FD7FF, 0xFFE0F7FF}, {0xFFFF8A1F, 0xFFFFB547}};
     private String appliedPreset;
 
     /** Applies the colours of the chosen preset when it changes (Custom keeps the colour pickers). */
     @Override
     public void onTick() {
         String p = preset.get();
-        if (appliedPreset == null) {
-            appliedPreset = p;
-            return;
-        }
+        // also on the first tick: a preset always shows its own colours (older configs kept the orange ones)
         if (p.equals(appliedPreset)) return;
         appliedPreset = p;
         for (int i = 0; i < PRESETS.length; i++) {

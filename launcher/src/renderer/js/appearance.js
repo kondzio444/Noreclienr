@@ -2,6 +2,7 @@
 /* Appearance: accent colour presets, page transitions and the background (Settings → Wygląd). */
 
 const ACCENTS = {
+  nore: { name: 'Nore Violet', a: '#9d5cff', b: '#c8a8ff', d: '#6a2fe0' },
   orange: { name: 'Nore Orange', a: '#ff8a1f', b: '#ffb547', d: '#ff5a1a' },
   crimson: { name: 'Crimson', a: '#ff4d5e', b: '#ff8a8a', d: '#d61f3c' },
   violet: { name: 'Violet', a: '#a96bff', b: '#c9a4ff', d: '#7a3df0' },
@@ -32,9 +33,22 @@ function hexRgb(h) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 
+/** Hue (degrees) of a #rrggbb colour. */
+function hexHue(h) {
+  const [r, g, b] = hexRgb(h).map(x => x / 255);
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  if (!d) return 0;
+  const hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (hue * 60 + 360) % 360;
+}
+
+/** The logo artwork is orange (hue ~28°); it is recoloured to sit in the launcher's accent. */
+const LOGO_HUE = 28;
+
 async function applyAppearance(s, { reloadCustom = false } = {}) {
-  const ac = ACCENTS[s.accentPreset] || ACCENTS.orange;
+  const ac = ACCENTS[s.accentPreset] || ACCENTS.nore;
   const root = document.documentElement.style;
+  root.setProperty('--logo-hue', Math.round(hexHue(ac.a) - LOGO_HUE) + 'deg');
   root.setProperty('--accent', ac.a);
   root.setProperty('--accent-2', ac.b);
   root.setProperty('--accent-deep', ac.d);
@@ -69,7 +83,7 @@ function appearanceCard(root) {
       <label class="lslider"><span class="lhead">${icon('zap')}<b>Prędkość</b><i id="lk-spdv"></i></span><input type="range" class="slider" id="lk-spd" min="0.25" max="2.5" step="0.25" value="${s.bgSpeed}"></label>
     </div>
     <div class="look-row">
-      <div class="look-col"><div class="look-label">Kolor akcentu</div><div class="swatches" id="lk-acc">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swatch ${k === s.accentPreset ? 'on' : ''}" data-v="${k}" title="${esc(a.name)}" style="--c1:${a.b};--c2:${a.d}"></button>`).join('')}</div></div>
+      <div class="look-col"><div class="look-label">Kolor akcentu</div><div class="swatches" id="lk-acc">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swatch ${k === (s.accentPreset || 'nore') ? 'on' : ''}" data-v="${k}" title="${esc(a.name)}" style="--c1:${a.b};--c2:${a.d}"></button>`).join('')}</div></div>
       <div class="look-col"><div class="look-label">Przejścia stron</div><div class="chips" id="lk-trans">${TRANSITIONS.map(([v, l]) => `<button class="lchip ${v === (s.pageTransition || 'rise') ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div></div>
     </div>
   </div>`);

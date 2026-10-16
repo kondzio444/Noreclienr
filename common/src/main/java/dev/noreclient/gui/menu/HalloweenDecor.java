@@ -4,7 +4,6 @@ import dev.noreclient.api.Gfx;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.Render2D;
 
-import java.util.Calendar;
 
 /**
  * Seasonal touch for the main menu: from 15 October to 3 November a little jack-o'-lantern sits next to the
@@ -14,24 +13,8 @@ import java.util.Calendar;
 final class HalloweenDecor {
     private HalloweenDecor() {}
 
-    private static long checkedAt;
-    private static boolean active;
-
-    /** True between 15 October and 3 November (system date); re-checked once a minute. */
-    static boolean active() {
-        long now = System.currentTimeMillis();
-        if (now - checkedAt > 60_000L || checkedAt == 0) {
-            checkedAt = now;
-            String force = System.getProperty("noreclient.halloween", "");
-            if (!force.isEmpty()) active = Boolean.parseBoolean(force);
-            else {
-                Calendar c = Calendar.getInstance();
-                int month = c.get(Calendar.MONTH), day = c.get(Calendar.DAY_OF_MONTH);
-                active = month == Calendar.OCTOBER && day >= 15 || month == Calendar.NOVEMBER && day <= 3;
-            }
-        }
-        return active;
-    }
+    /** Nore events are always on (Halloween and Christmas run all year and cannot be switched off). */
+    static boolean active() { return true; }
 
     private static final String[] PUMPKIN = {
             ".....gl....",

@@ -105,6 +105,10 @@ public class NoreMainMenu extends NoreScreen {
             HalloweenDecor.bats(ctx, panelW - 10, 62, width + 10, Math.max(120, height * 0.7f));
             ctx.setAlpha(1);
         }
+        // Christmas runs together with Halloween all year: snow behind the panels
+        ctx.setAlpha(stage(600, 1200));
+        ChristmasDecor.snow(ctx, width, height);
+        ctx.setAlpha(1);
         float slide = (1 - stage(100, 700)) * -40;
         ctx.push();
         ctx.translate(slide, 0);
@@ -126,6 +130,9 @@ public class NoreMainMenu extends NoreScreen {
             HalloweenDecor.titleBat(ctx, pad + 8, px + 14, 14);
         }
         Render2D.scaledText(ctx, "CLIENT " + NoreClient.VERSION, pad + logoS + 9, 45, 0.7f, Theme.TEXT_MUTED, false);
+        ctx.setAlpha(1);
+        ctx.setAlpha(stage(1000, 900));
+        ChristmasDecor.garland(ctx, -6, width + 6, -2);
         ctx.setAlpha(1);
 
         // navigation

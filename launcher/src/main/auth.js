@@ -21,7 +21,7 @@ function createOffline(name) {
 }
 
 // ---------------------------------------------------------------- Microsoft (device code flow)
-// Requires an Azure application ID that Mojang approved for Minecraft services; set it in Settings.
+// Uses the Azure application ID built into the launcher (scripts/keys.js), approved for Minecraft services.
 
 const MS_DEVICE = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode';
 const MS_TOKEN = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
@@ -52,10 +52,21 @@ async function postJson(url, body, headers = {}) {
   return json;
 }
 
+/** Microsoft identity errors (AADSTS codes) in plain Polish. */
+function msError(json, fallback) {
+  const d = String(json.error_description || '');
+  if (/AADSTS7000218|AADSTS70002|unauthorized_client/i.test(d + json.error)) return 'Aplikacja Nore nie ma włączonego logowania kodem w Microsoft (Allow public client flows).';
+  if (/AADSTS700016|AADSTS90002/.test(d)) return 'Aplikacja Nore nie jest zarejestrowana w Microsoft – zgłoś to autorom.';
+  if (json.error === 'invalid_grant') return 'Sesja Microsoft wygasła – zaloguj się ponownie.';
+  if (json.error === 'expired_token') return 'Kod logowania wygasł – spróbuj ponownie.';
+  if (json.error === 'authorization_declined' || json.error === 'access_denied') return 'Logowanie zostało odrzucone.';
+  return (d.split(/\r?\n/)[0].replace(/^AADSTS\d+:\s*/, '')) || fallback;
+}
+
 async function startDeviceCode(clientId) {
-  if (!clientId) throw new Error('Brak Client ID aplikacji Azure – uzupełnij je w Ustawieniach (logowanie Microsoft).');
+  if (!clientId) throw new Error('Ta wersja launchera nie ma wbudowanego identyfikatora Microsoft – pobierz oficjalne wydanie Nore Launchera.');
   const { status, json } = await postForm(MS_DEVICE, { client_id: clientId, scope: SCOPE });
-  if (status !== 200) throw new Error(json.error_description || 'Nie udało się rozpocząć logowania Microsoft');
+  if (status !== 200) throw new Error(msError(json, 'Nie udało się rozpocząć logowania Microsoft'));
   return json; // { device_code, user_code, verification_uri, expires_in, interval, message }
 }
 
@@ -71,7 +82,7 @@ async function pollDeviceCode(clientId, device, { signal } = {}) {
     if (json.access_token) return json;
     if (json.error === 'authorization_pending') continue;
     if (json.error === 'slow_down') { interval += 5000; continue; }
-    throw new Error(json.error_description || json.error || 'Logowanie nie powiodło się');
+    throw new Error(msError(json, 'Logowanie nie powiodło się'));
   }
   throw new Error('Kod logowania wygasł – spróbuj ponownie');
 }
@@ -99,9 +110,16 @@ async function minecraftFromMs(msAccessToken) {
     throw new Error(XERR[e.xerr] || e.message);
   }
   const uhs = xsts.DisplayClaims.xui[0].uhs;
-  const mc = await postJson('https://api.minecraftservices.com/authentication/login_with_xbox', {
-    identityToken: `XBL3.0 x=${uhs};${xsts.Token}`,
-  });
+  let mc;
+  try {
+    mc = await postJson('https://api.minecraftservices.com/authentication/login_with_xbox', {
+      identityToken: `XBL3.0 x=${uhs};${xsts.Token}`,
+    });
+  } catch (e) {
+    if (e.status === 403) throw new Error('Mojang nie zatwierdził jeszcze aplikacji Nore do Minecraft API – logowanie ruszy po zatwierdzeniu.');
+    if (e.status === 429) throw new Error('Za dużo prób logowania – odczekaj kilka minut.');
+    throw e;
+  }
   const res = await net.fetchWithRetry('https://api.minecraftservices.com/minecraft/profile', {
     headers: { Authorization: `Bearer ${mc.access_token}` },
   });
@@ -120,12 +138,24 @@ async function refreshMicrosoft(account, clientId) {
   const { json } = await postForm(MS_TOKEN, {
     grant_type: 'refresh_token', client_id: clientId, refresh_token: account.refreshToken, scope: SCOPE,
   });
-  if (!json.access_token) throw new Error('Sesja Microsoft wygasła – zaloguj się ponownie.');
+  if (!json.access_token) {
+    const err = new Error(msError(json, 'Sesja Microsoft wygasła – zaloguj się ponownie.'));
+    if (json.error) err.auth = true; // refresh token revoked or expired: the user has to log in again
+    throw err;
+  }
   const mc = await minecraftFromMs(json.access_token);
   return { ...account, ...mc, refreshToken: json.refresh_token || account.refreshToken };
 }
 
+/** True when the Minecraft token still opens the profile (false on 401, throws on network errors). */
+async function checkProfile(accessToken) {
+  const res = await net.fetchWithRetry('https://api.minecraftservices.com/minecraft/profile', { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (res.status === 401) return false;
+  if (res.status === 404) throw Object.assign(new Error('To konto nie posiada Minecraft: Java Edition.'), { auth: true });
+  return res.ok;
+}
+
 module.exports = {
   offlineUuid, validOfflineName, createOffline,
-  startDeviceCode, pollDeviceCode, minecraftFromMs, refreshMicrosoft,
+  startDeviceCode, pollDeviceCode, minecraftFromMs, refreshMicrosoft, checkProfile,
 };
