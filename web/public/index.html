@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Nore Client</title>
+  <meta name="description" content="Nore Client – klient Minecraft z własnym launcherem: radialne menu 3D, Szatnia, edytor scen, własne niebo i serwery jednym kliknięciem. Wersje 1.21 – 26.3.">
+  <meta name="theme-color" content="#0a0614">
+  <meta property="og:title" content="Nore Client">
+  <meta property="og:description" content="Minecraft, który wygląda jak Ty.">
+  <meta property="og:image" content="/assets/logo.png">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Onest:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <canvas id="sky" aria-hidden="true"></canvas>
+
+  <header class="nav" id="nav">
+    <a class="brand" href="#top" aria-label="Nore Client"><img src="/assets/logo.png" alt=""><span>NORE</span></a>
+    <nav aria-label="Sekcje">
+      <a href="#radial">Menu</a>
+      <a href="#modules">Moduły</a>
+      <a href="#scene">Scena</a>
+      <a href="#wardrobe">Szatnia</a>
+      <a href="#events">Wydarzenia</a>
+    </nav>
+    <a class="btn btn-sm" href="#download">Pobierz</a>
+  </header>
+
+  <main>
+    <!-- HERO: the product's signature – the radial menu, live and tiltable -->
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow mono"><span class="dot"></span><span id="hero-version">NORE CLIENT</span> · MC 1.21 – 26.3</p>
+        <h1>Minecraft,<br>który wygląda<br><em>jak Ty.</em></h1>
+        <p class="lead">Klient i launcher w jednym. Radialne menu 3D, Szatnia z animowanymi kosmetykami, edytor scen i niebo ustawiane po swojemu. Logujesz się kontem premium i grasz.</p>
+        <div class="cta">
+          <a class="btn btn-primary" id="dl-main" href="/api/v1/download/win">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+            <span>Pobierz dla Windows</span>
+          </a>
+          <a class="btn btn-ghost" href="#radial">Jak to działa</a>
+        </div>
+        <p class="hint mono">W grze menu otwiera <kbd>Prawy Shift</kbd> · czat znajomych <kbd>Y</kbd></p>
+      </div>
+
+      <div class="hero-stage" id="radial-stage" aria-label="Podgląd radialnego menu">
+        <div class="hud-corner tl"></div><div class="hud-corner tr"></div><div class="hud-corner bl"></div><div class="hud-corner br"></div>
+        <div class="hud-read mono" id="hud-read">XYZ 128 / 72 / -340 · 240 FPS</div>
+        <div class="radial" id="radial">
+          <div class="radial-tilt" id="radial-tilt">
+            <div class="radial-ring outer"></div>
+            <div class="radial-ring inner"></div>
+            <div class="radial-segments" id="segments"></div>
+            <div class="radial-core">
+              <img src="/assets/logo.png" alt="">
+              <b id="core-title">NORE</b>
+              <small id="core-sub" class="mono">97 modułów</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RADIAL explanation -->
+    <section class="band" id="radial">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow mono"><MENU RADIALNE</p>
+          <h2>Wszystko na jednym kole.</h2>
+          <p class="body">Zamiast list i zakładek: kategorie ułożone wokół celownika. Najeżdżasz, koło przechyla się w Twoją stronę, a podgląd modułu pokazuje się od razu. Przejścia trwają ułamek sekundy i nie zasłaniają gry.</p>
+        </div>
+        <ul class="spec">
+          <li><span class="mono">KATEGORIE</span><b>8 sektorów</b></li>
+          <li><span class="mono">MODUŁY</span><b>97</b></li>
+          <li><span class="mono">SKRÓT</span><b>Prawy Shift</b></li>
+          <li><span class="mono">WERSJE</span><b>1.21 – 26.3</b></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- MODULES as the in-game module list HUD -->
+    <section class="band" id="modules">
+      <div class="wrap modules-grid">
+        <div>
+          <p class="eyebrow mono"><MODUŁY</p>
+          <h2>Lista, którą znasz z gry.</h2>
+          <p class="body">Tak wygląda HUD z listą włączonych modułów. Każdy wpis to prawdziwy moduł Nore Client – HUD, PvP, kamera, wydajność i narzędzia.</p>
+          <div class="filters" id="module-filters" role="tablist">
+            <button class="chip on" data-f="all" role="tab" aria-selected="true">Wszystkie</button>
+            <button class="chip" data-f="hud" role="tab">HUD</button>
+            <button class="chip" data-f="pvp" role="tab">PvP</button>
+            <button class="chip" data-f="world" role="tab">Świat</button>
+          </div>
+        </div>
+        <ol class="modlist mono" id="modlist" aria-label="Moduły Nore Client"></ol>
+      </div>
+    </section>
+
+    <!-- SCENE EDITOR live demo -->
+    <section class="band" id="scene">
+      <div class="wrap scene-grid">
+        <div class="scene-view">
+          <canvas id="scene3d" aria-label="Podgląd edytora scen"></canvas>
+          <div class="scene-hud mono" id="scene-hud">06:00 · Dąb · Kamera 1</div>
+        </div>
+        <div class="scene-side">
+          <p class="eyebrow mono"><EDYTOR SCEN</p>
+          <h2>Tło menu, które budujesz sam.</h2>
+          <p class="body">Przesuń porę dnia, posadź drzewa i zmień ujęcie. Drzewa rosną na oczach, kamera przelatuje płynnie między ujęciami. Tak samo działa to w menu gry.</p>
+          <div class="controls">
+            <label for="tod" class="mono">PORA DNIA</label>
+            <input type="range" id="tod" min="0" max="1440" step="5" value="1110">
+            <span class="mono label">DRZEWA</span>
+            <div class="chips" id="trees">
+              <button class="chip on" data-t="oak">Dąb</button>
+              <button class="chip" data-t="birch">Brzoza</button>
+              <button class="chip" data-t="spruce">Świerk</button>
+              <button class="chip" data-t="cherry">Wiśnia</button>
+            </div>
+            <span class="mono label">KAMERA</span>
+            <div class="chips" id="cams">
+              <button class="chip on" data-c="0">Ujęcie 1</button>
+              <button class="chip" data-c="1">Ujęcie 2</button>
+              <button class="chip" data-c="2">Ujęcie 3</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WARDROBE -->
+    <section class="band" id="wardrobe">
+      <div class="wrap wardrobe">
+        <div class="ward-art">
+          <img src="/assets/halloween.gif" alt="Animowane peleryny Halloween: Dynia, Nietoperz, Pajęczyna" loading="lazy">
+          <img src="/assets/historia-nore.gif" alt="Peleryny z kolekcji Historia Nore" loading="lazy">
+        </div>
+        <div>
+          <p class="eyebrow mono"><SZATNIA</p>
+          <h2>Ubierz się na F5.</h2>
+          <p class="body">Kosmetyki rysowane w kodzie, animowane i widoczne na elytrze. Podgląd w Szatni obraca postać w 3D.</p>
+          <ul class="items">
+            <li><b>Kapelusz Wiedźmy</b><span>Wygięty czubek, pomarańczowa opaska ze złotą klamrą. Chowa się pod hełmem.</span></li>
+            <li><b>Skrzydła Nietoperza</b><span>Dwie błony na kość, pazur na nadgarstku. Spokojny oddech na ziemi, mocne uderzenia w locie.</span></li>
+            <li><b>Peleryny</b><span>Historia Nore, Halloween i 9 kolorów. Wszystkie animowane.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- EVENTS -->
+    <section class="band" id="events">
+      <div class="wrap">
+        <p class="eyebrow mono"><WYDARZENIA</p>
+        <h2>Halloween i Święta. Cały rok.</h2>
+        <div class="events">
+          <article class="event ev-halloween">
+            <canvas class="ev-canvas" data-kind="bats" aria-hidden="true"></canvas>
+            <div class="ev-body">
+              <span class="badge mono">ZAWSZE WŁĄCZONE</span>
+              <h3>Halloween</h3>
+              <p>Dynie i nietoperze w menu, trzy peleryny Halloween, Kapelusz Wiedźmy i mini-gra z nagrodami w launcherze.</p>
+            </div>
+          </article>
+          <article class="event ev-xmas">
+            <canvas class="ev-canvas" data-kind="snow" aria-hidden="true"></canvas>
+            <div class="ev-body">
+              <span class="badge mono">ZAWSZE WŁĄCZONE</span>
+              <h3>Święta</h3>
+              <p>Śnieg w trzech warstwach głębi i migające lampki nad menu gry.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- LAUNCHER -->
+    <section class="band" id="launcher">
+      <div class="wrap">
+        <p class="eyebrow mono"><LAUNCHER</p>
+        <h2>Wchodzisz kontem premium.</h2>
+        <p class="body narrow">Hasło wpisujesz tylko na stronie Microsoft. Launcher dostaje zaszyfrowany token, sprawdza go w Mojang przy każdym starcie, a logo przyjmuje kolor akcentu, który wybierzesz.</p>
+        <figure class="frame" id="frame"><img src="/assets/launcher-login.png" alt="Ekran logowania premium w Nore Launcherze" loading="lazy"></figure>
+      </div>
+    </section>
+
+    <!-- VERSIONS -->
+    <section class="band" id="versions">
+      <div class="wrap">
+        <p class="eyebrow mono"><WERSJE</p>
+        <h2>Jeden klient, dziewięć gałęzi.</h2>
+        <ol class="rail mono" id="rail" aria-label="Wspierane wersje Minecraft">
+          <li><b>1.21</b><span>1.21 · 1.21.1</span></li>
+          <li><b>1.21.4</b><span>1.21.2 – 1.21.4</span></li>
+          <li><b>1.21.5</b><span>1.21.5</span></li>
+          <li><b>1.21.8</b><span>1.21.6 – 1.21.8</span></li>
+          <li><b>1.21.10</b><span>1.21.9 – 1.21.10</span></li>
+          <li><b>1.21.11</b><span>1.21.11</span></li>
+          <li><b>26.1</b><span>26.1</span></li>
+          <li><b>26.2</b><span>26.2</span></li>
+          <li><b>26.3</b><span>26.3</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- NEWS + FAQ -->
+    <section class="band" id="news">
+      <div class="wrap two">
+        <div>
+          <p class="eyebrow mono"><NOWOŚCI</p>
+          <h2>Ostatnio w Nore</h2>
+          <div class="news" id="news-list"><article><div class="meta"><time datetime="2026-10-16">2026-10-16</time><span>Launcher</span></div><h3>Nowy wygląd i logowanie premium</h3><p>Nore Launcher wymaga teraz konta Minecraft Premium – sesja jest szyfrowana i sprawdzana w Mojang przy starcie. Do tego nowy fioletowy motyw i logo dopasowujące się do akcentu.</p></article><article><div class="meta"><time datetime="2026-10-16">2026-10-16</time><span>Nore Client</span></div><h3>Szatnia: Kapelusz Wiedźmy i Skrzydła Nietoperza</h3><p>W grze pojawiła się Szatnia – animowane skrzydła, kapelusz z klamrą i peleryny Halloween widoczne w F5.</p></article><article><div class="meta"><time datetime="2026-10-15">2026-10-15</time><span>Wydarzenia</span></div><h3>Halloween i Święta przez cały rok</h3><p>Wydarzenia są zawsze włączone: dynie i nietoperze, a do tego śnieg i świąteczne lampki w menu gry.</p></article></div>
+        </div>
+        <div>
+          <p class="eyebrow mono"><PYTANIA</p>
+          <h2>FAQ</h2>
+          <div class="faq">
+            <details><summary>Czy potrzebuję konta premium?</summary><p>Tak. Launcher działa tylko z kontem Minecraft: Java Edition albo Game Pass.</p></details>
+            <details><summary>Czy kosmetyki widzą inni gracze?</summary><p>Nie. Peleryny, skrzydła, kapelusz i własne niebo widzisz tylko Ty.</p></details>
+            <details><summary>Jak działa aktualizacja?</summary><p>Launcher pyta API Nore o nową wersję i pobiera ją w tle. Modpacki i mody aktualizują się bez utraty światów.</p></details>
+            <details><summary>Czy da się wyłączyć wydarzenia?</summary><p>Nie. Halloween i Święta są w Nore zawsze włączone.</p></details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="download" id="download">
+      <div class="wrap dl">
+        <img src="/assets/logo.png" alt="">
+        <h2>Gotowe. <em>Wchodzisz?</em></h2>
+        <p class="mono" id="dl-version">Najnowsze wydanie z GitHub Releases</p>
+        <div class="cta center">
+          <a class="btn btn-primary" href="/api/v1/download/win">Windows</a>
+          <a class="btn btn-ghost" href="/api/v1/download/linux">Linux</a>
+          <a class="btn btn-ghost" href="/api/v1/download/mac">macOS</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap foot">
+      <span class="brand small"><img src="/assets/logo.png" alt=""><span>NORE</span></span>
+      <nav aria-label="Linki"><a href="/api/v1/status">Status API</a><a href="https://github.com/kondzio444/Noreclienr">GitHub</a></nav>
+      <small>Nore Client nie jest powiązany z Mojang Studios ani Microsoft. Minecraft jest znakiem towarowym Mojang AB.</small>
+    </div>
+  </footer>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

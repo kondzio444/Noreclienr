@@ -1,0 +1,23 @@
+[
+  {
+    "id": "2026-10-premium",
+    "date": "2026-10-16",
+    "title": "Nowy wygląd i logowanie premium",
+    "text": "Nore Launcher wymaga teraz konta Minecraft Premium – sesja jest szyfrowana i sprawdzana w Mojang przy starcie. Do tego nowy fioletowy motyw i logo dopasowujące się do akcentu.",
+    "tag": "Launcher"
+  },
+  {
+    "id": "2026-10-wardrobe",
+    "date": "2026-10-16",
+    "title": "Szatnia: Kapelusz Wiedźmy i Skrzydła Nietoperza",
+    "text": "W grze pojawiła się Szatnia – animowane skrzydła, kapelusz z klamrą i peleryny Halloween widoczne w F5.",
+    "tag": "Nore Client"
+  },
+  {
+    "id": "2026-10-events",
+    "date": "2026-10-15",
+    "title": "Halloween i Święta przez cały rok",
+    "text": "Wydarzenia są zawsze włączone: dynie i nietoperze, a do tego śnieg i świąteczne lampki w menu gry.",
+    "tag": "Wydarzenia"
+  }
+]

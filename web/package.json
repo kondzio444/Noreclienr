@@ -1,0 +1,12 @@
+{
+  "name": "noreclient-web",
+  "private": true,
+  "description": "Nore Client website and API (Cloudflare Workers)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "4.42.0"
+  }
+}

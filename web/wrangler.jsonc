@@ -1,0 +1,19 @@
+{
+  // Nore Client website + API – Cloudflare Workers with static assets (no R2).
+  // Deploy: npx wrangler deploy   (CI: .github/workflows/web.yml)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "noreclient",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/api/*"]
+  },
+  "routes": [
+    { "pattern": "noroclient.pl", "custom_domain": true },
+    { "pattern": "www.noroclient.pl", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}
