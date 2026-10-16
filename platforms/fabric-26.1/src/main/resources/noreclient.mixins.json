@@ -28,6 +28,7 @@
     "MouseMixin",
     "ParticleManagerMixin",
     "PlayerListHudMixin",
+    "AvatarRendererMixin",
     "PlayerListNameMixin",
     "ServerEntryMixin",
     "SimpleOptionMixin",
