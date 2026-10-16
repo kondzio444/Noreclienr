@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('nore', {
     logout: invoke('auth:logout'),
   },
   accounts: {
+    offline: invoke('accounts:offline'),
     msStart: invoke('accounts:msStart'),
     msPoll: invoke('accounts:msPoll'),
     msCancel: invoke('accounts:msCancel'),
