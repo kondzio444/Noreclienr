@@ -111,6 +111,13 @@ public final class NoreClient {
         if (action == 1 || action == 2) KeyState.set(key, true);
         else if (action == 0) KeyState.set(key, false);
         if (action != 1 || !inGameNoScreen) return;
+        // developer tool: F7 saves a 360° panorama of the current view (menu backgrounds are made with it)
+        if (key == 296 && System.getProperty("noreclient.devPanorama") != null) {
+            runNextTick(new Runnable() {
+                @Override public void run() { Platform.game().takePanorama(System.getProperty("noreclient.devPanorama")); }
+            });
+            return;
+        }
         ClickGuiModule gui = instance.moduleManager.get(ClickGuiModule.class);
         if (key == gui.hudEditorKey.get()) {
             runNextTick(new Runnable() {

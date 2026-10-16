@@ -466,6 +466,13 @@ public final class GameImpl implements Game {
     private static net.minecraft.client.gui.RotatingCubeMapRenderer panorama;
 
     @Override
+    public void takePanorama(String dir) {
+        java.io.File d = new java.io.File(dir);
+        d.mkdirs();
+        mc().takePanorama(d, 1024, 1024);
+    }
+
+    @Override
     public void renderPanorama(dev.noreclient.api.Gfx g, float delta) {
         if (panorama == null) panorama = new net.minecraft.client.gui.RotatingCubeMapRenderer(
                 new net.minecraft.client.gui.CubeMapRenderer(Identifier.ofVanilla("textures/gui/title/background/panorama")));

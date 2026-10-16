@@ -33,6 +33,8 @@ public class SceneEditorScreen extends NoreScreen {
     private boolean draggingTime, draggingScene;
     private double lastX;
     private float sliderX, sliderW;
+    /** Which background is edited: 0 = Wiśniowy staw (real Minecraft scene), 1 = voxel island. */
+    private int style = NoreClient.get().modules().get(ClientSettings.class).menuBackground.get().startsWith("Scena") ? 1 : 0;
 
     public SceneEditorScreen(Object parent) {
         super(parent);
@@ -50,7 +52,9 @@ public class SceneEditorScreen extends NoreScreen {
         ClientSettings s = cs();
         if (draggingTime) setTimeFromMouse(mx);
         if (draggingScene) { NoreScene.addYaw((float) (mx - lastX) * 0.01f); lastX = mx; }
-        NoreScene.render(g, width, height, s.sceneMinutes(), 0.5f + 107f / Math.max(1, width));
+        if (style == 0 ? !dev.noreclient.util.MenuPanorama.render(g, width, height, s.sceneMinutes(), mx) : true) {
+            NoreScene.render(g, width, height, s.sceneMinutes(), 0.5f + 107f / Math.max(1, width));
+        }
 
         float p = Animation.easeOutCubic(panelIn.update());
         float pw = 200, px = 14 - (1 - p) * (pw + 20), py = 14, ph = height - 28;
@@ -63,6 +67,14 @@ public class SceneEditorScreen extends NoreScreen {
         y += 15;
         Render2D.scaledText(g, "Tło menu głównego Nore", x, y, 0.7f, Theme.TEXT_MUTED, false);
         y += 20;
+
+        // ---- style
+        label(g, "STYL TŁA", x, y);
+        y += 11;
+        float hw = (w - 6) / 2f;
+        chip(g, mx, my, x, y, hw, 18, "Wiśniowy staw", style == 0, () -> style = 0);
+        chip(g, mx, my, x + hw + 6, y, hw, 18, "Wyspa", style == 1, () -> style = 1);
+        y += 28;
 
         // ---- time of day
         float minutes = s.sceneMinutes();
@@ -81,6 +93,7 @@ public class SceneEditorScreen extends NoreScreen {
         chip(g, mx, my, x, y, w, 16, "Prawdziwa pora dnia", s.sceneRealTime.isOn(), () -> { s.sceneRealTime.set(!s.sceneRealTime.isOn()); save(); });
         y += 28;
 
+        if (style == 1) {
         // ---- trees
         label(g, "DRZEWA", x, y);
         y += 11;
@@ -102,11 +115,18 @@ public class SceneEditorScreen extends NoreScreen {
         }
         y += 24;
         Render2D.scaledText(g, "Przeciągnij scenę, aby obrócić kamerę", x, y, 0.62f, Theme.TEXT_MUTED, false);
+        } else {
+            for (String line : new String[]{"Prawdziwy świat Minecraft:", "wiśniowy gaj ze stawem.", "Kamera powoli się obraca,", "pora dnia przenika płynnie."}) {
+                Render2D.scaledText(g, line, x, y, 0.68f, Theme.TEXT_DIM, false);
+                y += 10;
+            }
+        }
 
         // ---- set as background / back
-        boolean active = s.menuBackground.get().startsWith("Scena");
+        final String target = style == 0 ? "Wiśniowy staw" : "Scena Nore";
+        boolean active = s.menuBackground.get().equals(target);
         float by = py + ph - 52;
-        button(g, mx, my, x, by, w, 18, active ? "✔ Tło menu: Scena Nore" : "Ustaw jako tło menu", !active, () -> { s.menuBackground.set("Scena Nore"); save(); Sounds.click(); });
+        button(g, mx, my, x, by, w, 18, active ? "✔ Ustawione jako tło menu" : "Ustaw jako tło menu", !active, () -> { s.menuBackground.set(target); save(); Sounds.click(); });
         button(g, mx, my, x, by + 24, w, 18, "Wróć", false, this::close);
         g.setAlpha(1);
 

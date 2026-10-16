@@ -16,8 +16,10 @@ public class ClientSettings extends Module {
     public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFF9D5CFF));
     public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFC8A8FF));
     public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów GUI", 6, 0, 12, 1, "px"));
-    public final ModeSetting menuBackground = add(new ModeSetting("Menu Background", "Tło menu głównego i ekranów Nore", "Scena Nore", "Scena Nore", "Panorama", "Mgławica", "Panorama + gwiazdy"));
-    public final NumberSetting sceneTime = add(new NumberSetting("Scene Time", "Pora dnia w Scenie Nore (minuty po północy)", 1110, 0, 1435, 5));
+    public final ModeSetting menuBackground = add(new ModeSetting("Menu Background", "Tło menu głównego i ekranów Nore", "Wiśniowy staw", "Wiśniowy staw", "Scena Nore", "Panorama", "Mgławica", "Panorama + gwiazdy"));
+    /** One-time switch of older configs to the new "Wiśniowy staw" background (hidden). */
+    public final BooleanSetting backgroundMigrated = add(new BooleanSetting("Background Migrated", "", false));
+    public final NumberSetting sceneTime = add(new NumberSetting("Scene Time", "Pora dnia w tle menu (minuty po północy)", 600, 0, 1435, 5));
     public final BooleanSetting sceneRealTime = add(new BooleanSetting("Scene Real Time", "Scena Nore pokazuje prawdziwą porę dnia", false));
     public final ModeSetting sceneTree = add(new ModeSetting("Scene Trees", "Drzewa w Scenie Nore", NoreScene.TREES[0], NoreScene.TREES));
     public final ModeSetting sceneCamera = add(new ModeSetting("Scene Camera", "Ujęcie kamery w Scenie Nore", NoreScene.CAMERAS[0], NoreScene.CAMERAS));
@@ -30,6 +32,7 @@ public class ClientSettings extends Module {
 
     public ClientSettings() {
         super("Client Settings", "Motyw, kolory i globalne opcje klienta", Category.CLIENT);
+        backgroundMigrated.visibleWhen(() -> false);
         setEnabled(true);
     }
 
@@ -45,6 +48,12 @@ public class ClientSettings extends Module {
     /** Applies the colours of the chosen preset when it changes (Custom keeps the colour pickers). */
     @Override
     public void onTick() {
+        if (!backgroundMigrated.isOn()) {
+            backgroundMigrated.set(true);
+            menuBackground.set("Wiśniowy staw");
+            sceneTime.set(600.0);
+            if (dev.noreclient.NoreClient.get() != null) dev.noreclient.NoreClient.get().config().save();
+        }
         NoreScene.setTree(sceneTree.get());
         NoreScene.setCamera(sceneCamera.getModes().indexOf(sceneCamera.get()));
         String p = preset.get();

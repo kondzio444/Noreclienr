@@ -303,6 +303,9 @@ public interface Game {
     /** Cape for the local player (null = the player's own / none). */
     void setLocalCape(TextureRef cape);
 
+    /** Developer tool: writes a 6-face panorama of the current view into dir (no-op where unsupported). */
+    default void takePanorama(String dir) {}
+
     String gpu();
 
     String cpu();

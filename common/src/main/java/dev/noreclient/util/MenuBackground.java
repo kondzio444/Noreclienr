@@ -28,6 +28,15 @@ public final class MenuBackground {
         parX += (tx - parX) * 0.05f;
         parY += (ty - parY) * 0.05f;
         String mode = mode();
+        if (mode.startsWith("Wiśniowy")) {
+            dev.noreclient.module.client.ClientSettings cs = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class);
+            if (MenuPanorama.render(g, width, height, cs.sceneMinutes(), mouseX)) {
+                Render2D.quadGradient(g, 0, 0, width, height, 0x400A0614, 0x000A0614, 0x000A0614, 0x400A0614);
+                Render2D.quadGradient(g, 0, height * 0.7f, width, height * 0.3f, 0, 0, 0x60050308, 0x60050308);
+                return;
+            }
+            mode = "Scena Nore"; // still loading: show the voxel scene meanwhile
+        }
         if (mode.startsWith("Scena")) {
             dev.noreclient.module.client.ClientSettings cs = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class);
             NoreScene.render(g, width, height, cs.sceneMinutes());
