@@ -70,7 +70,7 @@ public class NoreMainMenu extends NoreScreen {
         final NoreMainMenu self = this;
         nav.add("Singleplayer", "Twoje światy", SideNav.PLAY, SideNav.PRIMARY, () -> go(() -> game().openSingleplayer(self)))
                 .add("Multiplayer", "Serwery", SideNav.GLOBE, SideNav.NORMAL, () -> go(() -> game().openMultiplayer(self)))
-                .add("Menu Nore", "radialne menu 3D", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new dev.noreclient.gui.click.RadialMenuScreen(self)))
+                .add("Menu Nore", "nowe menu radialne", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new dev.noreclient.gui.click.RadialMenuScreen(self)))
                 .add("Edytor HUD", "Nakładki", SideNav.HUD, SideNav.NORMAL, () -> go(() -> game().openScreen(new HudEditorScreen(self))))
                 .add("Opcje", "Ustawienia gry", SideNav.GEAR, SideNav.NORMAL, () -> go(() -> game().openOptions(self)))
                 .add("Wyjdź", null, SideNav.POWER, SideNav.DANGER, () -> go(() -> game().quit()));
