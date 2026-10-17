@@ -207,7 +207,14 @@ function applyDiscord() {
   discord.setClientId(s.discordAppId || store.DISCORD_APP_ID);
 }
 
-app.on('before-quit', () => servers.stopAll());
+// running servers get "stop" and the launcher waits until they saved their worlds
+let serversStopped = false;
+app.on('before-quit', (e) => {
+  if (serversStopped || !servers.runningCount()) return;
+  e.preventDefault();
+  serversStopped = true;
+  servers.stopAllAndWait().finally(() => app.quit());
+});
 
 app.on('window-all-closed', () => {
   // the updater splash closes before the launcher window exists

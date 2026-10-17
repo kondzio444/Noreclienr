@@ -126,12 +126,32 @@ async function vanillaInfo(mcVersion) {
   };
 }
 
+/** Java major version each Mojang runtime component provides. */
+const COMPONENT_MAJOR = { 'jre-legacy': 8, 'java-runtime-alpha': 16, 'java-runtime-beta': 17, 'java-runtime-gamma': 17, 'java-runtime-gamma-snapshot': 17, 'java-runtime-delta': 21, 'java-runtime-epsilon': 25 };
+
 async function javaFor(srv, progress) {
-  const settings = store.get().settings;
-  let bin = settings.javaPath;
-  if (!bin) bin = await java.ensureRuntime(srv.javaComponent || 'java-runtime-delta', { progress });
+  const component = srv.javaComponent || 'java-runtime-delta';
+  // the user's own Java (set for the game) is used only when it is new enough for this server
+  let bin = store.get().settings.javaPath;
+  if (bin) {
+    const need = COMPONENT_MAJOR[component];
+    const have = await java.probeJava(bin.replace(/javaw\.exe$/i, 'java.exe'));
+    if (!need || !have || have < need) bin = null;
+  }
+  if (!bin) bin = await java.ensureRuntime(component, { progress });
   if (process.platform === 'win32') bin = bin.replace(/javaw\.exe$/i, 'java.exe');
   return bin;
+}
+
+/** Rejects when something else already listens on the server port (it would crash with FAILED TO BIND). */
+function portFree(port) {
+  return new Promise((resolve, reject) => {
+    const probe = require('net').createServer();
+    probe.once('error', (e) => reject(e.code === 'EADDRINUSE'
+      ? new Error(`Port ${port} jest zajęty – zatrzymaj inny serwer albo zmień port w ustawieniach serwera.`)
+      : e));
+    probe.listen(port, () => probe.close(() => resolve()));
+  });
 }
 
 function runInstaller(bin, installer, cwd, progress, args = ['--installServer']) {
@@ -387,6 +407,11 @@ async function start(id, progress = () => {}) {
   let srv = raw(id);
   if (!srv) throw new Error('Nie znaleziono serwera.');
   if (!srv.eula) throw new Error('Musisz zaakceptować EULA Minecraft, aby uruchomić serwer.');
+  for (const [other, rt] of running) {
+    const o = raw(other);
+    if (o && o.port === srv.port) throw new Error(`Serwer „${o.name}” już używa portu ${srv.port}${rt.state === 'stopping' ? ' (właśnie się zatrzymuje)' : ''}.`);
+  }
+  await portFree(srv.port);
   if (!srv.installed) { await install(srv, progress); srv = raw(id); }
   const bin = await javaFor(srv, progress);
   fs.writeFileSync(path.join(dir(id), 'eula.txt'), '# Zaakceptowano w Nore Launcher (https://aka.ms/MinecraftEULA)\neula=true\n');
@@ -489,6 +514,17 @@ function logs(id) {
 
 function stopAll() {
   for (const id of running.keys()) stop(id);
+}
+
+/** Stops every server and resolves when all have saved and exited (or after timeoutMs). */
+function stopAllAndWait(timeoutMs = 25000) {
+  const children = [...running.values()].map(rt => rt.child);
+  if (!children.length) return Promise.resolve();
+  stopAll();
+  const exits = children.map(c => (c.exitCode !== null ? Promise.resolve() : new Promise(r => c.once('exit', r))));
+  return Promise.race([Promise.all(exits), new Promise(r => setTimeout(r, timeoutMs))]).then(() => {
+    for (const c of children) { if (c.exitCode === null) { try { c.kill(); } catch { /* gone */ } } }
+  });
 }
 
 /** RAM used by the server process (MB) and uptime. */
@@ -638,5 +674,5 @@ async function resetWorld(id, seed) {
 module.exports = {
   TYPES, DEFAULT_PROPS, setEmitter, list, get, create, update, remove, install, start, stop, restart, command, logs, stopAll, stats,
   readProperties, players, playerList, backup, listBackups, restoreBackup, deleteBackup, resetWorld, decryptToken, encryptToken, raw,
-  loaderVersions, applyDomain, isRunning: (id) => running.has(id),
+  loaderVersions, applyDomain, stopAllAndWait, isRunning: (id) => running.has(id), runningCount: () => running.size,
 };
