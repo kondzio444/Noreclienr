@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'none'">
+  <title>Nore Updater</title>
+  <link rel="stylesheet" href="updater.css">
+</head>
+<body>
+  <div class="drag"></div>
+  <canvas id="stars"></canvas>
+  <main class="card">
+    <div class="orb" id="orb">
+      <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+        <defs>
+          <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#c8a8ff"/>
+            <stop offset="1" stop-color="#7b3cff"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="60" cy="60" r="54"/>
+        <circle class="spin" cx="60" cy="60" r="54"/>
+        <circle class="prog" id="prog" cx="60" cy="60" r="54"/>
+      </svg>
+      <div class="glow"></div>
+      <img class="logo" src="assets/logo.png" alt="">
+      <svg class="check" viewBox="0 0 52 52" aria-hidden="true"><path d="M14 27 l8 8 l16 -18"/></svg>
+      <div class="pct" id="pct"></div>
+    </div>
+
+    <h1 id="title">Nore Launcher</h1>
+    <p class="status" id="status">Uruchamianie…</p>
+
+    <div class="bar" id="bar"><i id="fill"></i></div>
+    <p class="meta" id="meta"></p>
+    <p class="notes" id="notes"></p>
+
+    <div class="actions">
+      <button id="skip" class="ghost" hidden>Pomiń — zaktualizuję później</button>
+      <button id="go" class="primary" hidden>Dalej</button>
+    </div>
+  </main>
+  <footer><span id="ver"></span><span>noroclient.pl</span></footer>
+  <script src="js/updater.js"></script>
+</body>
+</html>

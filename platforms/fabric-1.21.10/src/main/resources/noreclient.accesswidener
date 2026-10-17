@@ -1,0 +1,6 @@
+accessWidener	v2	named
+# Gfx adds its own GUI elements with the current scissor
+accessible class net/minecraft/client/gui/DrawContext$ScissorStack
+accessible field net/minecraft/client/gui/DrawContext state Lnet/minecraft/client/gui/render/state/GuiRenderState;
+accessible field net/minecraft/client/gui/DrawContext scissorStack Lnet/minecraft/client/gui/DrawContext$ScissorStack;
+accessible class net/minecraft/client/gui/widget/EntryListWidget$Entry
