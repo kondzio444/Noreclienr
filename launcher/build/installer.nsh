@@ -1,7 +1,7 @@
 ; Nore Launcher 1.4 Beta – custom NSIS branding (included by electron-builder before its own script)
 ; colours must be defined before MUI2.nsh is included (this file is included first)
-!define MUI_BGCOLOR "120E0B"
-!define MUI_TEXTCOLOR "F6EFE8"
+!define MUI_BGCOLOR "0D0913"
+!define MUI_TEXTCOLOR "F3EEFA"
 
 ; ---------------------------------------------------------------- installer
 !macro customWelcomePage
@@ -37,7 +37,7 @@
   !define MUI_FINISHPAGE_SHOWREADME_FUNCTION "noreDesktopShortcutNoop"
   !define MUI_FINISHPAGE_LINK "Co nowego w 1.4 Beta – informacje o wydaniu"
   !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/kondzio444/Noreclienr/releases"
-  !define MUI_FINISHPAGE_LINK_COLOR "FFB547"
+  !define MUI_FINISHPAGE_LINK_COLOR "C8A8FF"
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW "noreFinishShow"
   !define MUI_PAGE_CUSTOMFUNCTION_LEAVE "noreFinishLeave"
   !insertmacro MUI_PAGE_FINISH

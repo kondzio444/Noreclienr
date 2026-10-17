@@ -85,7 +85,7 @@ function send(channel, payload) {
 function createWindow() {
   win = new BrowserWindow({
     width: 1220, height: 760, minWidth: 980, minHeight: 640,
-    frame: false, show: false, backgroundColor: '#0c0a09', title: 'Nore Launcher',
+    frame: false, show: false, backgroundColor: '#0d0913', title: 'Nore Launcher',
     icon: nativeImage.createFromPath(ICON),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
@@ -124,7 +124,7 @@ function runSplash() {
 
     const splash = new BrowserWindow({
       width: 400, height: 480, frame: false, resizable: false, maximizable: false, fullscreenable: false,
-      show: false, center: true, backgroundColor: '#0b0716', title: 'Nore Updater',
+      show: false, center: true, backgroundColor: '#0d0913', title: 'Nore Updater',
       icon: nativeImage.createFromPath(ICON),
       webPreferences: { preload: path.join(__dirname, '..', 'updater-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
     });

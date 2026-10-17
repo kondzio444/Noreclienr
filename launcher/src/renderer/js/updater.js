@@ -8,6 +8,27 @@
 
   const mb = (b) => (b / 1048576).toFixed(b >= 104857600 ? 0 : 1) + ' MB';
 
+  // §k: the title scrambles into its new text, as obfuscated text does in Minecraft
+  const GLYPHS = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let lastTitle = '';
+  let raf = 0;
+  function title(text) {
+    const el = $('title');
+    if (text === lastTitle) return;
+    lastTitle = text;
+    cancelAnimationFrame(raf);
+    if (calm) { el.textContent = text; return; }
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / 480);
+      const n = Math.floor(p * text.length);
+      el.textContent = text.slice(0, n) + [...text.slice(n)].map(c => c === ' ' ? ' ' : GLYPHS[(Math.random() * GLYPHS.length) | 0]).join('');
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+  }
+
   function status(text) {
     const el = $('status');
     if (text === lastStatus) return;
@@ -42,19 +63,19 @@
       case 'checking':
       case 'idle':
         mode(); buttons();
-        $('title').textContent = 'Nore Launcher';
+        title('Nore Launcher');
         status('Szukam aktualizacji…');
         $('meta').textContent = '';
         break;
       case 'available':
         mode('progress'); progress(0); buttons({ skip: true });
-        $('title').textContent = 'Nowa wersja' + next;
+        title('Nowa wersja' + next);
         status('Przygotowuję pobieranie…');
         $('meta').textContent = s.size ? mb(s.size) : '';
         break;
       case 'downloading':
         mode('progress'); progress(s.percent); buttons({ skip: true });
-        $('title').textContent = 'Aktualizacja' + next;
+        title('Aktualizacja' + next);
         status('Pobieram nową wersję…');
         $('meta').textContent = s.size && s.bytes != null
           ? `${mb(s.bytes)} / ${mb(s.size)}${s.speed ? ' · ' + mb(s.speed) + '/s' : ''}`
@@ -67,30 +88,30 @@
       case 'ready':
       case 'installing':
         mode('progress', 'installing'); progress(100); buttons();
-        $('title').textContent = 'Instaluję' + next;
+        title('Instaluję' + next);
         status('Launcher uruchomi się ponownie za chwilę');
         $('meta').textContent = '';
         break;
       case 'latest':
       case 'dev':
         mode('done'); buttons();
-        $('title').textContent = 'Wszystko gotowe';
+        title('Wszystko gotowe');
         status('Masz najnowszą wersję Nore');
         $('meta').textContent = '';
         break;
       case 'updated':
         mode('done'); buttons({ go: true });
-        $('title').textContent = 'Zaktualizowano!';
+        title('Zaktualizowano!');
         status('Nore Launcher ' + s.version + ' jest gotowy');
         break;
       case 'installed':
         mode('done'); buttons({ go: true });
-        $('title').textContent = 'Witaj w Nore!';
+        title('Witaj w Nore!');
         status('Nore Launcher ' + s.version + ' został zainstalowany');
         break;
       case 'error':
         mode('error'); buttons();
-        $('title').textContent = 'Nore Launcher';
+        title('Nore Launcher');
         status('Nie udało się sprawdzić aktualizacji');
         $('meta').textContent = s.message || '';
         break;

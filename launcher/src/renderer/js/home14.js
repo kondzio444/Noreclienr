@@ -6,7 +6,7 @@ const NEWS_14 = [
   ['globe', 'Nowy Multiplayer', 'Flagi krajów serwerów, ping, gracze online i podgląd serwera przy szybkim dołączaniu.'],
   ['users', 'Znajomi i peleryny', 'Lista znajomych wspólna z grą, kolekcja peleryn „Historia Nore” i galeria zrzutów.'],
   ['shield', 'Auto naprawa', 'Launcher sam wykrywa zduplikowane mody, złe wersje i błędne loadery, zanim gra się wysypie.'],
-  ['layers', 'Minecraft 1.21.1 – 26.3', 'Nore Client działa na wszystkich wersjach od 1.21.1 do najnowszej 26.3 – wybierz dowolną przy tworzeniu instancji.'],
+  ['layers', 'Minecraft 1.20 – 26.3', 'Nore Client działa na wszystkich wersjach od 1.20 do najnowszej 26.3 – wybierz dowolną przy tworzeniu instancji.'],
 ];
 
 const QUICK_14 = [
@@ -26,7 +26,6 @@ Pages.home = (root) => {
         <div class="h14-shade"></div>
         <img class="h14-logo" src="assets/logo.png" alt="">
         <div class="h14-main">
-          <div class="eyebrow"><span class="ver-chip">1.4 BETA</span> NORE LAUNCHER ${esc(App.info.version)}</div>
           <h1 id="h-name"></h1>
           <p class="h14-sub" id="h-sub"></p>
           <div class="h14-tags" id="h-tags"></div>
@@ -36,6 +35,7 @@ Pages.home = (root) => {
             <button class="btn ghost icon" id="h-open" title="Strona instancji">${icon('settings')}</button>
           </div>
           ${progressHtml()}
+          <div class="eyebrow h14-meta"><span class="ver-chip">1.4 BETA</span> Nore Launcher ${esc(App.info.version)}</div>
         </div>
         <div class="h14-stats">
           <div><b id="st-play">–</b><span>Czas gry</span></div>
@@ -78,6 +78,7 @@ Pages.home = (root) => {
   $('#play', root).onclick = () => {
     const inst = App.instance();
     if (App.running && inst && App.running === inst.id) return nore.game.kill();
+    if (inst) Motd.reveal($('#h-name', root), inst.name, 720);
     launchSelected();
   };
 
@@ -129,8 +130,11 @@ Pages.home = (root) => {
     if (inst !== lastInst || !inst) {
       lastInst = inst;
       $('#h-art', root).style.background = inst ? instBanner(inst) : 'linear-gradient(135deg,#2a1a10,#0e0b09)';
-      $('#h-name', root).innerHTML = inst ? esc(inst.name) : 'Brak <span>instancji</span>';
-      $('#h-sub', root).textContent = inst ? instSubtitle(inst) : 'Utwórz instancję, aby zagrać.';
+      if (inst) Motd.reveal($('#h-name', root), inst.name);
+      else $('#h-name', root).innerHTML = 'Brak <span>instancji</span>';
+      const sub = $('#h-sub', root);
+      sub.classList.toggle('motd', !!inst);
+      sub.innerHTML = inst ? instMotd(inst) : 'Utwórz instancję, aby zagrać.';
       $('#h-tags', root).innerHTML = inst ? instanceTags(inst) : '';
     }
     const play = $('#play', root);

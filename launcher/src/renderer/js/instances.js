@@ -28,7 +28,7 @@ function instBanner(inst) {
   const [a, b] = INSTANCE_COLORS[inst.color % INSTANCE_COLORS.length] || INSTANCE_COLORS[0];
   const media = App.media && App.media[inst.id];
   const img = (media && media.banner) || inst.bannerUrl;
-  const grad = `radial-gradient(circle at 80% 0%, ${a}aa, transparent 60%), linear-gradient(135deg, ${b}55, #1a1410)`;
+  const grad = `linear-gradient(135deg, ${a}77, ${b}33 55%, #120c1a)`;
   return img ? `url("${esc(img)}") center/cover no-repeat, ${grad}` : grad;
 }
 
@@ -175,7 +175,7 @@ Pages.instances = (root) => {
     if (instView.view === 'list') {
       return `<div class="irow2 ${selected ? 'selected' : ''} ${running ? 'running' : ''}" data-id="${i.id}">
         ${instIcon(i, 46)}
-        <div class="iname2"><b>${esc(i.name)}${i.pinned ? ` <span class="pin-on">${icon('sparkles')}</span>` : ''}${upd ? ' <span class="tag upd">AKTUALIZACJA</span>' : ''}</b><span>${esc(instSubtitle(i))}</span></div>
+        <div class="iname2"><b>${esc(i.name)}${i.pinned ? ` <span class="pin-on">${icon('sparkles')}</span>` : ''}${upd ? ' <span class="tag upd">AKTUALIZACJA</span>' : ''}</b><span>${instMotd(i)}</span></div>
         <div class="itags">${instanceTags(i)}</div>
         <div class="istats">${stats}</div>
         <div class="itime"><b>${fmtDuration(i.playTime || 0)}</b><span>${fmtAgo(i.lastPlayed)}</span></div>
@@ -186,7 +186,7 @@ Pages.instances = (root) => {
       <div class="ibanner" style="background:${instBanner(i)}"></div>
       <div class="ibadges">${upd ? `<span class="tag upd" title="${esc(App.contentUpdates[i.id].pack ? 'Nowa wersja modpacka' : contentUpdatesText(App.contentUpdates[i.id]))}">${icon('download')} AKTUALIZACJA</span>` : ''}${running ? '<span class="tag premium running-dot">● W GRZE</span>' : ''}${selected ? '<span class="tag accent">WYBRANA</span>' : ''}</div>
       <button class="ipin ${i.pinned ? 'on' : ''}" data-act="pin" title="${i.pinned ? 'Odepnij' : 'Przypnij'}">${icon('sparkles')}</button>
-      <div class="ihead">${instIcon(i, 58)}<div class="ititle"><h3>${esc(i.name)}</h3><span>${esc(instSubtitle(i))}</span></div></div>
+      <div class="ihead">${instIcon(i, 58)}<div class="ititle"><h3>${esc(i.name)}</h3><span>${instMotd(i)}</span></div></div>
       <div class="itags">${instanceTags(i)}</div>
       <div class="istats">${stats || '<span class="muted">Brak modów i światów</span>'}</div>
       <div class="ifoot">
