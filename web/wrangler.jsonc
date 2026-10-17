@@ -9,11 +9,13 @@
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api", "/api/*"]
   },
   "routes": [
     { "pattern": "noroclient.pl", "custom_domain": true },
     { "pattern": "www.noroclient.pl", "custom_domain": true }
   ],
+  // background refresh of the release data (src/worker.js → scheduled)
+  "triggers": { "crons": ["*/15 * * * *"] },
   "observability": { "enabled": true }
 }
