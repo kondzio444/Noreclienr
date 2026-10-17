@@ -117,6 +117,7 @@ function runSplash() {
     const cur = app.getVersion();
     const prev = store.get().lastVersion;
     const justUpdated = !!prev && prev !== cur;
+    const freshInstall = !prev && app.isPackaged && store.get().firstRun !== false;
     store.update((d) => { d.lastVersion = cur; });
     const testing = !!process.env.NORE_UPDATER_TEST;
     if (!app.isPackaged && !testing && !justUpdated) return resolve();
@@ -173,8 +174,8 @@ function runSplash() {
 
     splash.once('ready-to-show', () => {
       splash.show();
-      if (justUpdated) {
-        post({ state: 'updated' });
+      if (justUpdated || freshInstall) {
+        post({ state: justUpdated ? 'updated' : 'installed' });
         later(begin, 2600);
       } else later(begin, 450);
     });

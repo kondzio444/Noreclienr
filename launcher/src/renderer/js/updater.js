@@ -83,6 +83,11 @@
         $('title').textContent = 'Zaktualizowano!';
         status('Nore Launcher ' + s.version + ' jest gotowy');
         break;
+      case 'installed':
+        mode('done'); buttons({ go: true });
+        $('title').textContent = 'Witaj w Nore!';
+        status('Nore Launcher ' + s.version + ' został zainstalowany');
+        break;
       case 'error':
         mode('error'); buttons();
         $('title').textContent = 'Nore Launcher';
