@@ -105,7 +105,83 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+// ------------------------------------------------------------------ Nore Updater splash
+
+/**
+ * Small animated window shown before the launcher: checks for a new version, downloads it with a
+ * progress ring and installs it (the launcher then restarts). After an update it greets the new
+ * version. It never blocks the launcher for long: no update, an error or "Pomiń" opens it at once.
+ */
+function runSplash() {
+  return new Promise((resolve) => {
+    const cur = app.getVersion();
+    const prev = store.get().lastVersion;
+    const justUpdated = !!prev && prev !== cur;
+    store.update((d) => { d.lastVersion = cur; });
+    const testing = !!process.env.NORE_UPDATER_TEST;
+    if (!app.isPackaged && !testing && !justUpdated) return resolve();
+
+    const splash = new BrowserWindow({
+      width: 400, height: 480, frame: false, resizable: false, maximizable: false, fullscreenable: false,
+      show: false, center: true, backgroundColor: '#0b0716', title: 'Nore Updater',
+      icon: nativeImage.createFromPath(ICON),
+      webPreferences: { preload: path.join(__dirname, '..', 'updater-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    splash.webContents.on('will-navigate', (e) => e.preventDefault());
+    splash.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    splash.loadFile(path.join(__dirname, '..', 'renderer', 'updater.html'));
+
+    let done = false;
+    let off = () => {};
+    const timers = [];
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const post = (st) => { if (!splash.isDestroyed()) splash.webContents.send('splash:state', { version: cur, ...st }); };
+    const finish = () => {
+      if (done) return;
+      done = true;
+      off();
+      timers.forEach(clearTimeout);
+      ipcMain.removeListener('splash:skip', onSkip);
+      resolve();
+      setTimeout(() => { if (!splash.isDestroyed()) splash.destroy(); }, 350);
+    };
+    const onSkip = (e) => { if (!splash.isDestroyed() && e.sender === splash.webContents) finish(); };
+    ipcMain.on('splash:skip', onSkip);
+    splash.on('closed', finish);
+    // a stuck window must never keep the launcher closed
+    later(() => { if (!['downloading', 'verifying', 'available'].includes(updater.current().state)) finish(); }, 20000);
+
+    const begin = () => {
+      post({ state: 'checking' });
+      off = updater.onState((st) => {
+        post(st);
+        if (st.state === 'latest' || st.state === 'dev') later(finish, 1100);
+        else if (st.state === 'error') later(finish, 1800);
+        else if (st.state === 'available' && store.get().settings.autoUpdate === false) later(finish, 2600);
+        else if (st.state === 'ready') {
+          const auto = store.get().settings.autoUpdate !== false;
+          if (!auto || testing || store.get().lastUpdateAttempt === st.next) return later(finish, 1500);
+          // one automatic attempt per version, so a broken installer cannot loop the launcher
+          store.update((d) => { d.lastUpdateAttempt = st.next; });
+          post({ state: 'installing', next: st.next });
+          later(() => updater.install(), 1400);
+        }
+      });
+      updater.check().catch(() => later(finish, 1500));
+      later(() => { if (updater.current().state === 'checking' || updater.current().state === 'idle') finish(); }, 9000);
+    };
+
+    splash.once('ready-to-show', () => {
+      splash.show();
+      if (justUpdated) {
+        post({ state: 'updated' });
+        later(begin, 2600);
+      } else later(begin, 450);
+    });
+  });
+}
+
+app.whenReady().then(async () => {
   store.load();
   // the friends voice chat needs the microphone; nothing else may ask for devices
   session.defaultSession.setPermissionRequestHandler((wc, permission, done, details) => {
@@ -117,10 +193,11 @@ app.whenReady().then(() => {
   servers.setEmitter(send);
   chatBridge.start(send);
   instances.ensureDefault();
+  updater.init(send, store.get().settings, { checkNow: true });
+  await runSplash().catch(() => {});
   createWindow();
   applyDiscord();
   discord.setActivity(LAUNCHER_ACTIVITY);
-  updater.init(send, store.get().settings);
 });
 
 const LAUNCHER_ACTIVITY = { details: 'W launcherze', state: 'Wybiera, w co zagrać' };
@@ -133,7 +210,8 @@ function applyDiscord() {
 app.on('before-quit', () => servers.stopAll());
 
 app.on('window-all-closed', () => {
-  if (!game) app.quit();
+  // the updater splash closes before the launcher window exists
+  if (!game && win) app.quit();
 });
 
 // ------------------------------------------------------------------ IPC: app & window

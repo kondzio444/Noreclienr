@@ -79,10 +79,10 @@ function shapeRelease(r) {
   const assets = {};
   for (const a of r.assets || []) {
     for (const [k, re] of Object.entries(ASSET_PATTERNS)) {
-      if (!assets[k] && re.test(a.name)) assets[k] = { name: a.name, size: a.size, url: a.browser_download_url };
+      if (!assets[k] && re.test(a.name)) assets[k] = { name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null };
     }
   }
-  const mods = (r.assets || []).filter(a => /^noreclient-.*\.jar$/i.test(a.name)).map(a => ({ name: a.name, size: a.size, url: a.browser_download_url }));
+  const mods = (r.assets || []).filter(a => /^noreclient-.*\.jar$/i.test(a.name)).map(a => ({ name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null }));
   return {
     version: String(r.tag_name || '').replace(/^v/, ''),
     name: r.name,

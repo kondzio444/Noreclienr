@@ -6,28 +6,39 @@
  * the user clicks "restart".
  *
  * When electron-updater cannot update this copy (unpacked folder, missing app-update.yml, a
- * broken latest.yml…) the launcher falls back to the GitHub API: it downloads the newest
- * installer / AppImage itself and runs it, so an old version can always move to the new one
- * without visiting GitHub.
+ * broken latest.yml…) the launcher falls back to its own updater: it asks the Nore API
+ * (noroclient.pl, GitHub API as a backup) for the newest release, downloads the installer /
+ * AppImage itself, checks its SHA-256 and runs it, so an old version can always move to the new
+ * one without visiting GitHub.
  */
 const { app, shell } = require('electron');
 const fs = require('fs');
 const fsp = require('fs/promises');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 const net = require('./net');
 
 const REPO = 'kondzio444/Noreclienr';
+const API = 'https://noroclient.pl/api/v1';
 
 let updater = null;
 let emit = () => {};
 let state = { state: 'idle', version: app.getVersion() };
 let timer = null;
+const listeners = new Set();
 
 function set(s) {
   state = { ...state, ...s };
   emit('update:state', state);
+  for (const fn of listeners) { try { fn(state); } catch { /* ignore */ } }
+}
+
+/** Calls fn on every state change; returns a function that stops listening. */
+function onState(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
 }
 
 function load() {
@@ -64,21 +75,23 @@ const NO_RELEASES = 'Nie ma jeszcze wydania na GitHubie – pojawi się automaty
 function friendly(e) {
   const m = String(e && e.message || e);
   if (/404|Unable to find latest version|No published versions/i.test(m)) return NO_RELEASES;
-  if (/ENOTFOUND|ETIMEDOUT|ECONNRESET|net::/i.test(m)) return 'Brak połączenia z serwerem aktualizacji.';
+  if (/ENOTFOUND|ETIMEDOUT|ECONNRESET|ECONNREFUSED|fetch failed|net::/i.test(m)) return 'Brak połączenia z serwerem aktualizacji.';
+  if (/HTTP (403|429|5\d\d)/.test(m)) return 'Serwer aktualizacji jest chwilowo niedostępny – spróbuję później.';
   return m.split('\n')[0].slice(0, 200);
 }
 
 /** Starts periodic checks (packaged builds only). */
-function init(sendFn, settings) {
+function init(sendFn, settings, { checkNow = false } = {}) {
   emit = sendFn;
-  if (!app.isPackaged) {
+  if (!app.isPackaged && !process.env.NORE_UPDATER_TEST) {
     set({ state: 'dev' });
     return;
   }
-  const u = load();
+  const u = process.env.NORE_UPDATER_TEST ? null : load();
   if (u) u.autoDownload = settings.autoUpdate !== false;
+  if (!u) brokenNative = true;
   fallbackAuto = settings.autoUpdate !== false;
-  setTimeout(() => check(), 8000);
+  if (!checkNow) setTimeout(() => check(), 8000);
   timer = setInterval(() => check(), 3 * 60 * 60 * 1000);
 }
 
@@ -88,7 +101,7 @@ function configure(settings) {
 }
 
 async function check() {
-  if (!app.isPackaged) { set({ state: 'dev' }); return state; }
+  if (!app.isPackaged && !process.env.NORE_UPDATER_TEST) { set({ state: 'dev' }); return state; }
   manual = null;
   const u = brokenNative ? null : load();
   let ok = false;
@@ -103,9 +116,9 @@ async function check() {
   return state;
 }
 
-// ------------------------------------------------------------------ fallback via the GitHub API
+// ------------------------------------------------------------------ own updater (Nore API, GitHub API as a backup)
 
-let manual = null; // { version, asset: { name, url, size }, file }
+let manual = null; // { version, asset: { name, url, size, sha256 }, file }
 let brokenNative = false; // electron-updater failed to download – use the fallback from now on
 
 function newer(a, b) {
@@ -120,20 +133,48 @@ function pickAsset(assets) {
   return assets.find(a => want.test(a.name) && !/blockmap/i.test(a.name));
 }
 
+const PLATFORM = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'mac' : 'linux';
+const sha256Of = (digest) => (/^sha256:([0-9a-f]{64})$/i.exec(String(digest || '')) || [])[1] || null;
+
+/** Newest release from the Nore API: { version, notes, asset } or null when there is nothing newer. */
+async function fromNoreApi() {
+  const r = await net.getJson(`${API}/updates/launcher?platform=${PLATFORM}&current=${encodeURIComponent(app.getVersion())}`);
+  const version = String(r.version || '');
+  if (!r.update || !newer(version, app.getVersion())) return { version, latest: true };
+  if (!r.download || !/^https:\/\/github\.com\/kondzio444\/Noreclienr\/releases\/download\//.test(r.download.url)) {
+    return { version, asset: null, notes: r.notes };
+  }
+  return { version, notes: r.notes, asset: { name: r.download.name, url: r.download.url, size: r.download.size, sha256: sha256Of(r.download.digest) } };
+}
+
+async function fromGithub() {
+  const rel = await net.getJson(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
+  const version = String(rel.tag_name || '').replace(/^v/, '');
+  if (!newer(version, app.getVersion())) return { version, latest: true };
+  const a = pickAsset(rel.assets || []);
+  return { version, notes: rel.body, asset: a ? { name: a.name, url: a.browser_download_url, size: a.size, sha256: sha256Of(a.digest) } : null };
+}
+
 async function fallbackCheck() {
   const prev = state.state === 'error' ? state.message : null;
   try {
-    const rel = await net.getJson(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
-    const version = String(rel.tag_name || '').replace(/^v/, '');
-    if (!newer(version, app.getVersion())) { set({ state: 'latest', checkedAt: Date.now(), message: null }); return; }
-    const asset = pickAsset(rel.assets || []);
-    if (!asset) { set({ state: 'error', message: `Wydanie ${version} nie ma pliku dla tego systemu.` }); return; }
-    manual = { version, asset: { name: asset.name, url: asset.browser_download_url, size: asset.size }, file: null };
-    set({ state: 'available', next: version, manual: true, notes: String(rel.body || '').slice(0, 600), message: null });
+    let rel;
+    try { rel = await fromNoreApi(); } catch { rel = await fromGithub(); }
+    if (rel.latest) { set({ state: 'latest', checkedAt: Date.now(), message: null }); return; }
+    if (!rel.asset) { set({ state: 'error', message: `Wydanie ${rel.version} nie ma pliku dla tego systemu.` }); return; }
+    if (manual && manual.version === rel.version && manual.file) return;
+    manual = { version: rel.version, asset: rel.asset, file: null };
+    set({ state: 'available', next: rel.version, manual: true, size: rel.asset.size, notes: String(rel.notes || '').slice(0, 600), message: null });
     if (autoDownload()) download().catch(() => {});
   } catch (e) {
     set({ state: 'error', message: /404/.test(String(e.message)) ? NO_RELEASES : (prev || friendly(e)) });
   }
+}
+
+async function fileSha256(file) {
+  const h = crypto.createHash('sha256');
+  for await (const chunk of fs.createReadStream(file)) h.update(chunk);
+  return h.digest('hex');
 }
 
 let fallbackAuto = true;
@@ -144,16 +185,30 @@ async function download() {
     if (manual.file) return;
     const dest = path.join(os.tmpdir(), 'nore-launcher-update', manual.asset.name);
     let got = 0, last = 0;
-    set({ state: 'downloading', percent: 0, next: manual.version });
+    const started = Date.now();
+    set({ state: 'downloading', percent: 0, next: manual.version, bytes: 0, size: manual.asset.size });
     try {
       await fsp.rm(dest, { force: true });
       await net.download(manual.asset.url, dest, {
         onBytes: (n) => {
           got += n;
           const pct = manual.asset.size ? Math.round(got / manual.asset.size * 100) : 0;
-          if (pct !== last) { last = pct; set({ state: 'downloading', percent: pct }); }
+          if (pct !== last) {
+            last = pct;
+            const speed = got / Math.max(0.5, (Date.now() - started) / 1000);
+            set({ state: 'downloading', percent: pct, bytes: got, speed: Math.round(speed) });
+          }
         },
       });
+      // the installer must be exactly the published file
+      if (manual.asset.size && fs.statSync(dest).size !== manual.asset.size) throw new Error('Pobrany plik ma zły rozmiar – spróbuj ponownie.');
+      if (manual.asset.sha256) {
+        set({ state: 'verifying' });
+        if (await fileSha256(dest) !== manual.asset.sha256.toLowerCase()) {
+          await fsp.rm(dest, { force: true });
+          throw new Error('Suma kontrolna aktualizacji się nie zgadza – plik odrzucony.');
+        }
+      }
     } catch (e) {
       set({ state: 'error', message: friendly(e) });
       throw e;
@@ -197,4 +252,4 @@ function current() { return state; }
 
 function stop() { clearInterval(timer); }
 
-module.exports = { init, configure, check, download, install, current, stop };
+module.exports = { init, configure, check, download, install, current, stop, onState };
