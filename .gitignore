@@ -22,3 +22,6 @@ launcher/src/main/cf-key.json
 .taste-skill/
 .impeccable/review/
 .impeccable/mocks/
+
+# raw captures for the website images (scripts/home-images.py turns them into webp)
+web/public/assets/home/raw/
