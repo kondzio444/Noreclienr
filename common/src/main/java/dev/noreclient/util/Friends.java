@@ -2,7 +2,6 @@ package dev.noreclient.util;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import dev.noreclient.api.Platform;
 
 import java.io.File;
@@ -39,7 +38,7 @@ public final class Friends {
         ORDER.clear();
         if (!f.exists()) return;
         try {
-            JsonElement root = JsonParser.parseString(new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8));
+            JsonElement root = Json.parse(new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8));
             JsonArray arr = root.isJsonArray() ? root.getAsJsonArray() : root.getAsJsonObject().getAsJsonArray("friends");
             for (JsonElement e : arr) {
                 String n = e.isJsonPrimitive() ? e.getAsString() : e.getAsJsonObject().get("name").getAsString();

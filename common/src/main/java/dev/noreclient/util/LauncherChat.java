@@ -3,14 +3,13 @@ package dev.noreclient.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -65,7 +64,6 @@ public final class LauncherChat {
     private static volatile List<Contact> contacts = Collections.emptyList();
     private static volatile String myName = "", myId = "";
     private static volatile boolean connected;
-    private static HttpClient http;
     private static String base, token;
     private static boolean started;
 
@@ -99,28 +97,52 @@ public final class LauncherChat {
         int i = ADDRESS.indexOf(':');
         base = "http://127.0.0.1:" + ADDRESS.substring(0, i);
         token = ADDRESS.substring(i + 1);
-        http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
         Thread t = new Thread(LauncherChat::loop, "Nore Chat");
         t.setDaemon(true);
         t.start();
     }
 
+    /** Local bridge request (HttpURLConnection: Java 8, works on every Minecraft version). */
+    private static String request(String method, String path, String body, int timeoutSec) throws Exception {
+        HttpURLConnection c = (HttpURLConnection) new URL(base + path).openConnection();
+        c.setConnectTimeout(3000);
+        c.setReadTimeout(timeoutSec * 1000);
+        c.setRequestMethod(method);
+        c.setRequestProperty("X-Nore-Token", token);
+        if (body != null) {
+            c.setDoOutput(true);
+            c.setRequestProperty("Content-Type", "application/json");
+            try (OutputStream out = c.getOutputStream()) { out.write(body.getBytes(StandardCharsets.UTF_8)); }
+        }
+        try {
+            int code = c.getResponseCode();
+            if (code != 200) throw new IllegalStateException("HTTP " + code);
+            try (InputStream in = c.getInputStream()) {
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                byte[] b = new byte[8192];
+                for (int n; (n = in.read(b)) > 0; ) buf.write(b, 0, n);
+                return new String(buf.toByteArray(), StandardCharsets.UTF_8);
+            }
+        } finally {
+            c.disconnect();
+        }
+    }
+
     private static JsonObject get(String path, int timeoutSec) throws Exception {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(base + path)).timeout(Duration.ofSeconds(timeoutSec))
-                .header("X-Nore-Token", token).GET().build();
-        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (res.statusCode() != 200) throw new IllegalStateException("HTTP " + res.statusCode());
-        return JsonParser.parseString(res.body()).getAsJsonObject();
+        return Json.parse(request("GET", path, null, timeoutSec)).getAsJsonObject();
     }
 
     private static void post(String path, JsonObject body) {
-        if (http == null) return;
-        HttpRequest req = HttpRequest.newBuilder(URI.create(base + path)).timeout(Duration.ofSeconds(5))
-                .header("X-Nore-Token", token).header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8)).build();
-        http.sendAsync(req, HttpResponse.BodyHandlers.discarding()).thenRun(() -> {
-            try { refreshState(); } catch (Exception ignored) { /* next poll */ }
-        });
+        if (base == null) return;
+        final String json = body.toString();
+        Thread t = new Thread(() -> {
+            try {
+                request("POST", path, json, 5);
+                refreshState();
+            } catch (Exception ignored) { /* next poll */ }
+        }, "Nore Chat send");
+        t.setDaemon(true);
+        t.start();
     }
 
     private static void refreshState() throws Exception {
@@ -170,7 +192,7 @@ public final class LauncherChat {
     /** Cached conversation (kept while a newer copy loads in the background). */
     public static List<Message> history(String hex) {
         List<Message> h = HISTORY.get(hex);
-        if ((h == null || STALE.contains(hex)) && http != null && LOADING.add(hex)) {
+        if ((h == null || STALE.contains(hex)) && base != null && LOADING.add(hex)) {
             STALE.remove(hex);
             Thread t = new Thread(() -> {
                 try {

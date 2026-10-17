@@ -3,7 +3,6 @@ package dev.noreclient.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import dev.noreclient.NoreClient;
 import dev.noreclient.api.Platform;
@@ -140,7 +139,7 @@ public final class Modrinth {
                     facets.add(single("versions:" + gameVersion()));
                     if (category != null && !category.isEmpty()) facets.add(single("categories:" + category));
                     String url = API + "/search?limit=" + PAGE + "&offset=" + offset + "&index=" + enc(sort) + "&query=" + enc(query) + "&facets=" + enc(facets.toString());
-                    JsonObject root = new JsonParser().parse(get(url)).getAsJsonObject();
+                    JsonObject root = Json.parse(get(url)).getAsJsonObject();
                     List<Hit> out = new ArrayList<Hit>();
                     for (JsonElement e : root.getAsJsonArray("hits")) {
                         JsonObject h = e.getAsJsonObject();
@@ -174,7 +173,7 @@ public final class Modrinth {
 
     private static String download(String projectId, File dir) throws Exception {
         String url = API + "/project/" + enc(projectId) + "/version?game_versions=" + enc("[\"" + gameVersion() + "\"]");
-        JsonArray versions = new JsonParser().parse(get(url)).getAsJsonArray();
+        JsonArray versions = Json.parse(get(url)).getAsJsonArray();
         if (versions.size() == 0) throw new IllegalStateException("Brak wersji dla " + gameVersion());
         JsonObject version = versions.get(0).getAsJsonObject();
         for (JsonElement v : versions) {

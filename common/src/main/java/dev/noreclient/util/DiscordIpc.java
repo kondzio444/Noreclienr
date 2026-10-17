@@ -1,7 +1,6 @@
 package dev.noreclient.util;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import java.io.Closeable;
 import java.io.File;
@@ -115,7 +114,7 @@ public final class DiscordIpc {
         byte[] body = new byte[len];
         pipe.readFully(body);
         if (op == OP_CLOSE) throw new IOException("closed by Discord");
-        return new JsonParser().parse(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
+        return Json.parse(new String(body, StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
     private static Pipe connect() {

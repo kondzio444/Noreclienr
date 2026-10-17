@@ -3,7 +3,6 @@ package dev.noreclient.util;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dev.noreclient.NoreClient;
 import dev.noreclient.api.Platform;
 import dev.noreclient.api.TextureRef;
@@ -210,7 +209,7 @@ public final class ServerInfo {
     }
 
     private static void parseStatus(Info info, String json) {
-        JsonObject o = JsonParser.parseString(json).getAsJsonObject();
+        JsonObject o = Json.parse(json).getAsJsonObject();
         if (o.has("version")) {
             JsonObject v = o.getAsJsonObject("version");
             info.version = v.has("name") ? v.get("name").getAsString() : "";
@@ -287,7 +286,7 @@ public final class ServerInfo {
 
     private static void geo(Info info) {
         try {
-            JsonObject o = JsonParser.parseString(Modrinth.get("https://ipwho.is/" + info.ip + "?fields=success,country,country_code,city,connection")).getAsJsonObject();
+            JsonObject o = Json.parse(Modrinth.get("https://ipwho.is/" + info.ip + "?fields=success,country,country_code,city,connection")).getAsJsonObject();
             if (o.has("success") && o.get("success").getAsBoolean()) {
                 info.country = o.get("country").getAsString();
                 info.countryCode = o.get("country_code").getAsString().toLowerCase(Locale.ROOT);
@@ -299,7 +298,7 @@ public final class ServerInfo {
         }
         if (info.countryCode == null) {
             try {
-                JsonObject o = JsonParser.parseString(Modrinth.get("http://ip-api.com/json/" + info.ip + "?fields=status,country,countryCode,city,isp")).getAsJsonObject();
+                JsonObject o = Json.parse(Modrinth.get("http://ip-api.com/json/" + info.ip + "?fields=status,country,countryCode,city,isp")).getAsJsonObject();
                 if ("success".equals(o.get("status").getAsString())) {
                     info.country = o.get("country").getAsString();
                     info.countryCode = o.get("countryCode").getAsString().toLowerCase(Locale.ROOT);

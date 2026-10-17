@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import dev.noreclient.NoreClient;
 import dev.noreclient.module.HudModule;
 import dev.noreclient.module.Module;
@@ -196,9 +195,7 @@ public class ConfigManager {
     }
 
     private static JsonObject read(Path f) throws IOException {
-        try (Reader r = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
-            return new JsonParser().parse(r).getAsJsonObject();
-        }
+        return dev.noreclient.util.Json.parse(new String(Files.readAllBytes(f), StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
     private static void write(Path f, JsonObject o) throws IOException {
