@@ -7,6 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
+# a newer push replaces a running build of the same branch / PR; release builds (default branch,
+# tags) are queued instead, so a release is never cut off halfway through publishing
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && github.ref_name != github.event.repository.default_branch }}
+
 permissions:
   contents: write  # pushes to the default branch publish the release the launcher auto-updates from
 
