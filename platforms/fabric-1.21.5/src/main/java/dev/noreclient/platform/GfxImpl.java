@@ -135,7 +135,16 @@ public final class GfxImpl implements Gfx {
 
     @Override public int textWidth(String s) { return MinecraftClient.getInstance().textRenderer.getWidth(s); }
     @Override public int fontHeight() { return MinecraftClient.getInstance().textRenderer.fontHeight; }
-    @Override public void scissor(int x1, int y1, int x2, int y2) { flush(); ctx.enableScissor(x1, y1, x2, y2); }
+    @Override
+    public void scissor(int x1, int y1, int x2, int y2) {
+        flush();
+        // since 1.21.2 enableScissor transforms the rectangle by the current matrix; Gfx passes
+        // untransformed GUI coordinates (like 1.21.1), so clip with an identity matrix
+        ctx.getMatrices().push();
+        ctx.getMatrices().loadIdentity();
+        ctx.enableScissor(x1, y1, x2, y2);
+        ctx.getMatrices().pop();
+    }
     @Override public void endScissor() { flush(); ctx.disableScissor(); }
 
     @Override
