@@ -192,7 +192,7 @@ button, input, select { font: inherit; color: inherit; }
 .plate-img img { width: 100%; aspect-ratio: 1; object-fit: cover; image-rendering: auto; transition: opacity .25s ease, transform .5s var(--ease); }
 .plate-img img.swap { opacity: 0; transform: scale(.98); }
 .plate-side { display: flex; flex-direction: column; justify-content: space-between; padding: 14svh var(--gut) 40px 20px; }
-.ptabs { display: flex; gap: 26px; }
+.ptabs { display: flex; flex-wrap: wrap; gap: 6px 26px; }
 .ptabs button { border: 0; background: none; padding: 6px 0; cursor: pointer; font-size: var(--step-body); font-weight: 500; color: #6e2a19; transition: color .2s; }
 .ptabs button[aria-selected="true"] { color: var(--on-zachod); font-weight: 800; text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 8px; }
 .plate-text h2 { font-weight: 800; font-size: var(--step-head); letter-spacing: -0.02em; line-height: 1; }

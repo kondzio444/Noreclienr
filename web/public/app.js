@@ -178,6 +178,8 @@
   const WARD = {
     capes: ['/assets/home/ward-capes.webp', 'Animowane peleryny Halloween w Szatni', 'Ubierz się na F5', 'Trzy animowane peleryny Halloween: Dynia, Nietoperz i Pajęczyna. Do tego Kapelusz Wiedźmy i Skrzydła Nietoperza, widoczne w F5.'],
     history: ['/assets/home/ward-history.webp', 'Animowane peleryny z kolekcji Historia Nore', 'Historia Nore', 'Peleryny z historii klienta i dziewięć kolorów. Wszystkie animowane i widoczne też na elytrze. Widzisz je tylko Ty.'],
+    hat: ['/assets/home/ward-hat.webp', 'Gracz w Kapeluszu Wiedźmy z fioletową klamrą, widok z przodu w F5', 'Kapelusz Wiedźmy', 'Fioletowy kapelusz ze złotą klamrą kołysze się, kiedy biegniesz. Gdy założysz hełm, kapelusz sam się chowa.'],
+    wings: ['/assets/home/ward-wings.webp', 'Gracz ze Skrzydłami Nietoperza i peleryną Halloween, widok z tyłu w F5', 'Skrzydła Nietoperza', 'Na ziemi oddychają powoli, w locie, na elytrze i przy spadaniu biją mocniej. Z żarzącą się krawędzią i pazurem na nadgarstku.'],
   };
   const ptabs = $$('.ptabs button');
   const wimg = $('#ward-img');

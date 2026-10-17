@@ -45,8 +45,16 @@ def save(im, name, size, quality=82):
     print('wrote', name, size)
 
 
-def still(name, src, ratio, size, focus=(0.5, 0.5)):
-    save(crop(Image.open(src), ratio, focus), name, size)
+def still(name, src, ratio, size, focus=(0.5, 0.5), zoom=1):
+    im = Image.open(src)
+    if zoom > 1:
+        w, h = im.size
+        cw, ch = int(w / zoom), int(h / zoom)
+        x = int(min(max(focus[0] * w - cw / 2, 0), w - cw))
+        y = int(min(max(focus[1] * h - ch / 2, 0), h - ch))
+        im = im.crop((x, y, x + cw, y + ch))
+        focus = (0.5, 0.5)
+    save(crop(im, ratio, focus), name, size)
 
 
 def animated(name, src, ratio, size, focus=(0.5, 0.5)):
@@ -77,6 +85,6 @@ animated('halloween.webp', os.path.join(PUB, 'halloween.gif'), 16 / 10, (640, 40
 animated('ward-capes.webp', os.path.join(PUB, 'halloween.gif'), 1, (900, 900))
 animated('ward-history.webp', os.path.join(PUB, 'historia-nore.gif'), 1, (900, 900))
 # in-game F5 shots of the hat and wings, when captured
-for name, src, focus in (('ward-hat.webp', 'wardrobe-hat.png', (0.5, 0.35)), ('ward-wings.webp', 'wardrobe-wings.png', (0.5, 0.45))):
+for name, src, focus in (('ward-hat.webp', 'wardrobe-hat.png', (0.5, 0.55)), ('ward-wings.webp', 'wardrobe-wings.png', (0.5, 0.52))):
     if os.path.exists(os.path.join(SRC, src)):
-        still(name, os.path.join(SRC, src), 1, (900, 900), focus)
+        still(name, os.path.join(SRC, src), 1, (720, 720), focus, zoom=1.4)
