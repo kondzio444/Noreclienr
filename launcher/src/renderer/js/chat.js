@@ -546,7 +546,7 @@ Pages.chat = (root, opts = {}) => {
       const day = d.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
       const sep = day !== lastDay ? `<div class="cv-day">${esc(day)}</div>` : '';
       lastDay = day;
-      const state = m.mine ? (m.state === 'delivered' ? '✓✓' : m.state === 'pending' ? '🕓' : '✓') : '';
+      const state = m.mine ? icon(m.state === 'delivered' ? 'checks' : m.state === 'pending' ? 'clock' : 'check') : '';
       return `${sep}<div class="cv-msg ${m.mine ? 'mine' : ''}"><div class="cv-bubble">${linkify(esc(m.text))}</div><span>${d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} ${state}</span></div>`;
     }).join('');
   };

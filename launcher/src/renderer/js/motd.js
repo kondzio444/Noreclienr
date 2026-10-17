@@ -38,9 +38,9 @@ const Motd = (() => {
     const step = (now) => {
       const p = Math.min(1, (now - t0) / ms);
       const done = Math.floor(p * text.length);
-      let s = text.slice(0, done);
-      for (let i = done; i < text.length; i++) s += text[i] === ' ' ? ' ' : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-      el.textContent = s;
+      let k = '';
+      for (let i = done; i < text.length; i++) k += text[i] === ' ' ? ' ' : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+      el.innerHTML = escape(text.slice(0, done)) + (k ? `<span class="mk">${k}</span>` : '');
       if (p < 1) el._motd = requestAnimationFrame(step);
       else { el.textContent = text; el._motd = 0; }
     };
@@ -56,7 +56,20 @@ const Motd = (() => {
     el.addEventListener('focusin', clear);
   }
 
-  return { html, strip, reveal, lit };
+  /** Like lit(), but each key lights only once; seeing it is remembered across restarts. */
+  function litOnce(el, key) {
+    let seen = {};
+    try { seen = JSON.parse(localStorage.getItem('nore.seen') || '{}'); } catch { /* fresh */ }
+    if (!el || seen[key]) return;
+    lit(el);
+    const mark = () => {
+      try { seen = JSON.parse(localStorage.getItem('nore.seen') || '{}'); seen[key] = Date.now(); localStorage.setItem('nore.seen', JSON.stringify(seen)); } catch { /* ignore */ }
+      el.removeEventListener('pointerenter', mark);
+    };
+    el.addEventListener('pointerenter', mark);
+  }
+
+  return { html, strip, reveal, lit, litOnce };
 })();
 
 /** The instance's MOTD line: loader in its colour, then what the instance is. */

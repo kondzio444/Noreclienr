@@ -713,7 +713,7 @@ body.no-anim .wz-in, body.no-anim .wz-pane { animation: none !important; }
 .srv2-pill.copyable { cursor: pointer; }
 .srv2-pill.copyable:hover { border-color: rgba(var(--accent-rgb), .6); }
 .srv2-ico { flex: none; display: grid; place-items: center; border-radius: var(--radius); color: #fff; overflow: hidden;
-  background: linear-gradient(145deg, color-mix(in srgb, var(--ec) 70%, #000), color-mix(in srgb, var(--ec) 25%, #000));
+  background: color-mix(in srgb, var(--ec) 40%, #120c1a);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
 .srv2-ico svg { width: 46%; height: 46%; }
 .srv2-ico img { width: 100%; height: 100%; image-rendering: pixelated; }

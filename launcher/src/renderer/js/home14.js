@@ -48,26 +48,26 @@ Pages.home = (root) => {
 
       <div class="h14-cols">
         <div class="col" style="gap:18px;min-width:0">
-          <section class="card h14-sec" style="--i:2">
+          <section class="card h14-sec" style="--i:2;--tab:var(--c-b)">
             <div class="row"><div class="section-title" style="flex:1">${icon('clock')} Ostatnio grane</div><button class="btn ghost sm" data-go="instances">Wszystkie ${icon('arrowRight')}</button></div>
             <div class="h14-recent" id="h-recent"></div>
           </section>
-          <section class="card h14-sec" style="--i:3">
+          <section class="card h14-sec" style="--i:3;--tab:var(--c-7)">
             <div class="row"><div class="section-title" style="flex:1">${icon('monitor')} Ostatnie zrzuty</div><button class="btn ghost sm" data-go="gallery">Galeria ${icon('arrowRight')}</button></div>
             <div class="h14-shots" id="h-shots"><div class="muted">Wczytywanie…</div></div>
           </section>
         </div>
         <div class="col" style="gap:18px;min-width:0">
-          <section class="card h14-sec h14-upd" id="h-upd" style="--i:2" hidden></section>
-          <section class="card h14-sec news" style="--i:2">
+          <section class="card h14-sec h14-upd" id="h-upd" style="--i:2;--tab:var(--c-e)" hidden></section>
+          <section class="card h14-sec news" style="--i:2;--tab:var(--c-d)">
             <div class="section-title">${icon('sparkles')} Nowe w 1.4 Beta</div>
             ${NEWS_14.map(n => `<div class="news-item"><div class="ico">${icon(n[0])}</div><div><b>${n[1]}</b><p>${n[2]}</p></div></div>`).join('')}
           </section>
-          <section class="card h14-sec" style="--i:3">
+          <section class="card h14-sec" style="--i:3;--tab:var(--c-a)">
             <div class="row"><div class="section-title" style="flex:1">${icon('users')} Znajomi</div><button class="btn ghost sm" data-go="friends">Zarządzaj ${icon('arrowRight')}</button></div>
             <div class="h14-friends" id="h-friends"></div>
           </section>
-          <section class="card home-servers h14-sec" id="hsrv" style="--i:4"></section>
+          <section class="card home-servers h14-sec" id="hsrv" style="--i:4;--tab:var(--c-6)"></section>
         </div>
       </div>
     </div>`;
@@ -129,7 +129,7 @@ Pages.home = (root) => {
     const inst = App.instance();
     if (inst !== lastInst || !inst) {
       lastInst = inst;
-      $('#h-art', root).style.background = inst ? instBanner(inst) : 'linear-gradient(135deg,#2a1a10,#0e0b09)';
+      $('#h-art', root).style.background = inst ? instBanner(inst) : 'var(--surface)';
       if (inst) Motd.reveal($('#h-name', root), inst.name);
       else $('#h-name', root).innerHTML = 'Brak <span>instancji</span>';
       const sub = $('#h-sub', root);

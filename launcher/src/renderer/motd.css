@@ -337,3 +337,56 @@ input[type=range].slider::-webkit-slider-thumb { width: 14px; height: 18px; bord
 .h14-stats span { font-size: 11px; }
 .logo-block .ver-chip { top: 44px; bottom: auto; left: 58px; }
 .mini-play:empty { display: none; }
+
+/* ------------------------------------------------------------------ finish review fixes */
+/* the rail stays one accent field during the forced events */
+body.halloween #sidebar, body.winter #sidebar { background: var(--rail); box-shadow: none; border-right: 1px solid var(--line); }
+body.halloween .nav a.active { background: none; }
+body.halloween .nav-label { color: #a89cbd; }
+body.halloween ::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), .3); background-clip: padding-box; }
+.nav a .badge[data-badge="halloween"] { --rc: var(--c-6); background: color-mix(in srgb, var(--c-6) 12%, rgba(0, 0, 0, .35)); color: var(--c-6); font-weight: 400; letter-spacing: .02em; }
+
+/* modules carry a small header tab on their top keyline, coloured by what they hold */
+.h14-sec { position: relative; }
+.h14-sec::before { content: ''; position: absolute; left: 15px; top: -1px; width: 34px; height: 3px; background: var(--tab, var(--accent)); }
+.h14-sec .section-title svg { color: var(--tab, var(--accent)); }
+@media (max-width: 1100px) {
+  .h14-quick { grid-template-columns: repeat(3, 1fr); }
+  .h14-quick .h14-q:nth-child(n+4) { border-top: 1px solid var(--line); }
+  .h14-quick .h14-q:nth-child(3n+1) { border-left: 0; }
+}
+
+/* §k glyphs in the pixel face */
+.mk { font-family: var(--pixel); font-weight: 400; -webkit-font-smoothing: none; letter-spacing: 0; opacity: 1; color: var(--accent-2); }
+
+/* Serwery as a server list: icon, name, MOTD, signal and players on the right */
+.srv2-list { display: flex; flex-direction: column; gap: 8px; }
+.srv2-row { padding: 12px 14px; border-left: 1px solid var(--line); }
+.srv2-line { display: flex; gap: 14px; align-items: flex-start; }
+.srv2-row .srv2-ico { width: 64px; height: 64px; border-radius: var(--radius-sm); }
+.srv2-text { flex: 1; min-width: 0; }
+.srv2-text h3 { font-size: 17px; text-transform: none; font-stretch: 90%; letter-spacing: 0; }
+.srv2-motd { font-size: 13.5px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srv2-right { display: grid; justify-items: end; gap: 4px; min-width: 96px; }
+.srv2-sig { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
+.srv2-sig i { width: 3px; background: #3a3346; }
+.srv2-sig i:nth-child(1) { height: 3px; } .srv2-sig i:nth-child(2) { height: 5px; } .srv2-sig i:nth-child(3) { height: 8px; } .srv2-sig i:nth-child(4) { height: 11px; } .srv2-sig i:nth-child(5) { height: 14px; }
+.srv2-sig.on i { background: var(--c-a); }
+.srv2-count { font-family: var(--display); font-stretch: 80%; font-weight: 800; font-size: 18px; font-variant-numeric: tabular-nums; color: var(--text); }
+.srv2-count span { color: var(--text-muted); font-weight: 600; }
+.srv2-st { font-size: 12.5px; font-weight: 600; }
+.srv2-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.srv2-actions .srv-progress { font-size: 12px; color: var(--text-muted); }
+.srv2-row.running { border-color: rgba(85, 255, 85, .4); box-shadow: none; }
+.srv2-add { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-style: dashed; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.srv2-add .plus { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid rgba(var(--accent-rgb), .5); border-radius: var(--radius-sm); color: var(--accent-2); }
+.srv2-add .muted { font-size: 12.5px; }
+
+/* wizard welcome: one hairline-boxed list instead of three floating cards */
+.wz-chips { gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.wz-chip { border: 0; border-radius: 0; background: none; }
+.wz-chip + .wz-chip { border-left: 1px solid var(--line); }
+.wz-chip .ic { background: none; color: var(--accent-2); width: 24px; height: 24px; }
+
+/* chat message state icons */
+.cv-msg > span svg.i { width: 13px; height: 13px; vertical-align: -2px; }

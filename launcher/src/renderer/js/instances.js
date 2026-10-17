@@ -21,15 +21,15 @@ function instIcon(inst, size = 42) {
   const src = (media && media.icon) || inst.iconUrl;
   const inner = src ? `<img class="cover" src="${esc(src)}" data-fallback alt="">`
     : inst.noreClient ? '<img src="assets/logo.png" alt="">' : `<span>${esc((inst.name || '?').charAt(0).toUpperCase())}</span>`;
-  return `<div class="inst-icon ${src ? 'has-img' : ''}" style="width:${size}px;height:${size}px;background:linear-gradient(135deg,${a},${b});box-shadow:0 0 18px ${a}55">${inner}</div>`;
+  return `<div class="inst-icon ${src ? 'has-img' : ''}" style="width:${size}px;height:${size}px;background:${a}">${inner}</div>`;
 }
 
 function instBanner(inst) {
   const [a, b] = INSTANCE_COLORS[inst.color % INSTANCE_COLORS.length] || INSTANCE_COLORS[0];
   const media = App.media && App.media[inst.id];
   const img = (media && media.banner) || inst.bannerUrl;
-  const grad = `linear-gradient(135deg, ${a}77, ${b}33 55%, #120c1a)`;
-  return img ? `url("${esc(img)}") center/cover no-repeat, ${grad}` : grad;
+  const flat = `color-mix(in oklab, ${a} 16%, #1c1428)`;
+  return img ? `url("${esc(img)}") center/cover no-repeat, ${flat}` : flat;
 }
 
 function loaderTag(l) {
@@ -198,6 +198,10 @@ Pages.instances = (root) => {
 
   function bind(body) {
     if ($('#new2', body)) $('#new2', body).onclick = () => createInstanceModal();
+    $$('[data-id]', body).forEach(c => {
+      const u = App.contentUpdates && App.contentUpdates[c.dataset.id];
+      if (hasContentUpdates(u)) Motd.litOnce(c, `upd:${c.dataset.id}:${JSON.stringify(u)}`);
+    });
     $$('[data-id]', body).forEach(c => {
       const id = c.dataset.id;
       const inst = App.state.instances.find(x => x.id === id);

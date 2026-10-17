@@ -12,6 +12,7 @@ const ENGINES = [
   { value: 'folia', label: 'Folia', hint: 'Wielowątkowy (eksp.)', color: '#4fd1a8' },
 ];
 const engine = (t) => ENGINES.find(e => e.value === t) || ENGINES[0];
+const srvSeenState = {};
 const SRV_STATE = { stopped: 'Wyłączony', starting: 'Uruchamianie…', running: 'Online', stopping: 'Zatrzymywanie…' };
 const KIND_LABEL = { plugin: 'Pluginy', mod: 'Mody', datapack: 'Datapacki', modpack: 'Paczki modów' };
 
@@ -61,26 +62,31 @@ Pages.servers = (root) => {
         </div>
         <button class="btn" id="new">${icon('plus')} Nowy serwer</button>
       </div>
-      <div class="grid cols-2" id="grid" style="margin-top:16px"></div>`;
+      <div class="srv2-list" id="grid" style="margin-top:16px"></div>`;
     const grid = $('#grid', root);
     grid.innerHTML = list.map(s => {
       const e = engine(s.type);
-      return `<div class="card hover srv2-card ${s.state}" data-id="${s.id}" style="--ec:${e.color}">
-        <div class="row" style="gap:14px">${srvIcon(s)}
-          <div style="flex:1;min-width:0"><h3>${esc(s.name)}</h3>
-            <div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><span class="tag eng">${esc(e.label)}</span><span class="tag offline">${esc(s.mcVersion)}</span><span class="tag offline">:${s.port}</span>
-              ${s.domain && s.domain.name ? `<span class="tag offline">${icon('link')} ${esc(s.domain.name)}</span>` : ''}</div></div>
-          <div class="srv2-state"><i></i>${SRV_STATE[s.state] || s.state}</div></div>
-        <div class="srv2-meta"><span>${s.state === 'running' ? `${icon('users')} ${s.players.length} / ${s.props['max-players']} graczy` : `${icon('cpu')} ${(s.memoryMb / 1024).toFixed(1)} GB RAM`}</span>
-          <span class="srv-progress">${progress[s.id] || ''}</span></div>
-        <div class="row" style="gap:8px;margin-top:12px">
+      const motd = (s.props && s.props.motd) || `§7${e.label} ${s.mcVersion}`;
+      const live = s.state === 'running';
+      const code = live ? '§a' : s.state === 'stopped' ? '§c' : '§e';
+      return `<div class="card hover srv2-card srv2-row ${s.state}" data-id="${s.id}" style="--ec:${e.color}">
+        <div class="srv2-line">${srvIcon(s)}
+          <div class="srv2-text"><h3>${esc(s.name)}</h3>
+            <div class="motd srv2-motd">${Motd.html(motd)}</div>
+            <div class="row" style="gap:5px;margin-top:6px;flex-wrap:wrap"><span class="tag eng">${esc(e.label)}</span><span class="tag offline">${esc(s.mcVersion)}</span><span class="tag offline">:${s.port}</span>
+              ${s.domain && s.domain.name ? `<span class="tag offline">${esc(s.domain.name)}</span>` : ''}</div></div>
+          <div class="srv2-right">
+            <div class="srv2-sig ${live ? 'on' : ''}" title="${SRV_STATE[s.state] || s.state}"><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="srv2-count">${live ? `${s.players.length}<span>/${s.props['max-players']}</span>` : `${(s.memoryMb / 1024).toFixed(1)} GB`}</div>
+            <div class="motd srv2-st">${Motd.html(code + (SRV_STATE[s.state] || s.state))}</div></div></div>
+        <div class="srv2-actions">
           ${s.state === 'stopped' ? `<button class="btn sm success" data-a="start">${icon('play')} Start</button>` : `<button class="btn sm danger" data-a="stop" ${s.state === 'stopping' ? 'disabled' : ''}>${icon('stop')} Stop</button>`}
           <button class="btn sm" data-a="open">${icon('settings')} Zarządzaj</button>
-          ${s.state === 'running' ? `<button class="btn sm ghost" data-a="join">${icon('arrowRight')} Dołącz</button>` : ''}
+          ${live ? `<button class="btn sm ghost" data-a="join">${icon('arrowRight')} Dołącz</button>` : ''}
+          <span class="srv-progress">${progress[s.id] || ''}</span>
           <span class="spacer"></span>
           <button class="btn ghost sm icon" data-a="copy" title="Kopiuj adres">${icon('copy')}</button></div></div>`;
-    }).join('') + `<div class="card hover new-card" id="new2" style="min-height:180px"><div style="text-align:center"><div class="plus">${icon('plus')}</div><b>Nowy serwer</b>
-        <div class="muted" style="font-size:12px;margin-top:4px">Paper, Purpur, Fabric, NeoForge, Forge…</div></div></div>`;
+    }).join('') + `<button class="card hover srv2-add" id="new2"><span class="plus">${icon('plus')}</span><b>Nowy serwer</b><span class="muted">Paper, Purpur, Fabric, NeoForge, Forge…</span></button>`;
     stagger(grid);
     hydrateIcons(grid);
     if ($('#pubip', root)) $('#pubip', root).onclick = () => netInfo && netInfo.publicIp && copyText(netInfo.publicIp, 'Skopiowano IP');
@@ -88,6 +94,8 @@ Pages.servers = (root) => {
     $$('.srv2-card', grid).forEach(card => {
       const id = card.dataset.id;
       const s = list.find(x => x.id === id);
+      if (srvSeenState[id] && srvSeenState[id] !== s.state && (s.state === 'running' || s.state === 'stopped')) Motd.lit(card);
+      srvSeenState[id] = s.state;
       card.onclick = async (ev) => {
         const a = ev.target.closest('[data-a]');
         if (!a) return go('server', { id });
