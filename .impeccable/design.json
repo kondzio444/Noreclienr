@@ -1,0 +1,638 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-17T15:10:54+00:00",
+  "title": "Design System: Nore Launcher",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Nore Violet",
+        "canonical": "#9d5cff",
+        "tonalRamp": [
+          "oklch(15.0% 0.107 297.7)",
+          "oklch(27.0% 0.153 297.7)",
+          "oklch(39.0% 0.199 297.7)",
+          "oklch(51.0% 0.231 297.7)",
+          "oklch(63.0% 0.230 297.7)",
+          "oklch(75.0% 0.184 297.7)",
+          "oklch(85.0% 0.145 297.7)",
+          "oklch(95.0% 0.107 297.7)"
+        ],
+        "note": "Themable accent (default shown); runtime --accent."
+      },
+      "accent-light": {
+        "role": "primary",
+        "displayName": "Lilac",
+        "canonical": "#c8a8ff",
+        "tonalRamp": [
+          "oklch(15.0% 0.072 300.5)",
+          "oklch(27.0% 0.097 300.5)",
+          "oklch(39.0% 0.122 300.5)",
+          "oklch(51.0% 0.125 300.5)",
+          "oklch(63.0% 0.125 300.5)",
+          "oklch(75.0% 0.113 300.5)",
+          "oklch(85.0% 0.092 300.5)",
+          "oklch(95.0% 0.072 300.5)"
+        ],
+        "note": "Runtime --accent-2."
+      },
+      "accent-deep": {
+        "role": "primary",
+        "displayName": "Deep Violet",
+        "canonical": "#6a2fe0",
+        "tonalRamp": [
+          "oklch(15.0% 0.111 289.6)",
+          "oklch(27.0% 0.159 289.6)",
+          "oklch(39.0% 0.208 289.6)",
+          "oklch(51.0% 0.243 289.6)",
+          "oklch(63.0% 0.240 289.6)",
+          "oklch(75.0% 0.192 289.6)",
+          "oklch(85.0% 0.151 289.6)",
+          "oklch(95.0% 0.111 289.6)"
+        ],
+        "note": "Runtime --accent-deep."
+      },
+      "rail": {
+        "role": "primary",
+        "displayName": "Rail Field",
+        "canonical": "color-mix(in oklab, var(--accent) 13%, #0a0610)",
+        "tonalRamp": [
+          "oklch(15.0% 0.047 301.0)",
+          "oklch(27.0% 0.052 301.0)",
+          "oklch(39.0% 0.052 301.0)",
+          "oklch(51.0% 0.052 301.0)",
+          "oklch(63.0% 0.052 301.0)",
+          "oklch(75.0% 0.052 301.0)",
+          "oklch(85.0% 0.052 301.0)",
+          "oklch(95.0% 0.047 301.0)"
+        ],
+        "note": "Derived: color-mix(in oklab, var(--accent) 13%, #0a0610); recolours with the accent."
+      },
+      "ground": {
+        "role": "neutral",
+        "displayName": "Tooltip Black",
+        "canonical": "#0d0913",
+        "tonalRamp": [
+          "oklch(15.0% 0.022 302.3)",
+          "oklch(27.0% 0.022 302.3)",
+          "oklch(39.0% 0.022 302.3)",
+          "oklch(51.0% 0.022 302.3)",
+          "oklch(63.0% 0.022 302.3)",
+          "oklch(75.0% 0.022 302.3)",
+          "oklch(85.0% 0.022 302.3)",
+          "oklch(95.0% 0.022 302.3)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#150f1e",
+        "tonalRamp": [
+          "oklch(15.0% 0.031 301.8)",
+          "oklch(27.0% 0.031 301.8)",
+          "oklch(39.0% 0.031 301.8)",
+          "oklch(51.0% 0.031 301.8)",
+          "oklch(63.0% 0.031 301.8)",
+          "oklch(75.0% 0.031 301.8)",
+          "oklch(85.0% 0.031 301.8)",
+          "oklch(95.0% 0.031 301.8)"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Panel Raised",
+        "canonical": "#1c1428",
+        "tonalRamp": [
+          "oklch(15.0% 0.040 301.5)",
+          "oklch(27.0% 0.040 301.5)",
+          "oklch(39.0% 0.040 301.5)",
+          "oklch(51.0% 0.040 301.5)",
+          "oklch(63.0% 0.040 301.5)",
+          "oklch(75.0% 0.040 301.5)",
+          "oklch(85.0% 0.040 301.5)",
+          "oklch(95.0% 0.040 301.5)"
+        ]
+      },
+      "overlay": {
+        "role": "neutral",
+        "displayName": "Overlay",
+        "canonical": "#120c1a",
+        "tonalRamp": [
+          "oklch(15.0% 0.030 303.1)",
+          "oklch(27.0% 0.030 303.1)",
+          "oklch(39.0% 0.030 303.1)",
+          "oklch(51.0% 0.030 303.1)",
+          "oklch(63.0% 0.030 303.1)",
+          "oklch(75.0% 0.030 303.1)",
+          "oklch(85.0% 0.030 303.1)",
+          "oklch(95.0% 0.030 303.1)"
+        ]
+      },
+      "well": {
+        "role": "neutral",
+        "displayName": "Well",
+        "canonical": "#0a0710",
+        "tonalRamp": [
+          "oklch(15.0% 0.021 300.1)",
+          "oklch(27.0% 0.021 300.1)",
+          "oklch(39.0% 0.021 300.1)",
+          "oklch(51.0% 0.021 300.1)",
+          "oklch(63.0% 0.021 300.1)",
+          "oklch(75.0% 0.021 300.1)",
+          "oklch(85.0% 0.021 300.1)",
+          "oklch(95.0% 0.021 300.1)"
+        ]
+      },
+      "keyline": {
+        "role": "neutral",
+        "displayName": "Tooltip Keyline",
+        "canonical": "rgba(190, 160, 255, .13)",
+        "tonalRamp": [
+          "oklch(15.0% 0.075 297.7)",
+          "oklch(27.0% 0.102 297.7)",
+          "oklch(39.0% 0.130 297.7)",
+          "oklch(51.0% 0.136 297.7)",
+          "oklch(63.0% 0.136 297.7)",
+          "oklch(75.0% 0.121 297.7)",
+          "oklch(85.0% 0.098 297.7)",
+          "oklch(95.0% 0.075 297.7)"
+        ],
+        "note": "13% alpha over the ground."
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "canonical": "#f3eefa",
+        "tonalRamp": [
+          "oklch(15.0% 0.017 304.8)",
+          "oklch(27.0% 0.017 304.8)",
+          "oklch(39.0% 0.017 304.8)",
+          "oklch(51.0% 0.017 304.8)",
+          "oklch(63.0% 0.017 304.8)",
+          "oklch(75.0% 0.017 304.8)",
+          "oklch(85.0% 0.017 304.8)",
+          "oklch(95.0% 0.017 304.8)"
+        ]
+      },
+      "text-dim": {
+        "role": "neutral",
+        "displayName": "Text Dim",
+        "canonical": "#b8adc9",
+        "tonalRamp": [
+          "oklch(15.0% 0.041 303.3)",
+          "oklch(27.0% 0.041 303.3)",
+          "oklch(39.0% 0.041 303.3)",
+          "oklch(51.0% 0.041 303.3)",
+          "oklch(63.0% 0.041 303.3)",
+          "oklch(75.0% 0.041 303.3)",
+          "oklch(85.0% 0.041 303.3)",
+          "oklch(95.0% 0.041 303.3)"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Text Muted",
+        "canonical": "#8f84a3",
+        "tonalRamp": [
+          "oklch(15.0% 0.046 301.3)",
+          "oklch(27.0% 0.047 301.3)",
+          "oklch(39.0% 0.047 301.3)",
+          "oklch(51.0% 0.047 301.3)",
+          "oklch(63.0% 0.047 301.3)",
+          "oklch(75.0% 0.047 301.3)",
+          "oklch(85.0% 0.047 301.3)",
+          "oklch(95.0% 0.046 301.3)"
+        ]
+      },
+      "code-a-green": {
+        "role": "state",
+        "displayName": "§a Green",
+        "canonical": "#55ff55",
+        "tonalRamp": [
+          "oklch(15.0% 0.114 143.1)",
+          "oklch(27.0% 0.164 143.1)",
+          "oklch(39.0% 0.215 143.1)",
+          "oklch(51.0% 0.252 143.1)",
+          "oklch(63.0% 0.249 143.1)",
+          "oklch(75.0% 0.198 143.1)",
+          "oklch(85.0% 0.156 143.1)",
+          "oklch(95.0% 0.114 143.1)"
+        ],
+        "note": "Ready, online, running, done."
+      },
+      "code-e-yellow": {
+        "role": "state",
+        "displayName": "§e Yellow",
+        "canonical": "#ffff55",
+        "tonalRamp": [
+          "oklch(15.0% 0.091 109.4)",
+          "oklch(27.0% 0.128 109.4)",
+          "oklch(39.0% 0.164 109.4)",
+          "oklch(51.0% 0.183 109.4)",
+          "oklch(63.0% 0.183 109.4)",
+          "oklch(75.0% 0.152 109.4)",
+          "oklch(85.0% 0.122 109.4)",
+          "oklch(95.0% 0.091 109.4)"
+        ],
+        "note": "Pending, update, beta, lit until seen."
+      },
+      "code-c-red": {
+        "role": "state",
+        "displayName": "§c Red",
+        "canonical": "#ff5555",
+        "tonalRamp": [
+          "oklch(15.0% 0.099 24.4)",
+          "oklch(27.0% 0.140 24.4)",
+          "oklch(39.0% 0.181 24.4)",
+          "oklch(51.0% 0.206 24.4)",
+          "oklch(63.0% 0.206 24.4)",
+          "oklch(75.0% 0.168 24.4)",
+          "oklch(85.0% 0.133 24.4)",
+          "oklch(95.0% 0.099 24.4)"
+        ],
+        "note": "Error, stopped, danger."
+      },
+      "code-6-gold": {
+        "role": "state",
+        "displayName": "§6 Gold",
+        "canonical": "#ffaa00",
+        "tonalRamp": [
+          "oklch(15.0% 0.087 73.3)",
+          "oklch(27.0% 0.121 73.3)",
+          "oklch(39.0% 0.155 73.3)",
+          "oklch(51.0% 0.171 73.3)",
+          "oklch(63.0% 0.171 73.3)",
+          "oklch(75.0% 0.144 73.3)",
+          "oklch(85.0% 0.115 73.3)",
+          "oklch(95.0% 0.087 73.3)"
+        ],
+        "note": "Events; Forge/NeoForge loader."
+      },
+      "code-b-aqua": {
+        "role": "state",
+        "displayName": "§b Aqua",
+        "canonical": "#55ffff",
+        "tonalRamp": [
+          "oklch(15.0% 0.075 195.0)",
+          "oklch(27.0% 0.103 195.0)",
+          "oklch(39.0% 0.130 195.0)",
+          "oklch(51.0% 0.136 195.0)",
+          "oklch(63.0% 0.136 195.0)",
+          "oklch(75.0% 0.121 195.0)",
+          "oklch(85.0% 0.098 195.0)",
+          "oklch(95.0% 0.075 195.0)"
+        ],
+        "note": "Info, links."
+      },
+      "code-d-pink": {
+        "role": "state",
+        "displayName": "§d Pink",
+        "canonical": "#ff55ff",
+        "tonalRamp": [
+          "oklch(15.0% 0.121 327.9)",
+          "oklch(27.0% 0.175 327.9)",
+          "oklch(39.0% 0.229 327.9)",
+          "oklch(51.0% 0.272 327.9)",
+          "oklch(63.0% 0.266 327.9)",
+          "oklch(75.0% 0.211 327.9)",
+          "oklch(85.0% 0.166 327.9)",
+          "oklch(95.0% 0.121 327.9)"
+        ],
+        "note": "Nore; Quilt loader."
+      },
+      "code-5-purple": {
+        "role": "state",
+        "displayName": "§5 Purple",
+        "canonical": "#c23bc2",
+        "tonalRamp": [
+          "oklch(15.0% 0.105 327.9)",
+          "oklch(27.0% 0.150 327.9)",
+          "oklch(39.0% 0.195 327.9)",
+          "oklch(51.0% 0.225 327.9)",
+          "oklch(63.0% 0.225 327.9)",
+          "oklch(75.0% 0.180 327.9)",
+          "oklch(85.0% 0.143 327.9)",
+          "oklch(95.0% 0.105 327.9)"
+        ],
+        "note": "Nore (MOTD rendering of §5)."
+      },
+      "code-7-gray": {
+        "role": "state",
+        "displayName": "§7 Gray",
+        "canonical": "#aaaaaa",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(27.0% 0.000 89.9)",
+          "oklch(39.0% 0.000 89.9)",
+          "oklch(51.0% 0.000 89.9)",
+          "oklch(63.0% 0.000 89.9)",
+          "oklch(75.0% 0.000 89.9)",
+          "oklch(85.0% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ],
+        "note": "Neutral MOTD text, offline."
+      },
+      "code-8-dark-gray": {
+        "role": "state",
+        "displayName": "§8 Dark Gray",
+        "canonical": "#7a7a7a",
+        "tonalRamp": [
+          "oklch(15.0% 0.000 89.9)",
+          "oklch(27.0% 0.000 89.9)",
+          "oklch(39.0% 0.000 89.9)",
+          "oklch(51.0% 0.000 89.9)",
+          "oklch(63.0% 0.000 89.9)",
+          "oklch(75.0% 0.000 89.9)",
+          "oklch(85.0% 0.000 89.9)",
+          "oklch(95.0% 0.000 89.9)"
+        ],
+        "note": "Separators; lifted from #555555 for legibility."
+      },
+      "code-3-teal": {
+        "role": "state",
+        "displayName": "§3 Teal",
+        "canonical": "#00aaaa",
+        "tonalRamp": [
+          "oklch(15.0% 0.068 194.8)",
+          "oklch(27.0% 0.091 194.8)",
+          "oklch(39.0% 0.114 194.8)",
+          "oklch(51.0% 0.114 194.8)",
+          "oklch(63.0% 0.114 194.8)",
+          "oklch(75.0% 0.106 194.8)",
+          "oklch(85.0% 0.087 194.8)",
+          "oklch(95.0% 0.068 194.8)"
+        ],
+        "note": "Modpack tag."
+      },
+      "running-green": {
+        "role": "state",
+        "displayName": "Running Green",
+        "canonical": "#1f9d3f",
+        "tonalRamp": [
+          "oklch(15.0% 0.087 146.9)",
+          "oklch(27.0% 0.121 146.9)",
+          "oklch(39.0% 0.155 146.9)",
+          "oklch(51.0% 0.170 146.9)",
+          "oklch(63.0% 0.170 146.9)",
+          "oklch(75.0% 0.143 146.9)",
+          "oklch(85.0% 0.115 146.9)",
+          "oklch(95.0% 0.087 146.9)"
+        ],
+        "note": "Graj block while the game runs."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Instance name in the Start band; wizard/login/updater titles at smaller sizes. Uppercase."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page heads and the server hero. Uppercase."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Instance card names, uppercase; server rows 17px sentence case."
+      },
+      "section": {
+        "displayName": "Section",
+        "purpose": "Module titles beside the coloured header tab. Uppercase."
+      },
+      "stat": {
+        "displayName": "Stat",
+        "purpose": "Live numbers: play time, players, RAM. Tabular."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "All working copy."
+      },
+      "motd": {
+        "displayName": "MOTD",
+        "purpose": "One-line § coloured description under instances and servers."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Silkscreen rank tags, loader tags, step numbers, §k glyphs. Uppercase, unsmoothed."
+      }
+    },
+    "shadows": [
+      {
+        "name": "float",
+        "value": "0 14px 34px rgba(0, 0, 0, .5)",
+        "purpose": "Modals, pop menus, toasts, login card: layers that float above the page."
+      },
+      {
+        "name": "block-bevel",
+        "value": "inset 0 -4px 0 rgba(0, 0, 0, .28)",
+        "purpose": "Lower edge of the Graj block and the Microsoft button; inset 0 -2px 0 when pressed."
+      },
+      {
+        "name": "selected-keyline",
+        "value": "inset 0 0 0 1px var(--accent)",
+        "purpose": "Selected cards and scenes, with an accent border."
+      },
+      {
+        "name": "focus",
+        "value": "outline: 2px solid var(--accent); outline-offset: 2px",
+        "purpose": "Keyboard focus everywhere; inputs use border + 0 0 0 1px var(--accent)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "The only easing curve."
+      },
+      {
+        "name": "control",
+        "value": "150ms",
+        "purpose": "Button, input and nav state changes."
+      },
+      {
+        "name": "rise-stagger",
+        "value": "rise 450ms, 40ms stagger, 10px",
+        "purpose": "List and module entry."
+      },
+      {
+        "name": "modal-pop",
+        "value": "250ms, 8px",
+        "purpose": "Modals and login card entry."
+      },
+      {
+        "name": "k-reveal",
+        "value": "560ms, left to right, per frame",
+        "purpose": "§k glyphs resolve into the instance name on page open and game launch; skipped when motion is reduced."
+      },
+      {
+        "name": "lit-blink",
+        "value": "1.2s steps(2, end) infinite",
+        "purpose": "The §e lit-until-seen mark."
+      },
+      {
+        "name": "stepped",
+        "value": "steps(8) spinner, steps(10) splash bar",
+        "purpose": "Mechanical progress moves in steps."
+      },
+      {
+        "name": "reduced",
+        "value": "prefers-reduced-motion or the in-app switch: durations to 0",
+        "purpose": "All motion collapses; §k shows the final text."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-main",
+        "value": "760px"
+      },
+      {
+        "name": "login-single",
+        "value": "860px"
+      },
+      {
+        "name": "grid-mid",
+        "value": "1000px"
+      },
+      {
+        "name": "quick-strip-3col",
+        "value": "1100px"
+      },
+      {
+        "name": "grid-wide",
+        "value": "1120px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Graj Block",
+      "kind": "button",
+      "refersTo": "button-play",
+      "description": "The one solid accent block per view; launches the selected instance.",
+      "html": "<button class=\"ds-play\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M7 4.5v15l12-7.5z\"/></svg> GRAJ</button>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-play{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 34px;border:0;border-radius:var(--radius-sm);font-family:var(--display);font-stretch:80%;font-size:21px;font-weight:900;letter-spacing:.1em;color:#fff;background:var(--accent);box-shadow:inset 0 -4px 0 rgba(0,0,0,.28);cursor:pointer;transition:background .15s var(--ease);} .ds-play:hover{background:color-mix(in oklab,var(--accent) 86%,#fff);} .ds-play:active{transform:translateY(2px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.28);} .ds-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-play.running{background:#1f9d3f;}"
+    },
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Tinted, outlined default action; tint channel swaps for danger/success.",
+      "html": "<button class=\"ds-btn\">Zmień</button>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-btn{--c:var(--accent-rgb);display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:var(--radius-sm);font:600 13px 'Inter',sans-serif;color:var(--text);background:rgba(var(--c),.16);border:1px solid rgba(var(--c),.55);cursor:pointer;transition:background .15s,border-color .15s,color .15s;} .ds-btn:hover{background:rgba(var(--c),.28);border-color:rgba(var(--c),.9);} .ds-btn:active{transform:translateY(1px);} .ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions and module header links.",
+      "html": "<button class=\"ds-btn-ghost\">Wszystkie</button>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-btn-ghost{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--radius-sm);font:600 13px 'Inter',sans-serif;color:var(--text-dim);background:rgba(255,255,255,.03);border:1px solid var(--line);cursor:pointer;transition:background .15s,border-color .15s,color .15s;} .ds-btn-ghost:hover{color:var(--text);background:rgba(255,255,255,.07);border-color:rgba(var(--accent-rgb),.5);} .ds-btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
+    },
+    {
+      "name": "Rank Tags",
+      "kind": "chip",
+      "refersTo": "rank-tag",
+      "description": "Bracketed Silkscreen status tags, coloured by § code.",
+      "html": "<span class=\"ds-rank\" style=\"--rc:var(--c-e)\">1.4 Beta</span> <span class=\"ds-rank\" style=\"--rc:var(--c-6)\">Event</span> <span class=\"ds-rank\" style=\"--rc:var(--c-a)\">Premium</span> <span class=\"ds-rank\">Non-premium</span> <span class=\"ds-rank\" style=\"--rc:var(--c-c)\">Alpha</span>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-rank{--rc:var(--c-7);display:inline-flex;align-items:center;height:18px;padding:0 5px;border-radius:2px;font-family:var(--pixel);font-size:11px;letter-spacing:.02em;line-height:1;text-transform:uppercase;color:var(--rc);background:color-mix(in srgb,var(--rc) 12%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-rank::before{content:'[';margin-right:1px;color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));} .ds-rank::after{content:']';margin-left:1px;color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));}"
+    },
+    {
+      "name": "Instance MOTD",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Instance name in condensed caps over its § coloured MOTD line and loader tags.",
+      "html": "<div class=\"ds-inst\"><h3>Test Naprawy</h3><div class=\"ds-motd\"><span style=\"color:var(--c-6)\">NeoForge</span><span style=\"color:#7a7a7a\"> – </span><span>własne mody</span></div><div class=\"ds-tags\"><span class=\"ds-ltag\">1.21.1</span><span class=\"ds-ltag\" style=\"--lc:var(--c-6)\"><i></i>NeoForge</span><span class=\"ds-ltag\" style=\"--lc:var(--c-d)\"><i></i>Nore Client</span></div></div>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-inst{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;} .ds-inst h3{margin:0;font-family:var(--display);font-stretch:72%;font-weight:900;font-size:40px;line-height:.95;text-transform:uppercase;letter-spacing:.01em;} .ds-motd{margin-top:8px;font-size:14px;line-height:1.45;color:var(--c-7);} .ds-tags{display:flex;gap:5px;margin-top:12px;} .ds-ltag{--lc:var(--c-7);display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 6px;border-radius:2px;font-family:var(--pixel);font-size:11px;letter-spacing:.02em;text-transform:uppercase;color:color-mix(in srgb,var(--lc) 80%,#fff);background:color-mix(in srgb,var(--lc) 13%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-ltag i{width:5px;height:5px;background:var(--lc);}"
+    },
+    {
+      "name": "Module with Header Tab",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Hairline-boxed module; a 34x3 tab on the top keyline coloured by content.",
+      "html": "<section class=\"ds-mod\" style=\"--tab:var(--c-b)\"><div class=\"ds-mod-t\">Ostatnio grane</div><div class=\"ds-row\">Cave Horror Project <span>1.20.1 · 3 dni temu</span></div><div class=\"ds-row\">Nore Client <span>1.21.1 · 4 dni temu</span></div></section>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-mod{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;transition:border-color .15s;} .ds-mod::before{content:'';position:absolute;left:15px;top:-1px;width:34px;height:3px;background:var(--tab,var(--accent));} .ds-mod:hover{border-color:rgba(var(--accent-rgb),.55);} .ds-mod-t{font-family:var(--display);font-stretch:82%;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--line);} .ds-row{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-top:1px solid var(--line);font-size:13px;} .ds-mod-t+.ds-row{border-top:0;} .ds-row span{color:var(--text-muted);font-size:12px;}"
+    },
+    {
+      "name": "Server List Row",
+      "kind": "custom",
+      "refersTo": "panel",
+      "description": "Icon, name, MOTD, signal, count and § status; lit until seen after a state change.",
+      "html": "<div class=\"ds-srv lit\"><div class=\"ds-ico\"></div><div class=\"ds-txt\"><b>Mój serwer SMP</b><div class=\"ds-motd\"><span style=\"color:var(--c-d)\">Serwer</span> Nore</div></div><div class=\"ds-right\"><div class=\"ds-sig on\"><i></i><i></i><i></i><i></i><i></i></div><b class=\"ds-count\">3<span>/20</span></b><div style=\"color:var(--c-a);font-size:12.5px;font-weight:600\">Włączony</div></div></div>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-srv{position:relative;display:flex;gap:14px;align-items:flex-start;padding:12px 14px;background:var(--surface);border:1px solid rgba(85,255,85,.4);border-radius:var(--radius);} .ds-srv:hover{border-color:rgba(var(--accent-rgb),.55);} .ds-ico{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--accent-deep);flex:none;} .ds-txt{flex:1;min-width:0;} .ds-txt b{font-family:var(--display);font-stretch:90%;font-weight:800;font-size:17px;} .ds-motd{font-size:13.5px;margin-top:2px;color:var(--c-7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .ds-right{display:grid;justify-items:end;gap:4px;min-width:96px;} .ds-sig{display:flex;align-items:flex-end;gap:2px;height:14px;} .ds-sig i{width:3px;background:#3a3346;} .ds-sig i:nth-child(1){height:3px}.ds-sig i:nth-child(2){height:5px}.ds-sig i:nth-child(3){height:8px}.ds-sig i:nth-child(4){height:11px}.ds-sig i:nth-child(5){height:14px} .ds-sig.on i{background:var(--c-a);} .ds-count{font-family:var(--display);font-stretch:80%;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;} .ds-count span{color:var(--text-muted);font-weight:600;} .lit::after{content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;background:var(--c-e);animation:dsLit 1.2s steps(2,end) infinite;} @keyframes dsLit{50%{opacity:.25}} .ds-srv:hover::after{display:none;}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken well field with accent focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Szukaj modów…\">",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-input{height:38px;padding:0 12px;border-radius:var(--radius-sm);background:#0a0710;border:1px solid var(--line);color:var(--text);caret-color:var(--accent);font:400 14px 'Inter',sans-serif;outline:0;transition:border-color .15s;} .ds-input::placeholder{color:var(--text-muted);} .ds-input:hover{border-color:rgba(var(--accent-rgb),.35);} .ds-input:focus-visible,.ds-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}"
+    },
+    {
+      "name": "Rail Navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Grouped nav on the rail field; active item is a 42% accent field; badges are rank tags.",
+      "html": "<nav class=\"ds-rail\"><div class=\"ds-lab\">GRA</div><a class=\"on\">Start</a><a>Instancje <span class=\"ds-b\" style=\"--rc:var(--c-b)\">3</span></a><a>Serwery <span class=\"ds-b\" style=\"--rc:var(--c-e)\">Beta</span></a><a>Halloween <span class=\"ds-b\" style=\"--rc:var(--c-6)\">Event</span></a></nav>",
+      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-rail{width:224px;padding:10px;background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:1px;} .ds-lab{font-size:11px;font-weight:700;letter-spacing:.16em;color:#a89cbd;padding:14px 10px 5px;} .ds-rail a{display:flex;align-items:center;height:34px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:500;color:var(--text-dim);cursor:pointer;transition:background .15s,color .15s;} .ds-rail a:hover{background:rgba(255,255,255,.05);color:var(--text);} .ds-rail a.on{background:color-mix(in oklab,var(--accent) 42%,transparent);color:#fff;} .ds-rail a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-b{--rc:var(--c-7);margin-left:auto;height:18px;padding:0 5px;border-radius:2px;display:inline-flex;align-items:center;font-family:var(--pixel);font-size:11px;text-transform:uppercase;color:var(--rc);background:color-mix(in srgb,var(--rc) 12%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-b::before{content:'[';color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));} .ds-b::after{content:']';color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Server List",
+    "overview": "Nore Launcher is set in the same material a player already reads every session: the multiplayer server list, the chat line and the item tooltip. The ground is the tooltip's violet-black, panels are flat and opaque with a thin violet keyline the way a tooltip border is, and state is not drawn with icons or glows but written in § formatting colours. Rank tags in square brackets ([BETA], [EVENT], [NON-PREMIUM], [1.21.1]) carry status, and every instance and server introduces itself with a one-line MOTD.\n\nThe shell is dense and practical. A solid accent-tinted rail holds the logo, grouped navigation with rank-tag badges, the account chip and a mini-play strip; the main column stacks hairline-boxed modules tightly, each marked with a small coloured header tab on its top keyline. One element is allowed to shout: the solid Graj block. Everything else stays tinted, outlined, and quiet, so the § codes can be read at a glance.\n\nThe signature is §k: obfuscated pixel glyphs that resolve, left to right, into the instance name when the page opens and when the game launches. It is the one moment of theatre, and it switches off with reduced motion. The category default of glowing glass cards over a blurred wallpaper is explicitly rejected; the background scene stays, held back behind a 74 to 97% violet-black shade and opaque panels.",
+    "keyCharacteristics": [
+      "Tooltip violet-black ground, flat opaque panels, 1px violet keyline.",
+      "§ formatting colours used only where they mean a state.",
+      "Rank tags in Silkscreen pixel caps, always bracketed.",
+      "Archivo condensed heavy caps for headings; Inter for all working text.",
+      "One solid colour block per view: Graj.",
+      "Changed rows stay lit until the player has seen them.",
+      "Accent is user-themable; every accent use resolves through the accent tokens."
+    ],
+    "rules": [
+      {
+        "name": "The Codes Carry State Rule",
+        "body": "A § colour appears only where it means its state. Never use §a for decoration or §c for emphasis; if a colour does not mean ready, pending, error, event, info or Nore, it is §7.",
+        "section": "colors"
+      },
+      {
+        "name": "The Themable Accent Rule",
+        "body": "Every accent use goes through `--accent`, `--accent-2`, `--accent-deep`, `--accent-rgb` or `--rail`. A literal violet hex in a component breaks the user's theme (the updater, which runs before settings load, is the one place the default is inlined).",
+        "section": "colors"
+      },
+      {
+        "name": "The Pixel In Brackets Rule",
+        "body": "Silkscreen appears only in rank tags, loader tags, step numbers and the §k glyphs. Never set a heading, button or paragraph in it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Numbers Rule",
+        "body": "Every number that updates (stats, progress, player counts, device-code cells) uses tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tooltip Keyline Rule",
+        "body": "Panels are opaque fills with a 1px violet keyline. No glow, no glass, no backdrop blur, no gradient borders or gradient text.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** give every instance and server a single MOTD line in § codes, §7 by default.",
+      "**Do** express status as a bracketed rank tag in the matching code colour.",
+      "**Do** keep panels opaque surface (#150f1e) with a 1px keyline and 6px corners.",
+      "**Do** mark each module with a 34 by 3px header tab coloured by what it holds.",
+      "**Do** keep Graj the only solid accent block in a view, with the 4px lower bevel.",
+      "**Do** route every accent through the accent tokens and the derived rail so the user's theme recolours the whole shell and the logo.",
+      "**Do** hold a changed row lit in §e until the player hovers or focuses it.",
+      "**Do** use tabular figures for every live number."
+    ],
+    "donts": [
+      "**Don't** use glass: no translucent cards, backdrop blur, glows or gradient borders over the wallpaper.",
+      "**Don't** use gradient text or coloured text shadows.",
+      "**Don't** use a § colour for decoration; a code that does not mean its state is §7.",
+      "**Don't** set headings, buttons or body copy in Silkscreen; it lives inside brackets and §k only.",
+      "**Don't** round past 6px or use pill shapes for tags and dots.",
+      "**Don't** add uppercase tracked kickers above headings; the rank tag and the MOTD line do that job.",
+      "**Don't** fold event styling (pumpkins, frost, event gradients) into base components; it belongs to the event overlays."
+    ]
+  }
+}
