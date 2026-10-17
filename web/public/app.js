@@ -176,9 +176,8 @@
 
   // ------------------------------------------------------------------ wardrobe
   const WARD = {
-    capes: ['/assets/home/ward-capes.webp', 'Animowane peleryny Halloween w Szatni', 'Ubierz się na F5', 'Historia Nore, trzy peleryny Halloween i dziewięć kolorów. Wszystkie animowane, widoczne też na elytrze.'],
-    hat: ['/assets/home/ward-hat.webp', 'Kapelusz Wiedźmy na postaci w widoku F5', 'Kapelusz Wiedźmy', 'Wygięty czubek, pomarańczowa opaska i złota klamra. Chowa się pod hełmem, żeby nic nie przenikało.'],
-    wings: ['/assets/home/ward-wings.webp', 'Skrzydła Nietoperza na postaci w widoku F5', 'Skrzydła Nietoperza', 'Dwie błony na kości i pazur na nadgarstku. Spokojny oddech na ziemi, mocne uderzenia w locie.'],
+    capes: ['/assets/home/ward-capes.webp', 'Animowane peleryny Halloween w Szatni', 'Ubierz się na F5', 'Trzy animowane peleryny Halloween: Dynia, Nietoperz i Pajęczyna. Do tego Kapelusz Wiedźmy i Skrzydła Nietoperza, widoczne w F5.'],
+    history: ['/assets/home/ward-history.webp', 'Animowane peleryny z kolekcji Historia Nore', 'Historia Nore', 'Peleryny z historii klienta i dziewięć kolorów. Wszystkie animowane i widoczne też na elytrze. Widzisz je tylko Ty.'],
   };
   const ptabs = $$('.ptabs button');
   const wimg = $('#ward-img');

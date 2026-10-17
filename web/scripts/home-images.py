@@ -75,6 +75,8 @@ w = Image.open(first('launcher-winter.png'))
 save(w.crop((0, 0, 720, 450)), 'winter.webp', (640, 400))
 animated('halloween.webp', os.path.join(PUB, 'halloween.gif'), 16 / 10, (640, 400))
 animated('ward-capes.webp', os.path.join(PUB, 'halloween.gif'), 1, (900, 900))
+animated('ward-history.webp', os.path.join(PUB, 'historia-nore.gif'), 1, (900, 900))
+# in-game F5 shots of the hat and wings, when captured
 for name, src, focus in (('ward-hat.webp', 'wardrobe-hat.png', (0.5, 0.35)), ('ward-wings.webp', 'wardrobe-wings.png', (0.5, 0.45))):
-    p = first(src, 'wardrobe-f5.png')
-    still(name, p, 1, (900, 900), focus)
+    if os.path.exists(os.path.join(SRC, src)):
+        still(name, os.path.join(SRC, src), 1, (900, 900), focus)
