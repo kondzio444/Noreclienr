@@ -58,13 +58,16 @@ public final class Mesh {
     /** Adds a quad (points p[i] = {x, y, z}, uv[i] = {u, v}) through the current transform. */
     public Mesh quad(float[][] p, float[][] uv) {
         Quad q = new Quad();
-        for (int i = 0; i < 4; i++) {
-            float[] a = p[i];
+        // a mirroring transform (scale(-1, ...)) flips the winding; walk the corners backwards to keep it
+        float det = m[0] * (m[5] * m[10] - m[6] * m[9]) - m[1] * (m[4] * m[10] - m[6] * m[8]) + m[2] * (m[4] * m[9] - m[5] * m[8]);
+        for (int k = 0; k < 4; k++) {
+            int i = det < 0 ? (4 - k) % 4 : k;
+            float[] a = p[k];
             q.x[i] = m[0] * a[0] + m[1] * a[1] + m[2] * a[2] + m[3];
             q.y[i] = m[4] * a[0] + m[5] * a[1] + m[6] * a[2] + m[7];
             q.z[i] = m[8] * a[0] + m[9] * a[1] + m[10] * a[2] + m[11];
-            q.u[i] = uv[i][0];
-            q.v[i] = uv[i][1];
+            q.u[i] = uv[k][0];
+            q.v[i] = uv[k][1];
         }
         // normal from the two diagonals (robust for slightly non-planar quads)
         float ax = q.x[2] - q.x[0], ay = q.y[2] - q.y[0], az = q.z[2] - q.z[0];
