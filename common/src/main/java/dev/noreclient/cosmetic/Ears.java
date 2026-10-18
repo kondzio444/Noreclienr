@@ -137,6 +137,14 @@ final class Ears extends Item {
         g.setPaint(new GradientPaint(64, 0, new Color(0, 0, 0, 0), 96, 0, new Color(0, 0, 0, 70), true));
         g.fillRect(64, 32, 64, 96);
         Paint.fur(g, 64, 40, 64, 88, fox ? 0xFFFFFF : 0xF8E8EA, 0, -1, 9, fox ? 420 : 160, 21);
+        // the opening is framed by the outer fur: a band along both edges and the (dark, for the fox) tip
+        for (int i = 0; i < 2; i++) {
+            int x0 = i == 0 ? 64 : 112;
+            g.setPaint(new GradientPaint(i == 0 ? 64 : 128, 0, Paint.c(Paint.shade(color, 0.95f)), i == 0 ? 80 : 112, 0, Paint.c(Paint.shade(color, 0.95f), 0)));
+            g.fillRect(x0, 32, 16, 96);
+        }
+        g.setPaint(new GradientPaint(0, 32, Paint.c(fox ? tip : Paint.shade(color, 0.95f)), 0, 60, Paint.c(fox ? tip : color, 0)));
+        g.fillRect(64, 32, 64, 28);
         // the rim of the opening: a few outer-colour hairs at the edges
         g.setStroke(new BasicStroke(1.2f));
         for (int i = 0; i < 90; i++) {
