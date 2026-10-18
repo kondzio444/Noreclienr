@@ -158,6 +158,9 @@ final class Crown extends Item {
     }
 
     @Override
+    protected float topY(Worn w) { return -7.7f - (("diadem".equals(w.variant) ? 4.5f : 7.6f) * w.scale); }
+
+    @Override
     protected float[] previewFrame() { return new float[]{0, -11, 0, 13}; }
 
     // ---------------------------------------------------------------- texture (256x128)

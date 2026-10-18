@@ -46,6 +46,9 @@ public abstract class Item {
     /** Adds this frame's geometry. */
     protected abstract void build(Build b);
 
+    /** Highest point of a hat (model pixels, head space, y up is negative), for things floating above it. */
+    protected float topY(Worn w) { return -8; }
+
     /** Extra vertical room for the item in the small grid preview (model pixels), and its centre. */
     protected float[] previewFrame() { return new float[]{0, -4, 0, 12}; }
 
@@ -59,6 +62,8 @@ public abstract class Item {
         public final float s;
         /** Previews (grid icons) have no player: items may skip parts hidden by the head. */
         public final boolean preview;
+        /** Top of whatever is on the head (the head itself or the hat worn with it), for a halo to float above. */
+        public float headTop = -8;
         final Mesh head = new Mesh(), body = new Mesh(), glowHead = new Mesh(), glowBody = new Mesh();
 
         Build(Worn worn, Wearer w, float t, boolean preview) {

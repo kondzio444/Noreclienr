@@ -198,6 +198,10 @@ public final class Wardrobe {
             for (Iterator<Wearer> it = WEARERS.values().iterator(); it.hasNext(); ) if (now - it.next().seen > 30_000_000_000L) it.remove();
         }
         boolean secretOk = who != LOCAL || SecretEars.unlocked();
+        float headTop = -8;
+        Worn hat = look.get(Slot.HAT);
+        Item hatItem = hat == null ? null : Items.get(hat.id);
+        if (hatItem != null && !s.helmet) headTop = Math.min(-8, hatItem.topY(hat));
         List<Piece> out = new ArrayList<Piece>(4);
         for (Map.Entry<Slot, Worn> e : look.slots().entrySet()) {
             Slot slot = e.getKey();
@@ -211,16 +215,17 @@ public final class Wardrobe {
             if (worn.anim) w.advance(slot, worn.speed);
             Textures.Atlas atlas = Textures.get(item, worn);
             if (atlas == null) continue;
-            Item.Build b = build(item, worn, w, false);
+            Item.Build b = build(item, worn, w, false, headTop);
             emit(out, item, b, atlas.tex);
         }
         return out;
     }
 
     /** Runs the item's builder with the right clock (frozen and at rest when its animation is off). */
-    static Item.Build build(Item item, Worn worn, Wearer w, boolean preview) {
+    static Item.Build build(Item item, Worn worn, Wearer w, boolean preview, float headTop) {
         Wearer src = worn.anim ? w : Wearer.REST;
         Item.Build b = new Item.Build(worn, src, worn.anim ? src.phase[item.slot.ordinal()] : 0, preview);
+        b.headTop = headTop;
         try {
             item.build(b);
         } catch (Throwable t) {
@@ -314,6 +319,6 @@ public final class Wardrobe {
         WearerState s = new WearerState();
         w.update(s, System.nanoTime());
         w.phase[item.slot.ordinal()] = time() * worn.speed;
-        return build(item, worn, w, true);
+        return build(item, worn, w, true, -8);
     }
 }

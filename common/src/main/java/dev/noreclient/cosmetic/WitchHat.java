@@ -144,6 +144,9 @@ final class WitchHat extends Item {
     }
 
     @Override
+    protected float topY(Worn w) { return -21f * w.scale - 8.65f * (1 - w.scale); }
+
+    @Override
     protected float[] previewFrame() { return new float[]{0, -16, 0, 22}; }
 
     private static float[] down(float[] p, float d) { return new float[]{p[0], p[1] + d, p[2]}; }

@@ -151,6 +151,9 @@ final class WinterHat extends Item {
     }
 
     @Override
+    protected float topY(Worn w) { return -3.5f - 11.5f * w.scale; }
+
+    @Override
     protected float[] previewFrame() { return new float[]{0, -6, 0, 16}; }
 
     // ---------------------------------------------------------------- texture (256x256)

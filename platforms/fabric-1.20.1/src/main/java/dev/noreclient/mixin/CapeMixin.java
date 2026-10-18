@@ -14,7 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class CapeMixin {
     @Inject(method = {"getCapeTexture", "getElytraTexture"}, at = @At("RETURN"), cancellable = true)
     private void noreclient$cape(CallbackInfoReturnable<Identifier> cir) {
-        if (GameImpl.localCape == null || (Object) this != MinecraftClient.getInstance().player) return;
-        cir.setReturnValue(GameImpl.localCape);
+        // the local player wears the cape from the Cosmetics module, other Nore players the one from the Nore Hub
+        net.minecraft.util.Identifier capeId;
+        if ((Object) this == MinecraftClient.getInstance().player) capeId = GameImpl.localCape;
+        else {
+            dev.noreclient.api.TextureRef t = dev.noreclient.cosmetic.Wardrobe.capeOf(((net.minecraft.entity.player.PlayerEntity) (Object) this).getGameProfile().getName(),
+                    (int) (System.currentTimeMillis() / 150 % dev.noreclient.util.Capes.FRAMES));
+            capeId = t == null ? null : (net.minecraft.util.Identifier) t.handle;
+        }
+        if (capeId == null) return;
+        cir.setReturnValue(capeId);
     }
 }
