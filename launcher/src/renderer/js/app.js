@@ -48,7 +48,6 @@ const NAV = {
   ],
   'nav-social': [
     { id: 'friends', label: 'Znajomi', icon: 'users' },
-    { id: 'chat', label: 'Czat i głos', icon: 'activity' },
     { id: 'gallery', label: 'Galeria', icon: 'monitor' },
     { id: 'shop', label: 'Sklep', icon: 'crown', badge: 'WKRÓTCE' },
   ],
@@ -62,54 +61,107 @@ const NAV = {
 function buildNav() {
   for (const [id, items] of Object.entries(NAV)) {
     const nav = document.getElementById(id);
-    nav.innerHTML = '<span class="indicator"></span>' + items.map(it =>
+    nav.innerHTML = items.map(it =>
       `<a data-page="${it.id}">${icon(it.icon)}<span>${it.label}</span><span class="badge" data-badge="${it.id}" ${it.badge ? '' : 'hidden'}>${it.badge || ''}</span></a>`).join('');
     $$('a', nav).forEach(a => { a.title = a.textContent.trim(); a.addEventListener('click', () => go(a.dataset.page)); });
   }
+  // one active field for the whole rail, so it can glide between the groups
+  if (!$('.rail-ind')) $('.sb-scroll').prepend(el('<span class="rail-ind" aria-hidden="true"></span>'));
 }
 
+const DETAIL_PAGES = { instance: 'instances', server: 'servers' };
+const navKey = (page) => DETAIL_PAGES[page] || page;
+
+let indY = null;
 function moveIndicator() {
-  for (const id of Object.keys(NAV)) {
-    const nav = document.getElementById(id);
-    const ind = $('.indicator', nav);
-    const key = App.page === 'instance' ? 'instances' : App.page === 'server' ? 'servers' : App.page;
-    const active = $(`a[data-page="${key}"]`, nav);
-    $$('a', nav).forEach(a => a.classList.toggle('active', a === active));
-    if (active) {
-      ind.style.opacity = 1;
-      ind.style.transform = `translateY(${active.offsetTop}px)`;
-    } else {
-      ind.style.opacity = 0;
-    }
+  const scroll = $('.sb-scroll');
+  const ind = $('.rail-ind', scroll);
+  const active = $(`a[data-page="${navKey(App.page)}"]`, scroll);
+  $$('.nav a', scroll).forEach(a => a.classList.toggle('active', a === active));
+  if (!ind) return;
+  if (!active || !active.offsetParent) { ind.style.opacity = 0; indY = null; return; }
+  const y = active.getBoundingClientRect().top - scroll.getBoundingClientRect().top + scroll.scrollTop;
+  ind.style.height = active.offsetHeight + 'px';
+  ind.style.opacity = 1;
+  // glide from wherever the field is right now (interruptible), with a small spring settle
+  const from = indY == null ? null : (() => { const m = new DOMMatrixReadOnly(getComputedStyle(ind).transform); return m.m42; })();
+  ind.getAnimations().forEach(a => a.cancel());
+  ind.style.transform = `translateY(${y}px)`;
+  if (from != null && Math.abs(from - y) > 0.5) {
+    const dist = Math.abs(y - from);
+    Motion.animate(ind, [{ transform: `translateY(${from}px)` }, { transform: `translateY(${y}px)` }],
+      { duration: Math.min(Motion.ms('--dur-page') + dist * 0.25, 460), easing: Motion.ease('--ease-spring') });
   }
+  indY = y;
+}
+
+function setBadge(b, text) {
+  if (!b) return;
+  const t = String(text);
+  if (b.textContent !== t && !b.hidden && b.textContent) Motion.bump(b);
+  b.textContent = t;
 }
 
 function renderBadges() {
   const b = $('[data-badge="instances"]');
-  if (b && App.state) { b.textContent = App.state.instances.length; b.hidden = false; }
+  if (b && App.state) { setBadge(b, App.state.instances.length); b.hidden = false; }
   const c = $('[data-badge="console"]');
   if (c) { c.hidden = !App.running; c.textContent = 'LIVE'; }
 }
 
+// ------------------------------------------------------------------ navigation: short, directional, interruptible
+
+const PAGE_ORDER = Object.values(NAV).flat().map(n => n.id);
+
+/** down/up follow the rail order; in/out drill into or back out of a detail page; '' just fades. */
+function pageDir(from, to) {
+  if (!from || from === to) return '';
+  if (DETAIL_PAGES[to] && DETAIL_PAGES[to] === from) return 'in';
+  if (DETAIL_PAGES[from] && DETAIL_PAGES[from] === to) return 'out';
+  if (DETAIL_PAGES[to] && !DETAIL_PAGES[from]) return 'in';
+  const a = PAGE_ORDER.indexOf(navKey(from)), b = PAGE_ORDER.indexOf(navKey(to));
+  if (a < 0 || b < 0 || a === b) return '';
+  return b > a ? 'down' : 'up';
+}
+
+/** The leaving page stays on screen as an inert ghost for a moment while the new page is already live. */
+function ghostPage(page, dir) {
+  const view = $('#view'), main = $('#main');
+  document.querySelectorAll('.page-ghost').forEach(g => g.remove()); // interrupted: drop the older ghost at once
+  if (!page || Motion.off()) { page && page.remove(); return; }
+  const vr = view.getBoundingClientRect(), mr = main.getBoundingClientRect();
+  const ghost = el('<div class="page-ghost" aria-hidden="true"></div>');
+  Object.assign(ghost.style, { left: (vr.left - mr.left) + 'px', top: (vr.top - mr.top) + 'px', width: view.clientWidth + 'px', height: view.clientHeight + 'px' });
+  const cs = getComputedStyle(view);
+  page.style.margin = `${cs.paddingTop} ${cs.paddingRight} 0 ${cs.paddingLeft}`;
+  page.style.transform = `translateY(${-view.scrollTop}px)`;
+  page.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  page.inert = true;
+  ghost.appendChild(page);
+  main.appendChild(ghost);
+  const d = Motion.px(6);
+  const shift = { down: `0 ${-d}px`, up: `0 ${d}px`, in: `${-d * 1.5}px 0`, out: `${d * 1.5}px 0` }[dir] || '0 0';
+  const a = Motion.animate(ghost, [{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: shift }],
+    { duration: Motion.ms('--dur-exit'), easing: Motion.ease('--ease-in'), fill: 'forwards' });
+  if (a) a.onfinish = () => ghost.remove(); else ghost.remove();
+}
+
 let cleanup = null;
-let navigating = false;
 
 async function go(page, opts) {
-  if (navigating) return;
+  if (page === 'chat') page = 'friends'; // the chat lives inside Znajomi now
   const view = $('#view');
-  const current = $('.page', view);
+  const current = $(':scope > .page', view);
+  const from = App.page;
+  const dir = current ? pageDir(from, page) : '';
   App.page = page;
   moveIndicator();
-  if (current) {
-    navigating = true;
-    current.classList.add('leaving');
-    await new Promise(r => setTimeout(r, 160));
-    navigating = false;
-  }
   if (cleanup) { try { cleanup(); } catch { /* ignore */ } cleanup = null; }
+  ghostPage(current, dir);
   view.innerHTML = '';
   view.scrollTop = 0;
   const root = el('<div class="page"></div>');
+  if (dir) root.dataset.dir = dir;
   view.appendChild(root);
   $('#bg').classList.toggle('dim', page !== 'home');
   const fn = Pages[page] || Pages.home;

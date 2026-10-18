@@ -88,8 +88,10 @@ function popMenu(anchor, items) {
   document.body.appendChild(m);
   const mw = m.offsetWidth, mh = m.offsetHeight;
   m.style.left = Math.min(window.innerWidth - mw - 10, r.right - mw) + 'px';
-  m.style.top = (r.bottom + mh + 8 > window.innerHeight ? r.top - mh - 6 : r.bottom + 6) + 'px';
-  const close = () => { m.classList.add('out'); setTimeout(() => m.remove(), 150); document.removeEventListener('mousedown', outside, true); };
+  const above = r.bottom + mh + 8 > window.innerHeight;
+  m.style.top = (above ? r.top - mh - 6 : r.bottom + 6) + 'px';
+  m.style.setProperty('--origin', `${above ? 'bottom' : 'top'} right`); // it grows out of its button
+  const close = () => { m.classList.add('out'); setTimeout(() => m.remove(), Motion.off() ? 0 : Motion.ms('--dur-exit') + 20); document.removeEventListener('mousedown', outside, true); };
   const outside = (e) => { if (!m.contains(e.target)) close(); };
   setTimeout(() => document.addEventListener('mousedown', outside, true), 0);
   $$('button', m).forEach(b => b.onclick = () => { close(); items[+b.dataset.k].action(); });
