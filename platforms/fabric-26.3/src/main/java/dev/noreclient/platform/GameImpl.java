@@ -573,7 +573,7 @@ public final class GameImpl implements Game {
 
     @Override
     public void openChat(String text) {
-        if (p() != null) mc().setScreen(new net.minecraft.client.gui.screens.ChatScreen(text, false));
+        if (p() != null) mc().gui.setScreen(new net.minecraft.client.gui.screens.ChatScreen(text, false));
     }
 
     @Override
