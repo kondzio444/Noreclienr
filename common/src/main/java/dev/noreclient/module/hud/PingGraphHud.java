@@ -16,7 +16,7 @@ public class PingGraphHud extends HudModule {
     private int count, head, tick;
 
     public PingGraphHud() {
-        super("Ping Graph", "Wykres pingu z ostatniej minuty (średnia i skoki)", 1.0f, 0.92f);
+        super("Ping Graph", "Wykres pingu z ostatniej minuty (średnia i skoki)", 1.0f, 0.62f);
         width = 110;
         height = 38;
     }
