@@ -261,13 +261,14 @@ function renderPlayBlock(btn, inst) {
   btn.style.setProperty('--p', frac == null ? 0 : frac.toFixed(3));
   const state = p ? 'busy' : running ? 'run' : 'idle';
   const label = $('.pl-label', btn);
+  const pctText = frac == null ? '' : Math.round(frac * 100) + '%';
   if (btn.dataset.state !== state) {
     btn.dataset.state = state;
     btn.setAttribute('aria-label', state === 'busy' ? 'Przygotowanie gry' : state === 'run' ? 'Zatrzymaj grę' : 'Graj');
-    Motion.swap(label, state === 'busy' ? 'PRZYGOTOWANIE <span class="pl-pct"></span>' : state === 'run' ? '<i class="pl-live"></i> ZATRZYMAJ' : `${icon('play')} GRAJ`, state === 'idle' ? -1 : 1);
+    Motion.swap(label, state === 'busy' ? `PRZYGOTOWANIE <span class="pl-pct">${pctText}</span>` : state === 'run' ? '<i class="pl-live"></i> ZATRZYMAJ' : `${icon('play')} GRAJ`, state === 'idle' ? -1 : 1);
   }
   const pct = $('.pl-pct', label);
-  if (pct) pct.textContent = frac == null ? '' : Math.round(frac * 100) + '%';
+  if (pct) pct.textContent = pctText;
 }
 
 // ------------------------------------------------------------------ sidebar mini player

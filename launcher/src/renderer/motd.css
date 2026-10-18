@@ -354,6 +354,8 @@ body.halloween ::-webkit-scrollbar-thumb { background: rgba(var(--accent-rgb), .
 
 /* §k glyphs in the pixel face */
 .mk { font-family: var(--pixel); font-weight: 400; -webkit-font-smoothing: none; letter-spacing: 0; opacity: 1; color: var(--accent-2); }
+/* pixel glyphs are wider than the condensed caps they stand in for: scaled so a scrambling name keeps its width and never wraps */
+h1 .mk, h2 .mk, h3 .mk { font-size: .7em; line-height: 1; }
 
 /* Serwery as a server list: icon, name, MOTD, signal and players on the right */
 .srv2-list { display: flex; flex-direction: column; gap: 8px; }

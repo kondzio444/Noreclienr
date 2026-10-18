@@ -32,7 +32,9 @@ body[data-trans="slide"] .page[data-dir="down"], body[data-trans="slide"] .page[
 body[data-trans="slide"] .page[data-dir="up"], body[data-trans="slide"] .page[data-dir="out"] { --px: calc(var(--shift-page) * -1.8); --py: 0px; }
 body[data-trans="zoom"] .page { animation-name: pageZoom; }
 body[data-trans="blur"] .page { animation-name: pageBlur; }
-.page-ghost { position: absolute; z-index: 2; pointer-events: none; overflow: hidden; }
+/* the ghost sits under the live page, so the arriving page (fading in) and the leaving one crossfade */
+#view { position: relative; z-index: 1; }
+.page-ghost { position: absolute; z-index: 0; pointer-events: none; overflow: hidden; }
 .page-ghost > .page { animation: none; }
 
 /* lists arrive as lists: a short rise, 30 ms apart, capped so a long list never drags */
@@ -115,7 +117,7 @@ input[type=range].slider:active::-webkit-slider-thumb { transform: scale(1.15); 
 .mini-play .mp-bar { width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
 .mini-play:not(.busy) .mp-bar { opacity: 0; }
 .mini-play .meta span { transition: color var(--dur-base); }
-.srv2-sig i { transition: background-color var(--dur-base) var(--ease-out); }
+.srv2-sig i { transition: background-color var(--dur-base) var(--ease-out); transform-origin: bottom; }
 .srv2-sig.on i:nth-child(2) { transition-delay: 40ms; } .srv2-sig.on i:nth-child(3) { transition-delay: 80ms; }
 .srv2-sig.on i:nth-child(4) { transition-delay: 120ms; } .srv2-sig.on i:nth-child(5) { transition-delay: 160ms; }
 .srv2-st, .srv2-count, .srv2-row { transition: color var(--dur-base), border-color var(--dur-base); }

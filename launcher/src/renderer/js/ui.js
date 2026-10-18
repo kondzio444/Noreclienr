@@ -149,7 +149,7 @@ const Motion = (() => {
     if (from == null || from === to || off() || reduced() || !isFinite(from) || !isFinite(to)) { node._shown = to; node.textContent = fmt(to); return; }
     const d = dur || ms('--dur-focal'), t0 = performance.now();
     const step = (now) => {
-      const p = Math.min(1, (now - t0) / d), e = 1 - Math.pow(1 - p, 4);
+      const p = Math.max(0, Math.min(1, (now - t0) / d)), e = 1 - Math.pow(1 - p, 4); // rAF time can precede t0
       node._shown = from + (to - from) * e;
       node.textContent = fmt(node._shown);
       if (p < 1) node._numRaf = requestAnimationFrame(step);

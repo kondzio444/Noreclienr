@@ -142,7 +142,7 @@ function ghostPage(page, dir) {
   const d = Motion.px(6);
   const shift = { down: `0 ${-d}px`, up: `0 ${d}px`, in: `${-d * 1.5}px 0`, out: `${d * 1.5}px 0` }[dir] || '0 0';
   const a = Motion.animate(ghost, [{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: shift }],
-    { duration: Motion.ms('--dur-exit'), easing: Motion.ease('--ease-in'), fill: 'forwards' });
+    { duration: Motion.ms('--dur-exit'), easing: Motion.ease('--ease-out'), fill: 'forwards' }); // drops fast: it is under the new page
   if (a) a.onfinish = () => ghost.remove(); else ghost.remove();
 }
 
