@@ -24,7 +24,7 @@ public class InfoPanelHud extends HudModule {
     private final List<String[]> rows = new ArrayList<String[]>();
 
     public InfoPanelHud() {
-        super("Info Panel", "Najważniejsze dane z F3 w jednym, małym panelu", 0.0f, 0.3f);
+        super("Info Panel", "Najważniejsze dane z F3 w jednym, małym panelu", 0.0f, 0.5f);
     }
 
     private static String facing(String f, float yaw) {

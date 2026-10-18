@@ -96,6 +96,9 @@ public class Waypoints extends Module {
         }
         data.set(b.toString());
         parsed = data.get();
+        // waypoints are data, not preferences: write them now instead of only when the game closes
+        dev.noreclient.NoreClient c = dev.noreclient.NoreClient.get();
+        if (c != null) c.config().save();
     }
 
     /** Server address or singleplayer world folder, so every world keeps its own points. */

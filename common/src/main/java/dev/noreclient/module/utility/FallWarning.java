@@ -23,7 +23,7 @@ public class FallWarning extends Module {
 
     /** Damage in half hearts for landing now (no armour enchantments or effects counted). */
     private float damage() {
-        if (!inGame() || game().flying() || game().fallFlying() || game().swimming() || game().velocityY() > -0.1) return 0;
+        if (!inGame() || game().invulnerable() || game().flying() || game().fallFlying() || game().swimming() || game().velocityY() > -0.1) return 0;
         return (float) Math.max(0, Math.ceil(game().fallDistance() - 3));
     }
 

@@ -304,6 +304,9 @@ public interface Game {
     /** Blocks fallen since the player last stood on the ground. */
     default float fallDistance() { return 0; }
 
+    /** Creative or spectator: no fall damage, no hunger. */
+    default boolean invulnerable() { return false; }
+
     /** Direction of the last hit relative to where the player looks (vanilla damage tilt, degrees). */
     default float hurtDirection() { return 0; }
 

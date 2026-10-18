@@ -575,6 +575,7 @@ public final class GameImpl implements Game {
 
     @Override public int selectedSlot() { return p() == null ? 0 : p().getInventory().selectedSlot; }
     @Override public float fallDistance() { return p() == null ? 0 : (float) p().fallDistance; }
+    @Override public boolean invulnerable() { return p() != null && p().getAbilities().invulnerable; }
     @Override public float hurtDirection() { return p() == null ? 0 : p().getDamageTiltYaw(); }
     @Override public void requestAttention() { org.lwjgl.glfw.GLFW.glfwRequestWindowAttention(windowHandle()); }
     @Override public boolean windowFocused() { return mc().isWindowFocused(); }

@@ -36,7 +36,7 @@ public class TotemPopHud extends HudModule {
     private ItemInfo icon;
 
     public TotemPopHud() {
-        super("Totem Pops", "Licznik zużytych totemów graczy w pobliżu", 0.0f, 0.36f);
+        super("Totem Pops", "Licznik zużytych totemów graczy w pobliżu", 0.22f, 0.62f);
         width = 100;
         height = 30;
     }

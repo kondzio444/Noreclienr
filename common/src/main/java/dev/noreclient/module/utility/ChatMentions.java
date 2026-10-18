@@ -49,13 +49,24 @@ public class ChatMentions extends Module {
         return false;
     }
 
-    /** Your own nick in someone else's message. */
+    /**
+     * Your own nick in someone else's chat line. The nick has to come after the sender part
+     * ("<Gracz> ", "Gracz: ", "Gracz » "), so command feedback and death messages that merely
+     * contain your name ("Teleported Tester to ...") do not count.
+     */
     public boolean isMentionOfMe(String text) {
         String me = game().username();
         if (me == null || me.isEmpty()) return false;
         me = me.toLowerCase(Locale.ROOT);
         String p = plain(text);
-        return !ownMessage(p, me) && containsWord(p, me);
+        if (ownMessage(p, me)) return false;
+        int sep = -1;
+        for (String s : new String[]{"> ", ": ", "» "}) {
+            int i = p.indexOf(s);
+            if (i > 0 && i < 48 && (sep < 0 || i < sep)) sep = i;
+        }
+        if (sep < 0 || containsWord(p.substring(0, sep), me)) return false;
+        return containsWord(p.substring(sep), me);
     }
 
     public boolean isMention(String text) {
