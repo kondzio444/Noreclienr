@@ -585,7 +585,14 @@ public final class GameImpl implements Game {
     @Override public float fallDistance() { return p() == null ? 0 : (float) p().fallDistance; }
     @Override public boolean invulnerable() { return p() != null && p().getAbilities().invulnerable; }
     @Override public float hurtDirection() { return p() == null ? 0 : p().getHurtDir(); }
-    @Override public void requestAttention() { org.lwjgl.glfw.GLFW.glfwRequestWindowAttention(windowHandle()); }
+    @Override
+    public void requestAttention() {
+        // 26.3 runs on SDL: SDL_FlashWindow(window, SDL_FLASH_UNTIL_FOCUSED = 2), looked up so a missing binding is harmless
+        try {
+            Class.forName("org.lwjgl.sdl.SDLVideo").getMethod("SDL_FlashWindow", long.class, int.class).invoke(null, windowHandle(), 2);
+        } catch (Throwable ignored) {
+        }
+    }
     @Override public boolean windowFocused() { return mc().isWindowActive(); }
 
     @Override
