@@ -31,6 +31,7 @@ const DEFAULTS = {
     updateChannel: 'all', // all (alpha/beta too) | beta | release – mods and modpacks
     notifyContentUpdates: true,
     discordAppId: DISCORD_APP_ID,
+    hubPresence: true, // Nore Hub: other Nore players see that you play with Nore (hub.js)
     animations: true,
     accent: '#ff8a1f',
     // appearance (Settings → Wygląd)

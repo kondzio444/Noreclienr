@@ -38,6 +38,7 @@ const doctor = require('./doctor');
 const social = require('./social');
 const chat = require('./chat');
 const chatBridge = require('./chat-bridge');
+const hub = require('./hub');
 const keys = require('./keys');
 
 const FABRIC_API_ID = 'P7dR8mSH';
@@ -254,6 +255,7 @@ ipcMain.handle('settings:set', (e, patch) => {
   if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
   if ('autoUpdate' in patch) updater.configure(store.get().settings);
   if ('updateChannel' in patch || 'notifyContentUpdates' in patch) scheduleUpdateChecks(1500);
+  if ('hubPresence' in patch) hub.refresh();
   return store.get().settings;
 });
 
@@ -664,6 +666,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
         const played = Date.now() - started;
         instances.update(inst.id, { playTime: (instances.get(inst.id).playTime || 0) + played });
         game = null;
+        hub.gameStopped();
         discord.setActivity(LAUNCHER_ACTIVITY);
         send('game:state', { running: null, code: killed ? 0 : code });
         if (win) { win.show(); win.focus(); }
@@ -671,6 +674,8 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
       },
     });
     game = { child, instanceId: inst.id, started, visible: false };
+    // Nore Hub: other Nore players see this one (in the background, never delays the game)
+    if (inst.noreClient) hub.gameStarted(account, (line) => send('log', { line: `[Nore Hub] ${line}`, stream: 'out' }));
     // Nore Client shows its own, richer presence from inside the game
     discord.setActivity(inst.modpack === 'nore' ? null : {
       details: `Gra w Minecraft ${inst.mcVersion}`, state: inst.name, start: Math.floor(started / 1000),

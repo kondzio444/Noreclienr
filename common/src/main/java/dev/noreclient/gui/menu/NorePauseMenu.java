@@ -40,8 +40,7 @@ public class NorePauseMenu extends NoreScreen {
                 .add("Edytor HUD", "H", SideNav.HUD, SideNav.NORMAL, () -> game().openScreen(new HudEditorScreen(self)))
                 .add("Postępy", null, SideNav.CHART, SideNav.NORMAL, () -> game().openAdvancements(self))
                 .add("Zrzuty ekranu", null, SideNav.CAMERA, SideNav.NORMAL, () -> game().openScreen(new ScreenshotsScreen(self)))
-                .add("Znajomi", null, SideNav.PERSON, SideNav.NORMAL, () -> game().openScreen(new FriendsScreen(self)))
-                .add(dev.noreclient.util.LauncherChat.unread() > 0 ? "Czat (" + dev.noreclient.util.LauncherChat.unread() + ")" : "Czat znajomych", "Y", SideNav.PERSON, SideNav.NORMAL, () -> game().openScreen(new FriendsChatScreen(self)))
+                .add(dev.noreclient.util.LauncherChat.unread() > 0 ? "Znajomi (" + dev.noreclient.util.LauncherChat.unread() + ")" : "Znajomi i czat", "Y", SideNav.PERSON, SideNav.NORMAL, () -> game().openScreen(new FriendsScreen(self)))
                 .add("Kosmetyki", null, SideNav.STAR, SideNav.NORMAL, () -> game().openScreen(new CosmeticsScreen(self)))
                 .add("Opcje", null, SideNav.GEAR, SideNav.NORMAL, () -> game().openOptions(self));
         if (game().canOpenLan()) nav.add("Otwórz w LAN", null, SideNav.WIFI, SideNav.NORMAL, () -> game().openLan(self));

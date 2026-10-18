@@ -96,6 +96,8 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
   jvm.push(`-Dnoreclient.session=${sessionTicket()}`);
   jvm.push(`-Dnoreclient.discordAppId=${settings.discordAppId || DISCORD_APP_ID}`);
   if (settings.chatBridge) jvm.push(`-Dnoreclient.chatBridge=${settings.chatBridge}`);
+  // the Nore Hub address is built into the mod; NORE_HUB points the launcher and the game elsewhere
+  if (process.env.NORE_HUB) jvm.push(`-Dnoreclient.hub=${process.env.NORE_HUB.replace(/\/+$/, '')}`);
   const extra = (settings.jvmArgs || '').trim();
   if (extra) jvm.push(...extra.split(/\s+/));
   if (process.platform === 'darwin') jvm.push('-XstartOnFirstThread');

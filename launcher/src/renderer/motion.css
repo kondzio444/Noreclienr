@@ -1,0 +1,205 @@
+/* ==========================================================================
+   Nore Launcher – motion. Loaded after motd.css. Every duration and curve comes from the
+   motion tokens in styles.css :root (js/ui.js Motion reads the same tokens).
+   Rules: transform and opacity only for movement; things leave faster than they arrive;
+   content is visible by default (fill-mode backwards, never a hidden resting state);
+   prefers-reduced-motion keeps the fades and colour changes but drops the travel.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ keyframes */
+@keyframes rise { from { opacity: 0; transform: translateY(var(--shift-rise)); } }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translateY(var(--shift-pop)) scale(.985); } }
+@keyframes bump { 40% { transform: scale(1.22); } }
+@keyframes pageIn { from { opacity: 0; transform: translate(var(--px, 0px), var(--py, 0px)); } }
+@keyframes pageZoom { from { opacity: 0; transform: scale(.985); } }
+@keyframes pageBlur { from { opacity: 0; filter: blur(6px); } }
+@keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+
+/* ------------------------------------------------------------------ pages: short, directional, interruptible
+   app.js go() sets data-dir: down/up follow the rail order, in/out drill into or back out of a detail page.
+   The page that leaves is a ghost (.page-ghost) faded by Motion while the new one is already live. */
+#main { isolation: isolate; }
+.page { animation: pageIn var(--dur-page) var(--ease-out) backwards; }
+.page[data-dir="down"] { --py: var(--shift-page); }
+.page[data-dir="up"] { --py: calc(var(--shift-page) * -1); }
+.page[data-dir="in"] { --px: calc(var(--shift-page) * 1.8); }
+.page[data-dir="out"] { --px: calc(var(--shift-page) * -1.8); }
+body[data-trans="fade"] .page { --px: 0px !important; --py: 0px !important; }
+body[data-trans="slide"] .page[data-dir="down"], body[data-trans="slide"] .page[data-dir="in"] { --px: calc(var(--shift-page) * 1.8); --py: 0px; }
+body[data-trans="slide"] .page[data-dir="up"], body[data-trans="slide"] .page[data-dir="out"] { --px: calc(var(--shift-page) * -1.8); --py: 0px; }
+body[data-trans="zoom"] .page { animation-name: pageZoom; }
+body[data-trans="blur"] .page { animation-name: pageBlur; }
+/* the ghost sits under the live page, so the arriving page (fading in) and the leaving one crossfade */
+#view { position: relative; z-index: 1; }
+.page-ghost { position: absolute; z-index: 0; pointer-events: none; overflow: hidden; }
+.page-ghost > .page { animation: none; }
+
+/* lists arrive as lists: a short rise, 30 ms apart, capped so a long list never drags */
+.stagger > * { animation: rise var(--dur-page) var(--ease-out) backwards; animation-delay: calc(min(var(--i, 0), var(--stagger-max)) * var(--stagger-step) + 40ms); }
+.stagger.settled > * { animation: none; }
+.swap-in { animation: fadeIn var(--dur-base) var(--ease-out) backwards; }
+
+/* ------------------------------------------------------------------ rail: one indicator that glides between groups */
+.sb-scroll { position: relative; }
+.sb-scroll .nav { z-index: 1; }
+.rail-ind { position: absolute; left: 6px; right: 6px; top: 0; height: 34px; z-index: 0; pointer-events: none; opacity: 0;
+  border-radius: var(--radius-sm); background: color-mix(in oklab, var(--accent) 42%, transparent);
+  transition: opacity var(--dur-base) var(--ease-out); will-change: transform; }
+.nav .indicator { display: none; }
+.nav a { transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out); }
+.nav a.active { background: none; }
+.nav a svg { transition: color var(--dur-fast) var(--ease-out), transform var(--dur-base) var(--ease-spring); }
+.nav a:hover:not(.active) svg { transform: translateX(1px); }
+.nav a:active { transform: scale(.98); }
+body.sb-collapsed .rail-ind { left: 4px; right: 4px; }
+.nav a .badge { transition: opacity var(--dur-fast); }
+.badge.bump, .fx-unread.bump { animation: bump var(--dur-base) var(--ease-out); }
+
+/* ------------------------------------------------------------------ controls: hover lights, press answers */
+.btn {
+  transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.btn:active:not(:disabled) { transform: translateY(1px) scale(.98); }
+.btn svg { transition: transform var(--dur-base) var(--ease-spring); }
+.btn:hover:not(:disabled) > svg:last-child:not(:first-child) { transform: translateX(2px); }
+.btn.icon:hover:not(:disabled) > svg:only-child { transform: scale(1.08); }
+.play, .btn.play { transition: background-color var(--dur-base) var(--ease-out), transform var(--dur-press) var(--ease-out), box-shadow var(--dur-press) var(--ease-out), opacity var(--dur-base); }
+.play:active:not(:disabled), .btn.play:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .28); }
+
+.card, .card.hover, .h14-q, .pcard, .icard, .irow, .irow2, .srv2-row, .h14-ri, .hs-row, .news-item, .addr, .qa, .eng, .scene-tile, .vrow, .ga-item, .fx-row, .ch-row {
+  transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.card.hover:active, .h14-q:active, .pcard:active, .icard:active, .irow2:active, .h14-ri:active, .hs-row:active, .qa:active:not(:disabled), .fx-row:active, .ga-item:active { transform: scale(.992); }
+.pcard:hover, .icard:hover, .irow2:hover, .ga-item:hover, .scene-tile:hover, .addr:hover, .qa:hover { transform: none; }
+.pcard:hover { box-shadow: none; background: color-mix(in oklab, var(--surface) 92%, var(--accent)); }
+.irow2:hover, .h14-ri:hover, .hs-row:hover { background-color: color-mix(in oklab, var(--surface) 90%, var(--accent)); }
+/* art inside a framed card drifts a little; the frame itself never lifts */
+.pc-banner, .ibanner, .ga-item img { transition: transform .9s var(--ease-out); }
+.pcard:hover .pc-banner, .icard:hover .ibanner, .ga-item:hover img { transform: scale(1.035); }
+.h14-q svg { transition: transform var(--dur-base) var(--ease-spring), color var(--dur-fast); }
+.h14-q:hover svg { transform: translateY(-2px); }
+.h14-shot { transition: border-color var(--dur-fast), transform var(--dur-press) var(--ease-out); }
+.h14-shot:active { transform: scale(.97); }
+
+.lchip, .chip, .seg button, .seg-icons button, .fcheck, .wz-acc, .wz-scene, .swatch, .color-row button, .version-list button {
+  transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-press) var(--ease-out);
+}
+.lchip:active, .chip:active, .seg button:active, .seg-icons button:active, .version-list button:active, .wz-acc:active, .wz-scene:active { transform: scale(.96); }
+.seg .pill { transition: transform var(--dur-base) var(--ease-spring); will-change: transform; }
+.fcheck i { transition: background-color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-base) var(--ease-spring); }
+.fcheck input:checked + i { animation: bump var(--dur-base) var(--ease-out); }
+.switch i { transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+.switch i::after { transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-fast); }
+.switch:active i::after { transform: scaleX(1.25); transform-origin: left; }
+.switch input:checked:active + i::after { transform: translateX(20px) scaleX(1.25); transform-origin: right; }
+input[type=range].slider::-webkit-slider-thumb { transition: transform var(--dur-fast) var(--ease-spring); }
+input[type=range].slider:active::-webkit-slider-thumb { transform: scale(1.15); }
+.input, .search, select.input { transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast); }
+.mini-play { animation: rise var(--dur-page) var(--ease-out) backwards; }
+.account-chip, .mini-play { transition: border-color var(--dur-fast) var(--ease-out), background-color var(--dur-fast), transform var(--dur-press) var(--ease-out); }
+.account-chip:active { transform: scale(.98); }
+.mp-btn { transition: transform var(--dur-press) var(--ease-out), filter var(--dur-fast), background-color var(--dur-base); }
+.mp-btn:hover:not(:disabled) { transform: none; filter: brightness(1.12); }
+.mp-btn:active:not(:disabled) { transform: translateY(1px) scale(.94); }
+.wc button { transition: background-color var(--dur-fast), color var(--dur-fast); }
+.sb-toggle { transition: transform var(--dur-page) var(--ease-out), color var(--dur-fast), border-color var(--dur-fast); }
+.pop-menu button { transition: background-color var(--dur-fast), color var(--dur-fast); }
+
+/* ------------------------------------------------------------------ live values */
+.progress-bar > i { width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform var(--dur-base) var(--ease-out); }
+.progress-bar.indeterminate > i { width: 35% !important; transform: none; animation: indet 1.2s var(--ease-in-out) infinite; }
+.progress-wrap.show { animation: rise var(--dur-base) var(--ease-out) backwards; }
+.mini-play .mp-bar { width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
+.mini-play:not(.busy) .mp-bar { opacity: 0; }
+.mini-play .meta span { transition: color var(--dur-base); }
+.srv2-sig i { transition: background-color var(--dur-base) var(--ease-out); transform-origin: bottom; }
+.srv2-sig.on i:nth-child(2) { transition-delay: 40ms; } .srv2-sig.on i:nth-child(3) { transition-delay: 80ms; }
+.srv2-sig.on i:nth-child(4) { transition-delay: 120ms; } .srv2-sig.on i:nth-child(5) { transition-delay: 160ms; }
+.srv2-st, .srv2-count, .srv2-row { transition: color var(--dur-base), border-color var(--dur-base); }
+.srv2-stat .bar i, .ub-progress i, .pu-bar i, .mp-bar i, .wz-membar .track i { transition: width var(--dur-base) var(--ease-out); }
+.num-tick { display: inline-block; animation: fadeIn var(--dur-base) var(--ease-out); }
+
+/* ------------------------------------------------------------------ skeleton → content */
+.skeleton { position: relative; overflow: hidden; background: rgba(255, 255, 255, .035); animation: fadeIn var(--dur-base) 120ms var(--ease-out) backwards; }
+.skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .055), transparent);
+  transform: translateX(-100%); animation: skelSweep 1.3s var(--ease-in-out) infinite; }
+@keyframes skelSweep { to { transform: translateX(100%); } }
+.swap-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+/* ------------------------------------------------------------------ overlays */
+.modal-backdrop { animation: fadeIn var(--dur-base) var(--ease-out) backwards; }
+.modal-backdrop.closing { animation: fadeOut var(--dur-exit) var(--ease-in) forwards; pointer-events: none; }
+.modal { animation: modalIn var(--dur-overlay) var(--ease-out) backwards; }
+.modal-backdrop.closing .modal { animation: modalOut var(--dur-exit) var(--ease-in) forwards; }
+@keyframes modalIn { from { opacity: 0; transform: translateY(var(--shift-pop)) scale(.985); } }
+@keyframes modalOut { to { opacity: 0; transform: translateY(calc(var(--shift-pop) * .5)) scale(.985); } }
+.pop-menu { animation: menuIn var(--dur-base) var(--ease-out) backwards; transform-origin: var(--origin, top right); }
+.pop-menu.out { animation: fadeOut var(--dur-exit) var(--ease-in) forwards; }
+@keyframes menuIn { from { opacity: 0; transform: translateY(-4px) scale(.97); } }
+.lightbox { animation: fadeIn var(--dur-base) var(--ease-out) backwards; }
+.lightbox.out { animation: fadeOut var(--dur-exit) var(--ease-in) forwards; }
+.lightbox img, .lb-stage img { animation: modalIn var(--dur-overlay) var(--ease-out) backwards; }
+.update-bar, .doc-scan, .call-bar { animation: toastIn var(--dur-overlay) var(--ease-out) backwards; }
+.doc-scan { animation-name: fadeIn; }
+
+/* login gate on the same tokens */
+#login-gate { animation: lg-in var(--dur-overlay) var(--ease-out) both; }
+#login-gate.leave { animation: lg-out var(--dur-exit) var(--ease-in) both; }
+.lg-card { animation: lg-card var(--dur-overlay) 50ms var(--ease-out) both; }
+@keyframes lg-card { from { opacity: 0; transform: translateY(var(--shift-page)); } }
+.lg-step.in > * { animation: lg-rise var(--dur-page) var(--ease-out) both; }
+.lg-step.in > *:nth-child(2) { animation-delay: calc(1 * var(--stagger-step) + 10ms); } .lg-step.in > *:nth-child(3) { animation-delay: calc(2 * var(--stagger-step) + 20ms); }
+.lg-step.in > *:nth-child(4) { animation-delay: calc(3 * var(--stagger-step) + 30ms); } .lg-step.in > *:nth-child(5) { animation-delay: calc(4 * var(--stagger-step) + 40ms); }
+.lg-step.in > *:nth-child(6) { animation-delay: calc(5 * var(--stagger-step) + 50ms); }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(var(--shift-rise)); } }
+
+/* toasts slide in from the edge they live on and the stack closes up (FLIP in ui.js) */
+.toast { animation: toastIn var(--dur-overlay) var(--ease-out) backwards; }
+.toast.out { animation: toastOut var(--dur-base) var(--ease-in) forwards; pointer-events: none; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(calc(var(--shift-page) * 2.4)); } }
+@keyframes toastOut { to { opacity: 0; transform: translateX(calc(var(--shift-page) * 1.6)); } }
+.toast .bar { width: 100%; transform-origin: left; animation: toastBar linear forwards; }
+.toast:hover .bar { animation-play-state: paused; }
+@keyframes toastBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+/* ------------------------------------------------------------------ the Graj block: press → progress → playing */
+.btn.play { position: relative; overflow: hidden; isolation: isolate; }
+.play .pl-fill { position: absolute; inset: 0; z-index: -1; background: rgba(255, 255, 255, .18); transform: scaleX(var(--p, 0)); transform-origin: left;
+  opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
+.play.busy .pl-fill { opacity: 1; }
+.play.busy.indeterminate .pl-fill { width: 30%; transform: none; animation: indet 1.4s var(--ease-in-out) infinite; }
+.play.busy, .play.busy:disabled { opacity: 1; cursor: progress; background: color-mix(in oklab, var(--accent) 78%, #000); }
+.play .pl-label { display: inline-flex; align-items: center; gap: 9px; }
+.play .pl-pct { font-variant-numeric: tabular-nums; font-size: .72em; letter-spacing: .04em; opacity: .85; min-width: 3ch; text-align: right; }
+.play .pl-live { width: 7px; height: 7px; background: #fff; flex: none; animation: litBlink 1.2s steps(2, end) infinite; }
+
+/* ------------------------------------------------------------------ home hero: quiet ambient life */
+.h14-art { animation: heroDrift 46s var(--ease-in-out) infinite alternate; transition: translate .9s var(--ease-out), background .5s; }
+@keyframes heroDrift { from { transform: scale(1.04); } to { transform: scale(1.1) translateX(-1.2%); } }
+.h14-logo { transition: translate .9s var(--ease-out); }
+.h14-stats b { display: block; }
+
+/* ------------------------------------------------------------------ friends & chat */
+.cv-msg { animation: msgIn var(--dur-base) var(--ease-out) backwards; }
+.cv-msg.mine { --mx: 6px; }
+@keyframes msgIn { from { opacity: 0; transform: translate(var(--mx, -6px), 4px); } }
+.cv-log.settled .cv-msg { animation: none; }
+
+/* ------------------------------------------------------------------ reduced motion: fades and colour stay, travel goes */
+@media (prefers-reduced-motion: reduce) {
+  :root { --shift-page: 0px; --shift-rise: 0px; --shift-pop: 0px; --ease-spring: var(--ease-out); --stagger-step: 0ms; --dur-page: 180ms; --dur-overlay: 160ms; }
+  *, *::before, *::after { scroll-behavior: auto !important; }
+  #bg .photo, .h14-art, .pd-banner, .hero-banner, .shop-glow, .shop-art, .ring .orbit, .skeleton::after, .wz-confetti i { animation: none !important; }
+  .pc-banner, .ibanner, .ga-item img, .h14-art, .h14-logo { transition: none !important; transform: none !important; translate: none !important; }
+  .lit::after, .pl-live, .srv2-state i, .srv-state i { animation-iteration-count: 1 !important; }
+  .badge.bump, .fcheck input:checked + i { animation: none; }
+  /* the event overlays' ambient loops (bats, spider, flicker) stand still */
+  body.halloween [class*="hw"], body.halloween [id^="hw"], body.halloween [id^="hw"] * { animation: none !important; }
+  #hw-bats { display: none; }
+  body.winter [class*="winter"], body.winter [class*="winter"] * { animation: none !important; }
+}

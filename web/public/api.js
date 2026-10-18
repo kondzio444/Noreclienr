@@ -25,7 +25,7 @@
   // ---------------------------------------------------------------- console
   const form = $('#console-form');
   const body = $('#res-body');
-  const PARAMS = { 'updates/mod': ['mc', 'loader'], 'updates/launcher': ['platform', 'current'], releases: ['limit'] };
+  const PARAMS = { 'updates/mod': ['mc', 'loader'], 'updates/launcher': ['platform', 'current'], releases: ['limit'], 'hub/players': ['names'] };
 
   function endpointUrl() {
     const ep = form.ep.value;
@@ -90,7 +90,7 @@
     if (e.target.name === 'limit') $('#limit-out').textContent = e.target.value;
     if (e.target.name === 'ep') showParams();
     clearTimeout(typing);
-    typing = setTimeout(send, e.target.name === 'current' ? 350 : 60);
+    typing = setTimeout(send, e.target.name === 'current' || e.target.name === 'names' ? 350 : 60);
   });
   form.addEventListener('submit', (e) => { e.preventDefault(); send(); });
 
@@ -106,6 +106,8 @@
   for (const a of $$('[data-endpoint]')) {
     a.addEventListener('click', (e) => { if (choose(a.dataset.endpoint)) e.preventDefault(); });
   }
+  // the hello is POST only: its band opens the FAQ answer instead
+  for (const a of $$('a[href="#nore-hub"]')) a.addEventListener('click', () => { $('#nore-hub').open = true; });
 
   async function loadVersions() {
     try {

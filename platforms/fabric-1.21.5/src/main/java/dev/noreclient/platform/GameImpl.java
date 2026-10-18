@@ -648,6 +648,11 @@ public final class GameImpl implements Game {
         return out;
     }
 
+    @Override
+    public void openChat(String text) {
+        if (p() != null) mc().setScreen(new net.minecraft.client.gui.screen.ChatScreen(text));
+    }
+
     @Override public void setRenderHitboxes(boolean on) { mc().getEntityRenderDispatcher().setRenderHitboxes(on); }
 
     public static Identifier localCape;

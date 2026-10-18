@@ -88,8 +88,10 @@ function popMenu(anchor, items) {
   document.body.appendChild(m);
   const mw = m.offsetWidth, mh = m.offsetHeight;
   m.style.left = Math.min(window.innerWidth - mw - 10, r.right - mw) + 'px';
-  m.style.top = (r.bottom + mh + 8 > window.innerHeight ? r.top - mh - 6 : r.bottom + 6) + 'px';
-  const close = () => { m.classList.add('out'); setTimeout(() => m.remove(), 150); document.removeEventListener('mousedown', outside, true); };
+  const above = r.bottom + mh + 8 > window.innerHeight;
+  m.style.top = (above ? r.top - mh - 6 : r.bottom + 6) + 'px';
+  m.style.setProperty('--origin', `${above ? 'bottom' : 'top'} right`); // it grows out of its button
+  const close = () => { m.classList.add('out'); setTimeout(() => m.remove(), Motion.off() ? 0 : Motion.ms('--dur-exit') + 20); document.removeEventListener('mousedown', outside, true); };
   const outside = (e) => { if (!m.contains(e.target)) close(); };
   setTimeout(() => document.addEventListener('mousedown', outside, true), 0);
   $$('button', m).forEach(b => b.onclick = () => { close(); items[+b.dataset.k].action(); });
@@ -159,9 +161,13 @@ Pages.instances = (root) => {
       <div class="${instView.view === 'grid' ? 'igrid' : 'ilist2'}">${items.map(card).join('')}${withNew && instView.view === 'grid' ? newCard() : ''}</div></div>`;
     body.innerHTML = (pinned.length ? section(`${icon('sparkles')} Przypięte`, pinned, false) : '')
       + section(pinned.length ? 'Pozostałe' : '', rest, true);
-    $$('.igrid, .ilist2', body).forEach(stagger);
+    // the cards arrive as a list only when what is listed changed (filter, sort, view, search), not on every state refresh
+    const shape = [instView.filter, instView.sort, instView.view, instView.q, list.map(i => i.id).join()].join('|');
+    $$('.igrid, .ilist2', body).forEach(g => stagger(g, shape !== lastShape));
+    lastShape = shape;
     bind(body);
   }
+  let lastShape = null;
 
   const newCard = () => `<div class="icard new" id="new2"><div class="plus">${icon('plus')}</div><b>Nowa instancja</b><span>Dowolna wersja • Vanilla, Fabric, Quilt, Forge, NeoForge</span></div>`;
 

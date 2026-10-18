@@ -82,6 +82,8 @@
             <label><input type="radio" name="ep" value="events"> <span>Wydarzenia</span></label>
             <label><input type="radio" name="ep" value="platforms"> <span>Wersje</span></label>
             <label><input type="radio" name="ep" value="status"> <span>Stan i synchronizacja</span></label>
+            <label><input type="radio" name="ep" value="hub/players"> <span>Gracze Nore</span></label>
+            <label><input type="radio" name="ep" value="hub/stats"> <span>Nore Hub: liczniki</span></label>
           </fieldset>
           <div class="params">
             <label class="param" data-for="updates/mod">Minecraft
@@ -95,6 +97,9 @@
             </label>
             <label class="param" data-for="updates/launcher">Twoja wersja
               <input name="current" value="1.4.0" inputmode="decimal" autocomplete="off">
+            </label>
+            <label class="param" data-for="hub/players">Nicki po przecinku
+              <input name="names" value="Steve,Alex" autocomplete="off" spellcheck="false">
             </label>
             <label class="param" data-for="releases">Ile wydań
               <input name="limit" type="range" min="1" max="30" value="5"><output id="limit-out">5</output>
@@ -116,6 +121,7 @@
           <button role="tab" aria-selected="true" aria-controls="g-wydania" id="t-wydania"><b>Wydania</b><small>4 adresy</small></button>
           <button role="tab" aria-selected="false" aria-controls="g-aktualizacje" id="t-aktualizacje"><b>Aktualizacje</b><small>2 adresy</small></button>
           <button role="tab" aria-selected="false" aria-controls="g-swiat" id="t-swiat"><b>Świat Nore</b><small>3 adresy</small></button>
+          <button role="tab" aria-selected="false" aria-controls="g-hub" id="t-hub"><b>Nore Hub</b><small>3 adresy</small></button>
           <button role="tab" aria-selected="false" aria-controls="g-stan" id="t-stan"><b>Stan</b><small>2 adresy</small></button>
         </div>
         <div class="bands">
@@ -133,6 +139,11 @@
             <a class="band" href="/api/v1/events" data-endpoint="events"><span class="m">GET</span><span class="t"><code>/api/v1/events</code><small>Halloween trwa, zima startuje 10 grudnia 2026. Zawsze włączone.</small></span><span class="who">Mod, launcher</span></a>
             <a class="band" href="/api/v1/news" data-endpoint="news"><span class="m">GET</span><span class="t"><code>/api/v1/news</code><small>Aktualności z ekranu głównego launchera.</small></span><span class="who">Launcher</span></a>
             <a class="band" href="/api/v1/platforms" data-endpoint="platforms"><span class="m">GET</span><span class="t"><code>/api/v1/platforms</code><small>Obsługiwane wersje Minecraft, loader i wymagana Java.</small></span><span class="who">Launcher, strona</span></a>
+          </div>
+          <div class="group" role="tabpanel" id="g-hub" aria-labelledby="t-hub" hidden>
+            <a class="band" href="/api/v1/hub/players?names=Steve,Alex" data-endpoint="hub/players"><span class="m">GET</span><span class="t"><code>/api/v1/hub/players?names=</code><small>Którzy z podanych graczy (do 100 nicków) używają Nore, czy są online i co noszą: skrzydła, kapelusze, uszy.</small></span><span class="who">Mod: lista graczy, garderoba</span></a>
+            <a class="band" href="/api/v1/hub/stats" data-endpoint="hub/stats"><span class="m">GET</span><span class="t"><code>/api/v1/hub/stats</code><small>Ilu graczy Nore jest teraz online i ilu znamy z ostatnich 30 dni.</small></span><span class="who">Strona</span></a>
+            <a class="band" href="#nore-hub"><span class="m">POST</span><span class="t"><code>/api/v1/hub/hello</code><small>Launcher zgłasza gracza na starcie gry i co 60 s. Podpis kluczem Nore ID, konto premium potwierdza Mojang.</small></span><span class="who">Nore Launcher</span></a>
           </div>
           <div class="group" role="tabpanel" id="g-stan" aria-labelledby="t-stan" hidden>
             <a class="band" href="/api/v1/status" data-endpoint="status"><span class="m">GET</span><span class="t"><code>/api/v1/status</code><small>Czy wszystko działa, wiek danych i wynik ostatniej synchronizacji w tle.</small></span><span class="who">Monitoring</span></a>
@@ -207,6 +218,7 @@
         <details name="faq"><summary>Jak oszczędzać transfer?</summary><p>Zapisz nagłówek <code>ETag</code> i wyślij go następnym razem w <code>If-None-Match</code>. Jeśli nic się nie zmieniło, dostaniesz pustą odpowiedź 304.</p></details>
         <details name="faq"><summary>Skąd są pliki do pobrania?</summary><p>Z GitHub Releases repozytorium kondzio444/Noreclienr. API podaje adres, rozmiar i SHA-256, a <code>/download</code> przekierowuje prosto do pliku.</p></details>
         <details name="faq"><summary>Czy API się zmieni?</summary><p>Adresy <code>/api/v1</code> zostają. Nowe pola mogą dochodzić, ale żadne nie znika ani nie zmienia znaczenia. Zmiana, która coś psuje, dostałaby nowe <code>/api/v2</code>.</p></details>
+        <details name="faq" id="nore-hub"><summary>Co wysyła Nore Hub?</summary><p>Tylko gdy grasz: nick, UUID, Nore ID i ustawienia garderoby, co 60 s i <code>online: false</code> po wyjściu z gry. Hello jest podpisane kluczem Nore ID (ECDSA P-256), a konto premium potwierdza Mojang (<code>hasJoined</code>). Nick bez premium należy do pierwszego Nore ID, które go zgłosi, przez 30 dni od ostatniej gry. Wyłączysz to w launcherze: Ustawienia → „Pokazuj innym graczom Nore, że grasz w Nore”.</p></details>
         <details name="faq"><summary>Czy jest Forge?</summary><p>Parametr <code>loader</code> w <code>/updates/mod</code> przyjmuje <code>fabric</code> albo <code>forge</code>. Lista z <code>/platforms</code> mówi, co jest dostępne dla danej wersji.</p></details>
       </div>
     </section>

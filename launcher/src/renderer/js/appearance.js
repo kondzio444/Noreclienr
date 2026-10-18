@@ -13,7 +13,7 @@ const ACCENTS = {
   ice: { name: 'Ice', a: '#7fe3ff', b: '#c4f3ff', d: '#3cb8e0' },
 };
 
-const TRANSITIONS = [['rise', 'Unoszenie'], ['fade', 'Zanikanie'], ['slide', 'Przesuwanie'], ['zoom', 'Przybliżenie'], ['blur', 'Rozmycie']];
+const TRANSITIONS = [['rise', 'Kierunkowe'], ['fade', 'Zanikanie'], ['slide', 'Przesuwanie'], ['zoom', 'Przybliżenie'], ['blur', 'Rozmycie']];
 
 const SCENE_PREVIEW = {
   photo: 'url(assets/background.jpg) center/cover',

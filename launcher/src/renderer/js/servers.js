@@ -37,12 +37,21 @@ async function hydrateIcons(root) {
 
 // ================================================================== list
 
+/** A row whose server just changed state: the signal bars climb (or drop) one by one and the status line fades in. */
+function srvStateMotion(card, up) {
+  $$('.srv2-sig i', card).forEach((b, i, all) => Motion.animate(b, [{ transform: `scaleY(${up ? 0 : 1})`, opacity: up ? 0.4 : 1 }, { transform: 'scaleY(1)', opacity: 1 }],
+    { duration: Motion.ms('--dur-base'), delay: (up ? i : all.length - 1 - i) * 45, easing: Motion.ease('--ease-spring'), fill: 'backwards' }));
+  const st = $('.srv2-st', card);
+  if (st) Motion.animate(st, [{ opacity: 0, transform: `translateY(${Motion.px(4)}px)` }, { opacity: 1, transform: 'none' }], { duration: Motion.ms('--dur-base'), easing: Motion.ease('--ease-out') });
+}
+
 Pages.servers = (root) => {
   let alive = true;
   const progress = {};
   let netInfo = null;
   nore.servers.netInfo().then(n => { netInfo = n; if (alive) render(); }).catch(() => {});
 
+  let rendered = false;
   const render = async () => {
     const list = await nore.servers.list();
     if (!alive) return;
@@ -87,14 +96,19 @@ Pages.servers = (root) => {
           <span class="spacer"></span>
           <button class="btn ghost sm icon" data-a="copy" title="Kopiuj adres">${icon('copy')}</button></div></div>`;
     }).join('') + `<button class="card hover srv2-add" id="new2"><span class="plus">${icon('plus')}</span><b>Nowy serwer</b><span class="muted">Paper, Purpur, Fabric, NeoForge, Forge…</span></button>`;
-    stagger(grid);
+    // the list arrives once; later renders (a server changed state) refresh it in place
+    stagger(grid, !rendered);
+    rendered = true;
     hydrateIcons(grid);
     if ($('#pubip', root)) $('#pubip', root).onclick = () => netInfo && netInfo.publicIp && copyText(netInfo.publicIp, 'Skopiowano IP');
     $('#new', root).onclick = $('#new2', root).onclick = () => createServerModal2(render);
     $$('.srv2-card', grid).forEach(card => {
       const id = card.dataset.id;
       const s = list.find(x => x.id === id);
-      if (srvSeenState[id] && srvSeenState[id] !== s.state && (s.state === 'running' || s.state === 'stopped')) Motd.lit(card);
+      if (srvSeenState[id] && srvSeenState[id] !== s.state) {
+        if (s.state === 'running' || s.state === 'stopped') Motd.lit(card);
+        srvStateMotion(card, s.state === 'running');
+      }
       srvSeenState[id] = s.state;
       card.onclick = async (ev) => {
         const a = ev.target.closest('[data-a]');
