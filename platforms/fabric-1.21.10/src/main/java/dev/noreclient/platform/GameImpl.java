@@ -577,6 +577,11 @@ public final class GameImpl implements Game {
     }
 
     @Override
+    public void openChat(String text) {
+        if (p() != null) mc().setScreen(new net.minecraft.client.gui.screen.ChatScreen(text, false));
+    }
+
+    @Override
     public void setRenderHitboxes(boolean on) {
         Identifier id = net.minecraft.client.gui.hud.debug.DebugHudEntries.ENTITY_HITBOXES;
         if (mc().debugHudEntryList.isEntryVisible(id) != on) mc().debugHudEntryList.toggleVisibility(id);

@@ -17,6 +17,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ChatHud.class)
 public abstract class ChatHudMixin {
+    /** Messages of muted players never reach the chat. */
+    @Inject(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V", at = @At("HEAD"), cancellable = true)
+    private void noreclient$muted(net.minecraft.text.Text a0, net.minecraft.network.message.MessageSignatureData a1, net.minecraft.client.gui.hud.MessageIndicator a2, CallbackInfo ci) {
+        if (a0 != null && NoreClient.shouldHideChat(a0.getString())) ci.cancel();
+    }
+
     @ModifyVariable(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
             at = @At("HEAD"), argsOnly = true)
     private Text noreclient$timestamp(Text message) {

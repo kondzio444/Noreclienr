@@ -28,6 +28,7 @@
     "LivingEntityRendererMixin",
     "MinecraftClientMixin",
     "MouseMixin",
+    "NorePackMixin",
     "ParticleManagerMixin",
     "PlayerListHudMixin",
     "PlayerListNameMixin",
