@@ -133,6 +133,16 @@ final class Textures {
             g.fillRect(0, base.getHeight(), base.getWidth(), base.getHeight());
             if (glow != null) g.drawImage(glow, 0, base.getHeight(), null);
             g.dispose();
+            // the glow half also works with translucent (not additive) glow pipelines: black becomes
+            // transparent and every pixel is as opaque as it is bright
+            int w = img.getWidth(), h0 = base.getHeight();
+            int[] px = img.getRGB(0, h0, w, h0, null, 0, w);
+            for (int i = 0; i < px.length; i++) {
+                int c = px[i], r = (c >> 16) & 255, gg = (c >> 8) & 255, b = c & 255;
+                int a = Math.max(r, Math.max(gg, b)) * ((c >>> 24) & 255) / 255;
+                px[i] = a << 24 | (c & 0xFFFFFF);
+            }
+            img.setRGB(0, h0, w, h0, px, 0, w);
         }
         Atlas a = new Atlas();
         a.png = png(img);
