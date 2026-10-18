@@ -354,7 +354,8 @@ public class FriendsScreen extends PanelScreen {
             hint = p.onServer ? "Nie używa Nore – możesz napisać do niego prywatną wiadomością na serwerze."
                     : "Zobaczysz go z gwiazdką w tabie i nad głową, a gdy wejdzie na Twój serwer, dostaniesz powiadomienie.";
         }
-        SocialWidgets.mark(g, cx + cw / 2f - 10, mid - 26, 20, p.hub != null && p.hub.verified, p.hub != null);
+        if (p.hub != null) SocialWidgets.mark(g, cx + cw / 2f - 10, mid - 26, 20, p.hub.verified, true);
+        else Icons.person(g, cx + cw / 2f, mid - 16, 14, ColorUtil.withAlpha(Theme.accent(), 170));
         Render2D.centeredText(g, title, cx + cw / 2f, mid, Theme.TEXT, false);
         List<String> lines = ModsScreen.wrap(hint, (int) ((cw - 40) / 0.72f));
         for (int i = 0; i < lines.size(); i++) Render2D.scaledText(g, lines.get(i), cx + cw / 2f - Render2D.textWidth(lines.get(i)) * 0.72f / 2f, mid + 13 + i * 9, 0.72f, Theme.TEXT_MUTED, false);
