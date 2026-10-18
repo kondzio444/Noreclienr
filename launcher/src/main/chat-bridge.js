@@ -5,15 +5,20 @@
  * -Dnoreclient.chatBridge=<port>:<token>. Nothing outside this computer can reach it, requests
  * without the token or with a foreign Host header (DNS rebinding) are refused.
  *
- *   GET  /v1/state                → { me, contacts: [{ hex, name, online, status, detail, unread, last }] }
+ *   GET  /v1/state                → { me, contacts: [{ hex, name, online, status, detail, unread, last }], requests }
  *   GET  /v1/history?hex=&limit=  → messages
  *   GET  /v1/events?since=        → long poll (25 s): { seq, events: [{ seq, type, hex, name, text, ts }] }
  *   POST /v1/send   { hex, text } → queued in the launcher (sent now or when the friend comes online)
  *   POST /v1/read   { hex }
+ *   POST /v1/contacts/remove   { hex }        → removes a chat contact
+ *   POST /v1/requests/decline  { hex, block? } → declines a chat invitation
+ *   POST /v1/presence { cosmetics }  → the wardrobe for the next Nore Hub hello (hub.js)
+ *   POST /v1/contacts/add { hex, name } → { ok, contact } – adds a Nore player and sends the invitation
  */
 const http = require('http');
 const crypto = require('crypto');
 const chat = require('./chat');
+const hub = require('./hub');
 
 let server = null, port = 0, token = '';
 let toRenderer = () => {};
@@ -29,15 +34,33 @@ function push(ev) {
   for (const w of [...waiters]) w();
 }
 
+const contactView = (c) => ({
+  hex: c.hex, name: c.name, unread: c.unread, last: c.last ? { text: c.last.text, mine: !!c.last.mine, ts: c.last.ts } : null,
+  ...(presence[c.hex] || { online: false, status: 'offline', detail: '' }),
+});
+
 function state() {
   const me = chat.identity();
   return {
-    me: { name: me.name, id: me.id },
-    contacts: chat.contacts().map(c => ({
-      hex: c.hex, name: c.name, unread: c.unread, last: c.last ? { text: c.last.text, mine: !!c.last.mine, ts: c.last.ts } : null,
-      ...(presence[c.hex] || { online: false, status: 'offline', detail: '' }),
-    })),
+    me: { hex: me.hex, name: me.name, id: me.id },
+    contacts: chat.contacts().map(contactView),
+    requests: chat.requests().map(r => ({ hex: r.hex, name: r.name, text: r.text, at: r.at })),
   };
+}
+
+/** A Nore player from the game (player menu → add friend); the renderer dials them and invites. */
+function addContact(b) {
+  const hex = String(b.hex || '');
+  const name = b.name == null ? '' : String(b.name);
+  if (!/^[0-9a-f]{20}$/.test(hex) || (name && !/^[A-Za-z0-9_]{2,16}$/.test(name))) return [400, { error: 'hex' }];
+  if (hex === chat.identity().hex) return [400, { error: 'self' }];
+  let c = chat.contacts().find(x => x.hex === hex);
+  if (!c) {
+    try { chat.addContact(hex, name); } catch (e) { return [400, { error: e.message }]; }
+    c = chat.contacts().find(x => x.hex === hex);
+    toRenderer('chat:bridgeAdd', { hex });
+  }
+  return [200, { ok: true, contact: contactView(c) }];
 }
 
 function readBody(req) {
@@ -81,6 +104,27 @@ function handle(req, res) {
       return json(202, { ok: true });
     }).catch(() => json(400, { error: 'body' }));
   }
+  if (req.method === 'POST' && url.pathname === '/v1/presence') {
+    return readBody(req).then((b) => {
+      const bad = hub.cosmeticsError(b.cosmetics);
+      if (bad) return json(400, { error: bad });
+      hub.setCosmetics(b.cosmetics);
+      return json(200, { ok: true });
+    }).catch(() => json(400, { error: 'body' }));
+  }
+  if (req.method === 'POST' && url.pathname === '/v1/contacts/add') {
+    return readBody(req).then(b => json(...addContact(b))).catch(() => json(400, { error: 'body' }));
+  }
+  if (req.method === 'POST' && (url.pathname === '/v1/contacts/remove' || url.pathname === '/v1/requests/decline')) {
+    return readBody(req).then((b) => {
+      const hex = String(b.hex || '');
+      if (!/^[0-9a-f]{20}$/.test(hex)) return json(400, { error: 'hex' });
+      if (url.pathname === '/v1/contacts/remove') chat.removeContact(hex);
+      else chat.declineRequest(hex, !!b.block);
+      toRenderer('chat:bridgeRead', { hex });
+      return json(200, { ok: true });
+    }).catch(() => json(400, { error: 'body' }));
+  }
   return json(404, { error: 'not found' });
 }
 
@@ -93,6 +137,11 @@ function start(send) {
     server.on('error', () => resolve(null));
     server.listen(0, '127.0.0.1', () => { port = server.address().port; resolve(address()); });
   });
+}
+
+function stop() {
+  if (server) server.close();
+  server = null; port = 0;
 }
 
 /** "<port>:<token>" for -Dnoreclient.chatBridge, or null before start(). */
@@ -117,4 +166,4 @@ function setPresence(map) {
   }
 }
 
-module.exports = { start, address, message, setPresence };
+module.exports = { start, stop, address, message, setPresence };

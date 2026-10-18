@@ -72,6 +72,9 @@ Pages.home = (root) => {
       </div>
     </div>`;
 
+  // the stat strip counts up from zero when Start opens
+  for (const id of ['#st-play', '#st-inst']) { const n = $(id, root); n._num = 0; n._shown = 0; }
+
   $$('[data-go]', root).forEach(c => c.onclick = () => go(c.dataset.go));
   $('#pick', root).onclick = () => instancePickerModal();
   $('#h-open', root).onclick = () => { const i = App.instance(); if (i) go('instance', { id: i.id }); };
@@ -83,31 +86,33 @@ Pages.home = (root) => {
   };
 
   // friends and screenshots load in the background
-  nore.friends.list().then(list => {
+  // friends: nick list + chat contacts as one row of heads, online first, with their status squares
+  let nicks = null;
+  const drawFriends = () => {
     const box = $('#h-friends', root);
-    if (!box) return;
-    box.innerHTML = list.length
-      ? `<div class="h14-heads">${list.slice(0, 9).map(n => `<span title="${esc(n)}"><b>${esc(n.charAt(0).toUpperCase())}</b><img src="https://mc-heads.net/avatar/${encodeURIComponent(n)}/48" alt="" data-fallback></span>`).join('')}
-          ${list.length > 9 ? `<span class="more">+${list.length - 9}</span>` : ''}</div><small class="muted">${list.length} na liście • podświetleni w grze</small>`
-      : `<div class="muted" style="font-size:12.5px">Dodaj znajomych – Nore Client podświetli ich nicki i powiadomi, gdy wejdą na serwer.</div>`;
-    drawChatFriends();
-  }).catch(() => {});
-  // friends online in the launcher chat (P2P), shown under the nick list
-  const drawChatFriends = () => {
-    const box = $('#h-friends', root);
-    if (!box || typeof Chat === 'undefined' || !Chat.contacts.length) return;
-    let row = $('.h14-chat', box);
-    if (!row) { row = el('<div class="h14-chat"></div>'); box.appendChild(row); }
-    const on = Chat.contacts.filter(c => Chat.online(c.hex));
-    const unread = Chat.unread();
-    row.innerHTML = `<button class="btn ghost sm" data-chat>${icon('activity')} Czat: ${on.length ? `${on.length} online` : 'nikt online'}${unread ? ` • <b>${unread} nowe</b>` : ''}</button>
-      ${on.slice(0, 5).map(c => `<span class="h14-con" title="${esc(c.name)}"><img src="https://mc-heads.net/avatar/${encodeURIComponent(c.name)}/32" alt="" data-fallback></span>`).join('')}`;
-    $('[data-chat]', row).onclick = () => go('chat');
+    if (!box || nicks == null) return;
+    const people = sortPeople(friendPeople(nicks));
+    const on = people.filter(p => p.status === 'game' || p.status === 'launcher').length;
+    const unread = people.reduce((n, p) => n + p.unread, 0);
+    const sig = JSON.stringify(people.slice(0, 9).map(p => [p.key, p.status, p.unread]).concat([people.length]));
+    if (box.dataset.sig === sig) return;
+    const first = box.dataset.sig == null;
+    box.dataset.sig = sig;
+    if (first) Motion.ghost(box);
+    box.innerHTML = people.length
+      ? `<div class="h14-heads">${people.slice(0, 9).map(p => `<button class="h14-head" data-k="${esc(p.key)}" title="${esc(p.name)}">${personAvatar(p, 34, 48)}</button>`).join('')}
+          ${people.length > 9 ? `<button class="h14-head more" data-k="">+${people.length - 9}</button>` : ''}</div>
+        <small class="muted motd">${Motd.html(`${on ? `§a${on} online` : '§7nikt online'}§8 • §7${people.length} ${plural(people.length, 'znajomy', 'znajomych', 'znajomych')}${unread ? `§8 • §e${unread} ${plural(unread, 'nowa wiadomość', 'nowe wiadomości', 'nowych wiadomości')}` : ''}`)}</small>`
+      : `<div class="muted" style="font-size:12.5px">Dodaj znajomych – Nore Client podświetli ich nicki, a w launcherze możecie pisać i rozmawiać.</div>`;
+    if (first) stagger($('.h14-heads', box) || box);
+    $$('.h14-head', box).forEach(b => b.onclick = () => go('friends', b.dataset.k ? { key: b.dataset.k } : {}));
   };
-  const offChat = typeof Chat !== 'undefined' ? Chat.on((w) => { if (w === 'presence' || w === 'contacts') drawChatFriends(); }) : () => {};
+  nore.friends.list().then(list => { nicks = list; drawFriends(); }).catch(() => { nicks = []; drawFriends(); });
+  const offChat = typeof Chat !== 'undefined' ? Chat.on((w) => { if (w === 'presence' || w === 'contacts') drawFriends(); }) : () => {};
   nore.gallery.list().then(list => {
     const box = $('#h-shots', root);
     if (!box) return;
+    Motion.ghost(box);
     box.innerHTML = list.length
       ? list.slice(0, 4).map(s => `<button class="h14-shot" title="${esc(s.instance)}">${s.thumb ? `<img src="${s.thumb}" alt="">` : icon('image')}</button>`).join('')
       : `<div class="muted" style="font-size:12.5px;grid-column:1/-1">Naciśnij F2 w grze, aby zrobić pierwszy zrzut.</div>`;
@@ -137,14 +142,11 @@ Pages.home = (root) => {
       sub.innerHTML = inst ? instMotd(inst) : 'Utwórz instancję, aby zagrać.';
       $('#h-tags', root).innerHTML = inst ? instanceTags(inst) : '';
     }
-    const play = $('#play', root);
-    const running = App.running && inst && App.running === inst.id;
-    play.classList.toggle('running', !!running);
-    play.disabled = !!App.progress || (!!App.running && !running);
-    play.innerHTML = App.progress ? '<span class="spinner"></span> PRZYGOTOWANIE' : running ? `${icon('stop')} ZATRZYMAJ` : `${icon('play')} GRAJ`;
-    $('#st-play', root).textContent = inst ? fmtDuration(inst.playTime || 0) : '–';
-    $('#st-last', root).textContent = inst ? fmtAgo(inst.lastPlayed) : '–';
-    $('#st-inst', root).textContent = s.instances.length;
+    renderPlayBlock($('#play', root), inst);
+    const stPlay = $('#st-play', root);
+    if (inst) Motion.count(stPlay, (inst.playTime || 0) / 60000, (m) => fmtDuration(m * 60000)); else { stPlay._num = null; stPlay.textContent = '–'; }
+    Motion.swap($('#st-last', root), inst ? esc(fmtAgo(inst.lastPlayed)) : '–');
+    Motion.count($('#st-inst', root), s.instances.length);
     const recent = [...s.instances].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0)).slice(0, 4);
     const box = $('#h-recent', root);
     const sig = recent.map(i => i.id + (i.id === s.selectedInstance ? '*' : '') + (App.running === i.id ? 'r' : '')).join();
@@ -209,8 +211,65 @@ Pages.home = (root) => {
   };
   render();
   const offApp = App.onChange(render);
-  return () => { offApp(); offChat(); };
+  const offAmbient = heroAmbient($('#h-hero', root), $('#h-name', root));
+  return () => { offApp(); offChat(); offAmbient(); };
 };
+
+// ------------------------------------------------------------------ Start hero: quiet ambient life
+
+/** The hero art drifts slowly (CSS) and leans a few pixels toward the pointer; every 7–12 s one letter
+    of the instance name flickers through a §k glyph. Nothing runs while the window is hidden or unfocused,
+    and none of it runs with reduced motion or the animation switch off. */
+function heroAmbient(hero, name) {
+  if (!hero) return () => {};
+  const art = $('.h14-art', hero), logo = $('.h14-logo', hero);
+  let raf = 0, tx = 0, ty = 0, timer = 0;
+  const move = (e) => {
+    if (Motion.off() || Motion.reduced()) return;
+    const r = hero.getBoundingClientRect();
+    tx = (e.clientX - r.left) / r.width - 0.5; ty = (e.clientY - r.top) / r.height - 0.5;
+    if (!raf) raf = requestAnimationFrame(() => {
+      raf = 0;
+      if (art) art.style.translate = `${(-tx * 10).toFixed(1)}px ${(-ty * 4).toFixed(1)}px`;
+      if (logo) logo.style.translate = `${(tx * 4).toFixed(1)}px ${(ty * 3).toFixed(1)}px`;
+    });
+  };
+  const leave = () => { if (art) art.style.translate = ''; if (logo) logo.style.translate = ''; };
+  hero.addEventListener('pointermove', move);
+  hero.addEventListener('pointerleave', leave);
+  const schedule = () => { timer = setTimeout(() => { if (!document.hidden && document.hasFocus() && !App.progress) Motd.tick(name); schedule(); }, 7000 + Math.random() * 5000); };
+  schedule();
+  return () => { clearTimeout(timer); cancelAnimationFrame(raf); hero.removeEventListener('pointermove', move); hero.removeEventListener('pointerleave', leave); };
+}
+
+// ------------------------------------------------------------------ the Graj block: press → progress → playing
+
+const progressFrac = (p) => (p && p.total ? Math.min(1, p.totalBytes ? p.bytes / p.totalBytes : p.done / p.total) : null);
+
+/** Builds the Graj block once, then updates it in place so its fill and label can move:
+    idle "GRAJ" → busy (the block fills with the download, percent in tabular figures) → running (green, live mark). */
+function renderPlayBlock(btn, inst) {
+  if (!btn) return;
+  if (!btn._built) { btn.innerHTML = '<span class="pl-fill"></span><span class="pl-label"></span>'; btn._built = true; }
+  const running = !!(App.running && inst && App.running === inst.id);
+  const p = App.progress;
+  const frac = progressFrac(p);
+  btn.classList.toggle('running', running);
+  btn.classList.toggle('busy', !!p);
+  btn.classList.toggle('indeterminate', !!p && frac == null);
+  btn.disabled = !!p || (!!App.running && !running);
+  btn.style.setProperty('--p', frac == null ? 0 : frac.toFixed(3));
+  const state = p ? 'busy' : running ? 'run' : 'idle';
+  const label = $('.pl-label', btn);
+  const pctText = frac == null ? '' : Math.round(frac * 100) + '%';
+  if (btn.dataset.state !== state) {
+    btn.dataset.state = state;
+    btn.setAttribute('aria-label', state === 'busy' ? 'Przygotowanie gry' : state === 'run' ? 'Zatrzymaj grę' : 'Graj');
+    Motion.swap(label, state === 'busy' ? `PRZYGOTOWANIE <span class="pl-pct">${pctText}</span>` : state === 'run' ? '<i class="pl-live"></i> ZATRZYMAJ' : `${icon('play')} GRAJ`, state === 'idle' ? -1 : 1);
+  }
+  const pct = $('.pl-pct', label);
+  if (pct) pct.textContent = pctText;
+}
 
 // ------------------------------------------------------------------ sidebar mini player
 
@@ -218,17 +277,36 @@ function renderMiniPlay() {
   const box = document.getElementById('mini-play');
   if (!box || !App.state) return;
   const inst = App.instance();
-  box.hidden = !inst || App.page === 'home';
+  const hide = !inst || App.page === 'home';
+  if (box.hidden !== hide) box.hidden = hide; // unhiding replays its CSS rise
   if (!inst) return;
-  const running = App.running && App.running === inst.id;
+  const running = !!(App.running && App.running === inst.id);
   const busy = !!App.progress;
-  const frac = App.progress && App.progress.total ? (App.progress.totalBytes ? App.progress.bytes / App.progress.totalBytes : App.progress.done / App.progress.total) : 0;
-  box.classList.toggle('running', !!running);
-  box.innerHTML = `${instIcon(inst, 30)}<div class="meta"><b>${esc(inst.name)}</b><span>${busy ? 'Przygotowanie…' : running ? 'W grze' : esc(inst.mcVersion)}</span></div>
-    <button class="mp-btn" title="${running ? 'Zatrzymaj' : 'Graj'}" ${busy || (App.running && !running) ? 'disabled' : ''}>${busy ? '<span class="spinner"></span>' : icon(running ? 'stop' : 'play')}</button>
-    ${busy ? `<i class="mp-bar" style="width:${(frac * 100).toFixed(1)}%"></i>` : ''}`;
-  $('.meta', box).onclick = () => go('instance', { id: inst.id });
-  $('.mp-btn', box).onclick = () => (running ? nore.game.kill() : launchSelected());
+  const frac = progressFrac(App.progress);
+  // the frame is built once per instance; state changes update it in place so they can animate
+  if (box.dataset.inst !== inst.id + '|' + inst.name + '|' + inst.color) {
+    box.dataset.inst = inst.id + '|' + inst.name + '|' + inst.color;
+    box.innerHTML = `${instIcon(inst, 30)}<div class="meta"><b>${esc(inst.name)}</b><span></span></div><button class="mp-btn"></button><i class="mp-bar"></i>`;
+    box._state = null;
+    $('.meta', box).onclick = () => go('instance', { id: App.instance().id });
+  }
+  box.classList.toggle('running', running);
+  box.classList.toggle('busy', busy);
+  box.style.setProperty('--p', frac == null ? 0 : frac.toFixed(3));
+  const state = busy ? 'busy' : running ? 'run' : 'idle';
+  const btn = $('.mp-btn', box);
+  btn.disabled = busy || (!!App.running && !running);
+  btn.title = running ? 'Zatrzymaj' : 'Graj';
+  btn.onclick = () => (running ? nore.game.kill() : launchSelected());
+  if (box._state !== state) {
+    const first = box._state == null;
+    box._state = state;
+    btn.innerHTML = busy ? '<span class="spinner"></span>' : icon(running ? 'stop' : 'play');
+    if (!first) Motion.animate(btn, [{ transform: 'scale(.7)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: Motion.ms('--dur-base'), easing: Motion.ease('--ease-spring') });
+  }
+  const sub = busy ? (frac == null ? 'Przygotowanie…' : `Przygotowanie ${Math.round(frac * 100)}%`) : running ? 'W grze' : esc(inst.mcVersion);
+  const span = $('.meta span', box);
+  if (span.innerHTML !== sub) span.innerHTML = sub;
 }
 
 (function hookMiniPlay() {

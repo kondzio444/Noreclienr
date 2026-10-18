@@ -83,6 +83,7 @@ public final class NoreClient {
             instance.nextTick.clear();
         }
         for (Runnable r : run) r.run();
+        dev.noreclient.module.social.Social.tick();
         instance.moduleManager.onTick();
     }
 
@@ -137,9 +138,36 @@ public final class NoreClient {
     public static void onMouseButton(int button, boolean pressed, boolean inGameNoScreen) {
         if (pressed && inGameNoScreen) ClickTracker.click(button);
         if (pressed && inGameNoScreen && button == 2 && instance != null) {
-            dev.noreclient.module.social.FriendsModule f = instance.moduleManager.get(dev.noreclient.module.social.FriendsModule.class);
-            if (f.isActive()) f.onMiddleClick();
+            final dev.noreclient.module.social.FriendsModule f = instance.moduleManager.get(dev.noreclient.module.social.FriendsModule.class);
+            if (f.isActive()) runNextTick(f::onMiddleClick);
         }
+    }
+
+    /** Marks in front of a player name: {@link #MARK_FRIEND}, {@link #MARK_NORE}, {@link #MARK_VERIFIED}. */
+    public static final int MARK_FRIEND = 1, MARK_NORE = 2, MARK_VERIFIED = 4;
+
+    /**
+     * Which marks a player name gets in the tab list (nametag = false) or above the head
+     * (nametag = true). Cheap cache reads only: called for every name every frame.
+     */
+    public static int nameMarks(String name, boolean nametag) {
+        if (instance == null || name == null) return 0;
+        dev.noreclient.module.social.FriendsModule f = instance.moduleManager.get(dev.noreclient.module.social.FriendsModule.class);
+        if (!f.isActive()) return 0;
+        int marks = 0;
+        if (f.highlight.isOn() && dev.noreclient.util.Friends.isFriend(name)) marks |= MARK_FRIEND;
+        if (nametag ? f.noreNametag.isOn() : f.noreTab.isOn()) {
+            dev.noreclient.util.NoreHub.Entry e = dev.noreclient.util.NoreHub.get(name);
+            if (e != null) marks |= MARK_NORE | (e.verified ? MARK_VERIFIED : 0);
+        }
+        return marks;
+    }
+
+    /** True when an incoming chat line comes from a muted player and should not be shown. */
+    public static boolean shouldHideChat(String text) {
+        if (instance == null || !dev.noreclient.util.Friends.anyMuted()) return false;
+        String sender = dev.noreclient.util.Friends.chatSender(text);
+        return sender != null && !sender.equalsIgnoreCase(Platform.game().username()) && dev.noreclient.util.Friends.isMuted(sender);
     }
 
     // ------------------------------------------------------------------ 1.4 hooks

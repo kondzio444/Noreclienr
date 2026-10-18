@@ -439,34 +439,59 @@
     ],
     "motion": [
       {
-        "name": "ease",
-        "value": "cubic-bezier(.16, 1, .3, 1)",
-        "purpose": "The only easing curve."
+        "name": "--dur-press / --dur-fast",
+        "value": "90ms / 140ms",
+        "purpose": "Press feedback; hover and control state."
       },
       {
-        "name": "control",
-        "value": "150ms",
-        "purpose": "Button, input and nav state changes."
+        "name": "--dur-base",
+        "value": "220ms",
+        "purpose": "Routine state changes, label swaps, value tweens, toast exit."
       },
       {
-        "name": "rise-stagger",
-        "value": "rise 450ms, 40ms stagger, 10px",
-        "purpose": "List and module entry."
+        "name": "--dur-page / --dur-overlay",
+        "value": "300ms / 260ms",
+        "purpose": "Page and list entrances; modals, menus and toasts arriving."
       },
       {
-        "name": "modal-pop",
-        "value": "250ms, 8px",
-        "purpose": "Modals and login card entry."
+        "name": "--dur-exit",
+        "value": "130ms",
+        "purpose": "Anything leaving; always faster than its entrance."
+      },
+      {
+        "name": "--dur-focal",
+        "value": "560ms",
+        "purpose": "The §k reveal and number count-ups."
+      },
+      {
+        "name": "--ease-out / --ease-in / --ease-in-out",
+        "value": "cubic-bezier(.16, 1, .3, 1) / cubic-bezier(.55, 0, .8, .25) / cubic-bezier(.65, 0, .35, 1)",
+        "purpose": "Arrivals, departures, loops."
+      },
+      {
+        "name": "--ease-spring",
+        "value": "cubic-bezier(.3, 1.25, .55, 1)",
+        "purpose": "Only things that travel into a slot: rail indicator, segmented pill, switch knob."
+      },
+      {
+        "name": "stagger",
+        "value": "--stagger-step 30ms, capped at --stagger-max 8; rise --shift-rise 8px",
+        "purpose": "Lists arrive as lists; refreshed lists do not replay."
+      },
+      {
+        "name": "page",
+        "value": "--shift-page 10px directional (down/up by rail order, in/out for detail pages); leaving page is a ghost under the new one",
+        "purpose": "Short, interruptible navigation."
       },
       {
         "name": "k-reveal",
-        "value": "560ms, left to right, per frame",
-        "purpose": "§k glyphs resolve into the instance name on page open and game launch; skipped when motion is reduced."
+        "value": "560ms, left to right; ambient one-letter tick every 7-12s on the Start hero",
+        "purpose": "The signature; skipped when motion is reduced."
       },
       {
         "name": "lit-blink",
         "value": "1.2s steps(2, end) infinite",
-        "purpose": "The §e lit-until-seen mark."
+        "purpose": "The §e lit-until-seen mark and the Graj live mark."
       },
       {
         "name": "stepped",
@@ -475,8 +500,8 @@
       },
       {
         "name": "reduced",
-        "value": "prefers-reduced-motion or the in-app switch: durations to 0",
-        "purpose": "All motion collapses; §k shows the final text."
+        "value": "prefers-reduced-motion: distances 0, spring off, ambient loops stopped, fades kept; in-app switch: all motion off",
+        "purpose": "Feedback stays legible without travel."
       }
     ],
     "breakpoints": [

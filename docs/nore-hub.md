@@ -76,6 +76,8 @@ The mod (`dev.noreclient.cosmetic.Wardrobe`) writes and reads it and ignores wha
   next hello (and sends one within 2 s when it changed).
 * `POST /v1/contacts/add { hex, name }` – add a Nore user as a chat contact (sends the invitation
   through the normal chat transport). Response `{ ok, contact }`.
+* `POST /v1/contacts/remove { hex }` and `POST /v1/requests/decline { hex, block? }` – remove a chat
+  contact / decline an invitation from the game.
 * `GET /v1/state` additionally returns `me: { hex, id, name }` (already) and `requests: [...]`.
 
 Without the launcher (no `-Dnoreclient.chatBridge`) the game still reads `/api/v1/hub/players`

@@ -548,6 +548,7 @@ function browsePage(key) {
       const box = el(`<div class="${mem.view === 'grid' ? 'pgrid' : 'plist'}"></div>`);
       box.innerHTML = res.hits.map(cardHtml).join('');
       stagger(box);
+      Motion.ghost(results()); // the skeletons fade out over the arriving cards
       results().innerHTML = '';
       results().appendChild(box);
       if (pages > 1) {
@@ -625,6 +626,7 @@ function browsePage(key) {
           <button class="btn danger sm icon" data-del title="Usuń">${icon('trash')}</button></div>`;
       }).join('');
       stagger(box);
+      Motion.ghost(results()); // the skeletons fade out over the arriving cards
       results().innerHTML = '';
       results().appendChild(box);
       $('#ifilter', root).oninput = (e) => {
