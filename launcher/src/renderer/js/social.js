@@ -99,7 +99,7 @@ Pages.friends = (root, opts = {}) => {
         <div class="fx-me" id="fx-me"></div>
         <div class="fx-add">
           <div class="fx-addrow"><input class="input" id="fx-in" maxlength="40" placeholder="Nick albo Nore ID" spellcheck="false" aria-describedby="fx-hint">
-            <button class="btn" id="fx-go" disabled>${icon('plus')} Dodaj</button></div>
+            <button class="btn" id="fx-go" disabled title="Dodaj">${icon('plus')}<span>Dodaj</span></button></div>
           <input class="input" id="fx-name" maxlength="16" placeholder="Jego nick w Minecraft (opcjonalnie)" spellcheck="false" hidden>
           <small class="fx-hint" id="fx-hint">Nick trafi na listę w grze, Nore ID zaprasza do czatu.</small>
         </div>
@@ -126,7 +126,7 @@ Pages.friends = (root, opts = {}) => {
     if (!box) return;
     if (!Chat.me) { box.innerHTML = '<div class="muted">Uruchamianie czatu…</div>'; return; }
     box.innerHTML = `<div class="cv-me"><img src="${head(Chat.me.name, 64)}" alt="" data-fallback></div><div class="grow" style="min-width:0"><b>${esc(Chat.me.name)}</b>
-        <button class="ch-myid" title="Kopiuj swój Nore ID">${esc(Chat.me.id)} ${icon('copy')}</button></div>`;
+        <button class="ch-myid" title="Kopiuj swój Nore ID: ${esc(Chat.me.id)}"><span>${esc(Chat.me.id)}</span> ${icon('copy')}</button></div>`;
     $('.ch-myid', box).onclick = () => { navigator.clipboard.writeText(Chat.me.id); toast('Skopiowano Twój Nore ID', 'Wyślij go znajomemu – doda Cię w zakładce Znajomi.', 'success'); };
   };
 
