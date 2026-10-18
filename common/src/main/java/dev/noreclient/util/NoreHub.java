@@ -128,7 +128,7 @@ public final class NoreHub {
         if (s == null) return;
         long now = System.currentTimeMillis();
         s.seen = now;
-        if (now - s.fetched > 10_000L) {
+        if (now - s.fetched > 30_000L) {
             s.explicit = now;
             s.fetched = Math.min(s.fetched, now - TTL);
             ensureThread();

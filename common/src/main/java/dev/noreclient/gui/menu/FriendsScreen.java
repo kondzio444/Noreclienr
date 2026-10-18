@@ -71,6 +71,7 @@ public class FriendsScreen extends PanelScreen {
 
     @Override
     protected String subtitle() {
+        people = Social.people(); // the header is drawn before the content: refresh the list here
         int server = 0, nore = 0;
         for (Social.Person p : people) { if (p.onServer) server++; else if (p.onlineInNore()) nore++; }
         String s = people.size() + " osób • " + server + " na tym serwerze • " + nore + " online w Nore";
@@ -149,7 +150,6 @@ public class FriendsScreen extends PanelScreen {
 
     @Override
     protected void content(Gfx g, int mx, int my, float x, float y, float w, float h) {
-        people = Social.people();
         if (waitHex != null) {
             for (Social.Person p : people) if (p.contact != null && p.contact.hex.equals(waitHex)) { key = p.key(); lastKey = key; waitHex = null; break; }
         }
@@ -285,18 +285,32 @@ public class FriendsScreen extends PanelScreen {
     private void person(Gfx g, int mx, int my, final Social.Person p, float cx, float y, float cw, float h) {
         panel(g, cx, y, cw, h, null);
         // ---- header: head, name, badges, status, actions
+        final String k = p.key();
+        boolean muted = Friends.isMuted(p.name);
+        // the buttons on the right decide how much room the name and the badges get
+        float buttons = 0;
+        if (p.contact != null && !p.friend) buttons += buttonWidth(armedFor(k + "rm") ? "Na pewno?" : "Usuń z czatu");
+        else if (p.friend) buttons += buttonWidth(armedFor(k + "rm") ? "Na pewno?" : "Usuń");
+        if (!p.friend) buttons += buttonWidth("Dodaj do znajomych") + 4;
+        boolean muteButton = cw > 330 || p.friend;
+        if (muteButton) buttons += buttonWidth(muted ? "Odcisz" : "Wycisz") + 4;
+        float limit = cx + cw - 8 - buttons - 6;
+
         SocialWidgets.head(g, p.name, cx + 8, y + 7, 24);
-        Render2D.text(g, p.name, cx + 38, y + 8, Theme.TEXT, false);
-        float bx = cx + 38 + Render2D.textWidth(p.name) + 5;
-        if (p.nore()) bx += SocialWidgets.badge(g, bx, y + 7, p.hub != null && p.hub.verified, p.hub != null, false) + 3;
-        if (p.friend) bx += SocialWidgets.pill(g, bx, y + 7, "★ Znajomy", 0xFF5BE37D) + 3;
-        if (Friends.isMuted(p.name)) SocialWidgets.pill(g, bx, y + 7, "Wyciszony", Theme.TEXT_MUTED);
+        String shown = Render2D.trim(p.name, (int) (limit - cx - 38));
+        Render2D.text(g, shown, cx + 38, y + 8, Theme.TEXT, false);
+        float bx = cx + 38 + Render2D.textWidth(shown) + 5;
+        boolean verified = p.hub != null && p.hub.verified;
+        String badgeLabel = p.hub == null ? "Nore" : verified ? "Nore ✓" : "Nore";
+        if (p.nore() && bx + 18 + Render2D.textWidth(badgeLabel) * 0.62f <= limit) bx += SocialWidgets.badge(g, bx, y + 7, verified, p.hub != null, false) + 3;
+        if (p.friend && bx + 10 + Render2D.textWidth("★ Znajomy") * 0.62f <= limit) bx += SocialWidgets.pill(g, bx, y + 7, "★ Znajomy", 0xFF5BE37D) + 3;
+        if (muted && bx + 10 + Render2D.textWidth("Wyciszony") * 0.62f <= limit) SocialWidgets.pill(g, bx, y + 7, "Wyciszony", Theme.TEXT_MUTED);
         int st = p.state();
         Render2D.circle(g, cx + 40, y + 24, 2.2f, SocialWidgets.stateColor(st));
-        Render2D.scaledText(g, Social.status(p), cx + 45, y + 21.5f, 0.68f, st == 2 ? Theme.SUCCESS : st == 1 ? Theme.accent2() : Theme.TEXT_MUTED, false);
+        String status = Social.status(p) + (muted ? " • wyciszony na czacie" : "");
+        Render2D.scaledText(g, Render2D.trim(status, (int) ((limit - cx - 45) / 0.68f)), cx + 45, y + 21.5f, 0.68f, st == 2 ? Theme.SUCCESS : st == 1 ? Theme.accent2() : Theme.TEXT_MUTED, false);
 
         float ax = cx + cw - 8;
-        final String k = p.key();
         if (p.contact != null && !p.friend) {
             String l = armedFor(k + "rm") ? "Na pewno?" : "Usuń z czatu";
             ax -= buttonWidth(l);
@@ -316,8 +330,8 @@ public class FriendsScreen extends PanelScreen {
             ax -= buttonWidth("Dodaj do znajomych") + 4;
             button(g, mx, my, ax, y + 9, "Dodaj do znajomych", 3, true, () -> Social.toggleFriend(p.name));
         }
-        String ml = Friends.isMuted(p.name) ? "Odcisz" : "Wycisz";
-        if (cw > 330 || p.friend) {
+        String ml = muted ? "Odcisz" : "Wycisz";
+        if (muteButton) {
             ax -= buttonWidth(ml) + 4;
             button(g, mx, my, ax, y + 9, ml, 0, true, () -> Social.toggleMute(p.name));
         }

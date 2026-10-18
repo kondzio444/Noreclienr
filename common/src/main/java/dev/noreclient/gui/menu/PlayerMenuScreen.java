@@ -239,7 +239,7 @@ public class PlayerMenuScreen extends NoreScreen {
     private void card(Gfx g, int mx, int my, float pa) {
         NoreHub.Entry e = NoreHub.get(name);
         List<String[]> wear = wardrobe(e);
-        float w = 230, h = 92 + Math.max(1, wear.size()) * 11 + 26;
+        float w = 230, h = 102 + Math.max(1, wear.size()) * 11;
         float x = cx() - w / 2f, y = cy() - h / 2f + (1 - Animation.easeOutCubic(pa)) * 14;
         Render2D.shadow(g, x, y, w, h, Theme.radius(), 8, 0x80000000);
         Render2D.roundedRect(g, x, y, w, h, Theme.radius(), 0xF0120E1E);
@@ -401,7 +401,8 @@ public class PlayerMenuScreen extends NoreScreen {
         afterClose = null;
         closeRequested = true;
         game().openParent(null);
-        if (r != null) r.run();
+        // next tick: the character of the key that triggered the action must not reach the new screen
+        if (r != null) dev.noreclient.NoreClient.runNextTick(r);
     }
 
     @Override
