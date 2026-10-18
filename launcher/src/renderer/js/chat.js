@@ -262,10 +262,15 @@ const Chat = {
     this.contacts = await nore.chat.add(id, name);
     const c = this.contacts[this.contacts.length - 1];
     await this.reload();
-    const l = c && this.links.get(c.hex);
-    if (l && l.authed) { await nore.chat.seen(c.hex, l.theirs.pub, l.theirs.name); l.conn.send({ t: 'invite', text: '' }); l.conn.send({ t: 'accepted' }); await this.flush(c.hex); }
-    else if (c) this.dial(c.hex);
+    if (c) await this.invite(c.hex);
     return c;
+  },
+
+  /** A just added contact: invite over an open link, or dial them (the handshake invites). */
+  async invite(hex) {
+    const l = this.links.get(hex);
+    if (l && l.authed) { await nore.chat.seen(hex, l.theirs.pub, l.theirs.name); l.conn.send({ t: 'invite', text: '' }); l.conn.send({ t: 'accepted' }); await this.flush(hex); }
+    else this.dial(hex);
   },
 
   notify(title, body) {
@@ -693,6 +698,8 @@ Chat.on((what) => {
 });
 nore.on('chat:bridgeSend', ({ hex, text }) => { Chat.send(hex, text).then(() => Chat.reload()).catch(e => console.error('chat', e)); });
 nore.on('chat:bridgeRead', () => Chat.reload());
+// a Nore player added from the game's player menu (main/chat-bridge.js stored the contact)
+nore.on('chat:bridgeAdd', ({ hex }) => { Chat.reload().then(() => Chat.invite(hex)).catch(e => console.error('chat', e)); });
 
 // start with the launcher (after App has loaded its state)
 (function bootChat() {
