@@ -116,10 +116,10 @@ public class WardrobeFeature extends FeatureRenderer<AbstractClientPlayerEntity,
         ctx.enableScissor(x1, y1, x2, y2);
         MatrixStack ms = ctx.getMatrices();
         ms.push();
-        ms.translate((x1 + x2) / 2f, y2 - size * 0.1f - p.lift * size, 150);
+        ms.translate((x1 + x2) / 2f, y2 - size * 0.25f - p.lift * size, 150);
         ms.scale(size, size, -size);
         ms.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(180));
-        ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(-pitch));
+        ms.multiply(RotationAxis.POSITIVE_X.rotationDegrees(pitch));
         ms.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-yaw));
         ms.scale(-1, -1, 1);
         ms.scale(0.9375f, 0.9375f, 0.9375f);
@@ -154,6 +154,12 @@ public class WardrobeFeature extends FeatureRenderer<AbstractClientPlayerEntity,
 
     private static void pose(PlayerEntityModel<?> m, PreviewPose p) {
         m.setVisible(true);
+        // the model is shared with the world renderer: clear whatever the last entity left behind
+        m.child = false;
+        m.riding = false;
+        m.sneaking = p.sneaking;
+        m.handSwingProgress = 0;
+        m.leaningPitch = 0;
         m.head.setAngles(p.headPitch, p.headYaw, 0);
         m.head.setPivot(0, p.headY, 0);
         m.body.setAngles(p.bodyPitch, 0, 0);

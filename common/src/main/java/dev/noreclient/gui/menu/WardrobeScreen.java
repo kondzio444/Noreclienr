@@ -50,7 +50,8 @@ public class WardrobeScreen extends PanelScreen {
     private float dragStartX, dragStartYaw;
     private float pvX, pvY, pvW, pvH;
     private float[] speedBar, scaleBar, hueBar, shadeBar;
-    private String tooltip;
+    private String tooltip, notice;
+    private long noticeAt;
     private float tipX, tipY;
 
     public WardrobeScreen(Object parent) {
@@ -110,7 +111,7 @@ public class WardrobeScreen extends PanelScreen {
         Item item = worn == null ? null : Items.get(worn.id);
         boolean showOpts = item != null && !(item instanceof Items.CapeItem && !item.animOption);
         float oa = optsAnim.target(showOpts ? 1 : 0).update();
-        float optH = item instanceof Items.CapeItem ? 40 : 104;
+        float optH = item == null ? 0 : optionsHeight(item, gw);
         float gridH = h - optH * oa - (oa > 0.01f ? 8 * oa : 0);
         grid(g, mx, my, gx, y, gw, gridH);
         if (oa > 0.01f && item != null) {
@@ -138,7 +139,7 @@ public class WardrobeScreen extends PanelScreen {
             catIcon(g, s, rx + 11, ry + rh / 2f, col);
             Render2D.text(g, s.title, rx + 21, ry + 7, col, false);
             Worn worn = look().get(s);
-            if (worn != null) Render2D.circle(g, rx + w - 14, ry + rh / 2f, 2, Theme.SUCCESS);
+            if (worn != null) Render2D.circle(g, rx + 16, ry + 5, 1.8f, Theme.SUCCESS);
             hit(x + 4, ry, w - 8, rh, () -> {
                 if (cat != s) {
                     Sounds.click();
@@ -197,7 +198,7 @@ public class WardrobeScreen extends PanelScreen {
         List<Item> items = Items.of(cat);
         int count = items.size() + 1; // + "nothing"
         int cols = Math.max(2, (int) ((w + 6) / 64));
-        float cw = (w - (cols - 1) * 6) / cols, ch = cw + 12;
+        float cw = (w - (cols - 1) * 6) / cols, ch = cw + 14;
         viewH = h;
         contentH = ((count + cols - 1) / cols) * (ch + 6) - 6;
         float sc = scrolled();
@@ -264,7 +265,7 @@ public class WardrobeScreen extends PanelScreen {
                     Render2D.scaledText(g, badge, tx + 7.5f, ty + 6.5f, 0.55f, halloween ? 0xFFFFB547 : 0xFF2A1A08, false);
                 }
             }
-            Render2D.centeredText(g, Render2D.trim(name, (int) cw - 6), tx + cw / 2f, ty + ch - 12, sel ? Theme.accent2() : locked ? Theme.TEXT_MUTED : Theme.TEXT, false);
+            tileName(g, name, tx + cw / 2f, ty + ch - 17, cw - 6, sel ? Theme.accent2() : locked ? Theme.TEXT_MUTED : Theme.TEXT);
             if (sel) {
                 Render2D.circle(g, tx + cw - 8, ty + 8, 4, Theme.SUCCESS);
                 Render2D.line(g, tx + cw - 10, ty + 8, tx + cw - 8.5f, ty + 9.5f, 1.1f, 0xFF0E2A1E);
@@ -292,16 +293,51 @@ public class WardrobeScreen extends PanelScreen {
                     else {
                         Worn cur = look().get(cat);
                         if (cur != null && cur.id.equals(item.id)) return;
-                        wear(cat, Worn.of(item), true);
+                        // ears and hats do not fit together: wearing one takes the other off
+                        Slot other = cat == Slot.EARS ? Slot.HAT : cat == Slot.HAT ? Slot.EARS : null;
+                        Look l = look().with(cat, Worn.of(item));
+                        if (other != null && l.get(other) != null) {
+                            l = l.with(other, null);
+                            notice = other == Slot.HAT ? "Zdjęto czapkę – uszy się pod nią nie mieszczą" : "Zdjęto uszy – czapka by je przygniotła";
+                            noticeAt = System.currentTimeMillis();
+                        }
+                        Wardrobe.setLocalLook(l, true);
                     }
                 });
             }
         }
         g.endScissor();
+        if (notice != null) {
+            long age = System.currentTimeMillis() - noticeAt;
+            if (age > 3500) notice = null;
+            else {
+                float na = Math.min(1, Math.min(age / 200f, (3500 - age) / 400f));
+                float nw = Render2D.textWidth(notice) * 0.75f + 14, nx = x + (w - nw) / 2f, ny = y + h - 18 + (1 - na) * 6;
+                g.setAlpha(na);
+                Render2D.roundedRect(g, nx, ny, nw, 14, 5, 0xF0201634);
+                Render2D.roundedOutline(g, nx, ny, nw, 14, 5, 1, ColorUtil.withAlpha(Theme.accent2(), 150));
+                Render2D.scaledText(g, notice, nx + 7, ny + 4, 0.75f, Theme.TEXT, false);
+                g.setAlpha(1);
+            }
+        }
         if (contentH > viewH) {
             float barH = Math.max(16, h * h / contentH), barY = y + (h - barH) * (sc / Math.max(1, contentH - viewH));
             Render2D.roundedRect(g, x + w + 2, barY, 2, barH, 1, 0x50FFFFFF);
         }
+    }
+
+    /** Item name under a tile: one or two lines of small text. */
+    private static void tileName(Gfx g, String name, float cx, float y, float maxW, int color) {
+        float sc = 0.72f;
+        if (Render2D.textWidth(name) * sc <= maxW) {
+            Render2D.scaledText(g, name, cx - Render2D.textWidth(name) * sc / 2f, y + 4, sc, color, false);
+            return;
+        }
+        int sp = name.indexOf(' ');
+        String a = sp < 0 ? name : name.substring(0, sp), b = sp < 0 ? "" : name.substring(sp + 1);
+        b = Render2D.trim(b, (int) (maxW / sc));
+        Render2D.scaledText(g, a, cx - Render2D.textWidth(a) * sc / 2f, y, sc, color, false);
+        Render2D.scaledText(g, b, cx - Render2D.textWidth(b) * sc / 2f, y + 7.5f, sc, color, false);
     }
 
     private void tilePreview(Gfx g, Item item, Worn worn, float x, float y, float w, float h, float hover, boolean hov) {
@@ -343,8 +379,9 @@ public class WardrobeScreen extends PanelScreen {
         float pad = 7, cx = x + pad, cy = y + 6;
         Render2D.text(g, item.name, cx, cy, Theme.TEXT, false);
         String sub = item.variants.length > 0 ? item.variantName(worn.variant) : item.description;
-        Render2D.scaledText(g, Render2D.trim(sub, (int) ((w - 110) / 0.7f)), cx + Render2D.textWidth(item.name) + 6, cy + 1.5f, 0.7f, Theme.TEXT_MUTED, false);
         float bw = buttonWidth("Zdejmij");
+        float subX = cx + Render2D.textWidth(item.name) + 6, subW = x + w - pad - bw - 6 - subX;
+        if (subW > 20) Render2D.scaledText(g, Render2D.trim(sub, (int) (subW / 0.7f)), subX, cy + 1.5f, 0.7f, Theme.TEXT_MUTED, false);
         button(g, mx, my, x + w - bw - pad, y + 4, "Zdejmij", 2, true, () -> wear(cat, null, true));
         cy += 16;
         if (item instanceof Items.CapeItem) {
@@ -413,6 +450,11 @@ public class WardrobeScreen extends PanelScreen {
             }
             vx += 6;
         }
+        if (vx + togglesWidth(item) > x + w - pad) {
+            // not enough room next to the variants: switches get their own row
+            if (item.variants.length > 0) cy += 17;
+            vx = cx;
+        }
         if (item.animOption) vx += toggle(g, mx, my, vx, cy, "Animacja", worn.anim, () -> wear(cat, worn.withAnim(!worn.anim), true)) + 8;
         if (item.glowOption) toggle(g, mx, my, vx, cy, "Poświata", worn.glow, () -> wear(cat, worn.withGlow(!worn.glow), true));
         cy += 19;
@@ -434,6 +476,31 @@ public class WardrobeScreen extends PanelScreen {
             float s = Math.round((Worn.MIN_SCALE + v * (Worn.MAX_SCALE - Worn.MIN_SCALE)) * 20) / 20f;
             if (s != worn.scale) wear(cat, worn.withScale(s), false);
         }
+    }
+
+    private static float togglesWidth(Item item) {
+        float w = 0;
+        if (item.animOption) w += Render2D.textWidth("Animacja") * 0.75f + 32;
+        if (item.glowOption) w += Render2D.textWidth("Poświata") * 0.75f + 32;
+        return w;
+    }
+
+    private static float variantsWidth(Item item) {
+        if (item.variants.length == 0) return 0;
+        float w = 42;
+        for (String n : item.variantNames) w += Render2D.textWidth(n) * 0.8f + 14;
+        return w;
+    }
+
+    /** Height of the options panel: title, colour, variants (+ switches when they fit), switches, sliders. */
+    private static float optionsHeight(Item item, float w) {
+        if (item instanceof Items.CapeItem) return 40;
+        float h = 6 + 16 + 4;
+        if (item.colorOption) h += 18;
+        boolean split = item.variants.length > 0 && variantsWidth(item) + togglesWidth(item) > w - 14;
+        h += 19 + (split ? 17 : 0);
+        if (item.speedOption || item.scaleOption) h += 16;
+        return h;
     }
 
     /** 0 = black … 0.5 = the pure hue … 1 = white. */
@@ -503,7 +570,7 @@ public class WardrobeScreen extends PanelScreen {
         }
         float yaw = yawAnim.target(dragYaw).update() + autoSpinOffset();
         Wardrobe.previewPose = pose;
-        float size = Math.min(pvH * 0.42f, w * 0.62f);
+        float size = Math.min(pvH / 3.1f, w / 1.8f);
         int x1 = (int) x + 2, y1 = (int) y + 2, x2 = (int) (x + w) - 2, y2 = (int) (y + pvH);
         boolean ok = false;
         try {

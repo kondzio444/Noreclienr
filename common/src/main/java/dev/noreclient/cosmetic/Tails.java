@@ -129,7 +129,7 @@ final class Tails extends Item {
     }
 
     @Override
-    protected float[] previewFrame() { return new float[]{0, 4, 8, 22}; }
+    protected float[] previewFrame() { return new float[]{0, 12, 7, 17}; }
 
     // ---------------------------------------------------------------- texture (128x256)
 

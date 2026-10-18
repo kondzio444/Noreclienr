@@ -102,7 +102,7 @@ public final class SecretEars {
         float t = age / 1000f;
         float fadeIn = Animation.easeOutCubic(t / 0.35f), fadeOut = 1 - Animation.easeOutCubic((t - 3.2f) / 0.8f);
         float dim = Math.min(fadeIn, fadeOut);
-        Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(0xFF05030A, (int) (120 * dim)));
+        Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(0xFF05030A, (int) (165 * dim)));
         float cx = width / 2f, cy = height / 2f - 10;
         // burst of sparkles and paw prints from the button towards the centre and beyond
         Random r = new Random(42);
@@ -132,6 +132,8 @@ public final class SecretEars {
         if (tp > 0) {
             g.setAlpha(Math.max(0, Math.min(1, fadeOut)) * tp);
             String title = "Sekret odkryty!";
+            float cw = Math.max(Render2D.textWidth(title) * 1.8f, Render2D.textWidth("Uszy i ogony Lisa i Kota czekają w Szatni") * 0.8f) + 24;
+            Render2D.roundedRect(g, cx - cw / 2f, cy + 30 + (1 - tp) * 8, cw, 38, 8, 0xC0100A1C);
             Render2D.gradientText(g, title, cx - Render2D.textWidth(title) * 0.9f, cy + 36 + (1 - tp) * 8, 1.8f, Theme.accent2(), 0xFFFFC2E0, true);
             String sub = "Uszy i ogony Lisa i Kota czekają w Szatni";
             Render2D.scaledText(g, sub, cx - Render2D.textWidth(sub) * 0.4f, cy + 56 + (1 - tp) * 8, 0.8f, Theme.TEXT_DIM, true);
@@ -154,19 +156,25 @@ public final class SecretEars {
         }
     }
 
-    /** Two cat ears over the top of a head outline; s = scale (1 ≈ 8 px wide), wiggle tilts the ears. */
+    /** A little cat head: two pointy ears (pink inside) on a round head with eyes; s = scale (1 ≈ 8 px wide), wiggle tilts the ears. */
     public static void catIcon(Gfx g, float cx, float cy, float s, int color, float wiggle) {
+        int a = ColorUtil.alpha(color);
+        int inner = ColorUtil.withAlpha(0xFFFF9EB5, a);
         for (int side = -1; side <= 1; side += 2) {
-            float bx = cx + side * 2.2f * s, by = cy - 0.6f * s;
-            double tilt = side * (0.35 + 0.25 * wiggle * side);
-            float[] base1 = rot(bx - 1.7f * s, by, bx, by, tilt), base2 = rot(bx + 1.7f * s, by, bx, by, tilt), tip = rot(bx + side * 0.5f * s, by - 4.2f * s, bx, by, tilt);
-            g.mesh(Gfx.TRIANGLES, new float[]{base1[0], base1[1], tip[0], tip[1], base2[0], base2[1]}, new int[]{color, color, color}, 3);
-            // inner ear
-            int inner = ColorUtil.withAlpha(0xFFFF9EB5, ColorUtil.alpha(color));
-            float[] i1 = rot(bx - 0.8f * s, by - 0.3f * s, bx, by, tilt), i2 = rot(bx + 0.8f * s, by - 0.3f * s, bx, by, tilt), it = rot(bx + side * 0.35f * s, by - 2.9f * s, bx, by, tilt);
+            float ox = cx + side * 1.9f * s, oy = cy - 0.6f * s;
+            double tilt = side * (0.12 + 0.3 * wiggle);
+            float[] b1 = rot(cx + side * 0.5f * s, cy - 1.6f * s, ox, oy, tilt), b2 = rot(cx + side * 3.3f * s, cy + 0.4f * s, ox, oy, tilt);
+            float[] tip = rot(cx + side * 2.9f * s, cy - 4.6f * s, ox, oy, tilt);
+            g.mesh(Gfx.TRIANGLES, new float[]{b1[0], b1[1], tip[0], tip[1], b2[0], b2[1]}, new int[]{color, color, color}, 3);
+            float[] i1 = rot(cx + side * 1.3f * s, cy - 1.5f * s, ox, oy, tilt), i2 = rot(cx + side * 2.8f * s, cy - 0.4f * s, ox, oy, tilt);
+            float[] it = rot(cx + side * 2.65f * s, cy - 3.5f * s, ox, oy, tilt);
             g.mesh(Gfx.TRIANGLES, new float[]{i1[0], i1[1], it[0], it[1], i2[0], i2[1]}, new int[]{inner, inner, inner}, 3);
         }
-        Render2D.ring(g, cx, cy + 1.2f * s, 3.6f * s, Math.max(0.9f, 0.9f * s), 196, 344, color);
+        Render2D.circle(g, cx, cy + 0.9f * s, 3.3f * s, color);
+        int eye = ColorUtil.withAlpha(0xFF1A1424, a);
+        Render2D.circle(g, cx - 1.25f * s, cy + 0.8f * s, 0.55f * s, eye);
+        Render2D.circle(g, cx + 1.25f * s, cy + 0.8f * s, 0.55f * s, eye);
+        Render2D.circle(g, cx, cy + 1.9f * s, 0.35f * s, inner);
     }
 
     private static float[] rot(float x, float y, float ox, float oy, double a) {

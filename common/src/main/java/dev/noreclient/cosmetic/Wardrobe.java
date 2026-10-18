@@ -206,6 +206,7 @@ public final class Wardrobe {
             Item item = Items.get(worn.id);
             if (item == null || (item.secret && !secretOk)) continue;
             if (s.helmet && (slot == Slot.HAT || slot == Slot.EARS)) continue;
+            if (slot == Slot.EARS && look.get(Slot.HAT) != null) continue; // a hat squashes the ears
             if (s.elytra && slot == Slot.WINGS) continue;
             if (worn.anim) w.advance(slot, worn.speed);
             Textures.Atlas atlas = Textures.get(item, worn);
@@ -279,7 +280,7 @@ public final class Wardrobe {
             float v = pose == 1 ? 0.21f : 0.065f;
             s.vz = v; // walking forward (body yaw 0 faces +z)
             s.limbSwing = t * (pose == 1 ? 9.5f : 5f);
-            s.limbAmount = pose == 1 ? 0.9f : 0.55f;
+            s.limbAmount = pose == 1 ? 0.7f : 0.5f;
         } else if (pose == 2) {
             s.vz = 0.35f;
             s.vy = Math.sin(t * 1.6) * 0.03;
