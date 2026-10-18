@@ -85,15 +85,23 @@ public final class Wardrobe {
     }
 
     /** Saves the local look (config and Nore Hub). */
-    public static synchronized void setLocalLook(Look look) {
+    public static void setLocalLook(Look look) { setLocalLook(look, true); }
+
+    /**
+     * Changes the local look; persist = false only updates it in memory (while a slider is being
+     * dragged), a later call with persist = true writes the config and publishes it.
+     */
+    public static synchronized void setLocalLook(Look look, boolean persist) {
         local = look == null ? Look.EMPTY : look;
         Cosmetics m = module();
         if (m != null) {
             m.storeLook(local);
-            if (!local.isEmpty() && !m.isEnabled()) m.setEnabled(true);
-            NoreClient.get().config().save();
+            if (persist) {
+                if (!local.isEmpty() && !m.isEnabled()) m.setEnabled(true);
+                NoreClient.get().config().save();
+            }
         }
-        publish();
+        if (persist) publish();
     }
 
     /** What others see of us: the look while the cosmetics are on, nothing when they are off. */

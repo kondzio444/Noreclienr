@@ -303,6 +303,14 @@ public interface Game {
     /** Cape for the local player (null = the player's own / none). */
     void setLocalCape(TextureRef cape);
 
+    /**
+     * Wardrobe preview: draws the local player's model (skin, the preview cape and the items of
+     * {@code Wardrobe.previewLook}, posed from {@code Wardrobe.previewState()}) inside the GUI
+     * rectangle x1,y1 – x2,y2 with its feet near the bottom. size: GUI pixels per block; yaw: degrees
+     * the model is turned (0 = facing the viewer); pitch: camera tilt. False when unsupported.
+     */
+    default boolean drawPlayerModel(Gfx g, int x1, int y1, int x2, int y2, float size, float yaw, float pitch) { return false; }
+
     /** Developer tool: writes a 6-face panorama of the current view into dir (no-op where unsupported). */
     default void takePanorama(String dir) {}
 
