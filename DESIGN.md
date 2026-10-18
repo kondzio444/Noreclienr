@@ -261,7 +261,7 @@ Flat by default. Panels sit on the ground with a keyline and no shadow; depth be
 
 Small, near-square corners that read as blocky without becoming pixel art: 6px for panels, modals and cards; 4px for buttons, inputs, nav items and icons; 2px for rank tags, loader tags and slider thumbs; 0 for progress bars, status dots, signal bars, the scrollbar thumb and the spinner (which steps in 8). Square dots replace round ones everywhere state is shown. Rank tags draw their own `[` and `]` in a muted mix of the tag colour.
 
-**Known drift, not the system.** A legacy `:root` block left in styles.css (the "Nore 2.1 design refresh" section) still redeclares `--radius` 16px, `--radius-sm` 11px and a translucent `--surface` (rgba(18, 12, 26, .66)), and its `.card` rule still adds `0 12px 34px rgba(0, 0, 0, .28)`. Because the world layer reads those variables, shipped panels currently compute to 16px/11px translucent glass. That is a defect to repair, not a value to inherit; the tokens above are normative.
+**Drift repaired.** The legacy "Nore 2.1 design refresh" block in styles.css (16px/11px corners, translucent `--surface`, glass `.card` gradients and shadow, the sidebar gradient and the nav gradient) has been removed, and `body.halloween` no longer makes `--surface` translucent. Panels compute to the tokens above: 6px/4px corners, opaque surfaces, 1px keylines, no glass. Do not reintroduce a second `:root` block that redeclares these tokens.
 
 ## Components
 
@@ -302,7 +302,7 @@ Tinted and outlined, so the one solid block stands alone.
 
 ### Navigation
 - Grouped rail nav: group labels 11px, 0.16em, #a89cbd; items 34px tall, 13.5px Inter, 17px stroke icons, dim text.
-- Hover: 5% white field, full text. Active: a sliding 42% accent field (0.3s, ease) with white text and icon.
+- Hover: 5% white field, full text; the icon nudges 1px. Press: scale .98. Active: one 42% accent field for the whole rail (`.rail-ind` in `.sb-scroll`) that glides between items and groups with `--ease-spring` (a few % of overshoot, then settle), interruptible mid-glide; white text and icon.
 - Rank-tag badges sit flush right in each item.
 
 ### Server List Rows
@@ -315,7 +315,25 @@ Tinted and outlined, so the one solid block stands alone.
 - Instance names scramble through pixel glyphs (A to Z without I/O, digits, #$%&?@) in accent-light and resolve left to right over 560ms when the page opens and when the game launches. Screen readers get the final name via aria-label. Skipped under reduced motion or the in-app animation switch.
 
 ### Motion
-- Ease: `cubic-bezier(.16, 1, .3, 1)` for everything; control state changes at 0.15s; list entries rise 10px over 0.45s with a 40ms stagger; modals pop 8px over 0.25s. Mechanical things step: spinners in 8 steps, the splash bar in 10, the lit mark and login loader in 2. Page transitions are a user choice (fade, slide, zoom, blur). `prefers-reduced-motion` and the in-app switch collapse all motion.
+One token set in styles.css `:root`, read by motion.css and by `Motion` in js/ui.js (WAAPI for anything interruptible or measured). Movement uses transform and opacity only; colour and border changes are plain transitions. Content is visible by default: entrances use `backwards` fill, never a hidden resting state.
+
+- **Durations:** `--dur-press` 90ms (press), `--dur-fast` 140ms (hover, control state), `--dur-base` 220ms (routine state, value tweens), `--dur-page` 300ms (page and list entrances), `--dur-overlay` 260ms (modal, menu, toast arriving), `--dur-exit` 130ms (anything leaving, always faster than it came), `--dur-focal` 560ms (the §k reveal, number count-ups).
+- **Curves:** `--ease-out` `cubic-bezier(.16, 1, .3, 1)` for arrivals; `--ease-in` `cubic-bezier(.55, 0, .8, .25)` for departures; `--ease-in-out` for loops; `--ease-spring` `cubic-bezier(.3, 1.25, .55, 1)` only for things that travel to a slot (rail indicator, segmented pill, switch knob). No bounce or elastic.
+- **Distances:** `--shift-page` 10px, `--shift-rise` 8px, `--shift-pop` 6px. Lists stagger by `--stagger-step` 30ms, capped at `--stagger-max` 8 items, so no list takes longer than ~0.3s to arrive; a list refreshed in place does not replay its entrance (`stagger(el, false)` / `.settled`).
+- **Pages:** `go()` is never blocked. The leaving page becomes an inert ghost under the new one and drops out in `--dur-exit`; the new page enters in `--dur-page` from its direction: down/up follow the rail order, in/out drill into or back out of a detail page (instance, server). A second click mid-transition simply starts the next one. The Settings choice (Kierunkowe default, fade, slide, zoom, bounded 6px blur) changes the entrance.
+- **Controls:** buttons press 1px down and to .98; trailing arrows nudge 2px on hover; icon-only buttons grow to 1.08; cards and rows keep their frame still (keyline and fill change on hover, .992 on press) while art inside drifts 3.5%; chips and tabs press to .96; the segmented pill glides (its width change is FLIPped into a scale); switch knobs stretch while held.
+- **Live values:** numbers count up (`Motion.count`, tabular figures), badges bump once when their value changes, progress fills scale on X (no width animation), a server that changes state climbs or drops its five signal bars one by one, a changed label swaps with a 7px out/in (`Motion.swap`).
+- **Loading:** skeletons fade in after 120ms (no flash on fast loads) with a transform sweep; results crossfade over them (`Motion.ghost`).
+- **Overlays:** modals and menus grow from their origin (6px, .985) and leave in `--dur-exit`; toasts slide in from the right edge, the stack closes up with FLIP, hovering holds a toast and pauses its bar.
+- **Graj block:** press drops it 2px; preparing fills the block left to right with the download (a 18% white layer scaled on X) and shows the percent; playing turns it running-green with a two-step live mark; each label change swaps out and in. The instance page uses the same block.
+- **Start hero (ambient):** the art drifts slowly (46s), leans a few pixels toward the pointer, and every 7 to 12s one letter of the instance name flickers through a §k glyph; nothing runs while the window is hidden or unfocused.
+- **Mechanical things step:** spinners in 8 steps, the splash bar in 10, the lit mark and the live mark in 2.
+- **Reduced motion:** `prefers-reduced-motion` zeroes the distances and the spring, shortens entrances and stops ambient loops (hero drift, event overlays); fades and colour changes stay so feedback remains legible. The in-app animation switch (`body.no-anim`) removes all motion.
+
+### Znajomi (friends and chat)
+- One view for both kinds of friend: a Minecraft nick on the list Nore Client highlights in game (main/social.js, written into every instance) and a chat contact keyed by Nore ID (main/chat.js, P2P in js/chat.js). They are matched by name into one person; the old "Czat i głos" page opens this view.
+- Left: your Nore ID (copy), one add field that recognises a nick or a Nore ID (with an optional nick for an ID), search from 7 people, invitations, then Online and the rest. A row is a 36px head with a square status mark (§a online or in game, §e waiting for them to add you, dark when offline, none for a nick-only friend), the name, and a presence line in § codes or the unread message, with an accent unread count.
+- Right: the person's header (head, condensed caps name, presence line, `[LISTA W GRZE]` §d and `[NORE ID]` §b rank tags, Zadzwoń when they are online, a menu for copy, NameMC, voice settings, clearing history and removing from either list), then the conversation inline; a nick-only friend shows their skin and a field to link their Nore ID; a chat-only contact offers adding their nick to the in-game list.
 
 ### Satellite surfaces
 - **Login gate:** an overlay card (320px rail-field side + 440px main), device code set as server-address cells in condensed caps on the well; Microsoft button in accent-deep with the block bevel.

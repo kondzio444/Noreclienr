@@ -56,7 +56,7 @@ body[data-trans="blur"] .page { animation-name: pageBlur; }
 .nav a:active { transform: scale(.98); }
 body.sb-collapsed .rail-ind { left: 4px; right: 4px; }
 .nav a .badge { transition: opacity var(--dur-fast); }
-.badge.bump, .ch-unread.bump, .fx-unread.bump { animation: bump var(--dur-base) var(--ease-spring); }
+.badge.bump, .fx-unread.bump { animation: bump var(--dur-base) var(--ease-out); }
 
 /* ------------------------------------------------------------------ controls: hover lights, press answers */
 .btn {
@@ -92,7 +92,7 @@ body.sb-collapsed .rail-ind { left: 4px; right: 4px; }
 .lchip:active, .chip:active, .seg button:active, .seg-icons button:active, .version-list button:active, .wz-acc:active, .wz-scene:active { transform: scale(.96); }
 .seg .pill { transition: transform var(--dur-base) var(--ease-spring); will-change: transform; }
 .fcheck i { transition: background-color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-base) var(--ease-spring); }
-.fcheck input:checked + i { animation: bump var(--dur-base) var(--ease-spring); }
+.fcheck input:checked + i { animation: bump var(--dur-base) var(--ease-out); }
 .switch i { transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
 .switch i::after { transition: transform var(--dur-base) var(--ease-spring), background-color var(--dur-fast); }
 .switch:active i::after { transform: scaleX(1.25); transform-origin: left; }
@@ -147,6 +147,17 @@ input[type=range].slider:active::-webkit-slider-thumb { transform: scale(1.15); 
 .update-bar, .doc-scan, .call-bar { animation: toastIn var(--dur-overlay) var(--ease-out) backwards; }
 .doc-scan { animation-name: fadeIn; }
 
+/* login gate on the same tokens */
+#login-gate { animation: lg-in var(--dur-overlay) var(--ease-out) both; }
+#login-gate.leave { animation: lg-out var(--dur-exit) var(--ease-in) both; }
+.lg-card { animation: lg-card var(--dur-overlay) 50ms var(--ease-out) both; }
+@keyframes lg-card { from { opacity: 0; transform: translateY(var(--shift-page)); } }
+.lg-step.in > * { animation: lg-rise var(--dur-page) var(--ease-out) both; }
+.lg-step.in > *:nth-child(2) { animation-delay: calc(1 * var(--stagger-step) + 10ms); } .lg-step.in > *:nth-child(3) { animation-delay: calc(2 * var(--stagger-step) + 20ms); }
+.lg-step.in > *:nth-child(4) { animation-delay: calc(3 * var(--stagger-step) + 30ms); } .lg-step.in > *:nth-child(5) { animation-delay: calc(4 * var(--stagger-step) + 40ms); }
+.lg-step.in > *:nth-child(6) { animation-delay: calc(5 * var(--stagger-step) + 50ms); }
+@keyframes lg-rise { from { opacity: 0; transform: translateY(var(--shift-rise)); } }
+
 /* toasts slide in from the edge they live on and the stack closes up (FLIP in ui.js) */
 .toast { animation: toastIn var(--dur-overlay) var(--ease-out) backwards; }
 .toast.out { animation: toastOut var(--dur-base) var(--ease-in) forwards; pointer-events: none; }
@@ -187,4 +198,8 @@ input[type=range].slider:active::-webkit-slider-thumb { transform: scale(1.15); 
   .pc-banner, .ibanner, .ga-item img, .h14-art, .h14-logo { transition: none !important; transform: none !important; translate: none !important; }
   .lit::after, .pl-live, .srv2-state i, .srv-state i { animation-iteration-count: 1 !important; }
   .badge.bump, .fcheck input:checked + i { animation: none; }
+  /* the event overlays' ambient loops (bats, spider, flicker) stand still */
+  body.halloween [class*="hw"], body.halloween [id^="hw"], body.halloween [id^="hw"] * { animation: none !important; }
+  #hw-bats { display: none; }
+  body.winter [class*="winter"], body.winter [class*="winter"] * { animation: none !important; }
 }

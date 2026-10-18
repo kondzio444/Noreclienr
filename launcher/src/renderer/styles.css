@@ -46,7 +46,7 @@
   --ease-out: cubic-bezier(.16, 1, .3, 1);      /* confident arrival */
   --ease-in: cubic-bezier(.55, 0, .8, .25);     /* quick departure */
   --ease-in-out: cubic-bezier(.65, 0, .35, 1);  /* back-and-forth loops */
-  --ease-spring: cubic-bezier(.3, 1.35, .55, 1); /* small overshoot: rail indicator, knobs, badges */
+  --ease-spring: cubic-bezier(.3, 1.25, .55, 1); /* a few % of overshoot, then settle: rail indicator, knobs, the segmented pill */
   --ease: var(--ease-out);
   --stagger-step: 30ms;
   --stagger-max: 8;      /* items after the 8th arrive together: a list never takes more than ~0.3 s */
