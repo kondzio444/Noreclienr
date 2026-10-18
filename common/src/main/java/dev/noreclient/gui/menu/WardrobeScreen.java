@@ -383,7 +383,7 @@ public class WardrobeScreen extends PanelScreen {
         Render2D.text(g, item.name, cx, cy, Theme.TEXT, false);
         String sub = item.variants.length > 0 ? item.variantName(worn.variant) : item.description;
         float bw = buttonWidth("Zdejmij");
-        float subX = cx + Render2D.textWidth(item.name) + 6, subW = x + w - pad - bw - 6 - subX;
+        float subX = cx + Render2D.textWidth(item.name) + 6, subW = x + w - pad - bw - 14 - subX;
         if (subW > 20) Render2D.scaledText(g, Render2D.trim(sub, (int) (subW / 0.7f)), subX, cy + 1.5f, 0.7f, Theme.TEXT_MUTED, false);
         button(g, mx, my, x + w - bw - pad, y + 4, "Zdejmij", 2, true, () -> wear(cat, null, true));
         cy += 16;

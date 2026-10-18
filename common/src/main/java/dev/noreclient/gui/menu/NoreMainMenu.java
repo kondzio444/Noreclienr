@@ -32,7 +32,8 @@ public class NoreMainMenu extends NoreScreen {
     private static final String[] NEWS = {
             "Radialne menu 3D pod Prawym Shiftem",
             "Edytor scen: pora dnia, drzewa, kamera",
-            "Szatnia: Kapelusz Wiedźmy i skrzydła",
+            "Nowa Szatnia – widzą ją inni gracze Nore",
+            "Środkowy przycisk na graczu: napisz, dodaj",
             "Halloween trwa – zima od 10 grudnia",
     };
 
