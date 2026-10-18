@@ -99,7 +99,7 @@ public final class ServerInfo {
 
     /** True when the text could be a server address (host or host:port). */
     public static boolean looksLikeAddress(String s) {
-        return s != null && s.trim().matches("[A-Za-z0-9._-]+\\.[A-Za-z0-9-]{2,}(:\\d{1,5})?|\\[?[0-9a-fA-F:]+\\]?(:\\d{1,5})?|localhost(:\\d{1,5})?");
+        return s != null && s.trim().matches("\\d{1,3}(\\.\\d{1,3}){3}(:\\d{1,5})?|[A-Za-z0-9._-]+\\.[A-Za-z0-9-]{2,}(:\\d{1,5})?|\\[?[0-9a-fA-F:]+\\]?(:\\d{1,5})?|localhost(:\\d{1,5})?");
     }
 
     // ------------------------------------------------------------------ query

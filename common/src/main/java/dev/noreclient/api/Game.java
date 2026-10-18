@@ -286,6 +286,11 @@ public interface Game {
 
     void moveServer(int from, int to);
 
+    /** Resource pack choice stored with a saved server: 0 ask, 1 enabled, 2 disabled. */
+    default int serverPackPolicy(int index) { return 0; }
+
+    default void setServerPackPolicy(int index, int policy) {}
+
     /** The original Minecraft server list screen. */
     void openVanillaMultiplayer(Object parent);
 

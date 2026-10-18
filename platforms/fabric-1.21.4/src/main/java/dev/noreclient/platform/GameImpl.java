@@ -473,7 +473,16 @@ public final class GameImpl implements Game {
 
     @Override
     public void connect(String name, String address, Object parent) {
-        ServerInfo info = new ServerInfo(name, address, ServerInfo.ServerType.OTHER);
+        // the saved entry, not a fresh one: keeps its resource pack choice (vanilla also replaces the
+        // saved entry with the one used for the connection after joining)
+        net.minecraft.client.option.ServerList list = servers();
+        ServerInfo info = savedEntry(list, name, address);
+        if (info == null) {
+            // like vanilla "Direct Connection": a hidden entry remembers the resource pack choice
+            info = new ServerInfo(name, address, ServerInfo.ServerType.OTHER);
+            list.add(info, true);
+            list.saveFile();
+        }
         net.minecraft.client.gui.screen.multiplayer.ConnectScreen.connect(toScreen(parent), mc(),
                 net.minecraft.client.network.ServerAddress.parse(address), info, false, null);
     }
@@ -496,10 +505,22 @@ public final class GameImpl implements Game {
         return list;
     }
 
+    /** The listed server with this name and address, else any saved entry (also hidden ones) with the address. */
+    private static ServerInfo savedEntry(net.minecraft.client.option.ServerList list, String name, String address) {
+        for (int i = 0; i < list.size(); i++) {
+            ServerInfo s = list.get(i);
+            if (s.address.equals(address) && java.util.Objects.equals(s.name, name)) return s;
+        }
+        return list.get(address);
+    }
+
     @Override
     public void addServer(String name, String address) {
         net.minecraft.client.option.ServerList list = servers();
-        list.add(new ServerInfo(name, address, ServerInfo.ServerType.OTHER), false);
+        // a server joined before through Direct Connection is stored hidden: show that entry (keeps its settings)
+        ServerInfo hidden = list.tryUnhide(address);
+        if (hidden != null) hidden.name = name;
+        else list.add(new ServerInfo(name, address, ServerInfo.ServerType.OTHER), false);
         list.saveFile();
     }
 
@@ -524,15 +545,34 @@ public final class GameImpl implements Game {
     @Override
     public void moveServer(int from, int to) {
         net.minecraft.client.option.ServerList list = servers();
-        if (from < 0 || to < 0 || from >= list.size() || to >= list.size()) return;
-        list.swapEntries(from, to);
+        if (from < 0 || to < 0 || from >= list.size() || to >= list.size() || from == to) return;
+        ServerInfo moved = list.get(from);
+        if (from < to) for (int i = from; i < to; i++) list.set(i, list.get(i + 1));
+        else for (int i = from; i > to; i--) list.set(i, list.get(i - 1));
+        list.set(to, moved);
+        list.saveFile();
+    }
+
+    @Override
+    public int serverPackPolicy(int index) {
+        net.minecraft.client.option.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return 0;
+        ServerInfo.ResourcePackPolicy p = list.get(index).getResourcePackPolicy();
+        return p == ServerInfo.ResourcePackPolicy.ENABLED ? 1 : p == ServerInfo.ResourcePackPolicy.DISABLED ? 2 : 0;
+    }
+
+    @Override
+    public void setServerPackPolicy(int index, int policy) {
+        net.minecraft.client.option.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return;
+        list.get(index).setResourcePackPolicy(policy == 1 ? ServerInfo.ResourcePackPolicy.ENABLED : policy == 2 ? ServerInfo.ResourcePackPolicy.DISABLED : ServerInfo.ResourcePackPolicy.PROMPT);
         list.saveFile();
     }
 
     @Override
     public void openVanillaMultiplayer(Object parent) {
         dev.noreclient.platform.ScreenRouting.allowVanilla = true;
-        mc().setScreen(new MultiplayerScreen(toScreen(parent)));
+        mc().setScreen(new MultiplayerScreen(toScreen(parent) != null ? toScreen(parent) : new TitleScreen()));
     }
 
     @Override
