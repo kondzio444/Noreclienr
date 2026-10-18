@@ -472,7 +472,16 @@ public final class GameImpl implements Game {
 
     @Override
     public void connect(String name, String address, Object parent) {
-        ServerData info = new ServerData(name, address, ServerData.Type.OTHER);
+        // the saved entry, not a fresh one: keeps its resource pack choice (vanilla also replaces the
+        // saved entry with the one used for the connection after joining)
+        net.minecraft.client.multiplayer.ServerList list = servers();
+        ServerData info = savedEntry(list, name, address);
+        if (info == null) {
+            // like vanilla "Direct Connection": a hidden entry remembers the resource pack choice
+            info = new ServerData(name, address, ServerData.Type.OTHER);
+            list.add(info, true);
+            list.save();
+        }
         net.minecraft.client.gui.screens.ConnectScreen.startConnecting(toScreen(parent), mc(),
                 net.minecraft.client.multiplayer.resolver.ServerAddress.parseString(address), info, false, null);
     }
@@ -495,10 +504,22 @@ public final class GameImpl implements Game {
         return list;
     }
 
+    /** The listed server with this name and address, else any saved entry (also hidden ones) with the address. */
+    private static ServerData savedEntry(net.minecraft.client.multiplayer.ServerList list, String name, String address) {
+        for (int i = 0; i < list.size(); i++) {
+            ServerData s = list.get(i);
+            if (s.ip.equals(address) && java.util.Objects.equals(s.name, name)) return s;
+        }
+        return list.get(address);
+    }
+
     @Override
     public void addServer(String name, String address) {
         net.minecraft.client.multiplayer.ServerList list = servers();
-        list.add(new ServerData(name, address, ServerData.Type.OTHER), false);
+        // a server joined before through Direct Connection is stored hidden: show that entry (keeps its settings)
+        ServerData hidden = list.unhide(address);
+        if (hidden != null) hidden.name = name;
+        else list.add(new ServerData(name, address, ServerData.Type.OTHER), false);
         list.save();
     }
 
@@ -523,15 +544,66 @@ public final class GameImpl implements Game {
     @Override
     public void moveServer(int from, int to) {
         net.minecraft.client.multiplayer.ServerList list = servers();
-        if (from < 0 || to < 0 || from >= list.size() || to >= list.size()) return;
-        list.swap(from, to);
+        if (from < 0 || to < 0 || from >= list.size() || to >= list.size() || from == to) return;
+        ServerData moved = list.get(from);
+        if (from < to) for (int i = from; i < to; i++) list.replace(i, list.get(i + 1));
+        else for (int i = from; i > to; i--) list.replace(i, list.get(i - 1));
+        list.replace(to, moved);
         list.save();
+    }
+
+    @Override
+    public int serverPackPolicy(int index) {
+        net.minecraft.client.multiplayer.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return 0;
+        ServerData.ServerPackStatus p = list.get(index).getResourcePackStatus();
+        return p == ServerData.ServerPackStatus.ENABLED ? 1 : p == ServerData.ServerPackStatus.DISABLED ? 2 : 0;
+    }
+
+    @Override
+    public void setServerPackPolicy(int index, int policy) {
+        net.minecraft.client.multiplayer.ServerList list = servers();
+        if (index < 0 || index >= list.size()) return;
+        list.get(index).setResourcePackStatus(policy == 1 ? ServerData.ServerPackStatus.ENABLED : policy == 2 ? ServerData.ServerPackStatus.DISABLED : ServerData.ServerPackStatus.PROMPT);
+        list.save();
+    }
+
+    @Override
+    public double[] camera() {
+        if (mc().level == null || mc().player == null) return null;
+        net.minecraft.client.Camera c = mc().gameRenderer.getMainCamera();
+        net.minecraft.world.phys.Vec3 pos = c.position();
+        return new double[]{pos.x, pos.y, pos.z, c.yRot(), c.xRot()};
+    }
+
+    @Override
+    public void setChunkBorders(boolean on) {
+        net.minecraft.resources.Identifier id = net.minecraft.client.gui.components.debug.DebugScreenEntries.CHUNK_BORDERS;
+        if (mc().debugEntries.isCurrentlyEnabled(id) != on) mc().debugEntries.toggleStatus(id);
+    }
+
+    @Override public int selectedSlot() { return p() == null ? 0 : p().getInventory().getSelectedSlot(); }
+    @Override public float fallDistance() { return p() == null ? 0 : (float) p().fallDistance; }
+    @Override public boolean invulnerable() { return p() != null && p().getAbilities().invulnerable; }
+    @Override public float hurtDirection() { return p() == null ? 0 : p().getHurtDir(); }
+    @Override public void requestAttention() { org.lwjgl.glfw.GLFW.glfwRequestWindowAttention(windowHandle()); }
+    @Override public boolean windowFocused() { return mc().isWindowActive(); }
+
+    @Override
+    public void playPing(float pitch) {
+        mc().getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING.value(), pitch, 0.6f));
+    }
+
+    @Override
+    public String itemName(ItemInfo item) {
+        if (item == null || !(item.handle instanceof net.minecraft.world.item.ItemStack)) return item == null ? "" : item.id;
+        return ((net.minecraft.world.item.ItemStack) item.handle).getHoverName().getString();
     }
 
     @Override
     public void openVanillaMultiplayer(Object parent) {
         dev.noreclient.platform.ScreenRouting.allowVanilla = true;
-        mc().setScreen(new JoinMultiplayerScreen(toScreen(parent)));
+        mc().setScreen(new JoinMultiplayerScreen(toScreen(parent) != null ? toScreen(parent) : new TitleScreen()));
     }
 
     @Override

@@ -28,6 +28,7 @@ public abstract class GameRendererMixin {
         }
         double divisor = c.modules().get(Zoom.class).getCurrentDivisor();
         if (divisor != 1.0 || fov != cir.getReturnValue()) cir.setReturnValue(fov / divisor);
+        if (changingFov) dev.noreclient.module.Hooks.fov = (float) (fov / divisor);
     }
 
     @Inject(method = "tiltViewWhenHurt", at = @At("HEAD"), cancellable = true)

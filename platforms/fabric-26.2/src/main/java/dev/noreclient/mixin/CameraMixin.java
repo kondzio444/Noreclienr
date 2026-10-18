@@ -50,6 +50,7 @@ public abstract class CameraMixin {
         }
         double divisor = c.modules().get(dev.noreclient.module.render.Zoom.class).getCurrentDivisor();
         if (divisor != 1.0 || fov != cir.getReturnValue()) cir.setReturnValue((float) (fov / divisor));
+        dev.noreclient.module.Hooks.fov = (float) (fov / divisor);
     }
 
     @Inject(method = "getMaxZoom", at = @At("HEAD"), cancellable = true)

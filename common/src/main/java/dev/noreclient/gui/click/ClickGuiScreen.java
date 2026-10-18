@@ -106,6 +106,8 @@ public class ClickGuiScreen extends NoreScreen {
     private String lastSearch = "";
     private final Animation navY = new Animation(61, 16);
     private final Animation navAlpha = new Animation(0, 12);
+    /** When each module was last switched from this screen (ripple on its toggle). */
+    private final Map<Module, Long> toggledAt = new HashMap<>();
 
     // per-frame transform
     private float scale, ox, oy;
@@ -206,8 +208,9 @@ public class ClickGuiScreen extends NoreScreen {
         renderBackground(ctx, mouseX, mouseY, delta);
 
         float base = Math.min(guiModule().guiScale.floatValue(), Math.min((width - 16) / W, (height - 16) / H));
-        float eased = Animation.easeOutBack(o);
-        scale = base * (0.88f + 0.12f * eased);
+        // opening pops slightly past full size, closing just shrinks away (no bounce on the way out)
+        float eased = closing ? Animation.easeOutCubic(o) : Animation.easeOutBack(o);
+        scale = base * (0.9f + 0.1f * eased);
         ox = (width / scale - W) / 2f;
         oy = (height / scale - H) / 2f + (1 - Animation.easeOutCubic(o)) * 12;
         double mx = mapX(mouseX), my = mapY(mouseY);
@@ -224,8 +227,9 @@ public class ClickGuiScreen extends NoreScreen {
         Render2D.roundedRect(ctx, 0, 0, W, H, r, Theme.BG);
         // soft accent light across the top of the content area
         Render2D.quadGradient(ctx, SIDEBAR + 1, 0, W - SIDEBAR - r, 70, ColorUtil.withAlpha(Theme.accent(), 26), ColorUtil.withAlpha(Theme.accent2(), 14), 0, 0);
-        Render2D.quadGradient(ctx, SIDEBAR + 20, 0, (W - SIDEBAR - 40) / 2f, 1, 0, Theme.accent(), Theme.accent(), 0);
-        Render2D.quadGradient(ctx, SIDEBAR + 20 + (W - SIDEBAR - 40) / 2f, 0, (W - SIDEBAR - 40) / 2f, 1, Theme.accent2(), 0, 0, Theme.accent2());
+        float lineW = (W - SIDEBAR - 40) / 2f * Animation.easeOutCubic(o), lineC = SIDEBAR + 20 + (W - SIDEBAR - 40) / 2f;
+        Render2D.quadGradient(ctx, lineC - lineW, 0, lineW, 1, 0, Theme.accent(), Theme.accent(), 0);
+        Render2D.quadGradient(ctx, lineC, 0, lineW, 1, Theme.accent2(), 0, 0, Theme.accent2());
         renderSidebar(ctx, mx, my);
         renderHeader(ctx, mx, my);
 
@@ -419,7 +423,7 @@ public class ClickGuiScreen extends NoreScreen {
             sub = currentList().isEmpty() ? "Kliknij gwiazdkę na module, aby go tu przypiąć" : currentList().size() + " przypiętych modułów";
         } else if (collection == 2) {
             title = "Nowe w " + NoreClient.VERSION;
-            sub = "Znajomi, peleryny, zrzuty, Auto GG, Dynamic FPS, Waypoint i więcej";
+            sub = "Waypointy, znacznik trafień, prędkościomierz, licznik totemów, AFK Alert i więcej";
         } else {
             title = category == null ? "Wszystkie moduły" : category.displayName;
             sub = category == null ? NoreClient.get().modules().getModules().size() + " modułów \u2022 " + NoreClient.get().modules().optionCount() + " opcji" : category.subtitle;
@@ -443,6 +447,23 @@ public class ClickGuiScreen extends NoreScreen {
         if (page == Page.MODULES) {
             float sw = 140, sx = W - sw - 40;
             search.render(ctx, sx, 12, sw, 22, TextBox.SEARCH_ICON);
+            if (!search.getText().isEmpty()) {
+                // result count and a clear button inside the field
+                String n = String.valueOf(currentList().size());
+                float cw = Render2D.textWidth(n) * 0.7f + 8, cx = sx + sw - 18 - cw;
+                Render2D.roundedRect(ctx, cx, 17.5f, cw, 11, 5.5f, ColorUtil.withAlpha(Theme.accent(), currentList().isEmpty() ? 40 : 90));
+                Render2D.scaledText(ctx, n, cx + 4, 20, 0.7f, Theme.TEXT, false);
+                boolean hc = Render2D.hovered(mx, my, sx + sw - 16, 15, 14, 16);
+                float ca = anim("clearSearch", 16).target(hc ? 1 : 0).update();
+                int xc = ColorUtil.lerp(Theme.TEXT_MUTED, Theme.TEXT, ca);
+                Render2D.line(ctx, sx + sw - 12, 19.5f, sx + sw - 6, 25.5f, 1.2f, xc);
+                Render2D.line(ctx, sx + sw - 6, 19.5f, sx + sw - 12, 25.5f, 1.2f, xc);
+                hit(sx + sw - 16, 15, 14, 16, false, (a, b, c) -> {
+                    search.setText("");
+                    scroll.set(0);
+                    Sounds.click();
+                });
+            }
             hit(sx, 12, sw, 22, false, (a, b, c) -> {
                 search.setFocused(true);
                 profileName.setFocused(false);
@@ -551,7 +572,15 @@ public class ClickGuiScreen extends NoreScreen {
         if (ta > 0.01f && toggleable) Render2D.roundedGradient(ctx, x, yy, w, h, r,
                 ColorUtil.withAlpha(Theme.accent(), (int) (30 * ta)), ColorUtil.withAlpha(Theme.accent(), (int) (6 * ta)), !listView);
         int outline = toggleable ? ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 200), ta) : Theme.OUTLINE;
+        Long tAt = toggledAt.get(m);
+        float flash = tAt == null ? 0 : Math.max(0, 1 - (System.currentTimeMillis() - tAt) / 450f);
+        if (flash > 0) outline = ColorUtil.lerp(outline, 0xFFFFFFFF, flash * 0.6f);
         Render2D.roundedOutline(ctx, x, yy, w, h, r, 1, outline);
+        // hover accent: a short bar that grows from the middle of the bottom edge
+        if (ha > 0.02f) {
+            float bw = (w - 2 * r) * 0.5f * Animation.easeOutCubic(ha);
+            Render2D.roundedRect(ctx, x + w / 2f - bw / 2f, yy + h - 1.6f, bw, 1.6f, 0.8f, ColorUtil.withAlpha(Theme.accent(), (int) (220 * ha)));
+        }
 
         // favourite star
         boolean hs = hovered(mx, my, sx - 7, sy - 7 - lift, 14, 14, true);
@@ -562,19 +591,23 @@ public class ClickGuiScreen extends NoreScreen {
         if (listView) {
             Icons.tile(ctx, m.getCategory(), x + 6, yy + 6, 18, ta);
             String name = m.getName();
+            matchHighlight(ctx, name, x + 30, yy + 6);
             Render2D.text(ctx, name, x + 30, yy + 6, Theme.TEXT);
             float nx = x + 30 + Render2D.textWidth(name) + 6;
             if (ExtraModules.isNew(m)) { newBadge(ctx, nx, yy + 5); nx += 36; }
             if (m.getKeybind().isBound()) keyChip(ctx, m, nx, yy + 4.5f);
             Render2D.scaledText(ctx, Render2D.trim(m.getDescription(), (int) ((w - 120) / 0.75f)), x + 30, yy + 18, 0.75f, Theme.TEXT_DIM, false);
-            if (toggleable) Widgets.toggle(ctx, x + w - 34, yy + h / 2f - 6.5f, 26, 13, ta);
-            else Render2D.text(ctx, "›", x + w - 16, yy + h / 2f - 4, Theme.accent());
+            if (toggleable) {
+                Widgets.toggle(ctx, x + w - 34, yy + h / 2f - 6.5f, 26, 13, ta);
+                ripple(ctx, m, x + w - 21, yy + h / 2f);
+            } else Render2D.text(ctx, "›", x + w - 16, yy + h / 2f - 4, Theme.accent());
             hit(x, y, w, h, true, cardAction(m, x, y, w, h));
             hit(sx - 7, sy - 7, 14, 14, true, (a, b, c) -> toggleFavorite(m));
             return;
         }
 
         Icons.tile(ctx, m.getCategory(), x + 7, yy + 7, 18, ta);
+        matchHighlight(ctx, Render2D.trim(m.getName(), (int) (w - 48)), x + 30, yy + 7);
         Render2D.text(ctx, Render2D.trim(m.getName(), (int) (w - 48)), x + 30, yy + 7, Theme.TEXT);
         String cat = m.getCategory().displayName.toUpperCase();
         Render2D.scaledText(ctx, cat, x + 30, yy + 17.5f, 0.6f, ColorUtil.withAlpha(m.getCategory().color, 200), false);
@@ -602,6 +635,7 @@ public class ClickGuiScreen extends NoreScreen {
             Icons.sliders(ctx, x + 12.5f, by + 6.5f, 8, gc);
             Render2D.text(ctx, "Opcje", x + 20 + ga * 1.5f, by + 3, gc);
             Widgets.toggle(ctx, x + w - 32, by, 26, 13, ta);
+            ripple(ctx, m, x + w - 19, by + 6.5f);
         } else {
             Render2D.text(ctx, "Otwórz ›", x + w - 8 - Render2D.textWidth("Otwórz ›"), by + 3, Theme.accent());
         }
@@ -611,6 +645,29 @@ public class ClickGuiScreen extends NoreScreen {
         }
         hit(x, y, w, h, true, cardAction(m, x, y, w, h));
         hit(sx - 7, sy - 7, 14, 14, true, (a, b, c) -> toggleFavorite(m));
+    }
+
+    /** Expanding ring from a toggle that was just switched. */
+    private void ripple(Gfx ctx, Module m, float cx, float cy) {
+        Long t = toggledAt.get(m);
+        if (t == null) return;
+        float p = (System.currentTimeMillis() - t) / 420f;
+        if (p >= 1) { toggledAt.remove(m); return; }
+        float e = Animation.easeOutCubic(p);
+        int c = m.isEnabled() ? Theme.accent() : 0xFFB0A3CF;
+        Render2D.ring(ctx, cx, cy, 6 + 12 * e, 1.4f, 0, 360, ColorUtil.withAlpha(c, (int) (170 * (1 - p))));
+    }
+
+    /** Soft accent mark behind the part of a module name that matches the search. */
+    private void matchHighlight(Gfx ctx, String name, float x, float y) {
+        String q = search.getText().trim().toLowerCase(java.util.Locale.ROOT);
+        if (q.isEmpty()) return;
+        int i = name.toLowerCase(java.util.Locale.ROOT).indexOf(q);
+        if (i < 0) return;
+        float sx = x + Render2D.textWidth(name.substring(0, i)) - 1;
+        float sw = Render2D.textWidth(name.substring(i, Math.min(name.length(), i + q.length()))) + 2;
+        Render2D.roundedRect(ctx, sx, y - 1.5f, sw, 11, 2, ColorUtil.withAlpha(Theme.accent(), 70));
+        Render2D.rect(ctx, sx + 1, y + 9, sw - 2, 0.8f, ColorUtil.withAlpha(Theme.accent(), 220));
     }
 
     private void keyChip(Gfx ctx, Module m, float kx, float ky) {
@@ -628,6 +685,7 @@ public class ClickGuiScreen extends NoreScreen {
                 switchPage(Page.SETTINGS, m);
             } else if (button == 0) {
                 m.toggle();
+                toggledAt.put(m, System.currentTimeMillis());
                 Sounds.toggle(m.isEnabled());
             }
         };

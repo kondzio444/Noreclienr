@@ -38,8 +38,10 @@ public class MultiplayerScreen2 extends NoreScreen {
     private final Animation scroll = new Animation(0, 14), dialogAnim = new Animation(0, 12);
     private final long opened = System.currentTimeMillis();
     private float scrollTarget, contentH, listY, listH;
-    private int selected = -1, dialog, editIndex = -1, lastClicked = -1;
-    private long lastClickAt, deleteArmed;
+    private int selected = -1, dialog, editIndex = -1, lastClicked = -1, dlgPolicy;
+    private long lastClickAt, deleteArmed, flashAt;
+    private String flash, dlgError;
+    private boolean scrollToSelected;
 
     private final List<float[]> hitRects = new ArrayList<float[]>();
     private final List<Runnable> hitActions = new ArrayList<Runnable>();
@@ -53,9 +55,50 @@ public class MultiplayerScreen2 extends NoreScreen {
         reload();
     }
 
+    /** Re-reads servers.dat: every change goes straight to the file, so the list always shows what is saved. */
     private void reload() {
         try { servers = game().serverList(); } catch (Exception e) { servers = new ArrayList<String[]>(); }
         if (selected >= servers.size()) selected = servers.size() - 1;
+    }
+
+    private void flash(String text) {
+        flash = text;
+        flashAt = System.currentTimeMillis();
+    }
+
+    /** "1 serwer", "3 serwery", "12 serwerów". */
+    static String serversLabel(int n) {
+        int m10 = n % 10, m100 = n % 100;
+        if (n == 1) return "1 serwer";
+        if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return n + " serwery";
+        return n + " serwerów";
+    }
+
+    private static final String[] POLICY = {"Pytaj", "Włączone", "Wyłączone"};
+
+    /** Moves the selected server one place up or down among the servers currently shown (search aware). */
+    private void moveSelected(int dir) {
+        List<Integer> vis = visible();
+        int k = vis.indexOf(selected);
+        if (k < 0 || k + dir < 0 || k + dir >= vis.size()) return;
+        int to = vis.get(k + dir);
+        game().moveServer(selected, to);
+        selected = to;
+        reload();
+        scrollToSelected = true;
+        Sounds.click();
+    }
+
+    private void deleteSelected() {
+        if (selected < 0 || selected >= servers.size()) return;
+        if (System.currentTimeMillis() - deleteArmed < 2500) {
+            String name = servers.get(selected)[0];
+            game().removeServer(selected);
+            deleteArmed = 0;
+            reload();
+            if (selected >= servers.size()) selected = servers.size() - 1;
+            flash("Usunięto: " + name);
+        } else deleteArmed = System.currentTimeMillis();
     }
 
     @Override
@@ -121,7 +164,16 @@ public class MultiplayerScreen2 extends NoreScreen {
         Render2D.line(g, pad + 7, 22, pad + 12, 27, 1.6f, 0xFFFFFFFF);
         if (inputOk) hit(pad, 12, 20, 20, this::close);
         Render2D.gradientText(g, "MULTIPLAYER", pad + 28, 13, 1.5f, Theme.accent2(), Theme.accent(), true);
-        Render2D.scaledText(g, servers.size() + " serwerów", pad + 28, 28, 0.7f, Theme.TEXT_MUTED, false);
+        Render2D.scaledText(g, serversLabel(servers.size()), pad + 28, 28, 0.7f, Theme.TEXT_MUTED, false);
+        if (flash != null) {
+            float fa = 1 - Math.max(0, (System.currentTimeMillis() - flashAt - 1800) / 600f);
+            if (fa <= 0) flash = null;
+            else {
+                float fx = pad + 28 + Render2D.textWidth(serversLabel(servers.size())) * 0.7f + 8;
+                Render2D.circle(g, fx + 2, 31.5f, 2, ColorUtil.withAlpha(Theme.SUCCESS, (int) (255 * fa)));
+                Render2D.scaledText(g, flash, fx + 7, 28, 0.7f, ColorUtil.withAlpha(Theme.SUCCESS, (int) (255 * fa)), false);
+            }
+        }
         boolean wide = width > 520;
         String addL = wide ? "+ Dodaj serwer" : "+ Dodaj", refL = "Odśwież", clsL = wide ? "Klasyczna lista" : "Klasyczna";
         float bx = width - pad;
@@ -130,7 +182,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         bx -= Render2D.textWidth(refL) + 18 + 5;
         button(g, mx, my, bx, 14, refL, 0, true, () -> { for (String[] s : servers) ServerInfo.invalidate(s[1]); Sounds.click(); });
         bx -= Render2D.textWidth(clsL) + 18 + 5;
-        if (bx > pad + 28 + Render2D.textWidth("MULTIPLAYER") * 1.5f + 6) button(g, mx, my, bx, 14, clsL, 0, true, () -> game().openVanillaMultiplayer(parent));
+        if (bx > pad + 28 + Render2D.textWidth("MULTIPLAYER") * 1.5f + 6) button(g, mx, my, bx, 14, clsL, 0, true, () -> game().openVanillaMultiplayer(this));
 
         // ------------------------------------------------------------ server list (left)
         float top = 44, lw = Math.max(200, width * 0.58f - pad), lx = pad;
@@ -140,6 +192,15 @@ public class MultiplayerScreen2 extends NoreScreen {
         listH = height - listY - 10;
         List<Integer> vis = visible();
         contentH = vis.size() * (ROW + 5);
+        if (scrollToSelected) {
+            scrollToSelected = false;
+            int k = vis.indexOf(selected);
+            if (k >= 0) {
+                float top0 = k * (ROW + 5), bot0 = top0 + ROW;
+                if (top0 < scrollTarget) scrollTarget = top0;
+                else if (bot0 > scrollTarget + listH) scrollTarget = bot0 - listH;
+            }
+        }
         scrollTarget = Math.max(0, Math.min(scrollTarget, contentH - listH));
         float sc = scroll.target(scrollTarget).update();
         g.scissor((int) lx - 6, (int) listY - 2, (int) (lx + lw + 6), (int) (listY + listH));
@@ -218,13 +279,12 @@ public class MultiplayerScreen2 extends NoreScreen {
                 x += button(g, mx, my, x, by, "Dołącz", 1, true, () -> join(s[0], s[1])) + 4;
                 x += button(g, mx, my, x, by, "Edytuj", 0, true, () -> openDialog(selected)) + 4;
                 boolean armed = System.currentTimeMillis() - deleteArmed < 2500;
-                x += button(g, mx, my, x, by, armed ? "Na pewno?" : "Usuń", 2, true, () -> {
-                    if (System.currentTimeMillis() - deleteArmed < 2500) { game().removeServer(selected); deleteArmed = 0; reload(); }
-                    else deleteArmed = System.currentTimeMillis();
-                }) + 4;
+                x += button(g, mx, my, x, by, armed ? "Na pewno?" : "Usuń", 2, true, this::deleteSelected) + 4;
                 if (x + 40 < rx + rw) {
-                    x += button(g, mx, my, x, by, "↑", 0, selected > 0, () -> { game().moveServer(selected, selected - 1); selected--; reload(); }) + 4;
-                    button(g, mx, my, x, by, "↓", 0, selected < servers.size() - 1, () -> { game().moveServer(selected, selected + 1); selected++; reload(); });
+                    List<Integer> shown = visible();
+                    int k = shown.indexOf(selected);
+                    x += button(g, mx, my, x, by, "↑", 0, k > 0, () -> moveSelected(-1)) + 4;
+                    button(g, mx, my, x, by, "↓", 0, k >= 0 && k < shown.size() - 1, () -> moveSelected(1));
                 }
                 compact = false;
             } else {
@@ -284,28 +344,66 @@ public class MultiplayerScreen2 extends NoreScreen {
     // ------------------------------------------------------------ dialog
 
     private void openDialog(int index) {
+        if (index >= servers.size()) return;
         dialog = index < 0 ? 1 : 2;
         editIndex = index;
+        dlgError = null;
         dlgName.setText(index < 0 ? "" : servers.get(index)[0]);
         dlgAddr.setText(index < 0 ? direct.getText().trim() : servers.get(index)[1]);
-        focus(index < 0 ? dlgAddr : dlgName);
+        dlgPolicy = index < 0 ? 0 : game().serverPackPolicy(index);
+        // the fields read top to bottom: name first (typing a name into the focused address box
+        // used to save servers with the name as their address)
+        focus(dlgName);
         Sounds.click();
     }
 
     private void saveDialog() {
         String addr = dlgAddr.getText().trim();
-        if (addr.isEmpty()) return;
+        if (addr.isEmpty()) {
+            dlgError = "Wpisz adres serwera";
+            focus(dlgAddr);
+            return;
+        }
+        if (addr.contains(" ")) {
+            dlgError = "Adres nie może zawierać spacji";
+            focus(dlgAddr);
+            return;
+        }
         String name = dlgName.getText().trim().isEmpty() ? addr : dlgName.getText().trim();
-        if (dialog == 1) { game().addServer(name, addr); reload(); selected = servers.size() - 1; }
-        else game().editServer(editIndex, name, addr);
+        if (dialog == 1) {
+            game().addServer(name, addr);
+            reload();
+            selected = -1;
+            for (int i = servers.size() - 1; i >= 0; i--) {
+                if (servers.get(i)[1].equals(addr) && servers.get(i)[0].equals(name)) { selected = i; break; }
+            }
+            if (selected >= 0 && dlgPolicy != 0) game().setServerPackPolicy(selected, dlgPolicy);
+            flash(selected >= 0 ? "Zapisano serwer" : "Nie udało się zapisać");
+            search.setText("");
+        } else {
+            if (editIndex >= 0 && editIndex < servers.size()) {
+                game().editServer(editIndex, name, addr);
+                if (game().serverPackPolicy(editIndex) != dlgPolicy) game().setServerPackPolicy(editIndex, dlgPolicy);
+                selected = editIndex;
+            }
+            flash("Zapisano zmiany");
+        }
         dialog = 0;
         reload();
+        scrollToSelected = true;
         Sounds.toggle(true);
+    }
+
+    private boolean duplicate(String addr) {
+        for (int i = 0; i < servers.size(); i++) {
+            if (i != editIndex && servers.get(i)[1].equalsIgnoreCase(addr)) return true;
+        }
+        return false;
     }
 
     private void renderDialog(Gfx g, int mx, int my, float d) {
         Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(0xFF000000, (int) (150 * d)));
-        float w = Math.min(280, width - 30), h = 150, x = (width - w) / 2f, y = (height - h) / 2f + (1 - d) * 16;
+        float w = Math.min(280, width - 30), h = 172, x = (width - w) / 2f, y = (height - h) / 2f + (1 - d) * 16;
         g.setAlpha(d);
         panel(g, x, y, w, h, dialog == 2 ? "Edytuj serwer" : "Dodaj serwer");
         Render2D.scaledText(g, "Nazwa", x + 8, y + 19, 0.68f, Theme.TEXT_MUTED, false);
@@ -319,11 +417,23 @@ public class MultiplayerScreen2 extends NoreScreen {
         } else {
             Render2D.scaledText(g, "Podgląd pojawi się po wpisaniu adresu.", x + 8, y + 92, 0.7f, Theme.TEXT_MUTED, false);
         }
+        // resource packs sent by the server (same setting as in the vanilla edit screen)
+        float py = y + 126;
+        Render2D.scaledText(g, "Paczki zasobów serwera", x + 8, py + 4, 0.7f, Theme.TEXT_MUTED, false);
+        String pol = POLICY[Math.max(0, Math.min(2, dlgPolicy))];
+        float pw = Render2D.textWidth(pol) + 16, pxx = x + w - 8 - pw;
+        boolean ph = Render2D.hovered(mx, my, pxx, py, pw, 14);
+        int pc = dlgPolicy == 1 ? Theme.SUCCESS : dlgPolicy == 2 ? Theme.ERROR : Theme.accent();
+        Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("dpol").target(ph ? 1 : 0).update(), 0.6f);
+        Render2D.centeredText(g, pol, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
+        String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : duplicate(addr) ? "Ten adres jest już na liście" : null);
+        if (warn != null) Render2D.scaledText(g, warn, x + 8, y + h - 18, 0.7f, dlgError != null ? Theme.ERROR : Theme.WARNING, false);
         if (dialog != 0) {
             hitRects.clear();
             hitActions.clear();
             hit(x + 8, y + 26, w - 16, 17, () -> focus(dlgName));
             hit(x + 8, y + 55, w - 16, 17, () -> focus(dlgAddr));
+            hit(pxx, py, pw, 14, () -> { dlgPolicy = (dlgPolicy + 1) % 3; Sounds.click(); });
             float bw1 = Render2D.textWidth("Zapisz") + 18, bw2 = Render2D.textWidth("Anuluj") + 18;
             float by = y + h - 24;
             dialogButton(g, mx, my, x + w - 8 - bw1, by, bw1, "Zapisz", true, this::saveDialog);
@@ -379,9 +489,13 @@ public class MultiplayerScreen2 extends NoreScreen {
     public boolean keyPressed(int key, int modifiers) {
         if (dialog != 0) {
             if (key == Keys.ESCAPE) { dialog = 0; return true; }
-            if (key == Keys.ENTER || key == Keys.KP_ENTER) { saveDialog(); return true; }
+            if (key == Keys.ENTER || key == Keys.KP_ENTER) {
+                if (dlgName.isFocused() && dlgAddr.getText().trim().isEmpty()) focus(dlgAddr);
+                else saveDialog();
+                return true;
+            }
             if (key == Keys.TAB) { focus(dlgName.isFocused() ? dlgAddr : dlgName); return true; }
-            if (dlgName.keyPressed(key) || dlgAddr.keyPressed(key)) return true;
+            if (dlgName.keyPressed(key) || dlgAddr.keyPressed(key)) { dlgError = null; return true; }
             return true;
         }
         if (direct.isFocused() && (key == Keys.ENTER || key == Keys.KP_ENTER)) {
@@ -395,11 +509,19 @@ public class MultiplayerScreen2 extends NoreScreen {
             join(servers.get(selected)[0], servers.get(selected)[1]);
             return true;
         }
-        if (key == Keys.DOWN && selected < servers.size() - 1) { selected++; return true; }
-        if (key == Keys.UP && selected > 0) { selected--; return true; }
+        if (key == Keys.DOWN || key == Keys.UP) {
+            List<Integer> vis = visible();
+            if (vis.isEmpty()) return true;
+            int k = vis.indexOf(selected), dir = key == Keys.DOWN ? 1 : -1;
+            if (game().shiftDown() && k >= 0) { moveSelected(dir); return true; }
+            k = k < 0 ? (dir > 0 ? 0 : vis.size() - 1) : Math.max(0, Math.min(vis.size() - 1, k + dir));
+            selected = vis.get(k);
+            deleteArmed = 0;
+            scrollToSelected = true;
+            return true;
+        }
         if (key == Keys.DELETE && selected >= 0) {
-            if (System.currentTimeMillis() - deleteArmed < 2500) { game().removeServer(selected); deleteArmed = 0; reload(); }
-            else deleteArmed = System.currentTimeMillis();
+            deleteSelected();
             return true;
         }
         return super.keyPressed(key, modifiers);

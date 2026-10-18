@@ -70,6 +70,11 @@ public class NorePauseMenu extends NoreScreen {
         ctx.translate(slide, 0);
         Render2D.quadGradient(ctx, 0, 0, panelW + 70, height, 0xF00A0614, 0x000A0614, 0x000A0614, 0xF00A0614);
         Render2D.quadGradient(ctx, panelW - 1, 0, 1, height, ColorUtil.withAlpha(Theme.accent(), 0), ColorUtil.withAlpha(Theme.accent(), 0), ColorUtil.withAlpha(Theme.accent(), 140), ColorUtil.withAlpha(Theme.accent(), 140));
+        // a slow light travelling down the panel edge
+        float sweep = (System.currentTimeMillis() % 4200L) / 4200f * (height + 120) - 60;
+        int glow = ColorUtil.withAlpha(Theme.accent2(), 220), none = ColorUtil.withAlpha(Theme.accent2(), 0);
+        Render2D.quadGradient(ctx, panelW - 1.5f, sweep - 40, 2, 40, none, none, glow, glow);
+        Render2D.quadGradient(ctx, panelW - 1.5f, sweep, 2, 40, glow, glow, none, none);
 
         float pad = 16;
         Render2D.logo(ctx, pad, 18, 22, 1f);
@@ -97,6 +102,7 @@ public class NorePauseMenu extends NoreScreen {
                     {game().singleplayer() ? "Wymiar" : "Ping", game().singleplayer() ? dimension() : game().ping() + " ms"},
                     {"Pozycja", (int) Math.floor(game().x()) + " " + (int) Math.floor(game().y()) + " " + (int) Math.floor(game().z())},
                     {"Sesja", session()},
+                    {"Moduły", activeModules() + " włączonych"},
             };
             float ch = 24 + rows.length * 13 + 4;
             float r = Theme.radius();
@@ -104,7 +110,16 @@ public class NorePauseMenu extends NoreScreen {
             Render2D.roundedRect(ctx, cx, cy, cw, ch, r, 0xD0120E0B);
             Render2D.roundedOutline(ctx, cx, cy, cw, ch, r, 1, 0x26FFFFFF);
             Render2D.quadGradient(ctx, cx + 8, cy, cw - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
-            Render2D.circle(ctx, cx + 11, cy + 11, 2.5f, Theme.SUCCESS);
+            // shimmer moving along the top edge of the card
+            float sh = (System.currentTimeMillis() % 3000L) / 3000f;
+            float shx = cx + 8 + (cw - 40) * sh;
+            Render2D.quadGradient(ctx, shx, cy, 12, 1, ColorUtil.withAlpha(0xFFFFFFFF, 0), ColorUtil.withAlpha(0xFFFFFFFF, 160), ColorUtil.withAlpha(0xFFFFFFFF, 160), ColorUtil.withAlpha(0xFFFFFFFF, 0));
+            Render2D.quadGradient(ctx, shx + 12, cy, 12, 1, ColorUtil.withAlpha(0xFFFFFFFF, 160), ColorUtil.withAlpha(0xFFFFFFFF, 0), ColorUtil.withAlpha(0xFFFFFFFF, 0), ColorUtil.withAlpha(0xFFFFFFFF, 160));
+            // status dot: breathing, coloured by ping on a server
+            int dot = game().singleplayer() ? Theme.SUCCESS : dev.noreclient.module.utility.TabPing.color(game().ping());
+            float breathe = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 500.0);
+            Render2D.circle(ctx, cx + 11, cy + 11, 2.5f + 2.5f * breathe, ColorUtil.withAlpha(dot, (int) (60 * (1 - breathe))));
+            Render2D.circle(ctx, cx + 11, cy + 11, 2.5f, dot);
             Render2D.text(ctx, "Sesja", cx + 18, cy + 7.5f, Theme.TEXT, false);
             for (int i = 0; i < rows.length; i++) {
                 float ry = cy + 24 + i * 13;
@@ -122,6 +137,12 @@ public class NorePauseMenu extends NoreScreen {
         if ("the_nether".equals(d)) return "Nether";
         if ("the_end".equals(d)) return "End";
         return d;
+    }
+
+    private static int activeModules() {
+        int n = 0;
+        for (dev.noreclient.module.Module m : NoreClient.get().modules().getModules()) if (m.isEnabled() && m.isToggleable()) n++;
+        return n;
     }
 
     private static String session() {
