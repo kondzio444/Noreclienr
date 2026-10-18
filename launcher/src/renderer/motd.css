@@ -339,6 +339,8 @@ input[type=range].slider::-webkit-slider-thumb { width: 14px; height: 18px; bord
 .mini-play:empty { display: none; }
 
 /* ------------------------------------------------------------------ finish review fixes */
+/* panels stay opaque during the forced events too (halloween.css used to make them translucent) */
+body.halloween { --surface: var(--surface-solid); --surface-2: #211628; }
 /* the rail stays one accent field during the forced events */
 body.halloween #sidebar, body.winter #sidebar { background: var(--rail); box-shadow: none; border-right: 1px solid var(--line); }
 body.halloween .nav a.active { background: none; }
