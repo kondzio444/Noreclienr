@@ -9,13 +9,21 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-/** Nore cape (Cosmetics module) on the local player, also used for the elytra. */
+/** Nore capes on the local player (Cosmetics module) and on other Nore players (Nore Hub), also used for the elytra. */
 @Mixin(AbstractClientPlayerEntity.class)
 public abstract class CapeMixin {
     @Inject(method = "getSkinTextures", at = @At("RETURN"), cancellable = true)
     private void noreclient$cape(CallbackInfoReturnable<SkinTextures> cir) {
-        if (GameImpl.localCape == null || (Object) this != MinecraftClient.getInstance().player) return;
+        // the local player wears the cape from the Cosmetics module, other Nore players the one from the Nore Hub
+        net.minecraft.util.Identifier capeId;
+        if ((Object) this == MinecraftClient.getInstance().player) capeId = GameImpl.localCape;
+        else {
+            dev.noreclient.api.TextureRef t = dev.noreclient.cosmetic.Wardrobe.capeOf(((net.minecraft.entity.player.PlayerEntity) (Object) this).getGameProfile().getName(),
+                    (int) (System.currentTimeMillis() / 150 % dev.noreclient.util.Capes.FRAMES));
+            capeId = t == null ? null : (net.minecraft.util.Identifier) t.handle;
+        }
+        if (capeId == null) return;
         SkinTextures s = cir.getReturnValue();
-        cir.setReturnValue(new SkinTextures(s.texture(), s.textureUrl(), GameImpl.localCape, GameImpl.localCape, s.model(), s.secure()));
+        cir.setReturnValue(new SkinTextures(s.texture(), s.textureUrl(), capeId, capeId, s.model(), s.secure()));
     }
 }

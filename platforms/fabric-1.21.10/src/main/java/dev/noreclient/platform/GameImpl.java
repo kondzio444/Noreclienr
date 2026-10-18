@@ -663,6 +663,11 @@ public final class GameImpl implements Game {
 
     @Override public void setLocalCape(TextureRef cape) { localCape = cape == null ? null : (Identifier) cape.handle; }
 
+    @Override
+    public boolean drawPlayerModel(dev.noreclient.api.Gfx g, int x1, int y1, int x2, int y2, float size, float yaw, float pitch) {
+        return g instanceof GfxImpl && WardrobeFeature.drawPreview(((GfxImpl) g).context(), x1, y1, x2, y2, size, yaw, pitch);
+    }
+
     @Override public void openSingleplayer(Object parent) { mc().setScreen(new SelectWorldScreen(toScreen(parent))); }
     @Override public void openMultiplayer(Object parent) { openScreen(new dev.noreclient.gui.menu.MultiplayerScreen2(parent)); }
     @Override public void openOptions(Object parent) { mc().setScreen(new OptionsScreen(toScreen(parent), mc().options)); }

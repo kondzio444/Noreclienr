@@ -3,6 +3,7 @@ package dev.noreclient.platform;
 import com.mojang.blaze3d.platform.GlDebugInfo;
 import dev.noreclient.api.EffectInfo;
 import dev.noreclient.api.Game;
+import dev.noreclient.api.Gfx;
 import dev.noreclient.api.ItemInfo;
 import dev.noreclient.api.TargetInfo;
 import dev.noreclient.api.TextureRef;
@@ -645,6 +646,11 @@ public final class GameImpl implements Game {
     public static Identifier localCape;
 
     @Override public void setLocalCape(TextureRef cape) { localCape = cape == null ? null : (Identifier) cape.handle; }
+
+    @Override
+    public boolean drawPlayerModel(Gfx g, int x1, int y1, int x2, int y2, float size, float yaw, float pitch) {
+        return g instanceof GfxImpl && WardrobeFeature.drawPreview(((GfxImpl) g).context(), x1, y1, x2, y2, size, yaw, pitch);
+    }
 
     @Override public void openSingleplayer(Object parent) { mc().setScreen(new SelectWorldScreen(toScreen(parent))); }
     @Override public void openMultiplayer(Object parent) { openScreen(new dev.noreclient.gui.menu.MultiplayerScreen2(parent)); }

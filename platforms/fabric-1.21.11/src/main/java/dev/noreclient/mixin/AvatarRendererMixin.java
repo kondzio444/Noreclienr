@@ -22,5 +22,6 @@ public abstract class AvatarRendererMixin extends LivingEntityRenderer<AbstractC
     @Inject(method = "<init>", at = @At("TAIL"))
     private void noreclient$wardrobe(EntityRendererProvider.Context ctx, boolean slim, CallbackInfo ci) {
         addLayer(new WardrobeLayer(this));
+        WardrobeLayer.register((AvatarRenderer<?>) (Object) this, slim);
     }
 }

@@ -230,6 +230,7 @@ public class NoreMainMenu extends NoreScreen {
             if (settings().welcomeGuide.isOn()) guideStep = 0;
         }
         if (guideStep >= 0) renderGuide(ctx, mouseX, mouseY);
+        dev.noreclient.cosmetic.SecretEars.menu(ctx, width, height, mouseX, mouseY);
 
         // fade-out transition before switching screen
         if (pending != null) {
@@ -500,6 +501,7 @@ public class NoreMainMenu extends NoreScreen {
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
         if (button != 0 || pending != null) return false;
+        if (dev.noreclient.cosmetic.SecretEars.menuClick(mx, my, width, height)) return true;
         if (guideClick(mx, my)) return true;
         for (int i = 0; i < TILE_ICONS.length; i++) {
             if (Render2D.hovered(mx, my, tilesX + i * (tileSize + tileGap), tilesY, tileSize, tileSize)) { openTile(i); return true; }

@@ -21,5 +21,6 @@ public abstract class PlayerEntityRendererMixin extends LivingEntityRenderer<Abs
     @Inject(method = "<init>", at = @At("TAIL"))
     private void noreclient$wardrobe(EntityRendererFactory.Context ctx, boolean slim, CallbackInfo ci) {
         addFeature(new WardrobeFeature(this));
+        WardrobeFeature.register((PlayerEntityRenderer) (Object) this, slim);
     }
 }
