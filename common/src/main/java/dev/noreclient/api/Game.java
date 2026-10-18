@@ -298,6 +298,9 @@ public interface Game {
     /** Names in the tab list (empty outside a server). */
     List<String> tabPlayerNames();
 
+    /** Opens the game chat with the given text already typed (e.g. "/msg Nick "). */
+    default void openChat(String text) {}
+
     void setRenderHitboxes(boolean on);
 
     /** Cape for the local player (null = the player's own / none). */
