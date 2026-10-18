@@ -16,4 +16,10 @@ public abstract class ClientPlayNetworkHandlerMixin {
         // the handler runs once on the network thread (and re-schedules itself); count only the main-thread call
         if (MinecraftClient.getInstance().isOnThread()) NoreClient.onServerTime(packet.time());
     }
+
+    @Inject(method = "onEntityStatus", at = @At("HEAD"))
+    private void noreclient$entityStatus(net.minecraft.network.packet.s2c.play.EntityStatusS2CPacket packet, CallbackInfo ci) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.isOnThread() && mc.world != null) dev.noreclient.module.Hooks.onEntityStatus(packet.getEntity(mc.world), packet.getStatus());
+    }
 }

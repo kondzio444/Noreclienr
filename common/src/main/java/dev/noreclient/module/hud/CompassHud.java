@@ -48,6 +48,22 @@ public class CompassHud extends HudModule {
                 Render2D.rect(g, x - 0.5f, 6, 1, 4, ColorUtil.withAlpha(0xFF9095AB, alpha));
             }
         }
+        // waypoints from the Waypoints module: a coloured mark at their bearing
+        dev.noreclient.NoreClient nc = dev.noreclient.NoreClient.get();
+        dev.noreclient.module.utility.Waypoints wp = nc == null ? null : nc.modules().get(dev.noreclient.module.utility.Waypoints.class);
+        if (wp != null && wp.isActive() && wp.compass.isOn() && inGame()) {
+            for (dev.noreclient.module.utility.Waypoints.Point p : wp.visiblePoints()) {
+                double dx = p.x + 0.5 - game().x(), dz = p.z + 0.5 - game().z();
+                float bearing = (float) Math.toDegrees(Math.atan2(-dx, dz));
+                float diff = wrap(bearing - yaw);
+                float x = Math.max(4, Math.min(width - 4, center + diff * pxPerDeg));
+                boolean edge = Math.abs(diff * pxPerDeg) > width / 2f - 4;
+                int c = ColorUtil.withAlpha(p.color, edge ? 140 : 255);
+                Render2D.line(g, x, 12.5f, x - 2.5f, 15.5f, 1.2f, c);
+                Render2D.line(g, x, 12.5f, x + 2.5f, 15.5f, 1.2f, c);
+                Render2D.circle(g, x, 11, 1.6f, c);
+            }
+        }
         Render2D.roundedRect(g, center - 1, 12, 2, 4, 1, Theme.accent());
         if (degrees.isOn()) Render2D.centeredText(g, String.valueOf(Math.round((yaw + 360) % 360)), center, 17, Theme.accent(), true);
     }

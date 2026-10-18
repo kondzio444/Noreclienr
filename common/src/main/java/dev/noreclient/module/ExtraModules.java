@@ -31,12 +31,34 @@ public final class ExtraModules {
         m.add(new dev.noreclient.module.utility.AutoGG());
         m.add(new dev.noreclient.module.client.DynamicFps());
         m.add(new dev.noreclient.module.hud.WaypointHud());
+        // 1.5
+        m.add(new dev.noreclient.module.utility.Waypoints());
+        m.add(new dev.noreclient.module.render.HitMarker());
+        m.add(new dev.noreclient.module.hud.SpeedometerHud());
+        m.add(new dev.noreclient.module.render.ChunkBorders());
+        m.add(new dev.noreclient.module.hud.TotemPopHud());
+        m.add(new dev.noreclient.module.utility.AfkAlert());
+        m.add(new dev.noreclient.module.utility.ChatMentions());
+        m.add(new dev.noreclient.module.hud.InfoPanelHud());
+        m.add(new dev.noreclient.module.hud.NetherCoordsHud());
+        m.add(new dev.noreclient.module.hud.LagDetectorHud());
+        m.add(new dev.noreclient.module.player.HotbarLock());
+        m.add(new dev.noreclient.module.utility.FallWarning());
+        m.add(new dev.noreclient.module.render.DamageDirection());
+        m.add(new dev.noreclient.module.hud.PickupLogHud());
+        m.add(new dev.noreclient.module.utility.AutoReconnect());
+        m.add(new dev.noreclient.module.utility.InventoryFullAlert());
+        m.add(new dev.noreclient.module.hud.PingGraphHud());
     }
+
+    private static final java.util.Set<String> NEW = new java.util.HashSet<String>(java.util.Arrays.asList(
+            "Waypoints", "Hit Marker", "Speedometer", "Chunk Borders", "Totem Pops", "AFK Alert", "Chat Mentions", "Info Panel",
+            "Nether Coords", "Lag Detector", "Hotbar Lock", "Fall Warning", "Damage Direction", "Pickup Log", "Auto Reconnect",
+            "Inventory Full Alert", "Ping Graph"));
 
     /** Names of modules added in the current release (shown with a NEW badge). */
     public static boolean isNew(Module module) {
         String n = module.getName();
-        return n.equals("Screenshots") || n.equals("Server Info") || n.equals("Friends") || n.equals("Friends Chat") || n.equals("Cosmetics") || n.equals("Hitboxes")
-                || n.equals("Auto GG") || n.equals("Dynamic FPS") || n.equals("Waypoint");
+        return NEW.contains(n);
     }
 }

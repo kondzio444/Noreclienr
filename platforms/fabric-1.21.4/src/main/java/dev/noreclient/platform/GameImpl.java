@@ -570,6 +570,37 @@ public final class GameImpl implements Game {
     }
 
     @Override
+    public double[] camera() {
+        if (mc().world == null || mc().player == null) return null;
+        net.minecraft.client.render.Camera c = mc().gameRenderer.getCamera();
+        net.minecraft.util.math.Vec3d pos = c.getPos();
+        return new double[]{pos.x, pos.y, pos.z, c.getYaw(), c.getPitch()};
+    }
+
+    @Override
+    public void setChunkBorders(boolean on) {
+        // toggle returns the new state: a second toggle fixes it if it was already on (F3 + G)
+        if (mc().debugRenderer.toggleShowChunkBorder() != on) mc().debugRenderer.toggleShowChunkBorder();
+    }
+
+    @Override public int selectedSlot() { return p() == null ? 0 : p().getInventory().selectedSlot; }
+    @Override public float fallDistance() { return p() == null ? 0 : (float) p().fallDistance; }
+    @Override public float hurtDirection() { return p() == null ? 0 : p().getDamageTiltYaw(); }
+    @Override public void requestAttention() { org.lwjgl.glfw.GLFW.glfwRequestWindowAttention(windowHandle()); }
+    @Override public boolean windowFocused() { return mc().isWindowFocused(); }
+
+    @Override
+    public void playPing(float pitch) {
+        mc().getSoundManager().play(PositionedSoundInstance.master(SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), pitch, 0.6f));
+    }
+
+    @Override
+    public String itemName(ItemInfo item) {
+        if (item == null || !(item.handle instanceof ItemStack)) return item == null ? "" : item.id;
+        return ((ItemStack) item.handle).getName().getString();
+    }
+
+    @Override
     public void openVanillaMultiplayer(Object parent) {
         dev.noreclient.platform.ScreenRouting.allowVanilla = true;
         mc().setScreen(new MultiplayerScreen(toScreen(parent) != null ? toScreen(parent) : new TitleScreen()));
