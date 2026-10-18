@@ -134,7 +134,7 @@ public class WardrobeFeature extends FeatureRenderer<AbstractClientPlayerEntity,
             ms.push();
             model.body.rotate(ms);
             ms.translate(0, 0, 0.125f);
-            float lift = 4 + s.limbAmount * 22 + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
+            float lift = 4 + s.limbAmount * (s.sneaking ? 6 : 22) + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
             if (p.sneaking) {
                 lift += 25;
                 ms.translate(0, 0.15f, 0);

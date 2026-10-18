@@ -37,7 +37,7 @@ final class Halo extends Item {
         for (int pass = 0; pass < 2; pass++) {
             Mesh m = meshes[pass];
             m.push();
-            m.translate(0, b.headTop - 3.3f + bob, 0.4f).scale(b.s).rotateX(tiltX).rotateZ(tiltZ).rotateY(t * 35);
+            m.translate(0, Math.min(-11.3f, b.headTop - 1.8f) + bob, 0.4f).scale(b.s).rotateX(tiltX).rotateZ(tiltZ).rotateY(t * 35);
             if (pass == 0) {
                 torus(m, RING, TUBE, 28, 6, 0, 0, 0.5f, 1);
                 if (rays) {

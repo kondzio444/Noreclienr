@@ -143,7 +143,7 @@ public class WardrobeFeature extends FeatureRenderer<PlayerEntityRenderState, Pl
         st.equippedChestStack = ItemStack.EMPTY;
         st.equippedLegsStack = ItemStack.EMPTY;
         st.equippedFeetStack = ItemStack.EMPTY;
-        st.field_53536 = 4 + s.limbAmount * 22 + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
+        st.field_53536 = 4 + s.limbAmount * (s.sneaking ? 6 : 22) + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
         st.field_53537 = 0;
         st.field_53538 = 2 * (float) Math.sin(age * 0.07f);
         return st;

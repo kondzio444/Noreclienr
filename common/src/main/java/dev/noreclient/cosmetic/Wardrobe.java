@@ -197,7 +197,7 @@ public final class Wardrobe {
             lastSweep = now;
             for (Iterator<Wearer> it = WEARERS.values().iterator(); it.hasNext(); ) if (now - it.next().seen > 30_000_000_000L) it.remove();
         }
-        boolean secretOk = who != LOCAL || SecretEars.unlocked();
+        boolean secretOk = who == OTHER || SecretEars.unlocked();
         float headTop = -8;
         for (Slot top : new Slot[]{Slot.HAT, Slot.EARS}) {
             Worn hw = look.get(top);

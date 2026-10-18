@@ -109,6 +109,7 @@ public class WardrobeScreen extends PanelScreen {
         // options panel for the worn item of this category
         Worn worn = look().get(cat);
         Item item = worn == null ? null : Items.get(worn.id);
+        if (item != null && item.secret && !SecretEars.unlocked()) item = null; // still locked: as if nothing is worn
         boolean showOpts = item != null && !(item instanceof Items.CapeItem && !item.animOption);
         float oa = optsAnim.target(showOpts ? 1 : 0).update();
         float optH = item == null ? 0 : optionsHeight(item, gw);
@@ -206,6 +207,8 @@ public class WardrobeScreen extends PanelScreen {
         if (System.currentTimeMillis() - catSwitched < 30) catAnim.set(0);
         ca = catAnim.target(1).update();
         Worn worn = look().get(cat);
+        Item wornItem = worn == null ? null : Items.get(worn.id);
+        if (wornItem != null && wornItem.secret && !SecretEars.unlocked()) worn = null;
         boolean revealing = reveal != 0 && System.currentTimeMillis() - reveal < 2600;
         if (reveal != 0 && !revealing) { reveal = 0; SecretEars.justUnlocked = false; }
         g.scissor((int) x - 6, (int) y, (int) (x + w + 6), (int) (y + h));

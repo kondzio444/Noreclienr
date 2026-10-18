@@ -147,7 +147,7 @@ public class WardrobeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
         st.chestEquipment = ItemStack.EMPTY;
         st.legsEquipment = ItemStack.EMPTY;
         st.feetEquipment = ItemStack.EMPTY;
-        st.capeFlap = 4 + s.limbAmount * 22 + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
+        st.capeFlap = 4 + s.limbAmount * (s.sneaking ? 6 : 22) + (s.flying ? 28 : 0) + 3 * (float) Math.sin(age * 0.05f);
         st.capeLean = 0;
         st.capeLean2 = 2 * (float) Math.sin(age * 0.07f);
         return st;
