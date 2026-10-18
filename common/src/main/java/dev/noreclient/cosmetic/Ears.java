@@ -107,6 +107,9 @@ final class Ears extends Item {
     }
 
     @Override
+    protected float topY(Worn w) { return -7.85f - height * w.scale - 0.3f; }
+
+    @Override
     protected float[] previewFrame() { return new float[]{0, -10, 0, 10}; }
 
     // ---------------------------------------------------------------- texture (128x128)

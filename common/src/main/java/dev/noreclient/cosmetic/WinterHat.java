@@ -16,7 +16,7 @@ import java.util.Random;
  */
 final class WinterHat extends Item {
     private static final int SIDES = 28, RINGS = 8;
-    private static final float RIM_Y = -3.5f, R = 4.88f, H = 5.9f;
+    private static final float RIM_Y = -4.5f, R = 4.88f, H = 5.2f;
 
     WinterHat() {
         super("winter_hat", "Czapka Zimowa", Slot.HAT, "Na zimę • pompon, który podskakuje");
@@ -151,7 +151,7 @@ final class WinterHat extends Item {
     }
 
     @Override
-    protected float topY(Worn w) { return -3.5f - 11.5f * w.scale; }
+    protected float topY(Worn w) { return -4.5f - 10.5f * w.scale; }
 
     @Override
     protected float[] previewFrame() { return new float[]{0, -6, 0, 16}; }

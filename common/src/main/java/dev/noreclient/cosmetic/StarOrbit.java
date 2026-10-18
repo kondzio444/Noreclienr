@@ -40,7 +40,7 @@ final class StarOrbit extends Item {
             float tilt = -18 + i * 9 + w.earSwing.x * 6;
             float r = (7.2f + (i % 3) * 0.9f) * reach;
             float y = 5.5f + (i - 2) * 1.6f + rise + (float) Math.sin(t * 1.3f + i) * 0.6f;
-            float size = (snow ? 1.6f : 1.5f) * (0.8f + 0.2f * (float) Math.sin(t * 3 + i * 1.3f));
+            float size = (snow ? 2.4f : 2.2f) * (0.8f + 0.2f * (float) Math.sin(t * 3 + i * 1.3f));
             for (int k = 0; k <= 3; k++) {
                 // k = 0: the star itself, k > 0: its fading trail (glow only)
                 float a = ang - k * 9f;

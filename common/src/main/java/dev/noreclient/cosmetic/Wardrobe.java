@@ -199,9 +199,11 @@ public final class Wardrobe {
         }
         boolean secretOk = who != LOCAL || SecretEars.unlocked();
         float headTop = -8;
-        Worn hat = look.get(Slot.HAT);
-        Item hatItem = hat == null ? null : Items.get(hat.id);
-        if (hatItem != null && !s.helmet) headTop = Math.min(-8, hatItem.topY(hat));
+        for (Slot top : new Slot[]{Slot.HAT, Slot.EARS}) {
+            Worn hw = look.get(top);
+            Item hi = hw == null ? null : Items.get(hw.id);
+            if (hi != null && !s.helmet && (!hi.secret || secretOk)) headTop = Math.min(headTop, hi.topY(hw));
+        }
         List<Piece> out = new ArrayList<Piece>(4);
         for (Map.Entry<Slot, Worn> e : look.slots().entrySet()) {
             Slot slot = e.getKey();
