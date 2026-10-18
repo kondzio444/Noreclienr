@@ -88,6 +88,15 @@ public final class Capes {
         return name.toLowerCase().replace('ź', 'z').replace('ę', 'e').replaceAll("[^a-z0-9]", "_");
     }
 
+    /** Wardrobe / Nore Hub id of a cape name ("Kuźnia 2.1" → "kuznia_2_1"). */
+    public static String capeId(String name) { return id(name); }
+
+    /** Cape name for a wardrobe id, or null when unknown. */
+    public static String byId(String capeId) {
+        for (int i = 1; i < NAMES.length; i++) if (id(NAMES[i]).equals(capeId)) return NAMES[i];
+        return null;
+    }
+
     /** Texture of the named cape (render thread); null for "Brak". */
     public static TextureRef texture(String name) { return texture(name, 0); }
 
