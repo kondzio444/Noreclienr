@@ -15,7 +15,7 @@ import java.util.Locale;
 /** Analog speed gauge with a needle, the current value and the recent peak. */
 public class SpeedometerHud extends HudModule {
     public final ModeSetting unit = add(new ModeSetting("Unit", "Jednostka", "b/s", "b/s", "km/h"));
-    public final NumberSetting max = add(new NumberSetting("Scale", "Wartość na końcu skali (b/s)", 20, 8, 100, 1, " b/s"));
+    public final NumberSetting max = add(new NumberSetting("Max Speed", "Wartość na końcu skali (b/s)", 20, 8, 100, 1, " b/s"));
     public final BooleanSetting vertical = add(new BooleanSetting("Include Vertical", "Licz także ruch w pionie (elytra, spadanie)", false));
     public final BooleanSetting peak = add(new BooleanSetting("Peak", "Znacznik najwyższej prędkości z ostatnich sekund", true));
 
