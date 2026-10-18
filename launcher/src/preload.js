@@ -152,7 +152,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'chat:bridgeSend', 'chat:bridgeRead', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState', 'auth:logout'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'chat:bridgeSend', 'chat:bridgeRead', 'chat:bridgeAdd', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState', 'auth:logout'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);

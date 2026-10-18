@@ -516,6 +516,7 @@ Pages.settings = (root) => {
         <div class="section-title">${icon('globe')} Discord</div>
         <div class="setting"><div class="col"><b>Status w Discordzie (Rich Presence)</b><span>Zawsze włączony – znajomi widzą, że grasz w Nore Client (launcher i gra)</span></div><span class="tag premium">AKTYWNY</span></div>
         <div class="setting"><div class="col"><b>Aplikacja Discord</b><span>Nore Client • ID ${esc(s.discordAppId || '1559570563339526175')}</span></div></div>
+        <div class="setting"><div class="col"><b>Pokazuj innym graczom Nore, że grasz w Nore</b><span>Znak Nore na liście graczy, Twoja garderoba u innych i zaproszenia do znajomych w grze</span></div><label class="switch"><input type="checkbox" id="hubp" ${s.hubPresence !== false ? 'checked' : ''}><i></i></label></div>
       </div>
       <div class="card panel">
         <div class="section-title">${icon('key')} Konta Microsoft</div>
@@ -538,6 +539,7 @@ Pages.settings = (root) => {
   $('#jvm', root).onchange = (e) => save({ jvmArgs: e.target.value });
   $('#autoupd', root).onchange = (e) => save({ autoUpdate: e.target.checked });
   $('#autorep', root).onchange = (e) => save({ autoRepair: e.target.checked });
+  $('#hubp', root).onchange = (e) => save({ hubPresence: e.target.checked });
   $('#uchan', root).appendChild(segmented([{ value: 'all', label: 'Wszystkie (alpha/beta)' }, { value: 'beta', label: 'Beta' }, { value: 'release', label: 'Tylko wydania' }],
     s.updateChannel || 'all', (v) => save({ updateChannel: v }).then(() => toast('Kanał aktualizacji', v === 'all' ? 'Najnowsze wersje, także alpha i beta' : v === 'beta' ? 'Wydania i wersje beta' : 'Tylko stabilne wydania', 'success'))));
   $('#unotify', root).onchange = (e) => save({ notifyContentUpdates: e.target.checked });

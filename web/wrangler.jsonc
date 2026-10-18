@@ -17,5 +17,8 @@
   ],
   // background refresh of the release data (src/worker.js → scheduled)
   "triggers": { "crons": ["*/15 * * * *"] },
+  // Nore Hub: one SQLite-backed Durable Object with the Nore players (src/hub.js)
+  "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "NoreHub" }] },
+  "migrations": [{ "tag": "hub-v1", "new_sqlite_classes": ["NoreHub"] }],
   "observability": { "enabled": true }
 }
