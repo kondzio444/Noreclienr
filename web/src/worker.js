@@ -13,6 +13,9 @@
  *   GET /api/v1/events                    running events (Halloween + Christmas, always on)
  *   GET /api/v1/news                      news for the launcher home page
  *   GET /api/v1/platforms                 supported Minecraft versions and loaders
+ *   POST /api/v1/hub/hello                Nore Hub: the launcher announces its player (src/hub.js)
+ *   GET /api/v1/hub/players?names=a,b     Nore Hub: which of these players use Nore, and what they wear
+ *   GET /api/v1/hub/stats                 Nore Hub: players online and known
  *   GET /api/v1/openapi.json              OpenAPI 3.1 description of all of the above
  *
  * Background work: a Cron Trigger (wrangler.jsonc) refreshes the GitHub data every 15 minutes, and
@@ -21,9 +24,12 @@
  */
 import PLATFORMS from '../../platforms/platforms.json';
 import NEWS from './news.json';
+import { HubError, readHello, readNames, hubCall } from './hub.js';
+
+export { NoreHub } from './hub.js';
 
 const REPO = 'kondzio444/Noreclienr';
-const API_VERSION = '1.2.0';
+const API_VERSION = '1.3.0';
 const FRESH_SECONDS = 300;        // data younger than this is served as is
 const KEEP_SECONDS = 7 * 86400;   // stale data is still served (and refreshed in the background)
 const INTERNAL = 'https://nore-internal.invalid/';
@@ -38,7 +44,7 @@ const SECURITY_HEADERS = {
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, If-None-Match',
   'Access-Control-Expose-Headers': 'ETag, X-Nore-Cache, X-Nore-Api',
   'Access-Control-Max-Age': '86400',
@@ -53,12 +59,12 @@ async function etagOf(text) {
   return '"' + [...new Uint8Array(d)].slice(0, 10).map(b => b.toString(16).padStart(2, '0')).join('') + '"';
 }
 
-async function json(request, data, { status = 200, maxAge = 60, cacheState } = {}) {
+async function json(request, data, { status = 200, maxAge = 60, swr = 600, cacheState } = {}) {
   const body = JSON.stringify(data, null, 2);
   const etag = await etagOf(body);
   const headers = {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': maxAge ? `public, max-age=${maxAge}, stale-while-revalidate=600` : 'no-store',
+    'Cache-Control': maxAge ? `public, max-age=${maxAge}${swr ? `, stale-while-revalidate=${swr}` : ''}` : 'no-store',
     ETag: etag,
     'X-Nore-Api': API_VERSION,
     ...CORS,
@@ -205,12 +211,18 @@ const ENDPOINTS = [
   ['GET', '/api/v1/events', 'Wydarzenia (zawsze włączone)'],
   ['GET', '/api/v1/news', 'Aktualności'],
   ['GET', '/api/v1/platforms', 'Obsługiwane wersje i loadery'],
+  ['POST', '/api/v1/hub/hello', 'Nore Hub: launcher zgłasza gracza (podpisane, co 60 s w trakcie gry)'],
+  ['GET', '/api/v1/hub/players?names=Steve,Alex', 'Nore Hub: którzy z tych graczy używają Nore i co noszą (do 100 nicków)'],
+  ['GET', '/api/v1/hub/stats', 'Nore Hub: gracze online i znani'],
   ['GET', '/api/v1/openapi.json', 'Opis OpenAPI 3.1'],
 ];
 
 async function api(request, url, env, ctx) {
   const p = url.pathname.replace(/\/+$/, '');
   const q = url.searchParams;
+
+  if (p.startsWith('/api/v1/hub/')) return hub(request, p, q, env);
+  if (request.method === 'POST') return fail(request, 405, 'Tylko GET');
 
   if (p === '/api/v1') {
     return json(request, { api: 'Nore Client API', version: API_VERSION, docs: 'https://noroclient.pl/api', endpoints: ENDPOINTS.map(([method, path, about]) => ({ method, path, about })) }, { maxAge: 3600 });
@@ -298,14 +310,30 @@ async function api(request, url, env, ctx) {
   return fail(request, 404, 'Nie ma takiego endpointu – lista: /api/v1');
 }
 
+// ---------------------------------------------------------------- Nore Hub (src/hub.js, docs/nore-hub.md)
+
+async function hub(request, p, q, env) {
+  if (p === '/api/v1/hub/hello') {
+    if (request.method !== 'POST') return fail(request, 405, 'Tylko POST');
+    return json(request, await hubCall(env, 'hello', await readHello(request)), { maxAge: 0 });
+  }
+  if (request.method === 'POST') return fail(request, 405, 'Tylko GET');
+  if (p === '/api/v1/hub/players') return json(request, await hubCall(env, 'players', { names: readNames(q.get('names')) }), { maxAge: 20, swr: 0 });
+  if (p === '/api/v1/hub/stats') return json(request, await hubCall(env, 'stats', {}), { maxAge: 30, swr: 0 });
+  throw new HubError(404, 'Nie ma takiego endpointu – lista: /api/v1');
+}
+
 function openapi() {
   const ok = (description, schema) => ({ 200: { description, content: { 'application/json': { schema } } } });
   const obj = (properties) => ({ type: 'object', properties });
   const s = { type: 'string' }, n = { type: 'integer' }, b = { type: 'boolean' };
   const asset = obj({ name: s, size: n, url: s, digest: { type: ['string', 'null'] }, downloads: n });
+  const err = (status, description) => ({ [status]: { description, content: { 'application/json': { schema: obj({ error: s, status: n }) } } } });
+  const cosmetics = { type: 'object', description: 'Garderoba z moda: { v, slots: { <slot>: { id, color, variant, opts } } }, najwyżej 2048 bajtów', properties: { v: n, slots: { type: 'object' } } };
+  const player = obj({ name: s, uuid: s, hex: s, verified: b, online: b, seen: n, cosmetics });
   return {
     openapi: '3.1.0',
-    info: { title: 'Nore Client API', version: API_VERSION, description: 'Publiczne API Nore Client: wydania, aktualizacje launchera i moda, wydarzenia i aktualności. Bez klucza, CORS otwarty, odpowiedzi z ETag.' },
+    info: { title: 'Nore Client API', version: API_VERSION, description: 'Publiczne API Nore Client: wydania, aktualizacje launchera i moda, wydarzenia, aktualności i Nore Hub (kto jeszcze gra z Nore). Bez klucza, CORS otwarty, odpowiedzi z ETag.' },
     servers: [{ url: 'https://noroclient.pl' }],
     paths: {
       '/api/v1/status': { get: { summary: 'Stan API i synchronizacji w tle', responses: ok('Stan', obj({ ok: b, api: s, latest: s, sync: obj({ at: s, ok: b, ms: n, releases: n, ageSeconds: n }) })) } },
@@ -318,6 +346,14 @@ function openapi() {
       '/api/v1/events': { get: { summary: 'Wydarzenia', responses: ok('Wydarzenia', obj({ events: { type: 'array', items: obj({ id: s, name: s, active: b, forced: b }) } })) } },
       '/api/v1/news': { get: { summary: 'Aktualności', responses: ok('Aktualności', obj({ news: { type: 'array' } })) } },
       '/api/v1/platforms': { get: { summary: 'Obsługiwane wersje', responses: ok('Platformy', obj({ platforms: { type: 'array', items: obj({ name: s, loader: s, java: n, versions: { type: 'array', items: s } }) } })) } },
+      '/api/v1/hub/hello': { post: {
+        summary: 'Nore Hub: launcher zgłasza gracza (też heartbeat co 60 s)',
+        description: 'Podpis ECDSA P-256 (DER, base64) kluczem Nore ID nad: nore-hub/1|name|uuid|hex|ts|online(1/0)|sha256hex(JSON.stringify(cosmetics)). hex = pierwsze 20 znaków sha256(pub). Konto premium: serverId po session/minecraft/join w Mojang. Najwyżej jedno hello na Nore ID co 15 s.',
+        requestBody: { required: true, content: { 'application/json': { schema: { type: 'object', required: ['name', 'uuid', 'hex', 'pub', 'ts', 'online', 'cosmetics', 'sig'], properties: { name: s, uuid: s, premium: b, serverId: s, hex: s, pub: s, ts: n, online: b, cosmetics, sig: s } } } } },
+        responses: { ...ok('Zapisano', obj({ ok: b, verified: b, name: s })), ...err(400, 'Złe pola'), ...err(401, 'Zły podpis, klucz, czas albo brak potwierdzenia Mojang'), ...err(409, 'Nick należy do innego gracza Nore'), ...err(429, 'Za często') },
+      } },
+      '/api/v1/hub/players': { get: { summary: 'Nore Hub: którzy z tych graczy używają Nore', parameters: [{ name: 'names', in: 'query', required: true, description: 'Do 100 nicków po przecinku, wielkość liter bez znaczenia', schema: s }], responses: { ...ok('Gracze Nore (klucze to nicki małymi literami)', obj({ players: { type: 'object', additionalProperties: player } })), ...err(400, 'Za dużo nicków') } } },
+      '/api/v1/hub/stats': { get: { summary: 'Nore Hub: liczba graczy', responses: ok('Liczniki', obj({ online: n, known: n })) } },
     },
   };
 }
@@ -347,7 +383,7 @@ export default {
     }
     if (url.pathname.startsWith('/api/')) {
       if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-      if (request.method !== 'GET' && request.method !== 'HEAD') return fail(request, 405, 'Tylko GET');
+      if (!['GET', 'HEAD', 'POST'].includes(request.method)) return fail(request, 405, 'Tylko GET');
       try {
         return await api(request, url, env, ctx);
       } catch (e) {
