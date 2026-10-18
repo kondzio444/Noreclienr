@@ -194,6 +194,7 @@ public final class NoreClient {
         if (instance == null) return;
         dev.noreclient.module.utility.AutoGG gg = instance.moduleManager.get(dev.noreclient.module.utility.AutoGG.class);
         if (gg.isActive()) gg.onChat(text);
+        dev.noreclient.module.Hooks.onChat(text);
     }
 
     private static volatile String connectName, connectAddress;
@@ -201,6 +202,7 @@ public final class NoreClient {
     public static void onConnecting(String name, String address) {
         connectName = name;
         connectAddress = address;
+        dev.noreclient.module.Hooks.onConnecting(name, address);
     }
 
     /** Server card on the "connecting" screen. */
@@ -212,7 +214,7 @@ public final class NoreClient {
 
     /** Returns true when the scroll was consumed (zoom). */
     public static boolean onScroll(double amount) {
-        return instance != null && instance.moduleManager.get(Zoom.class).onScroll(amount);
+        return instance != null && (instance.moduleManager.get(Zoom.class).onScroll(amount) || dev.noreclient.module.Hooks.onScroll(amount));
     }
 
     public static void onAttack(Object entityHandle, double reachDistance) {
@@ -221,6 +223,7 @@ public final class NoreClient {
         instance.moduleManager.get(BasicHuds.Combo.class).onHit();
         instance.moduleManager.get(BasicHuds.Reach.class).onHit(reachDistance);
         instance.moduleManager.get(InfoHuds.HitCounter.class).onHit();
+        dev.noreclient.module.Hooks.onAttack();
     }
 
     /** Overlays drawn on top of container screens (inventory, crafting table...). */
@@ -248,6 +251,7 @@ public final class NoreClient {
     /** World time from the server's time packet (about once a second); used for the TPS meter. */
     public static void onServerTime(long worldTime) {
         dev.noreclient.module.hud.ExtraHuds.Tps.onServerTime(worldTime);
+        dev.noreclient.module.Hooks.onServerTime();
     }
 
     public static void onShutdown() {

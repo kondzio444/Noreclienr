@@ -30,9 +30,11 @@ public abstract class MinecraftClientMixin {
         NoreScreen replacement = null;
         if (screen instanceof TitleScreen) replacement = NoreClient.titleScreen();
         else if (screen instanceof GameMenuScreen && ((GameMenuScreen) screen).shouldShowMenu()) replacement = NoreClient.pauseScreen();
-        else if (screen instanceof net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen && !dev.noreclient.platform.ScreenRouting.consumeVanilla()) {
+        else if (screen instanceof net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen && !dev.noreclient.platform.ScreenRouting.keepVanilla(screen)) {
             replacement = NoreClient.multiplayerScreen();
         }
-        return replacement != null ? new ScreenAdapter(replacement) : screen;
+        Screen shown = replacement != null ? new ScreenAdapter(replacement) : screen;
+        dev.noreclient.platform.ScreenRouting.shown(shown);
+        return shown;
     }
 }

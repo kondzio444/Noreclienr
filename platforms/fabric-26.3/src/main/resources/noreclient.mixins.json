@@ -43,7 +43,8 @@
     "skin.PressableWidgetMixin",
     "skin.ScreenMixin",
     "skin.SliderWidgetMixin",
-    "skin.TextFieldWidgetMixin"
+    "skin.TextFieldWidgetMixin",
+    "ScreenOverlayMixin"
   ],
   "injectors": {
     "defaultRequire": 1

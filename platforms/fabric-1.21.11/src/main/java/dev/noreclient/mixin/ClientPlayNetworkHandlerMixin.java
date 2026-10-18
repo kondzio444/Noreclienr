@@ -16,4 +16,10 @@ public abstract class ClientPlayNetworkHandlerMixin {
         // the handler runs once on the network thread (and re-schedules itself); count only the main-thread call
         if (Minecraft.getInstance().isSameThread()) NoreClient.onServerTime(packet.gameTime());
     }
+
+    @Inject(method = "handleEntityEvent", at = @At("HEAD"))
+    private void noreclient$entityStatus(net.minecraft.network.protocol.game.ClientboundEntityEventPacket packet, CallbackInfo ci) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.isSameThread() && mc.level != null) dev.noreclient.module.Hooks.onEntityStatus(packet.getEntity(mc.level), packet.getEventId());
+    }
 }

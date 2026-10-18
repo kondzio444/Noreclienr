@@ -286,6 +286,41 @@ public interface Game {
 
     void moveServer(int from, int to);
 
+    /** Resource pack choice stored with a saved server: 0 ask, 1 enabled, 2 disabled. */
+    default int serverPackPolicy(int index) { return 0; }
+
+    default void setServerPackPolicy(int index, int policy) {}
+
+    // ------------------------------------------------------------------ 1.5 modules
+    /** The camera this frame: {x, y, z, yaw, pitch} (follows freelook and F5); null outside a world. */
+    default double[] camera() { return null; }
+
+    /** Shows or hides the vanilla chunk border lines (F3 + G). */
+    default void setChunkBorders(boolean on) {}
+
+    /** Selected hotbar slot, 0..8. */
+    default int selectedSlot() { return 0; }
+
+    /** Blocks fallen since the player last stood on the ground. */
+    default float fallDistance() { return 0; }
+
+    /** Creative or spectator: no fall damage, no hunger. */
+    default boolean invulnerable() { return false; }
+
+    /** Direction of the last hit relative to where the player looks (vanilla damage tilt, degrees). */
+    default float hurtDirection() { return 0; }
+
+    /** Asks the operating system to flash the game window (taskbar) when it is not focused. */
+    default void requestAttention() {}
+
+    default boolean windowFocused() { return true; }
+
+    /** A short note-block ping for alerts. */
+    default void playPing(float pitch) { playClick(pitch); }
+
+    /** Display name of an item stack in the game language. */
+    default String itemName(ItemInfo item) { return item == null ? "" : item.id; }
+
     /** The original Minecraft server list screen. */
     void openVanillaMultiplayer(Object parent);
 
