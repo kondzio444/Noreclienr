@@ -39,7 +39,7 @@ Four things together, confirmed by the owner as the heart of the product:
 
 ## Capabilities and Constraints
 
-- Pages: Start, Instancje, Serwery, Halloween (event), Modpacki, Mody, Paczki zasobów, Shadery, Datapacki, Znajomi, Czat i głos, Galeria, Sklep (coming soon), Konta, Ustawienia, Konsola; onboarding wizard; Nore Updater splash.
+- Pages: Start, Instancje, Serwery, Halloween (event), Modpacki, Mody, Paczki zasobów, Shadery, Datapacki, Znajomi (nicki z gry, czat i głos w jednym widoku), Galeria, Sklep (coming soon), Konta, Ustawienia, Konsola; onboarding wizard; Nore Updater splash.
 - Accounts: Microsoft device-code login and offline nicknames; tokens only in OS secure storage.
 - Accent colour is user-selectable (Nore violet by default); the logo is recoloured to the accent.
 - Security: renderer IPC restricted to the launcher's own page; keys are baked in at build time, never committed.

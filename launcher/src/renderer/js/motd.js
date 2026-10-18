@@ -28,11 +28,12 @@ const Motd = (() => {
   const strip = (text) => String(text).replace(/§[0-9a-fk-orx]/gi, '');
 
   /** Scrambles el's text with random glyphs, then resolves it left to right (the §k effect). */
-  function reveal(el, text, ms = 560) {
+  function reveal(el, text, ms = (typeof Motion === 'object' && Motion.ms('--dur-focal')) || 560) {
     if (!el) return;
     text = String(text);
     el.setAttribute('aria-label', text);
     if (el._motd) cancelAnimationFrame(el._motd);
+    clearTimeout(el._tick);
     if (quiet() || !text) { el.textContent = text; return; }
     const t0 = performance.now();
     const step = (now) => {
@@ -45,6 +46,25 @@ const Motd = (() => {
       else { el.textContent = text; el._motd = 0; }
     };
     el._motd = requestAnimationFrame(step);
+  }
+
+  /** Ambient §k tick: one letter of a settled name flickers through two glyphs and back (~200 ms). */
+  function tick(el) {
+    if (!el || el._motd || quiet() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const text = el.getAttribute('aria-label');
+    if (!text || el.textContent !== text) return;
+    const spots = [...text].map((c, i) => (/[A-Za-z0-9]/.test(c) ? i : -1)).filter(i => i >= 0);
+    if (!spots.length) return;
+    const i = spots[(Math.random() * spots.length) | 0];
+    let n = 0;
+    const step = () => {
+      if (el._motd || !el.isConnected) return; // a full reveal took over
+      if (n++ < 2) {
+        el.innerHTML = escape(text.slice(0, i)) + `<span class="mk">${GLYPHS[(Math.random() * GLYPHS.length) | 0]}</span>` + escape(text.slice(i + 1));
+        el._tick = setTimeout(step, 90);
+      } else el.textContent = text;
+    };
+    step();
   }
 
   /** Marks el as changed until the player hovers or focuses it. */
@@ -69,7 +89,7 @@ const Motd = (() => {
     el.addEventListener('pointerenter', mark);
   }
 
-  return { html, strip, reveal, lit, litOnce };
+  return { html, strip, reveal, tick, lit, litOnce };
 })();
 
 /** The instance's MOTD line: loader in its colour, then what the instance is. */

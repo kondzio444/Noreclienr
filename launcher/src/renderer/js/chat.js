@@ -64,8 +64,13 @@ const Chat = {
   async reload() {
     [this.contacts, this.requests] = await Promise.all([nore.chat.contacts(), nore.chat.requests()]);
     this.emit('contacts');
-    const badge = document.querySelector('[data-badge="chat"]');
-    if (badge) { const n = this.unread() + this.requests.length; badge.hidden = !n; badge.textContent = n; }
+    // unread messages + invitations on the rail's Znajomi item
+    const badge = document.querySelector('[data-badge="friends"]');
+    if (badge) {
+      const n = this.unread() + this.requests.length;
+      if (n && !badge.hidden && badge.textContent !== String(n)) Motion.bump(badge);
+      badge.hidden = !n; badge.textContent = n;
+    }
   },
 
   connectBroker() {
@@ -154,7 +159,7 @@ const Chat = {
           this.requests = await nore.chat.addRequest(hex, st.theirs.pub, st.theirs.name, msg.text);
           this.reload();
           toast('Zaproszenie do znajomych', `${st.theirs.name} chce dodać Cię do czatu`, 'info', 6000);
-          this.notify(`${st.theirs.name} zaprasza Cię do znajomych`, 'Otwórz Czat w Nore Launcher');
+          this.notify(`${st.theirs.name} zaprasza Cię do znajomych`, 'Otwórz Znajomych w Nore Launcher');
         }
         break;
       case 'accepted':
@@ -443,8 +448,8 @@ function renderCallBar() {
   bar.innerHTML = `<div class="cb-who"><div class="cb-av" id="cb-them"><img src="${head(f.name, 64)}" alt="" data-fallback></div>
       <div><b>${esc(f.name)}</b><span id="cb-time">${c.phase === 'in' ? 'Dzwoni do Ciebie…' : c.phase === 'out' ? 'Łączenie…' : '00:00'}</span></div></div>
     ${c.phase === 'in' ? `<button class="btn success sm" id="cb-ok">${icon('play')} Odbierz</button><button class="btn danger sm" id="cb-no">${icon('x')} Odrzuć</button>`
-      : `<button class="btn ghost sm icon ${c.muted ? 'on-red' : ''}" id="cb-mute" title="${c.muted ? 'Włącz mikrofon' : 'Wycisz mikrofon'}">${c.muted ? '🔇' : '🎙️'}</button>
-        <button class="btn ghost sm icon ${c.deaf ? 'on-red' : ''}" id="cb-deaf" title="${c.deaf ? 'Włącz dźwięk' : 'Wyłącz dźwięk'}">${c.deaf ? '🙉' : '🎧'}</button>
+      : `<button class="btn ghost sm icon ${c.muted ? 'on-red' : ''}" id="cb-mute" title="${c.muted ? 'Włącz mikrofon' : 'Wycisz mikrofon'}">${icon(c.muted ? 'micOff' : 'mic')}</button>
+        <button class="btn ghost sm icon ${c.deaf ? 'on-red' : ''}" id="cb-deaf" title="${c.deaf ? 'Włącz dźwięk' : 'Wyłącz dźwięk'}">${icon(c.deaf ? 'headphonesOff' : 'headphones')}</button>
         <input type="range" class="slider cb-vol" id="cb-vol" min="0" max="1" step="0.05" value="${v.volume != null ? v.volume : 1}" title="Głośność">
         <button class="btn danger sm" id="cb-end">${icon('x')} Rozłącz</button>`}`;
   const on = (id, fn) => { const b = $(id, bar); if (b) b.onclick = fn; };
@@ -488,163 +493,8 @@ function presenceClass(hex) {
   return l && l.authed ? (l.status === 'game' ? 'game' : 'on') : 'off';
 }
 
-Pages.chat = (root, opts = {}) => {
-  let sel = opts.hex || Chat.lastViewed || null;
-  let alive = true;
-  root.innerHTML = `<div class="page-head"><div><h2>${icon('users')} Czat i głos</h2><p>Prywatne wiadomości i rozmowy głosowe ze znajomymi – bezpośrednio między komputerami, szyfrowane.</p></div>
-      <div class="actions"><span class="ch-broker" id="ch-broker"></span></div></div>
-    <div class="ch-wrap">
-      <aside class="card ch-side">
-        <div class="ch-me" id="ch-me"></div>
-        <div class="ch-add"><input class="input sm" id="ch-id" placeholder="Nore ID znajomego (NORE-…)" spellcheck="false"><input class="input sm" id="ch-name" placeholder="Nazwa (opcjonalnie)" maxlength="24">
-          <button class="btn sm" id="ch-addb">${icon('plus')} Dodaj</button></div>
-        <div id="ch-req"></div>
-        <div class="ch-list" id="ch-list"></div>
-      </aside>
-      <section class="card ch-main" id="ch-main"></section>
-    </div>`;
-
-  const drawBroker = () => {
-    const b = $('#ch-broker', root);
-    if (!b) return;
-    const map = { online: ['on', 'Połączono'], connecting: ['wait', 'Łączenie…'], error: ['off', 'Brak połączenia – ponawiam'], off: ['off', 'Wyłączony'] };
-    const [cls, txt] = map[Chat.broker] || map.off;
-    b.className = `ch-broker ${cls}`;
-    b.innerHTML = `<i></i>${txt}`;
-  };
-
-  const drawMe = () => {
-    const box = $('#ch-me', root);
-    if (!Chat.me) { box.innerHTML = '<div class="muted">Uruchamianie czatu…</div>'; return; }
-    box.innerHTML = `<div class="cv-me"><img src="${head(Chat.me.name, 64)}" alt="" data-fallback></div><div class="grow" style="min-width:0"><b>${esc(Chat.me.name)}</b>
-        <div class="ch-myid" title="Kopiuj">${esc(Chat.me.id)} ${icon('copy')}</div></div>`;
-    $('.ch-myid', box).onclick = () => { navigator.clipboard.writeText(Chat.me.id); toast('Skopiowano Twój Nore ID', 'Wyślij go znajomemu – doda Cię w zakładce Czat.', 'success'); };
-  };
-
-  const drawRequests = () => {
-    const box = $('#ch-req', root);
-    box.innerHTML = Chat.requests.length ? `<div class="ch-sub">Zaproszenia</div>${Chat.requests.map(r => `<div class="ch-reqrow" data-h="${r.hex}">
-        <img src="${head(r.name, 40)}" alt="" data-fallback><div class="grow" style="min-width:0"><b>${esc(r.name)}</b><span>${esc(r.id)}</span></div>
-        <button class="btn success sm icon" data-a="ok" title="Przyjmij">${icon('check')}</button><button class="btn ghost sm icon" data-a="no" title="Odrzuć">${icon('x')}</button></div>`).join('')}` : '';
-    $$('.ch-reqrow', box).forEach(row => {
-      const r = Chat.requests.find(x => x.hex === row.dataset.h);
-      $('[data-a="ok"]', row).onclick = async () => { try { await Chat.add(r.id, r.name); sel = r.hex; toast('Dodano znajomego', r.name, 'success'); draw(); } catch (e) { errorToast(e); } };
-      $('[data-a="no"]', row).onclick = async () => { Chat.requests = await nore.chat.decline(r.hex, false); Chat.reload(); };
-    });
-  };
-
-  const drawList = () => {
-    const box = $('#ch-list', root);
-    const list = [...Chat.contacts].sort((a, b) => (Chat.online(b.hex) - Chat.online(a.hex)) || ((b.last && b.last.ts) || 0) - ((a.last && a.last.ts) || 0));
-    box.innerHTML = `<div class="ch-sub">Znajomi • ${list.filter(c => Chat.online(c.hex)).length} online</div>` + (list.length ? list.map(c => `<div class="ch-row ${c.hex === sel ? 'on' : ''}" data-h="${c.hex}">
-        <div class="ch-av ${presenceClass(c.hex)}"><img src="${head(c.name, 48)}" alt="" data-fallback><i></i></div>
-        <div class="grow" style="min-width:0"><b>${esc(c.name)}</b><span>${c.last ? esc((c.last.mine ? 'Ty: ' : '') + c.last.text) : esc(presenceText(c.hex))}</span></div>
-        ${c.unread ? `<em>${c.unread}</em>` : ''}</div>`).join('')
-      : `<div class="ch-empty-list">${icon('users')}<span>Wyślij znajomemu swój Nore ID albo wpisz jego ID powyżej.</span></div>`);
-    $$('.ch-row', box).forEach(r => r.onclick = () => { sel = r.dataset.h; draw(); });
-  };
-
-  const bubbles = (list) => {
-    let lastDay = '';
-    return list.map(m => {
-      const d = new Date(m.ts);
-      const day = d.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
-      const sep = day !== lastDay ? `<div class="cv-day">${esc(day)}</div>` : '';
-      lastDay = day;
-      const state = m.mine ? icon(m.state === 'delivered' ? 'checks' : m.state === 'pending' ? 'clock' : 'check') : '';
-      return `${sep}<div class="cv-msg ${m.mine ? 'mine' : ''}"><div class="cv-bubble">${linkify(esc(m.text))}</div><span>${d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })} ${state}</span></div>`;
-    }).join('');
-  };
-  const linkify = (s) => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="#" data-ext="$1">$1</a>').replace(/\n/g, '<br>');
-
-  async function drawConversation() {
-    const main = $('#ch-main', root);
-    const c = sel && Chat.contact(sel);
-    Chat.viewing = c ? c.hex : null;
-    if (!c) {
-      main.innerHTML = `<div class="ch-welcome"><div class="ch-hero">${icon('users')}</div><h3>Czat ze znajomymi</h3>
-        <p class="muted">Twój Nore ID to Twój adres w czacie. Wyślij go znajomemu, a gdy doda Cię w launcherze, możecie pisać i rozmawiać głosowo.</p>
-        ${Chat.me ? `<button class="btn" id="cw-copy">${icon('copy')} Kopiuj mój Nore ID</button>` : ''}
-        <div class="ch-feat"><div>${icon('shield')}<b>Bez serwera</b><span>Wiadomości lecą prosto do znajomego (WebRTC, szyfrowane DTLS).</span></div>
-          <div>${icon('key')}<b>Nie do podrobienia</b><span>Każde połączenie potwierdza klucz znajomego – nikt się pod niego nie podszyje.</span></div>
-          <div>${icon('activity')}<b>Głos</b><span>Rozmowy z redukcją szumów, wyciszaniem i regulacją głośności.</span></div></div></div>`;
-      if ($('#cw-copy', main)) $('#cw-copy', main).onclick = () => { navigator.clipboard.writeText(Chat.me.id); toast('Skopiowano', Chat.me.id, 'success'); };
-      return;
-    }
-    Chat.lastViewed = c.hex;
-    const msgs = await nore.chat.history(c.hex);
-    if (!alive || sel !== c.hex) return;
-    const online = Chat.online(c.hex);
-    main.innerHTML = `<div class="cv-head"><div class="ch-av ${presenceClass(c.hex)}"><img src="${head(c.name, 64)}" alt="" data-fallback><i></i></div>
-        <div class="grow" style="min-width:0"><b>${esc(c.name)}</b><span id="cv-pres">${esc(presenceText(c.hex))}</span></div>
-        <button class="btn ${online ? '' : 'ghost'} sm" id="cv-call" ${Chat.call ? 'disabled' : ''}>${icon('activity')} Zadzwoń</button>
-        <button class="btn ghost sm icon" id="cv-more" title="Więcej">${icon('settings')}</button></div>
-      <div class="cv-log" id="cv-log">${msgs.length ? bubbles(msgs) : `<div class="cv-start">${icon('sparkles')}<span>Początek rozmowy z ${esc(c.name)}.${online ? '' : ' Wiadomości dotrą, gdy znajomy będzie online.'}</span></div>`}</div>
-      <div class="cv-typing" id="cv-typing"></div>
-      <div class="cv-compose"><textarea class="input" id="cv-text" rows="1" maxlength="2000" placeholder="Napisz do ${esc(c.name)}…"></textarea><button class="btn" id="cv-send">${icon('arrowRight')}</button></div>`;
-    const log = $('#cv-log', main);
-    log.scrollTop = log.scrollHeight;
-    log.onclick = (e) => { const a = e.target.closest('a[data-ext]'); if (a) { e.preventDefault(); nore.open(a.dataset.ext); } };
-    const ta = $('#cv-text', main);
-    const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(140, ta.scrollHeight) + 'px'; };
-    const send = async () => { const v = ta.value; if (!v.trim()) return; ta.value = ''; grow(); await Chat.send(c.hex, v); };
-    ta.oninput = () => { grow(); Chat.typing(c.hex); };
-    ta.onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
-    $('#cv-send', main).onclick = send;
-    $('#cv-call', main).onclick = () => Chat.startCall(c.hex);
-    $('#cv-more', main).onclick = (e) => popMenu(e.currentTarget, [
-      { label: 'Kopiuj Nore ID', icon: 'copy', action: () => { navigator.clipboard.writeText(c.id); toast('Skopiowano', c.id, 'success'); } },
-      { label: 'Ustawienia głosu', icon: 'settings', action: () => voiceSettingsModal() },
-      { label: 'Wyczyść historię', icon: 'trash', action: async () => { if (await confirmModal('Wyczyścić historię?', `Rozmowa z ${c.name} zniknie z tego komputera.`, { ok: 'Wyczyść', danger: true })) { await nore.chat.clear(c.hex); drawConversation(); } } },
-      '-',
-      { label: 'Usuń znajomego', icon: 'trash', danger: true, action: async () => { if (await confirmModal(`Usunąć ${c.name}?`, 'Znajomy i historia rozmowy znikną z tego komputera.', { ok: 'Usuń', danger: true })) { await nore.chat.remove(c.hex); sel = null; await Chat.reload(); draw(); } } },
-    ]);
-    setTimeout(() => ta.focus(), 50);
-    if (c.unread) { await nore.chat.read(c.hex); Chat.reload(); }
-  }
-
-  const draw = () => { if (!alive) return; drawBroker(); drawMe(); drawRequests(); drawList(); drawConversation(); };
-
-  $('#ch-addb', root).onclick = async () => {
-    try {
-      const c = await Chat.add($('#ch-id', root).value, $('#ch-name', root).value.trim());
-      $('#ch-id', root).value = ''; $('#ch-name', root).value = '';
-      sel = c.hex;
-      toast('Dodano znajomego', 'Gdy znajomy też doda Twój Nore ID, możecie pisać i rozmawiać.', 'success', 6000);
-      draw();
-    } catch (e) { errorToast(e, 'Czat'); }
-  };
-  $('#ch-id', root).onkeydown = (e) => { if (e.key === 'Enter') $('#ch-addb', root).click(); };
-
-  const off = Chat.on(async (what, data) => {
-    if (!alive) return;
-    if (what === 'broker') drawBroker();
-    if (what === 'contacts') { drawRequests(); drawList(); }
-    if (what === 'presence') {
-      drawList();
-      if (data === sel) { const p = $('#cv-pres', root); if (p) p.textContent = presenceText(sel); const b = $('#cv-call', root); if (b) b.className = `btn ${Chat.online(sel) ? '' : 'ghost'} sm`; }
-    }
-    if (what === 'message' && data && data.hex === sel) {
-      const log = $('#cv-log', root);
-      if (log) {
-        const msgs = await nore.chat.history(sel);
-        const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-        log.innerHTML = bubbles(msgs);
-        if (atBottom || (data.msg && data.msg.mine)) log.scrollTop = log.scrollHeight;
-        if (data.msg && !data.msg.mine) nore.chat.read(sel);
-      }
-    }
-    if (what === 'typing' && data === sel) {
-      const t = $('#cv-typing', root);
-      const c = Chat.contact(sel);
-      if (t && c) { t.textContent = `${c.name} pisze…`; clearTimeout(t._h); t._h = setTimeout(() => { t.textContent = ''; }, 3000); }
-    }
-    if (what === 'call') { const b = $('#cv-call', root); if (b) b.disabled = !!Chat.call; }
-  });
-  draw();
-  if (!Chat.me) Chat.start().then(draw);
-  return () => { alive = false; off(); Chat.viewing = null; };
-};
+// The chat lives inside the merged Znajomi view (js/social.js); old links to 'chat' open it.
+Pages.chat = (root, opts = {}) => Pages.friends(root, opts);
 
 /** Microphone / speaker / noise suppression. */
 async function voiceSettingsModal() {

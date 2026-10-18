@@ -140,9 +140,10 @@ Pages.instance = (root, { id, tab: startTab }) => {
         <div class="row">
           <button class="btn ghost icon" id="folder" title="Folder">${icon('folder')}</button>
           <button class="btn ghost icon" id="dup" title="Duplikuj">${icon('copy')}</button>
-          <button class="btn play ${running ? 'running' : ''}" id="play" style="height:52px;padding:0 30px;font-size:17px">${running ? icon('stop') + ' ZATRZYMAJ' : icon('play') + ' GRAJ'}</button>
+          <button class="btn play ${running ? 'running' : ''}" id="play" style="height:52px;padding:0 30px;font-size:17px"></button>
         </div>
       </div>`;
+    renderPlayBlock($('#play', root), i);
     $('#back', root).onclick = () => go('instances');
     $('#folder', root).onclick = () => nore.instances.folder(i.id);
     $('#dup', root).onclick = async () => {

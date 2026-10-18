@@ -50,6 +50,11 @@ const ICONS = {
   activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
   plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
   list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  micOff: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M4 4l16 16"/>',
+  headphones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="1.5"/><rect x="16" y="14" width="5" height="7" rx="1.5"/>',
+  headphonesOff: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="1.5"/><rect x="16" y="14" width="5" height="7" rx="1.5"/><path d="M3 3l18 18"/>',
+  message: '<path d="M4 5h16v11H9l-5 4z"/>',
 };
 
 const LOADER_LABELS = { vanilla: 'Vanilla', fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' };
@@ -117,15 +122,123 @@ function avatarHtml(acc) {
   return `<div class="avatar">${letter}<img src="https://mc-heads.net/avatar/${encodeURIComponent(acc.name)}/64" data-fallback alt=""></div>`;
 }
 
+// ------------------------------------------------------------------ motion (reads the tokens in styles.css :root)
+
+const Motion = (() => {
+  const css = () => getComputedStyle(document.documentElement);
+  /** In-app animation switch off: no motion at all. */
+  const off = () => document.body.classList.contains('no-anim');
+  /** prefers-reduced-motion: fades stay, travel goes. */
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const ms = (name) => { const v = css().getPropertyValue(name).trim(); return v.endsWith('ms') ? parseFloat(v) : v.endsWith('s') ? parseFloat(v) * 1000 : (parseFloat(v) || 0); };
+  const ease = (name) => css().getPropertyValue(name).trim() || 'ease';
+  /** A travel distance, zero under reduced motion. */
+  const px = (n) => (reduced() ? 0 : n);
+
+  function animate(node, frames, opts) {
+    if (!node || off() || !node.animate) return null;
+    try { return node.animate(frames, opts); } catch { return null; }
+  }
+
+  /** Tweens the number shown in node to `to` (formatted by fmt). Interruptible: starts from the value on screen. */
+  function count(node, to, fmt = (n) => String(Math.round(n)), dur) {
+    if (!node) return;
+    const from = node._num != null ? node._shown : null;
+    node._num = to;
+    cancelAnimationFrame(node._numRaf);
+    if (from == null || from === to || off() || reduced() || !isFinite(from) || !isFinite(to)) { node._shown = to; node.textContent = fmt(to); return; }
+    const d = dur || ms('--dur-focal'), t0 = performance.now();
+    const step = (now) => {
+      const p = Math.max(0, Math.min(1, (now - t0) / d)), e = 1 - Math.pow(1 - p, 4); // rAF time can precede t0
+      node._shown = from + (to - from) * e;
+      node.textContent = fmt(node._shown);
+      if (p < 1) node._numRaf = requestAnimationFrame(step);
+    };
+    node._numRaf = requestAnimationFrame(step);
+  }
+
+  /** A short spring pulse on a badge or counter whose value just changed. */
+  function bump(node) {
+    if (!node || off() || reduced()) return;
+    node.classList.remove('bump'); void node.offsetWidth; node.classList.add('bump');
+    clearTimeout(node._bump); node._bump = setTimeout(() => node.classList.remove('bump'), ms('--dur-base') + 40);
+  }
+
+  /** Swaps node's content with a quick out/in (a button label, a status line). dir 1 = new content rises. */
+  function swap(node, html, dir = 1) {
+    if (!node || node._swapHtml === html) return;
+    const first = node._swapHtml == null;
+    node._swapHtml = html;
+    if (first || off() || !node.isConnected) { node.innerHTML = html; return; }
+    const d = px(7) * dir;
+    if (node._swapAnim) node._swapAnim.cancel();
+    const out = animate(node, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${-d}px)` }], { duration: ms('--dur-exit'), easing: ease('--ease-in') });
+    node._swapAnim = out;
+    const show = () => {
+      if (node._swapHtml !== html) return;
+      node.innerHTML = html;
+      node._swapAnim = animate(node, [{ opacity: 0, transform: `translateY(${d}px)` }, { opacity: 1, transform: 'none' }], { duration: ms('--dur-base'), easing: ease('--ease-out') });
+    };
+    if (out) out.onfinish = show; else show();
+  }
+
+  /** Keeps a frozen copy of container's current content over it and fades it away, so whatever
+      replaces the content (results after a skeleton) crossfades instead of popping. */
+  function ghost(container) {
+    if (!container || off() || !container.firstElementChild) return;
+    const g = document.createElement('div');
+    g.className = 'swap-ghost';
+    g.setAttribute('aria-hidden', 'true');
+    for (const c of container.children) { if (c.classList.contains('swap-ghost')) continue; const k = c.cloneNode(true); k.querySelectorAll('[id]').forEach(n => n.removeAttribute('id')); g.appendChild(k); }
+    if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    queueMicrotask(() => {
+      container.appendChild(g);
+      const a = animate(g, [{ opacity: 1 }, { opacity: 0 }], { duration: ms('--dur-base'), easing: ease('--ease-in'), fill: 'forwards' });
+      if (a) a.onfinish = () => g.remove(); else g.remove();
+    });
+  }
+
+  /** FLIP: measures nodes, runs mutate(), then slides each one from where it was. */
+  function flip(nodes, mutate) {
+    const before = new Map(nodes.map(n => [n, n.getBoundingClientRect()]));
+    mutate();
+    if (off() || reduced()) return;
+    for (const [n, r] of before) {
+      if (!n.isConnected) continue;
+      const now = n.getBoundingClientRect();
+      const dx = r.left - now.left, dy = r.top - now.top;
+      if (dx || dy) animate(n, [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: ms('--dur-base'), easing: ease('--ease-out') });
+    }
+  }
+
+  return { off, reduced, ms, ease, px, animate, count, bump, swap, ghost, flip };
+})();
+
 // ------------------------------------------------------------------ toasts
 
 function toast(title, text = '', type = 'info', ms = 3800) {
   const ic = type === 'error' ? 'x' : type === 'success' ? 'check' : 'info';
-  const t = el(`<div class="toast ${type}"><div class="ico">${icon(ic)}</div><div><b>${esc(title)}</b>${text ? `<span>${esc(text)}</span>` : ''}</div><div class="bar" style="animation-duration:${ms}ms"></div></div>`);
-  $('#toasts').appendChild(t);
-  const close = () => { t.classList.add('out'); setTimeout(() => t.remove(), 300); };
+  const t = el(`<div class="toast ${type}" role="status"><div class="ico">${icon(ic)}</div><div><b>${esc(title)}</b>${text ? `<span>${esc(text)}</span>` : ''}</div><div class="bar" style="animation-duration:${ms}ms"></div></div>`);
+  const box = $('#toasts');
+  // the stack is bottom-aligned: the newcomer pushes the others up smoothly
+  const others = [...box.children].filter(x => !x.classList.contains('out'));
+  Motion.flip(others, () => box.appendChild(t));
+  let left = ms, started = Date.now(), timer = null;
+  const close = () => {
+    if (t.classList.contains('out')) return;
+    clearTimeout(timer);
+    t.classList.add('out');
+    setTimeout(() => {
+      // the toasts above close the gap instead of jumping
+      const rest = [...box.children].filter(x => x !== t && !x.classList.contains('out'));
+      Motion.flip(rest, () => t.remove());
+    }, Motion.off() ? 0 : Motion.ms('--dur-base'));
+  };
+  // hovering holds the toast (its bar pauses in CSS)
+  t.addEventListener('pointerenter', () => { clearTimeout(timer); left -= Date.now() - started; });
+  t.addEventListener('pointerleave', () => { started = Date.now(); clearTimeout(timer); timer = setTimeout(close, Math.max(900, left)); });
   t.addEventListener('click', close);
-  setTimeout(close, ms);
+  timer = setTimeout(close, ms);
 }
 
 function errorToast(e, title = 'Wystąpił błąd') {
@@ -141,7 +254,7 @@ function modal(html, { onClose, dismissable = true } = {}) {
   const close = () => {
     if (back.classList.contains('closing')) return;
     back.classList.add('closing');
-    setTimeout(() => back.remove(), 200);
+    setTimeout(() => back.remove(), Motion.off() ? 0 : Motion.ms('--dur-exit') + 30);
     onClose && onClose();
   };
   if (dismissable) back.addEventListener('mousedown', (e) => { if (e.target === back) close(); });
@@ -183,18 +296,27 @@ function plural(n, one, few, many) {
   return d >= 2 && d <= 4 && (t < 12 || t > 14) ? few : many;
 }
 
-/** Animated segmented control: buttons [{value,label}] → element; onChange(value). */
+/** Animated segmented control: buttons [{value,label}] → element; onChange(value).
+    The pill glides with transform only (its width change is FLIPped into a scale). */
 function segmented(options, value, onChange) {
   const root = el(`<div class="seg"><span class="pill"></span>${options.map(o => `<button data-v="${esc(o.value)}">${o.label}</button>`).join('')}</div>`);
   const pill = $('.pill', root);
+  let at = null; // { x, w } currently drawn
   const set = (v, animate = true) => {
     $$('button', root).forEach(b => b.classList.toggle('on', b.dataset.v === v));
     const b = $(`button[data-v="${CSS.escape(v)}"]`, root);
-    if (!b) return;
-    if (!animate) pill.style.transition = 'none';
-    pill.style.left = b.offsetLeft + 'px';
-    pill.style.width = b.offsetWidth + 'px';
-    if (!animate) requestAnimationFrame(() => (pill.style.transition = ''));
+    if (!b || !b.offsetWidth) return;
+    const x = b.offsetLeft, w = b.offsetWidth;
+    pill.style.left = '0px';
+    pill.style.transformOrigin = 'left';
+    pill.style.transition = 'none';
+    pill.style.width = w + 'px';
+    pill.style.transform = `translateX(${x}px)`;
+    if (animate && at && (at.x !== x || at.w !== w)) {
+      Motion.animate(pill, [{ transform: `translateX(${at.x}px) scaleX(${at.w / w})` }, { transform: `translateX(${x}px) scaleX(1)` }],
+        { duration: Motion.ms('--dur-base') + 40, easing: Motion.ease('--ease-spring') });
+    }
+    at = { x, w };
   };
   $$('button', root).forEach(b => b.addEventListener('click', () => { set(b.dataset.v); onChange(b.dataset.v); }));
   requestAnimationFrame(() => set(value, false));
@@ -202,8 +324,12 @@ function segmented(options, value, onChange) {
   return root;
 }
 
-function stagger(container) {
-  [...container.children].forEach((c, i) => c.style.setProperty('--i', Math.min(i, 20)));
+/** Marks a container's children as a list arriving (a short staggered rise, capped in CSS).
+    replay=false refreshes a list in place without playing the entrance again. */
+function stagger(container, replay = true) {
+  if (!container) return;
+  [...container.children].forEach((c, i) => c.style.setProperty('--i', i));
+  container.classList.toggle('settled', !replay);
   container.classList.add('stagger');
 }
 
