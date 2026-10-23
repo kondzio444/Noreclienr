@@ -71,7 +71,24 @@ function unseal(box, id) {
   return (id && volatileSecrets.get(id)) || {};
 }
 
-const msClientId = () => keys.microsoftClientId() || store.get().settings.msClientId;
+/**
+ * Azure application ID for the Microsoft login: baked in by scripts/keys.js, or – in a build made
+ * without it (CI secret not set, local development) – fetched from the Nore API, which keeps it as a
+ * Worker secret. The last fetched value is remembered so token refresh works offline-first.
+ */
+async function msClientId() {
+  const own = keys.microsoftClientId() || store.get().settings.msClientId;
+  if (own) return own;
+  try {
+    const res = await net.fetchWithRetry('https://noroclient.pl/api/v1/launcher/config', {}, 2);
+    const id = res.ok ? String((await res.json()).microsoftClientId || '') : '';
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      if (store.get().msClientIdRemote !== id) store.update(s => { s.msClientIdRemote = id; });
+      return id;
+    }
+  } catch { /* offline – fall back to the remembered one */ }
+  return store.get().msClientIdRemote || null;
+}
 
 function publicAccount(a) {
   return { id: a.id, type: a.type, name: a.name, uuid: a.uuid, skin: a.skin || null };
@@ -317,7 +334,7 @@ ipcMain.handle('accounts:offline', (e, name) => {
 });
 
 ipcMain.handle('accounts:msStart', async () => {
-  const device = await auth.startDeviceCode(msClientId());
+  const device = await auth.startDeviceCode(await msClientId());
   const controller = new AbortController();
   msLogins.set(device.device_code, controller);
   return { deviceCode: device.device_code, userCode: device.user_code, uri: device.verification_uri, expiresIn: device.expires_in, interval: device.interval };
@@ -327,7 +344,7 @@ ipcMain.handle('accounts:msPoll', async (e, deviceCode, userCode, expiresIn, int
   const controller = msLogins.get(deviceCode);
   if (!controller) throw new Error('Sesja logowania wygasła – zacznij od nowa');
   try {
-    const token = await auth.pollDeviceCode(msClientId(), { device_code: deviceCode, expires_in: expiresIn, interval }, { signal: controller.signal });
+    const token = await auth.pollDeviceCode(await msClientId(), { device_code: deviceCode, expires_in: expiresIn, interval }, { signal: controller.signal });
     const mc = await auth.minecraftFromMs(token.access_token);
     const acc = { id: 'ms-' + mc.uuid, type: 'microsoft', name: mc.name, uuid: mc.uuid, skin: mc.skin, verifiedAt: Date.now() };
     const secret = seal({ accessToken: mc.accessToken, refreshToken: token.refresh_token, expiresAt: mc.expiresAt }, acc.id);
@@ -405,7 +422,7 @@ async function readyAccount({ force = false } = {}) {
   }
   if (force || !secret.accessToken || !secret.expiresAt || secret.expiresAt - Date.now() < 10 * 60 * 1000) {
     send('progress', { stage: 'Odświeżanie sesji Microsoft' });
-    const refreshed = await auth.refreshMicrosoft({ ...acc, ...secret }, msClientId());
+    const refreshed = await auth.refreshMicrosoft({ ...acc, ...secret }, await msClientId());
     secret = { accessToken: refreshed.accessToken, refreshToken: refreshed.refreshToken, expiresAt: refreshed.expiresAt };
     store.update(s => {
       const a = s.accounts.find(x => x.id === acc.id);

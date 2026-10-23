@@ -21,7 +21,8 @@ function createOffline(name) {
 }
 
 // ---------------------------------------------------------------- Microsoft (device code flow)
-// Uses the Azure application ID built into the launcher (scripts/keys.js), approved for Minecraft services.
+// Uses the Azure application ID approved for Minecraft services: built into the launcher (scripts/keys.js)
+// or served by the Nore API (main.js → msClientId).
 
 const MS_DEVICE = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode';
 const MS_TOKEN = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
@@ -64,7 +65,7 @@ function msError(json, fallback) {
 }
 
 async function startDeviceCode(clientId) {
-  if (!clientId) throw new Error('Ta wersja launchera nie ma wbudowanego identyfikatora Microsoft – pobierz oficjalne wydanie Nore Launchera.');
+  if (!clientId) throw new Error('Nie udało się pobrać identyfikatora aplikacji Microsoft – sprawdź połączenie z internetem i spróbuj ponownie.');
   const { status, json } = await postForm(MS_DEVICE, { client_id: clientId, scope: SCOPE });
   if (status !== 200) throw new Error(msError(json, 'Nie udało się rozpocząć logowania Microsoft'));
   return json; // { device_code, user_code, verification_uri, expires_in, interval, message }

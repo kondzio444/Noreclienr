@@ -5,9 +5,9 @@
  * file) and recognising installed files by fingerprint for badges and updates.
  *
  * The official API (api.curseforge.com) needs a free key from console.curseforge.com – the user's
- * own key from Settings, or one baked into the build from a CI secret (scripts/keys.js). Without a key
- * only modpack files can be imported: each file is then fetched through the public
- * curseforge.com download redirect.
+ * own key from Settings, or one baked into the build from a CI secret (scripts/keys.js). Builds without
+ * a key go through the Nore API (noroclient.pl/api/v1/cf), which adds its own key on the server, so
+ * the key never ships to players.
  */
 const fs = require('fs');
 const fsp = require('fs/promises');
@@ -17,6 +17,7 @@ const net = require('./net');
 const store = require('./store');
 
 const API = process.env.NORE_CF_API || 'https://api.curseforge.com';
+const PROXY = process.env.NORE_CF_PROXY || 'https://noroclient.pl/api/v1/cf';
 const GAME = 432; // Minecraft
 const CLASS = { mod: 6, modpack: 4471, resourcepack: 12, shader: 6552, datapack: 6945 };
 const CLASS_KIND = Object.fromEntries(Object.entries(CLASS).map(([k, v]) => [v, k]));
@@ -52,7 +53,8 @@ function encrypt(value) {
 
 function key() { return decrypt((store.get().settings || {}).curseforgeKey) || bundledKey(); }
 
-function available() { return !!key(); }
+/** Always true: without a key of our own the Nore API proxy answers. */
+function available() { return true; }
 
 class NoKeyError extends Error {
   constructor() {
@@ -63,12 +65,13 @@ class NoKeyError extends Error {
 
 async function call(pathname, { method = 'GET', body, apiKey } = {}) {
   const k = apiKey || key();
-  if (!k) throw new NoKeyError();
-  const res = await net.fetchWithRetry(API + pathname, {
-    method, headers: { 'x-api-key': k, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+  const res = await net.fetchWithRetry((k ? API : PROXY) + pathname, {
+    method, headers: { ...(k ? { 'x-api-key': k } : {}), Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   }, 3);
-  if (res.status === 403 || res.status === 401) throw new Error('CurseForge odrzucił klucz API – sprawdź go w Ustawieniach.');
+  if (res.status === 403 || res.status === 401) {
+    throw new Error(k ? 'CurseForge odrzucił klucz API – sprawdź go w Ustawieniach.' : 'CurseForge jest chwilowo niedostępny – spróbuj później albo dodaj własny klucz w Ustawieniach.');
+  }
   if (res.status === 404) throw new Error('Nie znaleziono na CurseForge.');
   if (!res.ok) throw new Error(`CurseForge: HTTP ${res.status}`);
   return res.json();

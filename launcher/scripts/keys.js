@@ -25,4 +25,8 @@ const json = JSON.stringify(keys);
 const mask = crypto.randomBytes(Buffer.byteLength(json));
 const data = Buffer.from(json).map((b, i) => b ^ mask[i]);
 fs.writeFileSync(out, `${mask.toString('base64')}.${Buffer.from(data).toString('base64')}`);
-for (const [k, v] of Object.entries(keys)) console.log(`[keys] ${k}: ${v ? 'embedded' : 'MISSING'}`);
+for (const [k, v] of Object.entries(keys)) {
+  console.log(`[keys] ${k}: ${v ? 'embedded' : 'MISSING'}`);
+  // not fatal – the launcher then asks the Nore API (Microsoft ID, CurseForge proxy) – but worth seeing in CI
+  if (!v && process.env.GITHUB_ACTIONS) console.log(`::warning::${k} key not set as a GitHub secret – the launcher will use the Nore API instead`);
+}

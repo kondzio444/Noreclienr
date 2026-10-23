@@ -16,6 +16,8 @@
  *   POST /api/v1/hub/hello                Nore Hub: the launcher announces its player (src/hub.js)
  *   GET /api/v1/hub/players?names=a,b     Nore Hub: which of these players use Nore, and what they wear
  *   GET /api/v1/hub/stats                 Nore Hub: players online and known
+ *   GET /api/v1/launcher/config           what Nore Launcher reads at run time (src/launcher.js)
+ *   GET|POST /api/v1/cf/v1/…              CurseForge for the launcher, key added on the server
  *   GET /api/v1/openapi.json              OpenAPI 3.1 description of all of the above
  *
  * Background work: a Cron Trigger (wrangler.jsonc) refreshes the GitHub data every 15 minutes, and
@@ -25,6 +27,7 @@
 import PLATFORMS from '../../platforms/platforms.json';
 import NEWS from './news.json';
 import { HubError, readHello, readNames, hubCall } from './hub.js';
+import { launcherConfig, curseforge } from './launcher.js';
 
 export { NoreHub } from './hub.js';
 
@@ -214,6 +217,7 @@ const ENDPOINTS = [
   ['POST', '/api/v1/hub/hello', 'Nore Hub: launcher zgłasza gracza (podpisane, co 60 s w trakcie gry)'],
   ['GET', '/api/v1/hub/players?names=Steve,Alex', 'Nore Hub: którzy z tych graczy używają Nore i co noszą (do 100 nicków)'],
   ['GET', '/api/v1/hub/stats', 'Nore Hub: gracze online i znani'],
+  ['GET', '/api/v1/launcher/config', 'Ustawienia dla Nore Launchera (identyfikator aplikacji Microsoft do logowania)'],
   ['GET', '/api/v1/openapi.json', 'Opis OpenAPI 3.1'],
 ];
 
@@ -222,7 +226,9 @@ async function api(request, url, env, ctx) {
   const q = url.searchParams;
 
   if (p.startsWith('/api/v1/hub/')) return hub(request, p, q, env);
+  if (p.startsWith('/api/v1/cf/')) return curseforge(request, url, env, ctx);
   if (request.method === 'POST') return fail(request, 405, 'Tylko GET');
+  if (p === '/api/v1/launcher/config') return json(request, launcherConfig(env), { maxAge: 3600 });
 
   if (p === '/api/v1') {
     return json(request, { api: 'Nore Client API', version: API_VERSION, docs: 'https://noroclient.pl/api', endpoints: ENDPOINTS.map(([method, path, about]) => ({ method, path, about })) }, { maxAge: 3600 });
@@ -354,6 +360,7 @@ function openapi() {
       } },
       '/api/v1/hub/players': { get: { summary: 'Nore Hub: którzy z tych graczy używają Nore', parameters: [{ name: 'names', in: 'query', required: true, description: 'Do 100 nicków po przecinku, wielkość liter bez znaczenia', schema: s }], responses: { ...ok('Gracze Nore (klucze to nicki małymi literami)', obj({ players: { type: 'object', additionalProperties: player } })), ...err(400, 'Za dużo nicków') } } },
       '/api/v1/hub/stats': { get: { summary: 'Nore Hub: liczba graczy', responses: ok('Liczniki', obj({ online: n, known: n })) } },
+      '/api/v1/launcher/config': { get: { summary: 'Ustawienia dla Nore Launchera', responses: ok('Ustawienia', obj({ microsoftClientId: { type: ['string', 'null'] } })) } },
     },
   };
 }
