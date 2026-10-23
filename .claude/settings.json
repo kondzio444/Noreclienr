@@ -1,0 +1,20 @@
+{
+  "extraKnownMarketplaces": {
+    "ui-ux-pro-max-skill": {
+      "source": {
+        "source": "github",
+        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
+      }
+    },
+    "addy-web-quality-skills": {
+      "source": {
+        "source": "github",
+        "repo": "addyosmani/web-quality-skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
+    "web-quality-skills@addy-web-quality-skills": true
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "noreclient-web",
+  "private": true,
+  "description": "Nore Client website and API (Cloudflare Workers)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build:standalone": "mkdir -p dist && cp public/app.js dist/app.js.txt && cp public/api.js dist/api.js.txt && esbuild src/standalone.js --bundle --format=esm --platform=neutral --loader:.html=text --loader:.css=text --loader:.txt=text --minify --outfile=dist/site.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.42.0",
+    "esbuild": "0.25.4"
+  }
+}
