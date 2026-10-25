@@ -11,6 +11,7 @@ import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.CurrentGfx;
 import dev.noreclient.util.MenuBackground;
+import dev.noreclient.util.OfficialServer;
 import dev.noreclient.util.Render2D;
 import dev.noreclient.util.ServerInfo;
 import dev.noreclient.util.Sounds;
@@ -25,9 +26,12 @@ import java.util.Map;
 /**
  * Nore multiplayer: saved servers with icons, country flags, MOTD, players and ping, search,
  * add / edit / remove / reorder, and a direct-connect panel with a live preview of the server.
+ * The official Nore MC server is pinned above the player's own servers in a section of its own.
  */
 public class MultiplayerScreen2 extends NoreScreen {
     private static final float ROW = 46;
+    /** "selected" value for the official server when servers.dat has no entry for it (yet). */
+    private static final int OFFICIAL_VIRTUAL = -2;
 
     private List<String[]> servers = new ArrayList<String[]>();
     private final TextBox search = new TextBox("Szukaj serwera...", 40);
@@ -38,9 +42,11 @@ public class MultiplayerScreen2 extends NoreScreen {
     private final Animation scroll = new Animation(0, 14), dialogAnim = new Animation(0, 12);
     private final long opened = System.currentTimeMillis();
     private float scrollTarget, contentH, listY, listH;
-    private int selected = -1, dialog, editIndex = -1, lastClicked = -1, dlgPolicy;
+    private int selected = -1, dialog, editIndex = -1, lastClicked = -1, dlgPolicy, official = -1;
+    private String tooltip;
     private long lastClickAt, deleteArmed, flashAt;
     private String flash, dlgError;
+    private int flashColor;
     private boolean scrollToSelected;
 
     private final List<float[]> hitRects = new ArrayList<float[]>();
@@ -58,11 +64,26 @@ public class MultiplayerScreen2 extends NoreScreen {
     /** Re-reads servers.dat: every change goes straight to the file, so the list always shows what is saved. */
     private void reload() {
         try { servers = game().serverList(); } catch (Exception e) { servers = new ArrayList<String[]>(); }
+        official = OfficialServer.indexIn(servers);
         if (selected >= servers.size()) selected = servers.size() - 1;
     }
 
+    private boolean isOfficial(int index) {
+        return index == OFFICIAL_VIRTUAL || index >= 0 && index < servers.size() && OfficialServer.matches(servers.get(index)[1]);
+    }
+
+    /** {name, address} of the official server: the saved entry (keeps its settings) or the defaults. */
+    private String[] officialEntry() {
+        return official >= 0 && official < servers.size() ? servers.get(official) : new String[]{OfficialServer.NAME, OfficialServer.ADDRESS};
+    }
+
     private void flash(String text) {
+        flash(text, Theme.SUCCESS);
+    }
+
+    private void flash(String text, int color) {
         flash = text;
+        flashColor = color;
         flashAt = System.currentTimeMillis();
     }
 
@@ -90,6 +111,7 @@ public class MultiplayerScreen2 extends NoreScreen {
     }
 
     private void deleteSelected() {
+        if (isOfficial(selected)) { flash("Oficjalnego serwera nie można usunąć", Theme.WARNING); return; }
         if (selected < 0 || selected >= servers.size()) return;
         if (System.currentTimeMillis() - deleteArmed < 2500) {
             String name = servers.get(selected)[0];
@@ -120,6 +142,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         String q = search.getText().trim().toLowerCase(Locale.ROOT);
         for (int i = 0; i < servers.size(); i++) {
             String[] s = servers.get(i);
+            if (OfficialServer.matches(s[1])) continue; // pinned in its own section
             if (q.isEmpty() || s[0].toLowerCase(Locale.ROOT).contains(q) || s[1].toLowerCase(Locale.ROOT).contains(q)) out.add(i);
         }
         return out;
@@ -135,7 +158,13 @@ public class MultiplayerScreen2 extends NoreScreen {
     private boolean compact;
 
     private float button(Gfx g, int mx, int my, float x, float y, String label, int style, boolean active, Runnable action) {
+        return button(g, mx, my, x, y, label, style, active, action, null);
+    }
+
+    /** As above; a disabled button shows {@code reason} as a tooltip on hover. */
+    private float button(Gfx g, int mx, int my, float x, float y, String label, int style, boolean active, Runnable action, String reason) {
         float w = Render2D.textWidth(label) + (compact ? 9 : 18), h = 18;
+        if (!active && reason != null && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h)) tooltip = reason;
         boolean hov = active && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h);
         int col = style == 2 ? 0xFFFF5C5C : Theme.accent();
         Widgets.glowBox(g, x, y, w, h, Theme.radius(), col, anim("b" + label).target(hov ? 1 : 0).update(), active ? (style == 1 ? 1f : 0.55f) : 0.25f);
@@ -149,6 +178,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         CurrentGfx.set(g);
         hitRects.clear();
         hitActions.clear();
+        tooltip = null;
         MenuBackground.render(g, width, height, mx, my);
         Render2D.rect(g, 0, 0, width, height, 0x700A0614);
         float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 450f);
@@ -170,8 +200,8 @@ public class MultiplayerScreen2 extends NoreScreen {
             if (fa <= 0) flash = null;
             else {
                 float fx = pad + 28 + Render2D.textWidth(serversLabel(servers.size())) * 0.7f + 8;
-                Render2D.circle(g, fx + 2, 31.5f, 2, ColorUtil.withAlpha(Theme.SUCCESS, (int) (255 * fa)));
-                Render2D.scaledText(g, flash, fx + 7, 28, 0.7f, ColorUtil.withAlpha(Theme.SUCCESS, (int) (255 * fa)), false);
+                Render2D.circle(g, fx + 2, 31.5f, 2, ColorUtil.withAlpha(flashColor, (int) (255 * fa)));
+                Render2D.scaledText(g, flash, fx + 7, 28, 0.7f, ColorUtil.withAlpha(flashColor, (int) (255 * fa)), false);
             }
         }
         boolean wide = width > 520;
@@ -188,7 +218,33 @@ public class MultiplayerScreen2 extends NoreScreen {
         float top = 44, lw = Math.max(200, width * 0.58f - pad), lx = pad;
         search.render(g, lx, top, lw, 18, TextBox.SEARCH_ICON);
         if (inputOk) hit(lx, top, lw, 18, () -> focus(search));
-        listY = top + 24;
+        // official server: always on top, not affected by search or scrolling
+        float oy = top + 24;
+        Render2D.scaledText(g, "OFICJALNY SERWER", lx + 2, oy, 0.62f, ColorUtil.brighten(Theme.accent(), 0.3f), false);
+        oy += 8;
+        final String[] off = officialEntry();
+        boolean ohov = inputOk && Render2D.hovered(mx, my, lx, oy, lw, ROW);
+        float oh = anim("official").target(ohov ? 1 : 0).update();
+        // always shown as "Nore MC", also when the player saved it under a name of their own
+        ServerCard.row(g, ServerInfo.get(off[1]), OfficialServer.NAME, "PARTNER", lx, oy, lw, ROW, oh, isOfficial(selected));
+        if (oh > 0.05f) {
+            Render2D.roundedRect(g, lx + 4, oy + 4, ROW - 8, ROW - 8, 4, ColorUtil.withAlpha(0xFF000000, (int) (140 * oh)));
+            Icons.play(g, lx + ROW / 2f, oy + ROW / 2f, 14, ColorUtil.withAlpha(0xFFFFFFFF, (int) (255 * oh)));
+        }
+        if (inputOk) {
+            final int oi = official >= 0 ? official : OFFICIAL_VIRTUAL;
+            hit(lx, oy, lw, ROW, () -> {
+                long now = System.currentTimeMillis();
+                if (lastClicked == oi && now - lastClickAt < 350) join(off[0], off[1]);
+                else { selected = oi; deleteArmed = 0; Sounds.click(); }
+                lastClicked = oi;
+                lastClickAt = now;
+            });
+            hit(lx + 4, oy + 4, ROW - 8, ROW - 8, () -> join(off[0], off[1]));
+        }
+        oy += ROW + 6;
+        Render2D.scaledText(g, "TWOJE SERWERY", lx + 2, oy, 0.62f, Theme.TEXT_MUTED, false);
+        listY = oy + 8;
         listH = height - listY - 10;
         List<Integer> vis = visible();
         contentH = vis.size() * (ROW + 5);
@@ -206,8 +262,9 @@ public class MultiplayerScreen2 extends NoreScreen {
         g.scissor((int) lx - 6, (int) listY - 2, (int) (lx + lw + 6), (int) (listY + listH));
         if (vis.isEmpty()) {
             Icons.globe(g, lx + lw / 2f, listY + 50, 18, ColorUtil.withAlpha(Theme.accent(), 150));
-            Render2D.centeredText(g, servers.isEmpty() ? "Nie masz zapisanych serwerów" : "Brak wyników", lx + lw / 2f, listY + 70, Theme.TEXT_MUTED, false);
-            if (servers.isEmpty()) {
+            boolean none = servers.size() - (official >= 0 ? 1 : 0) <= 0;
+            Render2D.centeredText(g, none ? "Nie masz zapisanych serwerów" : "Brak wyników", lx + lw / 2f, listY + 70, Theme.TEXT_MUTED, false);
+            if (none) {
                 String hint = "Dodaj serwer albo wpisz adres w panelu obok";
                 Render2D.scaledText(g, hint, lx + lw / 2f - Render2D.textWidth(hint) * 0.36f, listY + 82, 0.72f, Theme.TEXT_MUTED, false);
             }
@@ -267,7 +324,9 @@ public class MultiplayerScreen2 extends NoreScreen {
             }
             ry += dh + 8;
             // selected server details
-            if (selected >= 0 && selected < servers.size()) {
+            if (isOfficial(selected)) {
+                officialPanel(g, mx, my, rx, ry, rw);
+            } else if (selected >= 0 && selected < servers.size()) {
                 final String[] s = servers.get(selected);
                 ServerInfo.Info info = ServerInfo.get(s[1]);
                 float dh2 = Math.min(height - ry - 10, 150);
@@ -295,10 +354,69 @@ public class MultiplayerScreen2 extends NoreScreen {
             }
         }
         g.setAlpha(1);
+        if (tooltip != null) drawTooltip(g, tooltip, mx, my);
 
         // ------------------------------------------------------------ add / edit dialog
         float d = dialogAnim.target(dialog != 0 ? 1 : 0).update();
         if (d > 0.01f) renderDialog(g, mx, my, d);
+    }
+
+    /** Details of the official server: live status, a short info card, Join and the resource pack choice. */
+    private void officialPanel(Gfx g, int mx, int my, float rx, float ry, float rw) {
+        final String[] s = officialEntry();
+        ServerInfo.Info info = ServerInfo.get(s[1]);
+        float dh2 = Math.min(height - ry - 10, 176);
+        panel(g, rx, ry, rw, dh2, "Oficjalny serwer");
+        ServerCard.badge(g, "PARTNER", rx + 12 + Render2D.textWidth("Oficjalny serwer"), ry + 4.5f);
+        // info card
+        float cy = ry + 17;
+        Render2D.roundedRect(g, rx + 6, cy, rw - 12, 20, Theme.radius() * 0.7f, ColorUtil.withAlpha(Theme.accent(), 38));
+        Icons.sparkle(g, rx + 14, cy + 10, 3.5f, Theme.accent2());
+        Render2D.scaledText(g, Render2D.trim(OfficialServer.TAGLINE, (int) ((rw - 34) / 0.7f)), rx + 22, cy + 3.5f, 0.7f, Theme.TEXT, false);
+        boolean loading = info == null || info.state == ServerInfo.State.LOADING && info.online < 0;
+        boolean down = !loading && info.state == ServerInfo.State.OFFLINE && info.online < 0;
+        String state = loading ? "Sprawdzanie statusu..."
+                : down ? ("Nieznany adres".equals(info.error) ? "Status: nieznany (adres jeszcze nie działa)" : "Status: offline")
+                : "Status: online";
+        int stateCol = loading ? Theme.TEXT_MUTED : down ? 0xFFFF7A7A : Theme.SUCCESS;
+        Render2D.scaledText(g, Render2D.trim(state, (int) ((rw - 34) / 0.62f)), rx + 22, cy + 12, 0.62f, stateCol, false);
+        details(g, info, new String[]{OfficialServer.NAME, s[1]}, rx + 6, cy + 25, rw - 12, dh2 - 25 - 17 - 62);
+        float by = ry + dh2 - 24;
+        // resource packs sent by the server: stored with the saved entry and used when joining
+        if (official >= 0) {
+            final int idx = official;
+            float py = by - 18;
+            Render2D.scaledText(g, "Paczki zasobów serwera", rx + 8, py + 4, 0.7f, Theme.TEXT_MUTED, false);
+            int pol = Math.max(0, Math.min(2, game().serverPackPolicy(idx)));
+            String label = POLICY[pol];
+            float pw = Render2D.textWidth(label) + 16, pxx = rx + rw - 8 - pw;
+            boolean ph = dialog == 0 && Render2D.hovered(mx, my, pxx, py, pw, 14);
+            int pc = pol == 1 ? Theme.SUCCESS : pol == 2 ? Theme.ERROR : Theme.accent();
+            Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("opol").target(ph ? 1 : 0).update(), 0.6f);
+            Render2D.centeredText(g, label, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
+            if (dialog == 0) hit(pxx, py, pw, 14, () -> {
+                game().setServerPackPolicy(idx, (game().serverPackPolicy(idx) + 1) % 3);
+                Sounds.click();
+            });
+        }
+        float x = rx + 6;
+        compact = rw < 210;
+        x += button(g, mx, my, x, by, "Dołącz", 1, true, () -> join(s[0], s[1])) + 4;
+        x += button(g, mx, my, x, by, "Edytuj", 0, false, null, OfficialServer.LOCKED) + 4;
+        button(g, mx, my, x, by, "Usuń", 2, false, null, OfficialServer.LOCKED);
+        compact = false;
+    }
+
+    private void drawTooltip(Gfx g, String text, int mx, int my) {
+        List<String> lines = ModsScreen.wrap(text, 180);
+        float w = 0;
+        for (String l : lines) w = Math.max(w, Render2D.textWidth(l) * 0.7f);
+        w += 10;
+        float h = lines.size() * 8 + 7;
+        float x = Math.min(width - w - 4, mx + 8), y = Math.max(4, my - h - 4);
+        Render2D.roundedRect(g, x, y, w, h, 4, 0xF0120E0B);
+        Render2D.roundedOutline(g, x, y, w, h, 4, 1, ColorUtil.withAlpha(Theme.accent(), 160));
+        for (int i = 0; i < lines.size(); i++) Render2D.scaledText(g, lines.get(i), x + 5, y + 4 + i * 8, 0.7f, Theme.TEXT, false);
     }
 
     private void panel(Gfx g, float x, float y, float w, float h, String title) {
@@ -322,11 +440,13 @@ public class MultiplayerScreen2 extends NoreScreen {
         }
         float ly = y + 38;
         if (info == null) return;
+        // "..." while checking, "—" once the server did not answer
+        String none = info.state == ServerInfo.State.OFFLINE ? "—" : "...";
         String[][] rows = {
-                {"Gracze", info.online >= 0 ? info.online + " / " + info.max : "..."},
-                {"Ping", info.ping >= 0 ? info.ping + " ms" : "..."},
-                {"Wersja", info.version.isEmpty() ? "..." : info.version.replaceAll("§.", "")},
-                {"IP", info.ip == null ? "..." : info.ip},
+                {"Gracze", info.online >= 0 ? info.online + " / " + info.max : none},
+                {"Ping", info.ping >= 0 ? info.ping + " ms" : none},
+                {"Wersja", info.version.isEmpty() ? none : info.version.replaceAll("§.", "")},
+                {"IP", info.ip == null ? none : info.ip},
                 {"Dostawca", info.isp == null ? "—" : info.isp}};
         for (String[] r : rows) {
             if (ly > y + h - 6) break;
@@ -345,6 +465,7 @@ public class MultiplayerScreen2 extends NoreScreen {
 
     private void openDialog(int index) {
         if (index >= servers.size()) return;
+        if (index != -1 && isOfficial(index)) { flash("Oficjalnego serwera nie można edytować", Theme.WARNING); return; }
         dialog = index < 0 ? 1 : 2;
         editIndex = index;
         dlgError = null;
@@ -366,6 +487,11 @@ public class MultiplayerScreen2 extends NoreScreen {
         }
         if (addr.contains(" ")) {
             dlgError = "Adres nie może zawierać spacji";
+            focus(dlgAddr);
+            return;
+        }
+        if (OfficialServer.matches(addr)) {
+            dlgError = "Oficjalny serwer jest już na liście";
             focus(dlgAddr);
             return;
         }
@@ -426,7 +552,8 @@ public class MultiplayerScreen2 extends NoreScreen {
         int pc = dlgPolicy == 1 ? Theme.SUCCESS : dlgPolicy == 2 ? Theme.ERROR : Theme.accent();
         Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("dpol").target(ph ? 1 : 0).update(), 0.6f);
         Render2D.centeredText(g, pol, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
-        String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : duplicate(addr) ? "Ten adres jest już na liście" : null);
+        String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : OfficialServer.matches(addr) ? "Oficjalny serwer jest już na liście"
+                : duplicate(addr) ? "Ten adres jest już na liście" : null);
         if (warn != null) Render2D.scaledText(g, warn, x + 8, y + h - 18, 0.7f, dlgError != null ? Theme.ERROR : Theme.WARNING, false);
         if (dialog != 0) {
             hitRects.clear();
