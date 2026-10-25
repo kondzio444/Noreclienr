@@ -32,7 +32,6 @@ export function env() {
     dataDir: path.resolve(ROOT, str('DATA_DIR', './data')),
     twitchClientId: str('TWITCH_CLIENT_ID'),
     twitchClientSecret: str('TWITCH_CLIENT_SECRET'),
-    githubToken: str('GITHUB_TOKEN'),
     rssBridgeUrl: str('RSS_BRIDGE_URL').replace(/\/+$/, ''),
   };
 }
