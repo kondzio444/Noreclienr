@@ -1,6 +1,6 @@
 /* noroclient.pl – Album world for the web. Two faces (Dela Gothic One, Onest), flat fields, no rules, no gradients,
    no shadows at rest. Stickers carry a vinyl rim drawn as a border, never as a shadow. */
-@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&family=Pixelify+Sans:wght@600&display=swap');
 *, *::before, *::after { box-sizing: border-box; }
 html { background: var(--nore-page); color: var(--nore-ink); -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: var(--nore-web-body); overflow-x: hidden; }
@@ -20,7 +20,7 @@ a { color: inherit; }
 .nav .links a:hover { color: var(--nore-ink); }
 
 /* the one button shape on the site: a pill sticker */
-.pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--nore-vinyl); background: var(--nore-accent); color: #fff; font: 700 17px/1 var(--nore-font-text); text-decoration: none; white-space: nowrap; transition: translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out); }
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--nore-vinyl); background: var(--nore-accent-deep); color: #fff; font: 700 17px/1 var(--nore-font-text); text-decoration: none; white-space: nowrap; transition: translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out); }
 .pill:hover { translate: 0 calc(var(--nore-shift-lift) * -1); }
 .pill:active { scale: .97; translate: 0 0; }
 .pill.sm { height: 44px; padding: 0 20px; font-size: 15px; }

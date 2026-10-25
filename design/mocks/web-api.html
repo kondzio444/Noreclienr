@@ -36,7 +36,7 @@
   .try { padding: 22px; border-radius: 22px; background: var(--nore-page-raised); }
   .try h3 { margin: 0 0 14px; font: 600 18px/1.2 var(--nore-font-text); }
   .req { display: flex; gap: 10px; }
-  .req .field { flex: 1; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 16px; border-radius: 14px; background: var(--nore-slot); font: 500 15px/1 var(--nore-font-code); box-shadow: 0 0 0 2px var(--nore-accent); overflow: hidden; white-space: nowrap; }
+  .req .field { flex: 1; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 16px; border-radius: 14px; background: var(--nore-slot); font: 500 15px/1 var(--nore-font-code); outline: 2px solid var(--nore-accent); outline-offset: 0; overflow: hidden; white-space: nowrap; }
   .req .field span { color: var(--nore-ink-faint); }
   .status { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0 10px; font: 500 14px/1 var(--nore-font-text); color: var(--nore-ink-soft); font-variant-numeric: tabular-nums; }
   .status b { display: inline-flex; align-items: center; gap: 8px; color: var(--nore-ink); }
@@ -112,7 +112,7 @@
             </tbody>
           </table>
         </div>
-        <div class="try">
+        <div class="try" data-ui>
           <h3>Zapytaj na żywo</h3>
           <div class="req"><div class="field"><span>/api/v2/servers/</span>mc.przyklad.pl</div><a class="pill" href="#"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Wyślij</a></div>
           <div class="status"><b><i></i>200 OK</b><span>41 ms</span><span>cache: HIT</span><span>ETag W/"9f2c"</span></div>

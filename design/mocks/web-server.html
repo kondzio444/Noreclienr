@@ -26,7 +26,7 @@
   .world .st { position: absolute; inset: 0; --tilt: 2.5deg; background-image: url(../../web/public/assets/home/panorama.webp); background-position: 42% 50%; }
   .world .heads { position: absolute; left: -9%; bottom: 8%; display: flex; }
   .world .heads img { width: clamp(52px, 5vw, 76px); border-radius: 16px; border: 5px solid var(--nore-vinyl); image-rendering: pixelated; margin-left: -14px; rotate: var(--r); }
-  .world .rank { position: absolute; right: -6%; top: 8%; rotate: 7deg; padding: 12px 18px; border-radius: 14px; border: 5px solid var(--nore-vinyl); background: var(--nore-accent); color: #fff; font: 400 26px/1 var(--nore-font-display); }
+  .world .rank { position: absolute; right: -6%; top: 8%; rotate: 7deg; padding: 12px 18px; border-radius: 14px; border: 5px solid var(--nore-vinyl); background: var(--nore-accent-deep); color: #fff; font: 400 26px/1 var(--nore-font-display); }
 
   /* join: three ways, ordered by how close you are to Nore; no numbers, the stickers lead */
   .join { background: var(--nore-page-raised); padding: clamp(80px, 9vw, 150px) var(--nore-web-margin); }
@@ -43,10 +43,10 @@
   .way .path span.go { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
   .way.b .path span { background: var(--nore-page-raised-2); }
   .way .slot { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; background: var(--nore-page-raised); }
-  .way .slot .ico { width: 54px; height: 54px; border-radius: 10px; border: 3px solid var(--nore-vinyl); background: url(../../web/public/assets/home/panorama.webp) 40% 50% / 400%; flex: none; }
+  .way .slot .ico { width: 54px; height: 54px; border-radius: 10px; border: 3px solid var(--nore-vinyl); object-fit: cover; flex: none; }
   .way .slot b { display: block; font: 600 17px/1.2 var(--nore-font-text); }
   .way .slot small { display: block; margin-top: 4px; color: var(--nore-ink-soft); font-size: 14px; }
-  .way .slot .pin { margin-left: auto; padding: 7px 10px; border-radius: 8px; background: var(--nore-accent); color: #fff; font: 700 13px/1 var(--nore-font-text); }
+  .way .slot .pin { margin-left: auto; padding: 7px 10px; border-radius: 8px; background: var(--nore-accent-deep); color: #fff; font: 700 13px/1 var(--nore-font-text); }
   .way code { font: 600 22px/1.3 var(--nore-font-code); }
 
   /* ranks: a sticker sheet, each rank its own die-cut shape and colour */
@@ -59,7 +59,7 @@
   .rk li { display: flex; gap: 12px; align-items: baseline; }
   .rk li::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; background: currentColor; translate: 0 1px; opacity: .55; }
   .rk.g { --t: -1.5deg; background: var(--nore-page-raised); }
-  .rk.v { --t: 1deg; background: var(--nore-accent); color: #fff; margin-top: 30px; }
+  .rk.v { --t: 1deg; background: var(--nore-accent-deep); color: #fff; margin-top: 30px; }
   .rk.s { --t: -.5deg; background: var(--nore-dot-wait); color: #221a00; border-radius: 28px 28px 80px 28px; }
   .rk .pill.ink { width: 100%; }
   .fair { margin-top: 40px; max-width: 60ch; font: var(--nore-web-lead); color: var(--nore-ink-soft); }
@@ -92,7 +92,7 @@
       <div class="acts in d4"><a class="pill" href="#"><svg viewBox="0 0 24 24"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="currentColor" stroke="none"/></svg>Graj przez Nore Launcher</a><a class="pill ink" href="#">Zasady serwera</a></div>
     </div>
     <div class="world stick-in">
-      <div class="st" role="img" aria-label="Spawn serwera: wiśniowy staw"></div>
+      <div class="st"><img src="../../web/public/assets/home/panorama.webp" alt="Spawn serwera: wiśniowy staw" style="width:100%;height:100%;object-fit:cover;object-position:42% 50%"></div>
       <span class="rank">VIP</span>
       <div class="heads"><img src="assets/head-ola.png" style="--r:-6deg" alt=""><img src="assets/head-bartek.png" style="--r:4deg" alt=""><img src="assets/head-mila.png" style="--r:-3deg" alt=""><img src="assets/head-kondzio.png" style="--r:7deg" alt=""></div>
     </div>
@@ -102,7 +102,7 @@
     <h2 id="j" class="in">Trzy drogi na serwer</h2>
     <div class="ways">
       <article class="way a in"><div><h3>Z Nore Launcher</h3><p>Nore MC jest na stronie Serwery. Jeden klik instaluje właściwą wersję i od razu łączy.</p></div><div class="path"><span>Serwery</span>→<span>Nore MC</span>→<span class="go">Graj</span></div></article>
-      <article class="way b in d1"><div><h3>Z Nore Client</h3><p>Serwer jest przypięty na górze listy Multiplayer w każdej wersji klienta.</p></div><div class="slot"><span class="ico"></span><div><b>Nore MC</b><small><i class="dot" style="width:10px;height:10px;border-width:2px"></i> 37/200 · survival</small></div><span class="pin">Oficjalny</span></div></article>
+      <article class="way b in d1"><div><h3>Z Nore Client</h3><p>Serwer jest przypięty na górze listy Multiplayer w każdej wersji klienta.</p></div><div class="slot"><img class="ico" src="../../web/public/assets/home/sky.webp" alt=""><div><b>Nore MC</b><small><i class="dot" style="width:10px;height:10px;border-width:2px"></i> 37/200 · survival</small></div><span class="pin">Oficjalny</span></div></article>
       <article class="way c in d2"><div><h3>Z innego launchera</h3><p>Dodaj serwer w Minecraft: Java Edition 1.21.11 i wpisz adres.</p></div><code>mc.noreclient.pl</code></article>
     </div>
   </section>
