@@ -53,6 +53,11 @@ contextBridge.exposeInMainWorld('nore', {
     stats: invoke('instances:stats'),
     duplicate: invoke('instances:duplicate'),
   },
+  official: {
+    info: invoke('official:info'),
+    status: invoke('official:status'),
+    pick: invoke('official:pick'),
+  },
   game: {
     launch: invoke('game:launch'),
     prepare: invoke('game:prepare'),

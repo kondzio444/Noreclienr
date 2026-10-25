@@ -23,7 +23,7 @@ public abstract class ServerListMixin {
         ServerInfo entry = null;
         for (String alias : OfficialServer.HIDDEN_ALIASES) if (entry == null) entry = self.tryUnhide(alias);
         if (entry != null) entry.name = OfficialServer.NAME;
-        else self.add(entry = new ServerInfo(OfficialServer.NAME, OfficialServer.ADDRESS, ServerInfo.ServerType.OTHER), false);
+        else self.add(entry = new ServerInfo(OfficialServer.NAME, OfficialServer.ADDRESS, false), false);
         // pinned at the top
         for (int i = self.size() - 1; i > 0; i--) self.set(i, self.get(i - 1));
         self.set(0, entry);
