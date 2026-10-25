@@ -48,7 +48,7 @@ export class NoreApi {
       // 4xx: the API is up, the request is wrong (or the guild unknown) – no backoff
       if (err.status >= 400 && err.status < 500) {
         this.markOk();
-        if (err.status !== 404) log.warn('bot endpoint rejected request', { method, path, status: err.status, body: err.body });
+        if (err.status !== 404 && err.status !== 429) log.warn('bot endpoint rejected request', { method, path, status: err.status, body: err.body });
         return { ok: false, status: err.status, data: err.body };
       }
       this.markFail(err);
@@ -71,7 +71,10 @@ export class NoreApi {
     this.eventBuckets.set(guildId, b);
     if (b.tokens < 1) return { ok: false, limited: true };
     b.tokens -= 1;
-    return this.bot('POST', `/bot/guilds/${guildId}/events`, { type, data });
+    // contract: data is an object of at most 4 KB
+    let payload = data && typeof data === 'object' ? data : { value: data };
+    if (JSON.stringify(payload).length > 3800) payload = { truncated: true, keys: Object.keys(payload).slice(0, 20) };
+    return this.bot('POST', `/bot/guilds/${guildId}/events`, { type, data: payload });
   }
 
   // ---------------------------------------------------------------- public data

@@ -11,11 +11,18 @@ export async function serverStatus(api, address, { maxAge = 30_000 } = {}) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < maxAge) return hit.data;
   let data = null;
-  const remote = api ? await api.server(address).catch(() => null) : null;
+  let remote = api ? await api.server(address).catch(() => null) : null;
+  if (remote && remote.server) remote = remote.server; // API v2: { ok, server: {…} }
   if (remote && typeof remote === 'object' && 'online' in remote && !remote.error) {
     const p = parseAddress(address) || {};
+    const motd = typeof remote.motd === 'object' && remote.motd ? (remote.motd.plain ?? remote.motd.clean ?? remote.motd.raw ?? '') : remote.motd;
+    const fav = remote.favicon || remote.faviconUrl || null;
     data = remote.online
-      ? { ...shapeStatus({ version: { name: remote.version?.name ?? remote.version, protocol: remote.version?.protocol ?? remote.protocol }, players: remote.players, description: remote.motd?.raw ?? remote.motd?.clean ?? remote.motd, favicon: remote.favicon }, { host: p.host, port: p.port, latency: remote.latency ?? null }), source: 'api' }
+      ? {
+        ...shapeStatus({ version: { name: remote.version?.name ?? remote.version, protocol: remote.version?.protocol ?? remote.protocol }, players: remote.players, description: motd, favicon: typeof fav === 'string' && fav.startsWith('data:') ? fav : undefined }, { host: p.host, port: p.port, latency: remote.latencyMs ?? remote.latency ?? null }),
+        faviconUrl: typeof fav === 'string' && /^https?:/.test(fav) ? fav : null,
+        source: 'api',
+      }
       : { online: false, host: p.host, port: p.port, error: remote.error || 'offline', source: 'api' };
   } else {
     data = { ...(await ping(address)), source: 'ping' };

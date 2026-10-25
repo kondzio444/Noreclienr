@@ -84,7 +84,7 @@ export async function serverEmbed(bot, guildId, t, address, status) {
   if (status.motd) e.setDescription('```\n' + clip(status.motd, 500) + '\n```');
   if (status.players.sample?.length) e.addFields({ name: t('mc.sample'), value: clip(status.players.sample.map(n => `\`${n}\``).join(' '), 1024) });
   const fav = faviconBuffer(status.favicon);
-  if (fav) { files.push(new AttachmentBuilder(fav, { name: 'favicon.png' })); e.setThumbnail('attachment://favicon.png'); }
+  if (fav) { files.push(new AttachmentBuilder(fav, { name: 'favicon.png' })); e.setThumbnail('attachment://favicon.png'); } else if (status.faviconUrl) e.setThumbnail(status.faviconUrl);
   e.setFooter({ text: t(status.source === 'api' ? 'mc.via_api' : 'mc.via_ping') }).setTimestamp();
   return { embeds: [e], files };
 }
