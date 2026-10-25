@@ -113,7 +113,7 @@ async function cached(name, loader, ctx) {
 async function fetchReleases(env) {
   const headers = { 'User-Agent': 'nore-web', Accept: 'application/vnd.github+json' };
   if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers });
+  const res = await fetch(`${env.GITHUB_API || 'https://api.github.com'}/repos/${REPO}/releases?per_page=30`, { headers }); // GITHUB_API: tests only
   if (!res.ok) throw new HttpError(502, `GitHub odpowiedział ${res.status}`);
   const list = await res.json();
   return list.filter(r => !r.draft).map(shapeRelease);
