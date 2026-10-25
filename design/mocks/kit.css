@@ -145,7 +145,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .label.forge { --bg: var(--nore-label-forge); }
 .label.vanilla { --bg: var(--nore-label-vanilla); }
 .label.modpack { --bg: var(--nore-label-modpack); }
-.label.nore { --bg: var(--nore-accent); color: #fff; }
+.label.nore { --bg: var(--nore-accent-deep); color: #fff; }
 .label.event { --bg: var(--nore-dot-event); }
 .label.dark { --bg: var(--nore-page); color: var(--nore-ink); }
 .label.sm { height: 20px; padding: 0 8px; font-size: 12px; border-radius: 6px; }
@@ -193,7 +193,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn:active { scale: .97; }
 .btn.sm { height: 32px; padding: 0 13px; font-size: 13px; }
 .btn.icon { width: 40px; padding: 0; }
-.btn.sticker-btn { background: var(--nore-accent); color: #fff; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.btn.sticker-btn { background: var(--nore-accent-deep); color: #fff; box-shadow: 0 0 0 3px var(--nore-vinyl); }
 .btn.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
 .btn.danger { background: color-mix(in oklab, var(--nore-dot-error) 18%, var(--nore-page-raised)); color: #ffd9d5; }
 .btn svg { width: 17px; height: 17px; }

@@ -24,7 +24,7 @@ body { width: 533px; height: 300px; overflow: hidden; background: #000; color: v
 /* sticker in game: 1px vinyl rim, radius 4, no rotation */
 .gst { position: relative; border-radius: 4px; box-shadow: 0 0 0 1px var(--nore-vinyl); }
 .gst.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
-.gst.violet { background: var(--nore-accent); color: #fff; }
+.gst.violet { background: var(--nore-accent-deep); color: #fff; }
 .gst.lift { translate: 0 -1px; box-shadow: 0 0 0 1px var(--nore-vinyl), 0 3px 5px -1px rgba(0, 0, 0, .6); }
 /* peel corner: two triangles drawn with Render2D mesh */
 .gst.lift::after { content: ''; position: absolute; right: -1px; top: -1px; width: 7px; height: 7px; border-top-right-radius: 4px; background: linear-gradient(225deg, #141216 0 50%, #d9d4cc 50%); }
