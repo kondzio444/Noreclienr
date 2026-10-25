@@ -225,7 +225,8 @@ public class MultiplayerScreen2 extends NoreScreen {
         final String[] off = officialEntry();
         boolean ohov = inputOk && Render2D.hovered(mx, my, lx, oy, lw, ROW);
         float oh = anim("official").target(ohov ? 1 : 0).update();
-        ServerCard.row(g, ServerInfo.get(off[1]), off[0], "PARTNER", lx, oy, lw, ROW, oh, isOfficial(selected));
+        // always shown as "Nore MC", also when the player saved it under a name of their own
+        ServerCard.row(g, ServerInfo.get(off[1]), OfficialServer.NAME, "PARTNER", lx, oy, lw, ROW, oh, isOfficial(selected));
         if (oh > 0.05f) {
             Render2D.roundedRect(g, lx + 4, oy + 4, ROW - 8, ROW - 8, 4, ColorUtil.withAlpha(0xFF000000, (int) (140 * oh)));
             Icons.play(g, lx + ROW / 2f, oy + ROW / 2f, 14, ColorUtil.withAlpha(0xFFFFFFFF, (int) (255 * oh)));
@@ -379,7 +380,7 @@ public class MultiplayerScreen2 extends NoreScreen {
                 : "Status: online";
         int stateCol = loading ? Theme.TEXT_MUTED : down ? 0xFFFF7A7A : Theme.SUCCESS;
         Render2D.scaledText(g, Render2D.trim(state, (int) ((rw - 34) / 0.62f)), rx + 22, cy + 12, 0.62f, stateCol, false);
-        details(g, info, s, rx + 6, cy + 25, rw - 12, dh2 - 25 - 17 - 62);
+        details(g, info, new String[]{OfficialServer.NAME, s[1]}, rx + 6, cy + 25, rw - 12, dh2 - 25 - 17 - 62);
         float by = ry + dh2 - 24;
         // resource packs sent by the server: stored with the saved entry and used when joining
         if (official >= 0) {
@@ -490,7 +491,7 @@ public class MultiplayerScreen2 extends NoreScreen {
             return;
         }
         if (OfficialServer.matches(addr)) {
-            dlgError = "To oficjalny serwer – jest już przypięty na górze";
+            dlgError = "Oficjalny serwer jest już na liście";
             focus(dlgAddr);
             return;
         }
@@ -551,7 +552,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         int pc = dlgPolicy == 1 ? Theme.SUCCESS : dlgPolicy == 2 ? Theme.ERROR : Theme.accent();
         Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("dpol").target(ph ? 1 : 0).update(), 0.6f);
         Render2D.centeredText(g, pol, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
-        String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : OfficialServer.matches(addr) ? "To oficjalny serwer – jest już przypięty na górze"
+        String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : OfficialServer.matches(addr) ? "Oficjalny serwer jest już na liście"
                 : duplicate(addr) ? "Ten adres jest już na liście" : null);
         if (warn != null) Render2D.scaledText(g, warn, x + 8, y + h - 18, 0.7f, dlgError != null ? Theme.ERROR : Theme.WARNING, false);
         if (dialog != 0) {
