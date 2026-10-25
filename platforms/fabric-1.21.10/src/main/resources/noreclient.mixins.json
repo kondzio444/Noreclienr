@@ -33,6 +33,7 @@
     "PlayerListHudMixin",
     "PlayerListNameMixin",
     "ServerEntryMixin",
+    "ServerListMixin",
     "SimpleOptionMixin",
     "SkyStyleMixin",
     "SplashOverlayMixin",

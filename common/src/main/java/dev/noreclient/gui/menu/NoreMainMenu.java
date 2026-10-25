@@ -12,6 +12,7 @@ import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.CurrentGfx;
 import dev.noreclient.util.MenuBackground;
+import dev.noreclient.util.OfficialServer;
 import dev.noreclient.util.ServerInfo;
 import dev.noreclient.gui.widget.TextBox;
 import dev.noreclient.util.Render2D;
@@ -30,6 +31,7 @@ import java.util.Locale;
  */
 public class NoreMainMenu extends NoreScreen {
     private static final String[] NEWS = {
+            "Oficjalny serwer Nore MC – jeden klik",
             "Radialne menu 3D pod Prawym Shiftem",
             "Edytor scen: pora dnia, drzewa, kamera",
             "Nowa Szatnia – widzą ją inni gracze Nore",
@@ -71,6 +73,7 @@ public class NoreMainMenu extends NoreScreen {
         final NoreMainMenu self = this;
         nav.add("Singleplayer", "Twoje światy", SideNav.PLAY, SideNav.PRIMARY, () -> go(() -> game().openSingleplayer(self)))
                 .add("Multiplayer", "Serwery", SideNav.GLOBE, SideNav.NORMAL, () -> go(() -> game().openMultiplayer(self)))
+                .add("Zagraj na " + OfficialServer.NAME, null, SideNav.STAR, SideNav.NORMAL, this::joinOfficial)
                 .add("Menu Nore", "nowe menu radialne", SideNav.GRID, SideNav.NORMAL, () -> game().openScreen(new dev.noreclient.gui.click.RadialMenuScreen(self)))
                 .add("Edytor HUD", "Nakładki", SideNav.HUD, SideNav.NORMAL, () -> go(() -> game().openScreen(new HudEditorScreen(self))))
                 .add("Opcje", "Ustawienia gry", SideNav.GEAR, SideNav.NORMAL, () -> go(() -> game().openOptions(self)))
@@ -80,6 +83,23 @@ public class NoreMainMenu extends NoreScreen {
         } catch (Exception e) {
             servers = new ArrayList<String[]>();
         }
+        // the official server has its own entry in the navigation
+        List<String[]> own = new ArrayList<String[]>();
+        for (String[] s : servers) if (!OfficialServer.matches(s[1])) own.add(s);
+        servers = own;
+    }
+
+    /** Joins Nore MC through its saved entry (keeps the resource pack choice stored with it). */
+    private void joinOfficial() {
+        final NoreMainMenu self = this;
+        String[] entry = new String[]{OfficialServer.NAME, OfficialServer.ADDRESS};
+        try {
+            List<String[]> all = game().serverList();
+            int i = OfficialServer.indexIn(all);
+            if (i >= 0) entry = all.get(i);
+        } catch (Exception ignored) { }
+        final String[] e = entry;
+        go(() -> game().connect(e[0], e[1], self));
     }
 
     @Override
@@ -409,7 +429,7 @@ public class NoreMainMenu extends NoreScreen {
             {"Moduły klienta", "Ponad 90 modułów: HUD, zoom, freelook, crosshair, Auto Craft... W grze otwierasz je Prawym Shiftem. Gwiazdka przypina ulubione."},
             {"Edytor HUD", "W grze naciśnij H, aby przeciągać elementy HUD. Każdy element ma skalę i własne opcje."},
             {"Skróty", "Kafelki w prawym górnym rogu: paczki zasobów z Modrinth, galeria zrzutów (F2), znajomi, peleryny, lista modów i sklep (wkrótce)."},
-            {"Multiplayer", "Nowa lista serwerów z flagami krajów, graczami i pingiem. Wpisz adres w Szybkim dołączaniu, aby zobaczyć serwer, zanim wejdziesz."},
+            {"Multiplayer", "Nowa lista serwerów z flagami krajów, graczami i pingiem. Oficjalny serwer Nore MC jest zawsze na górze. Wpisz adres w Szybkim dołączaniu, aby zobaczyć serwer, zanim wejdziesz."},
             {"Gotowe!", "Miłej gry. Ustawienia wyglądu (kolory, tło menu) znajdziesz w Moduły klienta → Client Settings."}};
     private int guideStep = -1;
     private boolean guideChecked;
@@ -418,8 +438,8 @@ public class NoreMainMenu extends NoreScreen {
 
     private float[] guideTarget() {
         switch (guideStep) {
-            case 1: return new float[]{navX - 2, navY + rowH * 2 - 2, navW + 4, rowH + 2};
-            case 2: return new float[]{navX - 2, navY + rowH * 3 - 2, navW + 4, rowH + 2};
+            case 1: return new float[]{navX - 2, navY + rowH * 3 - 2, navW + 4, rowH + 2};
+            case 2: return new float[]{navX - 2, navY + rowH * 4 - 2, navW + 4, rowH + 2};
             case 3: return new float[]{tilesX - 4, tilesY - 4, TILE_ICONS.length * (tileSize + tileGap) + 3, tileSize + 8};
             case 4: return ipY > -999 ? new float[]{cardX - 3, ipY - 22, cardW + 6, 46} : new float[]{navX - 2, navY + rowH - 2, navW + 4, rowH + 2};
             default: return null;
