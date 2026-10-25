@@ -5,13 +5,15 @@
  */
 import worker from './worker.js';
 
-export { NoreHub } from './worker.js';
+export { NoreHub, NoreBot, NoreCounters } from './worker.js';
 import INDEX from '../public/index.html';
 import NOT_FOUND from '../public/404.html';
 import API_PAGE from '../public/api.html';
 import API_STYLE from '../public/api.css';
 import API_APP from '../dist/api.js.txt';
 import STYLE from '../public/style.css';
+import MC_INDEX from '../public/mc/index.html';
+import MC_STATUS from '../dist/mc-status.js.txt';
 import APP from '../dist/app.js.txt';
 
 const RAW = 'https://raw.githubusercontent.com/kondzio444/Noreclienr/3fa206c97bdc40bfcf07af15f68bb1bbba50ab5d/web/public';
@@ -24,6 +26,9 @@ const TEXT = {
   '/api.html': [API_PAGE, 'text/html; charset=utf-8'],
   '/api.css': [API_STYLE, 'text/css; charset=utf-8'],
   '/api.js': [API_APP, 'text/javascript; charset=utf-8'],
+  '/mc/': [MC_INDEX, 'text/html; charset=utf-8'],
+  '/mc/index.html': [MC_INDEX, 'text/html; charset=utf-8'],
+  '/mc/status.js': [MC_STATUS, 'text/javascript; charset=utf-8'],
 };
 const TYPES = { png: 'image/png', gif: 'image/gif', jpg: 'image/jpeg', svg: 'image/svg+xml', ico: 'image/x-icon', webp: 'image/webp', webm: 'video/webm', mp4: 'video/mp4' };
 
