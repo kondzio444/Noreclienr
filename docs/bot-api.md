@@ -1,0 +1,60 @@
+# Nore Bot ↔ Nore API v2 – contract
+
+Two parts that are built separately and must agree on this file:
+
+* **Nore Bot** – `discord-bot/`, a standalone Node.js (22+) process: `npm install` then `node .`
+  (or `npm start`). discord.js gateway bot, many languages. Secrets only in `discord-bot/.env`
+  (git-ignored): `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `NORE_API=https://noroclient.pl`,
+  `NORE_BOT_SECRET`.
+* **Panel** – on the website (`/panel`), Discord OAuth2 login (`identify guilds`), lets a member with
+  *Manage Server* on a guild where the bot is present edit that guild's configuration. Served by the
+  Worker (API v2). Worker secrets: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `NORE_BOT_SECRET`,
+  `SESSION_KEY`.
+
+## Configuration schema – owned by the bot
+
+`discord-bot/config.schema.json` (JSON Schema draft 2020-12, generated/kept in sync by the bot) is the
+single description of every setting: modules, fields, types, defaults, enums, and for each field
+`x-ui` hints (`channel`, `role`, `text`, `textarea`, `toggle`, `select`, `color`, `number`, `list`) and
+`x-i18n` label keys. The panel renders its forms **from this schema only** (no hard-coded fields), so
+new bot features appear in the panel without web changes. The Worker bundles a copy of the file
+(`web/src/bot-schema.json`, copied at build) and validates every write against it.
+
+Translations of the labels: `discord-bot/locales/<lang>.json` under `panel.*`; the panel uses the
+same files (copied to `web/public/panel/locales/`). Languages: pl (default), en, de, es, fr, uk, ru,
+cs, pt-BR, tr.
+
+## Endpoints
+
+All JSON, UTF-8, under `https://noroclient.pl/api/v2`.
+
+Bot → API (header `Authorization: Bot <NORE_BOT_SECRET>`):
+
+| method | path | body / result |
+|---|---|---|
+| GET | `/bot/guilds/:guildId/config` | `{ guildId, version, updatedAt, config }` (defaults when never saved) |
+| PUT | `/bot/guilds/:guildId/meta` | `{ name, icon, channels:[{id,name,type,parentId}], roles:[{id,name,color,position,managed}] }` – the bot reports what the panel may offer; sent on join, on channel/role changes (debounced) and every 10 min |
+| DELETE | `/bot/guilds/:guildId` | bot left the guild |
+| GET | `/bot/changes?since=<ms>` | `{ now, guilds:[guildId…] }` – guilds whose config changed after `since` (bot polls every 15 s and reloads those) |
+| POST | `/bot/guilds/:guildId/events` | `{ type, data }` – optional audit/stat events shown in the panel (`member_join`, `mod_action`, `ticket_open` …), max 100/min per guild |
+
+Panel → API (cookie session after OAuth2):
+
+| method | path | |
+|---|---|---|
+| GET | `/auth/discord/login` → Discord → `/auth/discord/callback` | sets `__Host-nore_s` (signed, httpOnly, SameSite=Lax) |
+| POST | `/auth/logout` | |
+| GET | `/me` | `{ user, guilds:[{id,name,icon,manageable,botPresent}] }` |
+| GET | `/panel/guilds/:guildId` | `{ meta, config, version, updatedAt, events:[…last 50] }` – 403 unless the user can manage it |
+| PUT | `/panel/guilds/:guildId/config` | `{ config, version }` → `{ version }`; 409 on version conflict; 400 with JSON-pointer errors when the schema rejects it |
+
+Config writes bump `version`; the bot applies a config only when its `version` is newer than the one
+it has.
+
+## Public API v2 (also used by the bot's commands)
+
+`/api/v2` is the new public API; `/api/v1` stays unchanged for existing launchers and mods. v2 adds at
+least: `status`, `releases`, `releases/latest`, `downloads`, `events` (with countdowns), `news`,
+`platforms`, `players/:name` (Nore Hub lookup: Nore user, verified, online, wardrobe),
+`servers/:address` (Minecraft server ping: online, players, version, MOTD, favicon), `stats`
+(downloads, Nore players online/known), with ETag, CORS and OpenAPI at `/api/v2/openapi.json`.
