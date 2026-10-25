@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Nore Bot – Nore SMP</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="web.css">
+<style>
+  /* Operate surface on the web: the panel uses the launcher's rail grammar (index tabs on the cover). */
+  .bar { display: flex; align-items: center; gap: 16px; height: 72px; padding-inline: var(--nore-web-margin); }
+  .bar .mark { display: flex; align-items: center; gap: 10px; font: 400 22px/1 var(--nore-font-display); text-decoration: none; }
+  .bar .mark img { width: 36px; }
+  .bar .mark small { font: 500 15px/1 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .user { margin-left: auto; display: flex; align-items: center; gap: 10px; font: 600 15px/1 var(--nore-font-text); }
+  .user img { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--nore-vinyl); image-rendering: pixelated; }
+  .user a { margin-left: 8px; font-weight: 500; color: var(--nore-ink-soft); }
+  .app { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 860px; margin: 0 var(--nore-web-margin) 40px; border-radius: 22px; overflow: hidden; background: var(--nore-page-raised); }
+  .rail { padding: 20px 0 20px 16px; color: var(--nore-cover-ink); }
+  .guild { display: flex; align-items: center; gap: 12px; padding: 0 16px 20px 4px; }
+  .guild .gi { width: 48px; height: 48px; border-radius: 14px; border: 3px solid var(--nore-vinyl); background: url(../../web/public/assets/home/sky.webp) 50% 50% / 300%; }
+  .guild b { display: block; font: 600 16px/1.2 var(--nore-font-text); }
+  .guild small { display: flex; align-items: center; gap: 7px; margin-top: 4px; font: 500 13px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--nore-vinyl); background: var(--c, var(--nore-dot-off)); flex: none; }
+  .rail h6 { margin: 14px 0 6px 12px; font: 600 13px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+  .tab { position: relative; display: flex; align-items: center; gap: 11px; height: 42px; padding: 0 16px 0 12px; border-radius: 12px 0 0 12px; font: 500 15px/1 var(--nore-font-text); color: var(--nore-cover-ink); text-decoration: none; }
+  .tab .dot { margin-left: auto; }
+  .tab.on { background: var(--nore-page); color: var(--nore-ink); font-weight: 600; }
+  .tab svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .tab.on svg { color: var(--nore-accent-light); }
+  .main { position: relative; background: var(--nore-page); padding: 30px clamp(20px, 3vw, 44px) 120px; }
+  .head { display: flex; align-items: flex-start; gap: 20px; }
+  .head h1 { margin: 0; font: 400 clamp(30px, 3vw, 44px)/1 var(--nore-font-display); letter-spacing: -.02em; }
+  .head p { margin: 10px 0 0; max-width: 56ch; color: var(--nore-ink-soft); font-size: 17px; }
+  .switch { position: relative; width: 56px; height: 32px; border-radius: 999px; background: color-mix(in oklab, var(--nore-accent) 34%, var(--nore-slot)); flex: none; }
+  .switch::after { content: ''; position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%; background: var(--nore-accent); box-shadow: 0 0 0 3px var(--nore-vinyl); }
+  .switch.off { background: var(--nore-slot); } .switch.off::after { right: auto; left: 5px; background: var(--nore-dot-off); }
+  .head .switch { margin-left: auto; margin-top: 8px; }
+  .cols { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; margin-top: 34px; align-items: start; }
+  form { display: grid; gap: 26px; }
+  label.f { display: grid; gap: 9px; }
+  label.f > span { font: 600 15px/1.2 var(--nore-font-text); }
+  label.f > small { margin-top: -4px; color: var(--nore-ink-soft); font-size: 14px; }
+  .select, .area { border-radius: 14px; background: var(--nore-slot); font: 500 16px/1.5 var(--nore-font-text); }
+  .select { display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 16px; }
+  .select .hash { color: var(--nore-ink-faint); font-weight: 700; }
+  .select .chev { margin-left: auto; color: var(--nore-ink-soft); }
+  .area { min-height: 116px; padding: 14px 16px; box-shadow: 0 0 0 2px var(--nore-accent); }
+  .var { display: inline-flex; align-items: center; height: 26px; padding: 0 9px; border-radius: 7px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font: 600 14px/1 var(--nore-font-text); vertical-align: 1px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 999px; background: var(--nore-page-raised); font: 500 14px/1 var(--nore-font-text); }
+  .chip.add { background: transparent; box-shadow: inset 0 0 0 2px var(--nore-ghost); color: var(--nore-ink-soft); }
+  .sw { display: flex; gap: 12px; }
+  .sw i { width: 30px; height: 30px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--nore-vinyl); }
+  .sw i.on { outline: 3px solid var(--nore-accent-light); outline-offset: 4px; }
+  .row { display: flex; align-items: center; gap: 16px; justify-content: space-between; }
+  .row b { display: block; font: 600 15px/1.2 var(--nore-font-text); }
+  .row small { color: var(--nore-ink-soft); font-size: 14px; }
+  .err { display: flex; align-items: center; gap: 8px; color: #ffb4ad; font: 500 14px/1.3 var(--nore-font-text); }
+  .preview { position: sticky; top: 20px; display: grid; gap: 18px; }
+  .preview h3 { margin: 0; font: 600 15px/1 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .discord { padding: 16px 16px 18px; border-radius: 16px; background: #313338; color: #dbdee1; font: 400 15px/1.4 'Onest', sans-serif; }
+  .discord .who { display: flex; align-items: center; gap: 10px; }
+  .discord .who img { width: 38px; height: 38px; border-radius: 50%; }
+  .discord .who b { color: #fff; font-weight: 600; }
+  .discord .who em { font-style: normal; font-size: 11px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: #5865f2; color: #fff; }
+  .discord .embed { margin: 10px 0 0 48px; padding: 12px 14px; border-radius: 4px; background: #2b2d31; border-left: 4px solid #9d5cff; }
+  .discord .embed b { color: #fff; }
+  .discord .men { color: #c9cdfb; background: rgba(88, 101, 242, .3); border-radius: 3px; padding: 0 2px; }
+  .events { padding: 16px 18px; border-radius: 16px; background: var(--nore-page-raised); display: grid; gap: 12px; font: 400 14px/1.35 var(--nore-font-text); }
+  .events div { display: flex; gap: 10px; align-items: center; }
+  .events span { margin-left: auto; color: var(--nore-ink-faint); white-space: nowrap; }
+  .save { position: absolute; left: clamp(20px, 3vw, 44px); right: clamp(20px, 3vw, 44px); bottom: 26px; display: flex; align-items: center; gap: 14px; padding: 12px 12px 12px 22px; border-radius: 999px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); box-shadow: var(--nore-shadow-float); font: 600 15px/1.2 var(--nore-font-text); }
+  .save small { font-weight: 500; color: var(--nore-vinyl-ink-soft); }
+  .save .ghost { margin-left: auto; background: transparent; color: var(--nore-vinyl-ink); border-color: transparent; }
+  @media (max-width: 760px) {
+    .bar .mark small, .user span, .user a { display: none; }
+    .app { grid-template-columns: minmax(0, 1fr); margin: 0 0 40px; border-radius: 0; }
+    .main { padding-bottom: 30px; }
+    .area { overflow-wrap: anywhere; }
+    .rail { padding: 16px 0 0 16px; }
+    .rail nav { display: flex; overflow-x: auto; scrollbar-width: none; gap: 4px; }
+    .rail h6 { display: none; }
+    .tab { flex: none; border-radius: 12px 12px 0 0; padding: 0 14px; }
+    .tab .dot { margin-left: 4px; }
+    .cols { grid-template-columns: minmax(0, 1fr); }
+    .preview { position: static; }
+    .save { position: relative; left: auto; right: auto; bottom: auto; margin-top: 28px; padding-left: 16px; }
+    .save small { display: none; }
+    .save .ghost { display: none; }
+    .save .pill { margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="mark" href="#"><img src="assets/logo-sticker-256.png" alt="">Nore <small>Panel bota</small></a>
+  <div class="user"><img src="assets/head-kondzio.png" alt=""><span>kondzio</span><a href="#">Wyloguj</a></div>
+</header>
+<div class="app">
+  <aside class="rail cloth">
+    <div class="guild"><span class="gi" role="img" aria-label="Ikona serwera Discord"></span><div><b>Nore SMP</b><small><i class="dot" style="--c:var(--nore-dot-ready)"></i>Bot online · wersja 14</small></div></div>
+    <nav aria-label="Moduły bota">
+      <h6>Moduły</h6>
+      <a class="tab on" href="#"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-4 0"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>Powitania<i class="dot" style="--c:var(--nore-dot-ready)"></i></a>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Moderacja<i class="dot" style="--c:var(--nore-dot-ready)"></i></a>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/></svg>Tickety<i class="dot"></i></a>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/></svg>Serwer Minecraft<i class="dot" style="--c:var(--nore-dot-ready)"></i></a>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/></svg>Role za reakcje<i class="dot"></i></a>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/></svg>Logi<i class="dot" style="--c:var(--nore-dot-wait)"></i></a>
+      <h6>Serwer</h6>
+      <a class="tab" href="#"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>Zmień serwer</a>
+    </nav>
+  </aside>
+  <main class="main">
+    <div class="head"><div><h1>Powitania</h1><p>Wiadomość, którą Nore Bot wysyła, gdy ktoś dołącza do serwera, i rola, którą dostaje na start.</p></div><span class="switch" role="switch" aria-checked="true" aria-label="Moduł włączony"></span></div>
+    <div class="cols">
+      <form>
+        <label class="f"><span>Kanał</span><div class="select"><span class="hash">#</span>powitania<span class="chev">▾</span></div></label>
+        <label class="f"><span>Wiadomość</span><small>Wstaw zmienną kliknięciem.</small>
+          <div class="area">Hej <span class="var">{user}</span>, witaj na <span class="var">{server}</span>! Jesteś <span class="var">{memberCount}</span>. osobą. Zajrzyj na #zasady i wpadnij na serwer: mc.przyklad.pl</div>
+          <div class="chips"><span class="chip">{user}</span><span class="chip">{server}</span><span class="chip">{memberCount}</span><span class="chip">{nick}</span></div>
+        </label>
+        <label class="f"><span>Kolor ramki</span><div class="sw"><i class="on" style="--c:#9d5cff"></i><i style="--c:#4aa3ff"></i><i style="--c:#3fd27f"></i><i style="--c:#ffd23a"></i><i style="--c:#ff8a1f"></i><i style="--c:#ff5a4f"></i></div></label>
+        <label class="f"><span>Rola na start</span><div class="chips"><span class="chip"><i class="dot" style="--c:#3fd27f"></i>Gracz</span><span class="chip"><i class="dot" style="--c:#4aa3ff"></i>Nowy</span><span class="chip add">+ Dodaj rolę</span></div><span class="err"><i class="dot" style="--c:var(--nore-dot-error)"></i>Rola Moderator jest wyżej niż rola bota, więc bot nie może jej nadać.</span></label>
+        <div class="row"><div><b>Wyślij też w wiadomości prywatnej</b><small>Nowa osoba dostanie ten sam tekst na DM.</small></div><span class="switch off" role="switch" aria-checked="false"></span></div>
+      </form>
+      <aside class="preview">
+        <h3>Podgląd na Discordzie</h3>
+        <div class="discord" data-ui>
+          <div class="who"><img src="assets/logo-sticker-256.png" alt=""><b>Nore Bot</b><em>BOT</em><small style="color:#949ba4">dziś o 21:37</small></div>
+          <div class="embed">Hej <span class="men">@ola_mc</span>, witaj na <b>Nore SMP</b>! Jesteś 128. osobą. Zajrzyj na #zasady i wpadnij na serwer: mc.przyklad.pl</div>
+        </div>
+        <h3>Ostatnio</h3>
+        <div class="events">
+          <div><i class="dot" style="--c:var(--nore-dot-ready)"></i>ola_mc dołączyła<span>2 min</span></div>
+          <div><i class="dot" style="--c:var(--nore-dot-info)"></i>Ticket #41 otwarty<span>18 min</span></div>
+          <div><i class="dot" style="--c:var(--nore-dot-wait)"></i>Logi: brak kanału #logi<span>1 h</span></div>
+        </div>
+      </aside>
+    </div>
+    <div class="save"><span>Masz 3 niezapisane zmiany<br><small>Bot wczyta je w ciągu 15 sekund od zapisania.</small></span><a class="pill ghost sm" href="#">Cofnij</a><a class="pill sm" href="#">Zapisz</a></div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,663 +1,626 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-17T15:10:54+00:00",
-  "title": "Design System: Nore Launcher",
+  "generatedAt": "2026-10-25T21:55:55.571Z",
+  "title": "Design System: Nore – Album",
   "extensions": {
     "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "page",
+        "canonical": "#141216",
+        "note": "Ground: the black album card every page sits on."
+      },
+      "page-raised": {
+        "role": "neutral",
+        "displayName": "page-raised",
+        "canonical": "#1e1b21",
+        "note": "A loose sheet: modals, menus, settings groups, the instance header. One tone step above the page, no border."
+      },
+      "page-raised-2": {
+        "role": "neutral",
+        "displayName": "page-raised-2",
+        "canonical": "#28242c",
+        "note": "Hover on a loose sheet or a secondary (slot) button."
+      },
+      "slot": {
+        "role": "neutral",
+        "displayName": "slot",
+        "canonical": "#0c0b0e",
+        "note": "Recessed slot: inputs, tracks, empty sticker places, code wells."
+      },
+      "ghost": {
+        "role": "neutral",
+        "displayName": "ghost",
+        "canonical": "#2e2a33",
+        "note": "The printed ghost silhouette inside an empty slot (icon outline, dashed die line)."
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "ink",
+        "canonical": "#f3efe9",
+        "note": "Text and icons on the page. Called white pen."
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "ink-soft",
+        "canonical": "#b3abb0",
+        "note": "Secondary text: descriptions, meta, inactive tabs."
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "ink-faint",
+        "canonical": "#837b82",
+        "note": "Placeholders, disabled labels, ghost slot names. Only at 13px and up."
+      },
+      "vinyl": {
+        "role": "neutral",
+        "displayName": "vinyl",
+        "canonical": "#fbfaf7",
+        "note": "The white rim of every die-cut sticker and the face of white stickers."
+      },
+      "vinyl-ink": {
+        "role": "neutral",
+        "displayName": "vinyl-ink",
+        "canonical": "#17141a",
+        "note": "Text printed on a white sticker or a paper clipping."
+      },
+      "vinyl-ink-soft": {
+        "role": "neutral",
+        "displayName": "vinyl-ink-soft",
+        "canonical": "#5d5560",
+        "note": "Secondary text on white stickers and clippings."
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "paper",
+        "canonical": "#e8e5e0",
+        "note": "News clippings and the login nameplate. Slightly greyer than vinyl so stickers still read as stickers on it."
+      },
+      "cover": {
+        "role": "neutral",
+        "displayName": "cover",
+        "canonical": "#291c3d",
+        "note": "The album cover: launcher rail, installer sidebar, updater, login backdrop. Derived from the accent, never hard-coded."
+      },
+      "cover-tab": {
+        "role": "neutral",
+        "displayName": "cover-tab",
+        "canonical": "#352552",
+        "note": "An inactive index tab sitting on the cover."
+      },
+      "cover-ink": {
+        "role": "neutral",
+        "displayName": "cover-ink",
+        "canonical": "#e9e2f5",
+        "note": "Text on the cover."
+      },
+      "cover-ink-soft": {
+        "role": "neutral",
+        "displayName": "cover-ink-soft",
+        "canonical": "#ab9fc0",
+        "note": "Group labels and secondary text on the cover."
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "scrim",
+        "canonical": "rgba(8, 7, 10, 0.72)",
+        "note": "Behind a loose sheet (modal). Flat, no blur."
+      },
       "accent": {
         "role": "primary",
-        "displayName": "Nore Violet",
+        "displayName": "accent",
         "canonical": "#9d5cff",
-        "tonalRamp": [
-          "oklch(15.0% 0.107 297.7)",
-          "oklch(27.0% 0.153 297.7)",
-          "oklch(39.0% 0.199 297.7)",
-          "oklch(51.0% 0.231 297.7)",
-          "oklch(63.0% 0.230 297.7)",
-          "oklch(75.0% 0.184 297.7)",
-          "oklch(85.0% 0.145 297.7)",
-          "oklch(95.0% 0.107 297.7)"
-        ],
-        "note": "Themable accent (default shown); runtime --accent."
+        "note": "Nore violet. User-themable at runtime (--nore-accent). The Graj sticker, active slot pill, focus ring, selected keyline, switch on, icons on white stickers."
       },
       "accent-light": {
         "role": "primary",
-        "displayName": "Lilac",
-        "canonical": "#c8a8ff",
-        "tonalRamp": [
-          "oklch(15.0% 0.072 300.5)",
-          "oklch(27.0% 0.097 300.5)",
-          "oklch(39.0% 0.122 300.5)",
-          "oklch(51.0% 0.125 300.5)",
-          "oklch(63.0% 0.125 300.5)",
-          "oklch(75.0% 0.113 300.5)",
-          "oklch(85.0% 0.092 300.5)",
-          "oklch(95.0% 0.072 300.5)"
-        ],
-        "note": "Runtime --accent-2."
+        "displayName": "accent-light",
+        "canonical": "#c6a3ff",
+        "note": "Links, accent text on the page, the phosphor of focus on dark."
       },
       "accent-deep": {
         "role": "primary",
-        "displayName": "Deep Violet",
-        "canonical": "#6a2fe0",
-        "tonalRamp": [
-          "oklch(15.0% 0.111 289.6)",
-          "oklch(27.0% 0.159 289.6)",
-          "oklch(39.0% 0.208 289.6)",
-          "oklch(51.0% 0.243 289.6)",
-          "oklch(63.0% 0.240 289.6)",
-          "oklch(75.0% 0.192 289.6)",
-          "oklch(85.0% 0.151 289.6)",
-          "oklch(95.0% 0.111 289.6)"
-        ],
-        "note": "Runtime --accent-deep."
+        "displayName": "accent-deep",
+        "canonical": "#6d38dc",
+        "note": "Pressed accent, progress fill under the Graj label, accent fields that carry small white text (contrast 5.9:1)."
       },
-      "rail": {
+      "accent-ink": {
         "role": "primary",
-        "displayName": "Rail Field",
-        "canonical": "color-mix(in oklab, var(--accent) 13%, #0a0610)",
-        "tonalRamp": [
-          "oklch(15.0% 0.047 301.0)",
-          "oklch(27.0% 0.052 301.0)",
-          "oklch(39.0% 0.052 301.0)",
-          "oklch(51.0% 0.052 301.0)",
-          "oklch(63.0% 0.052 301.0)",
-          "oklch(75.0% 0.052 301.0)",
-          "oklch(85.0% 0.052 301.0)",
-          "oklch(95.0% 0.047 301.0)"
-        ],
-        "note": "Derived: color-mix(in oklab, var(--accent) 13%, #0a0610); recolours with the accent."
+        "displayName": "accent-ink",
+        "canonical": "#ffffff",
+        "note": "Text on an accent sticker. Large text only (22px heavy and up, 3.9:1); small text on accent uses accent-deep fields."
       },
-      "ground": {
-        "role": "neutral",
-        "displayName": "Tooltip Black",
-        "canonical": "#0d0913",
-        "tonalRamp": [
-          "oklch(15.0% 0.022 302.3)",
-          "oklch(27.0% 0.022 302.3)",
-          "oklch(39.0% 0.022 302.3)",
-          "oklch(51.0% 0.022 302.3)",
-          "oklch(63.0% 0.022 302.3)",
-          "oklch(75.0% 0.022 302.3)",
-          "oklch(85.0% 0.022 302.3)",
-          "oklch(95.0% 0.022 302.3)"
-        ]
-      },
-      "surface": {
-        "role": "neutral",
-        "displayName": "Panel",
-        "canonical": "#150f1e",
-        "tonalRamp": [
-          "oklch(15.0% 0.031 301.8)",
-          "oklch(27.0% 0.031 301.8)",
-          "oklch(39.0% 0.031 301.8)",
-          "oklch(51.0% 0.031 301.8)",
-          "oklch(63.0% 0.031 301.8)",
-          "oklch(75.0% 0.031 301.8)",
-          "oklch(85.0% 0.031 301.8)",
-          "oklch(95.0% 0.031 301.8)"
-        ]
-      },
-      "surface-raised": {
-        "role": "neutral",
-        "displayName": "Panel Raised",
-        "canonical": "#1c1428",
-        "tonalRamp": [
-          "oklch(15.0% 0.040 301.5)",
-          "oklch(27.0% 0.040 301.5)",
-          "oklch(39.0% 0.040 301.5)",
-          "oklch(51.0% 0.040 301.5)",
-          "oklch(63.0% 0.040 301.5)",
-          "oklch(75.0% 0.040 301.5)",
-          "oklch(85.0% 0.040 301.5)",
-          "oklch(95.0% 0.040 301.5)"
-        ]
-      },
-      "overlay": {
-        "role": "neutral",
-        "displayName": "Overlay",
-        "canonical": "#120c1a",
-        "tonalRamp": [
-          "oklch(15.0% 0.030 303.1)",
-          "oklch(27.0% 0.030 303.1)",
-          "oklch(39.0% 0.030 303.1)",
-          "oklch(51.0% 0.030 303.1)",
-          "oklch(63.0% 0.030 303.1)",
-          "oklch(75.0% 0.030 303.1)",
-          "oklch(85.0% 0.030 303.1)",
-          "oklch(95.0% 0.030 303.1)"
-        ]
-      },
-      "well": {
-        "role": "neutral",
-        "displayName": "Well",
-        "canonical": "#0a0710",
-        "tonalRamp": [
-          "oklch(15.0% 0.021 300.1)",
-          "oklch(27.0% 0.021 300.1)",
-          "oklch(39.0% 0.021 300.1)",
-          "oklch(51.0% 0.021 300.1)",
-          "oklch(63.0% 0.021 300.1)",
-          "oklch(75.0% 0.021 300.1)",
-          "oklch(85.0% 0.021 300.1)",
-          "oklch(95.0% 0.021 300.1)"
-        ]
-      },
-      "keyline": {
-        "role": "neutral",
-        "displayName": "Tooltip Keyline",
-        "canonical": "rgba(190, 160, 255, .13)",
-        "tonalRamp": [
-          "oklch(15.0% 0.075 297.7)",
-          "oklch(27.0% 0.102 297.7)",
-          "oklch(39.0% 0.130 297.7)",
-          "oklch(51.0% 0.136 297.7)",
-          "oklch(63.0% 0.136 297.7)",
-          "oklch(75.0% 0.121 297.7)",
-          "oklch(85.0% 0.098 297.7)",
-          "oklch(95.0% 0.075 297.7)"
-        ],
-        "note": "13% alpha over the ground."
-      },
-      "text": {
-        "role": "neutral",
-        "displayName": "Text",
-        "canonical": "#f3eefa",
-        "tonalRamp": [
-          "oklch(15.0% 0.017 304.8)",
-          "oklch(27.0% 0.017 304.8)",
-          "oklch(39.0% 0.017 304.8)",
-          "oklch(51.0% 0.017 304.8)",
-          "oklch(63.0% 0.017 304.8)",
-          "oklch(75.0% 0.017 304.8)",
-          "oklch(85.0% 0.017 304.8)",
-          "oklch(95.0% 0.017 304.8)"
-        ]
-      },
-      "text-dim": {
-        "role": "neutral",
-        "displayName": "Text Dim",
-        "canonical": "#b8adc9",
-        "tonalRamp": [
-          "oklch(15.0% 0.041 303.3)",
-          "oklch(27.0% 0.041 303.3)",
-          "oklch(39.0% 0.041 303.3)",
-          "oklch(51.0% 0.041 303.3)",
-          "oklch(63.0% 0.041 303.3)",
-          "oklch(75.0% 0.041 303.3)",
-          "oklch(85.0% 0.041 303.3)",
-          "oklch(95.0% 0.041 303.3)"
-        ]
-      },
-      "text-muted": {
-        "role": "neutral",
-        "displayName": "Text Muted",
-        "canonical": "#8f84a3",
-        "tonalRamp": [
-          "oklch(15.0% 0.046 301.3)",
-          "oklch(27.0% 0.047 301.3)",
-          "oklch(39.0% 0.047 301.3)",
-          "oklch(51.0% 0.047 301.3)",
-          "oklch(63.0% 0.047 301.3)",
-          "oklch(75.0% 0.047 301.3)",
-          "oklch(85.0% 0.047 301.3)",
-          "oklch(95.0% 0.046 301.3)"
-        ]
-      },
-      "code-a-green": {
+      "dot-ready": {
         "role": "state",
-        "displayName": "§a Green",
-        "canonical": "#55ff55",
-        "tonalRamp": [
-          "oklch(15.0% 0.114 143.1)",
-          "oklch(27.0% 0.164 143.1)",
-          "oklch(39.0% 0.215 143.1)",
-          "oklch(51.0% 0.252 143.1)",
-          "oklch(63.0% 0.249 143.1)",
-          "oklch(75.0% 0.198 143.1)",
-          "oklch(85.0% 0.156 143.1)",
-          "oklch(95.0% 0.114 143.1)"
-        ],
-        "note": "Ready, online, running, done."
+        "displayName": "ready",
+        "canonical": "#3fd27f",
+        "note": "Ready, online, running, installed, done."
       },
-      "code-e-yellow": {
+      "dot-wait": {
         "role": "state",
-        "displayName": "§e Yellow",
-        "canonical": "#ffff55",
-        "tonalRamp": [
-          "oklch(15.0% 0.091 109.4)",
-          "oklch(27.0% 0.128 109.4)",
-          "oklch(39.0% 0.164 109.4)",
-          "oklch(51.0% 0.183 109.4)",
-          "oklch(63.0% 0.183 109.4)",
-          "oklch(75.0% 0.152 109.4)",
-          "oklch(85.0% 0.122 109.4)",
-          "oklch(95.0% 0.091 109.4)"
-        ],
-        "note": "Pending, update, beta, lit until seen."
+        "displayName": "wait",
+        "canonical": "#ffd23a",
+        "note": "Waiting, update available, beta, starting, pending invite."
       },
-      "code-c-red": {
+      "dot-error": {
         "role": "state",
-        "displayName": "§c Red",
-        "canonical": "#ff5555",
-        "tonalRamp": [
-          "oklch(15.0% 0.099 24.4)",
-          "oklch(27.0% 0.140 24.4)",
-          "oklch(39.0% 0.181 24.4)",
-          "oklch(51.0% 0.206 24.4)",
-          "oklch(63.0% 0.206 24.4)",
-          "oklch(75.0% 0.168 24.4)",
-          "oklch(85.0% 0.133 24.4)",
-          "oklch(95.0% 0.099 24.4)"
-        ],
-        "note": "Error, stopped, danger."
+        "displayName": "error",
+        "canonical": "#ff5a4f",
+        "note": "Error, stopped by crash, danger, offline server."
       },
-      "code-6-gold": {
+      "dot-event": {
         "role": "state",
-        "displayName": "§6 Gold",
-        "canonical": "#ffaa00",
-        "tonalRamp": [
-          "oklch(15.0% 0.087 73.3)",
-          "oklch(27.0% 0.121 73.3)",
-          "oklch(39.0% 0.155 73.3)",
-          "oklch(51.0% 0.171 73.3)",
-          "oklch(63.0% 0.171 73.3)",
-          "oklch(75.0% 0.144 73.3)",
-          "oklch(85.0% 0.115 73.3)",
-          "oklch(95.0% 0.087 73.3)"
-        ],
-        "note": "Events; Forge/NeoForge loader."
+        "displayName": "event",
+        "canonical": "#ff8a1f",
+        "note": "Events (Halloween, winter), seasonal items, countdowns."
       },
-      "code-b-aqua": {
+      "dot-info": {
         "role": "state",
-        "displayName": "§b Aqua",
-        "canonical": "#55ffff",
-        "tonalRamp": [
-          "oklch(15.0% 0.075 195.0)",
-          "oklch(27.0% 0.103 195.0)",
-          "oklch(39.0% 0.130 195.0)",
-          "oklch(51.0% 0.136 195.0)",
-          "oklch(63.0% 0.136 195.0)",
-          "oklch(75.0% 0.121 195.0)",
-          "oklch(85.0% 0.098 195.0)",
-          "oklch(95.0% 0.075 195.0)"
-        ],
-        "note": "Info, links."
+        "displayName": "info",
+        "canonical": "#4aa3ff",
+        "note": "Information, links to docs, new content to look at."
       },
-      "code-d-pink": {
+      "dot-nore": {
         "role": "state",
-        "displayName": "§d Pink",
-        "canonical": "#ff55ff",
-        "tonalRamp": [
-          "oklch(15.0% 0.121 327.9)",
-          "oklch(27.0% 0.175 327.9)",
-          "oklch(39.0% 0.229 327.9)",
-          "oklch(51.0% 0.272 327.9)",
-          "oklch(63.0% 0.266 327.9)",
-          "oklch(75.0% 0.211 327.9)",
-          "oklch(85.0% 0.166 327.9)",
-          "oklch(95.0% 0.121 327.9)"
-        ],
-        "note": "Nore; Quilt loader."
+        "displayName": "nore",
+        "canonical": "#9d5cff",
+        "note": "Nore itself: Nore Client loader, Nore Hub players."
       },
-      "code-5-purple": {
+      "dot-off": {
         "role": "state",
-        "displayName": "§5 Purple",
-        "canonical": "#c23bc2",
-        "tonalRamp": [
-          "oklch(15.0% 0.105 327.9)",
-          "oklch(27.0% 0.150 327.9)",
-          "oklch(39.0% 0.195 327.9)",
-          "oklch(51.0% 0.225 327.9)",
-          "oklch(63.0% 0.225 327.9)",
-          "oklch(75.0% 0.180 327.9)",
-          "oklch(85.0% 0.143 327.9)",
-          "oklch(95.0% 0.105 327.9)"
-        ],
-        "note": "Nore (MOTD rendering of §5)."
+        "displayName": "off",
+        "canonical": "#6c656d",
+        "note": "Offline friend, disabled, unknown."
       },
-      "code-7-gray": {
-        "role": "state",
-        "displayName": "§7 Gray",
-        "canonical": "#aaaaaa",
-        "tonalRamp": [
-          "oklch(15.0% 0.000 89.9)",
-          "oklch(27.0% 0.000 89.9)",
-          "oklch(39.0% 0.000 89.9)",
-          "oklch(51.0% 0.000 89.9)",
-          "oklch(63.0% 0.000 89.9)",
-          "oklch(75.0% 0.000 89.9)",
-          "oklch(85.0% 0.000 89.9)",
-          "oklch(95.0% 0.000 89.9)"
-        ],
-        "note": "Neutral MOTD text, offline."
+      "label-fabric": {
+        "role": "tag",
+        "displayName": "fabric",
+        "canonical": "#e8c873",
+        "note": "Loader label sticker fill (dark text)."
       },
-      "code-8-dark-gray": {
-        "role": "state",
-        "displayName": "§8 Dark Gray",
-        "canonical": "#7a7a7a",
-        "tonalRamp": [
-          "oklch(15.0% 0.000 89.9)",
-          "oklch(27.0% 0.000 89.9)",
-          "oklch(39.0% 0.000 89.9)",
-          "oklch(51.0% 0.000 89.9)",
-          "oklch(63.0% 0.000 89.9)",
-          "oklch(75.0% 0.000 89.9)",
-          "oklch(85.0% 0.000 89.9)",
-          "oklch(95.0% 0.000 89.9)"
-        ],
-        "note": "Separators; lifted from #555555 for legibility."
+      "label-quilt": {
+        "role": "tag",
+        "displayName": "quilt",
+        "canonical": "#d99be8",
+        "note": "Loader label sticker fill (dark text)."
       },
-      "code-3-teal": {
-        "role": "state",
-        "displayName": "§3 Teal",
-        "canonical": "#00aaaa",
-        "tonalRamp": [
-          "oklch(15.0% 0.068 194.8)",
-          "oklch(27.0% 0.091 194.8)",
-          "oklch(39.0% 0.114 194.8)",
-          "oklch(51.0% 0.114 194.8)",
-          "oklch(63.0% 0.114 194.8)",
-          "oklch(75.0% 0.106 194.8)",
-          "oklch(85.0% 0.087 194.8)",
-          "oklch(95.0% 0.068 194.8)"
-        ],
-        "note": "Modpack tag."
+      "label-forge": {
+        "role": "tag",
+        "displayName": "forge",
+        "canonical": "#e09a5b",
+        "note": "Forge and NeoForge label sticker fill (dark text)."
       },
-      "running-green": {
-        "role": "state",
-        "displayName": "Running Green",
-        "canonical": "#1f9d3f",
-        "tonalRamp": [
-          "oklch(15.0% 0.087 146.9)",
-          "oklch(27.0% 0.121 146.9)",
-          "oklch(39.0% 0.155 146.9)",
-          "oklch(51.0% 0.170 146.9)",
-          "oklch(63.0% 0.170 146.9)",
-          "oklch(75.0% 0.143 146.9)",
-          "oklch(85.0% 0.115 146.9)",
-          "oklch(95.0% 0.087 146.9)"
-        ],
-        "note": "Graj block while the game runs."
+      "label-vanilla": {
+        "role": "tag",
+        "displayName": "vanilla",
+        "canonical": "#8fd18b",
+        "note": "Vanilla label sticker fill (dark text)."
+      },
+      "label-modpack": {
+        "role": "tag",
+        "displayName": "modpack",
+        "canonical": "#7cc7d6",
+        "note": "Modpack label sticker fill (dark text)."
+      },
+      "label-nore": {
+        "role": "tag",
+        "displayName": "nore",
+        "canonical": "#9d5cff",
+        "note": "Nore Client label sticker (white text)."
+      },
+      "label-version": {
+        "role": "tag",
+        "displayName": "version",
+        "canonical": "#f3efe9",
+        "note": "Minecraft version label sticker (white sticker, dark text)."
+      },
+      "halloween-page": {
+        "role": "event",
+        "displayName": "halloween page",
+        "canonical": "#0b0a0c",
+        "note": "Lights out: the album in a dark room."
+      },
+      "halloween-page-raised": {
+        "role": "event",
+        "displayName": "halloween page-raised",
+        "canonical": "#151317",
+        "note": ""
+      },
+      "halloween-slot": {
+        "role": "event",
+        "displayName": "halloween slot",
+        "canonical": "#060507",
+        "note": ""
+      },
+      "halloween-cover": {
+        "role": "event",
+        "displayName": "halloween cover",
+        "canonical": "#150f1d",
+        "note": ""
+      },
+      "halloween-ink": {
+        "role": "event",
+        "displayName": "halloween ink",
+        "canonical": "#e9e4dc",
+        "note": ""
+      },
+      "halloween-ink-soft": {
+        "role": "event",
+        "displayName": "halloween ink-soft",
+        "canonical": "#b8b0b6",
+        "note": "Raised for lights-out so secondary text keeps 4.5:1 where the dark is deepest."
+      },
+      "halloween-phosphor": {
+        "role": "event",
+        "displayName": "halloween phosphor",
+        "canonical": "#d2ff7a",
+        "note": "Glow-in-the-dark stickers. The only colour allowed to glow, and only during Halloween."
+      },
+      "halloween-phosphor-glow": {
+        "role": "event",
+        "displayName": "halloween phosphor-glow",
+        "canonical": "rgba(210, 255, 122, 0.38)",
+        "note": "Halo around phosphor stickers (0 0 18px)."
+      },
+      "halloween-pumpkin": {
+        "role": "event",
+        "displayName": "halloween pumpkin",
+        "canonical": "#ff7417",
+        "note": "Pumpkin stickers, the event tab, Halloween countdown."
+      },
+      "halloween-pumpkin-deep": {
+        "role": "event",
+        "displayName": "halloween pumpkin-deep",
+        "canonical": "#c2470a",
+        "note": ""
+      },
+      "halloween-torch": {
+        "role": "event",
+        "displayName": "halloween torch",
+        "canonical": "rgba(255, 236, 196, 0.16)",
+        "note": "The flashlight cone that follows the pointer."
+      },
+      "halloween-bat": {
+        "role": "event",
+        "displayName": "halloween bat",
+        "canonical": "#221c26",
+        "note": "Bat and spider silhouettes (dark stickers with vinyl rim)."
+      },
+      "winter-page": {
+        "role": "event",
+        "displayName": "winter page",
+        "canonical": "#11141b",
+        "note": "Winter night card, cooler."
+      },
+      "winter-page-raised": {
+        "role": "event",
+        "displayName": "winter page-raised",
+        "canonical": "#1a1e27",
+        "note": ""
+      },
+      "winter-slot": {
+        "role": "event",
+        "displayName": "winter slot",
+        "canonical": "#0a0c11",
+        "note": ""
+      },
+      "winter-cover": {
+        "role": "event",
+        "displayName": "winter cover",
+        "canonical": "#1e1d38",
+        "note": ""
+      },
+      "winter-frost": {
+        "role": "event",
+        "displayName": "winter frost",
+        "canonical": "#e9f4ff",
+        "note": "Frost creeping from page corners, snow confetti."
+      },
+      "winter-ice": {
+        "role": "event",
+        "displayName": "winter ice",
+        "canonical": "#8fd3ff",
+        "note": "Winter label stickers, countdown."
+      },
+      "winter-light-red": {
+        "role": "event",
+        "displayName": "winter light-red",
+        "canonical": "#ff5a5a",
+        "note": "String-light dot stickers."
+      },
+      "winter-light-green": {
+        "role": "event",
+        "displayName": "winter light-green",
+        "canonical": "#5be38f",
+        "note": ""
+      },
+      "winter-light-gold": {
+        "role": "event",
+        "displayName": "winter light-gold",
+        "canonical": "#ffd257",
+        "note": ""
+      },
+      "winter-light-blue": {
+        "role": "event",
+        "displayName": "winter light-blue",
+        "canonical": "#6cb8ff",
+        "note": ""
       }
     },
     "typographyMeta": {
-      "display": {
-        "displayName": "Display",
-        "purpose": "Instance name in the Start band; wizard/login/updater titles at smaller sizes. Uppercase."
-      },
-      "headline": {
-        "displayName": "Headline",
-        "purpose": "Page heads and the server hero. Uppercase."
-      },
-      "title": {
-        "displayName": "Title",
-        "purpose": "Instance card names, uppercase; server rows 17px sentence case."
-      },
-      "section": {
-        "displayName": "Section",
-        "purpose": "Module titles beside the coloured header tab. Uppercase."
-      },
-      "stat": {
-        "displayName": "Stat",
-        "purpose": "Live numbers: play time, players, RAM. Tabular."
-      },
-      "body": {
-        "displayName": "Body",
-        "purpose": "All working copy."
-      },
-      "motd": {
-        "displayName": "MOTD",
-        "purpose": "One-line § coloured description under instances and servers."
+      "meta": {
+        "displayName": "meta",
+        "purpose": "Launcher meta: Onest 12px"
       },
       "label": {
-        "displayName": "Label",
-        "purpose": "Silkscreen rank tags, loader tags, step numbers, §k glyphs. Uppercase, unsmoothed."
+        "displayName": "label",
+        "purpose": "Launcher label: Onest 13px"
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Launcher body: Onest 14px"
+      },
+      "lead": {
+        "displayName": "lead",
+        "purpose": "Launcher lead: Onest 16px"
+      },
+      "section": {
+        "displayName": "section",
+        "purpose": "Launcher section: Onest 18px"
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Launcher title: Dela Gothic One 30px"
+      },
+      "hero": {
+        "displayName": "hero",
+        "purpose": "Launcher hero: Dela Gothic One 44px"
+      },
+      "play": {
+        "displayName": "play",
+        "purpose": "Launcher play: Dela Gothic One 24px"
+      },
+      "web-small": {
+        "displayName": "Web small",
+        "purpose": "Onest 16px"
+      },
+      "web-body": {
+        "displayName": "Web body",
+        "purpose": "Onest clamp(16px, 1.05vw + 12px, 19px)"
+      },
+      "web-lead": {
+        "displayName": "Web lead",
+        "purpose": "Onest clamp(20px, 1.2vw + 14px, 28px)"
+      },
+      "web-heading": {
+        "displayName": "Web heading",
+        "purpose": "Dela Gothic One clamp(34px, 4.2vw, 64px)"
+      },
+      "web-display": {
+        "displayName": "Web display",
+        "purpose": "Dela Gothic One clamp(64px, 12.5vw, 200px)"
       }
     },
     "shadows": [
       {
+        "name": "flat",
+        "value": "none",
+        "purpose": "Page, slots and stickers at rest. Stickers are glued down: no shadow."
+      },
+      {
+        "name": "lift",
+        "value": "0 10px 20px -8px rgba(0, 0, 0, 0.65), 0 2px 4px rgba(0, 0, 0, 0.35)",
+        "purpose": "A sticker being peeled: hover, drag, the moment before it sticks."
+      },
+      {
         "name": "float",
-        "value": "0 14px 34px rgba(0, 0, 0, .5)",
-        "purpose": "Modals, pop menus, toasts, login card: layers that float above the page."
+        "value": "0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 4px 10px rgba(0, 0, 0, 0.4)",
+        "purpose": "Loose sheets: modals, menus, toasts, dropdowns."
       },
       {
-        "name": "block-bevel",
-        "value": "inset 0 -4px 0 rgba(0, 0, 0, .28)",
-        "purpose": "Lower edge of the Graj block and the Microsoft button; inset 0 -2px 0 when pressed."
-      },
-      {
-        "name": "selected-keyline",
-        "value": "inset 0 0 0 1px var(--accent)",
-        "purpose": "Selected cards and scenes, with an accent border."
-      },
-      {
-        "name": "focus",
-        "value": "outline: 2px solid var(--accent); outline-offset: 2px",
-        "purpose": "Keyboard focus everywhere; inputs use border + 0 0 0 1px var(--accent)."
+        "name": "phosphor",
+        "value": "0 0 18px rgba(210, 255, 122, 0.38), 0 0 2px rgba(210, 255, 122, 0.8)",
+        "purpose": "Halloween glow stickers only."
       }
     ],
     "motion": [
       {
-        "name": "--dur-press / --dur-fast",
-        "value": "90ms / 140ms",
-        "purpose": "Press feedback; hover and control state."
+        "name": "--nore-dur-tap",
+        "value": "90ms",
+        "purpose": "Press feedback."
       },
       {
-        "name": "--dur-base",
+        "name": "--nore-dur-quick",
+        "value": "140ms",
+        "purpose": "Hover, colour and state changes."
+      },
+      {
+        "name": "--nore-dur-base",
         "value": "220ms",
-        "purpose": "Routine state changes, label swaps, value tweens, toast exit."
+        "purpose": "Routine transitions, value swaps."
       },
       {
-        "name": "--dur-page / --dur-overlay",
-        "value": "300ms / 260ms",
-        "purpose": "Page and list entrances; modals, menus and toasts arriving."
+        "name": "--nore-dur-exit",
+        "value": "160ms",
+        "purpose": "Anything leaving. Always shorter than it arrived."
       },
       {
-        "name": "--dur-exit",
-        "value": "130ms",
-        "purpose": "Anything leaving; always faster than its entrance."
+        "name": "--nore-dur-peel",
+        "value": "260ms",
+        "purpose": "A sticker peeling off (toggle off, remove, dismiss)."
       },
       {
-        "name": "--dur-focal",
-        "value": "560ms",
-        "purpose": "The §k reveal and number count-ups."
+        "name": "--nore-dur-overlay",
+        "value": "280ms",
+        "purpose": "Loose sheet arriving (modal, menu, toast)."
       },
       {
-        "name": "--ease-out / --ease-in / --ease-in-out",
-        "value": "cubic-bezier(.16, 1, .3, 1) / cubic-bezier(.55, 0, .8, .25) / cubic-bezier(.65, 0, .35, 1)",
-        "purpose": "Arrivals, departures, loops."
+        "name": "--nore-dur-page",
+        "value": "320ms",
+        "purpose": "Page turn in the launcher and site sections."
       },
       {
-        "name": "--ease-spring",
-        "value": "cubic-bezier(.3, 1.25, .55, 1)",
-        "purpose": "Only things that travel into a slot: rail indicator, segmented pill, switch knob."
+        "name": "--nore-dur-stick",
+        "value": "380ms",
+        "purpose": "A sticker slapping into its slot (spring settle time)."
       },
       {
-        "name": "stagger",
-        "value": "--stagger-step 30ms, capped at --stagger-max 8; rise --shift-rise 8px",
-        "purpose": "Lists arrive as lists; refreshed lists do not replay."
+        "name": "--nore-dur-launch",
+        "value": "900ms",
+        "purpose": "App launch storyboard, total."
       },
       {
-        "name": "page",
-        "value": "--shift-page 10px directional (down/up by rail order, in/out for detail pages); leaving page is a ghost under the new one",
-        "purpose": "Short, interruptible navigation."
+        "name": "--nore-dur-reveal",
+        "value": "1400ms",
+        "purpose": "Event reveal (lights out, frost), total."
       },
       {
-        "name": "k-reveal",
-        "value": "560ms, left to right; ambient one-letter tick every 7-12s on the Start hero",
-        "purpose": "The signature; skipped when motion is reduced."
+        "name": "--nore-dur-ambient",
+        "value": "9000ms",
+        "purpose": "Slow loops: flashlight sway, snow fall cycle, drift."
       },
       {
-        "name": "lit-blink",
-        "value": "1.2s steps(2, end) infinite",
-        "purpose": "The §e lit-until-seen mark and the Graj live mark."
+        "name": "--nore-ease-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Arrivals."
       },
       {
-        "name": "stepped",
-        "value": "steps(8) spinner, steps(10) splash bar",
-        "purpose": "Mechanical progress moves in steps."
+        "name": "--nore-ease-in",
+        "value": "cubic-bezier(0.55, 0, 1, 0.45)",
+        "purpose": "Departures."
       },
       {
-        "name": "reduced",
-        "value": "prefers-reduced-motion: distances 0, spring off, ambient loops stopped, fades kept; in-app switch: all motion off",
-        "purpose": "Feedback stays legible without travel."
+        "name": "--nore-ease-in-out",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Loops and position swaps."
+      },
+      {
+        "name": "--nore-ease-peel",
+        "value": "cubic-bezier(0.45, 0, 0.2, 1)",
+        "purpose": "Corner lift then release."
+      },
+      {
+        "name": "--nore-ease-rub",
+        "value": "cubic-bezier(0.3, 0, 0.1, 1)",
+        "purpose": "The rub-down highlight sweep after pressing."
+      },
+      {
+        "name": "--nore-spring-stick",
+        "value": "stiffness 700, damping 30, mass 1",
+        "purpose": "Sticker slaps into a slot: about 11% overshoot, settles in ~420ms."
+      },
+      {
+        "name": "--nore-spring-tab",
+        "value": "stiffness 430, damping 32, mass 1",
+        "purpose": "Active tab and segmented pill travelling to a slot: ~4% overshoot."
+      },
+      {
+        "name": "--nore-spring-knob",
+        "value": "stiffness 520, damping 26, mass 1",
+        "purpose": "Switch knob (a dot sticker) re-sticking on the other side."
+      },
+      {
+        "name": "--nore-spring-soft",
+        "value": "stiffness 180, damping 22, mass 1",
+        "purpose": "Large objects: the album cover opening, the event poster."
+      },
+      {
+        "name": "--nore-stagger",
+        "value": "45ms (max 8)",
+        "purpose": "List and grid entrances: 45ms apart, never more than 8 steps, so nothing takes over ~360ms to arrive."
       }
     ],
     "breakpoints": [
       {
-        "name": "compact-main",
+        "name": "web-phone",
         "value": "760px"
       },
       {
-        "name": "login-single",
-        "value": "860px"
-      },
-      {
-        "name": "grid-mid",
-        "value": "1000px"
-      },
-      {
-        "name": "quick-strip-3col",
+        "name": "web-tablet",
         "value": "1100px"
       },
       {
-        "name": "grid-wide",
-        "value": "1120px"
+        "name": "launcher-min",
+        "value": "980px"
       }
     ]
   },
   "components": [
     {
-      "name": "Graj Block",
+      "name": "Graj sticker",
       "kind": "button",
       "refersTo": "button-play",
-      "description": "The one solid accent block per view; launches the selected instance.",
-      "html": "<button class=\"ds-play\"><svg viewBox=\"0 0 24 24\" width=\"20\" height=\"20\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M7 4.5v15l12-7.5z\"/></svg> GRAJ</button>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-play{display:inline-flex;align-items:center;gap:10px;height:54px;padding:0 34px;border:0;border-radius:var(--radius-sm);font-family:var(--display);font-stretch:80%;font-size:21px;font-weight:900;letter-spacing:.1em;color:#fff;background:var(--accent);box-shadow:inset 0 -4px 0 rgba(0,0,0,.28);cursor:pointer;transition:background .15s var(--ease);} .ds-play:hover{background:color-mix(in oklab,var(--accent) 86%,#fff);} .ds-play:active{transform:translateY(2px);box-shadow:inset 0 -2px 0 rgba(0,0,0,.28);} .ds-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-play.running{background:#1f9d3f;}"
+      "description": "The one violet hero per view: pill, accent fill, 4px vinyl rim, Dela GRAJ.",
+      "html": "<button class=\"btn-play\"><span>GRAJ</span></button>",
+      "css": ".btn-play{height:64px;padding:0 40px 0 34px;border-radius:999px;background:var(--nore-accent);box-shadow:0 0 0 4px var(--nore-vinyl);color:#fff;font:400 24px/1 var(--nore-font-display)}"
     },
     {
-      "name": "Button",
-      "kind": "button",
-      "refersTo": "button",
-      "description": "Tinted, outlined default action; tint channel swaps for danger/success.",
-      "html": "<button class=\"ds-btn\">Zmień</button>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-btn{--c:var(--accent-rgb);display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:var(--radius-sm);font:600 13px 'Inter',sans-serif;color:var(--text);background:rgba(var(--c),.16);border:1px solid rgba(var(--c),.55);cursor:pointer;transition:background .15s,border-color .15s,color .15s;} .ds-btn:hover{background:rgba(var(--c),.28);border-color:rgba(var(--c),.9);} .ds-btn:active{transform:translateY(1px);} .ds-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
-    },
-    {
-      "name": "Ghost Button",
-      "kind": "button",
-      "refersTo": "button-ghost",
-      "description": "Secondary actions and module header links.",
-      "html": "<button class=\"ds-btn-ghost\">Wszystkie</button>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-btn-ghost{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:var(--radius-sm);font:600 13px 'Inter',sans-serif;color:var(--text-dim);background:rgba(255,255,255,.03);border:1px solid var(--line);cursor:pointer;transition:background .15s,border-color .15s,color .15s;} .ds-btn-ghost:hover{color:var(--text);background:rgba(255,255,255,.07);border-color:rgba(var(--accent-rgb),.5);} .ds-btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}"
-    },
-    {
-      "name": "Rank Tags",
-      "kind": "chip",
-      "refersTo": "rank-tag",
-      "description": "Bracketed Silkscreen status tags, coloured by § code.",
-      "html": "<span class=\"ds-rank\" style=\"--rc:var(--c-e)\">1.4 Beta</span> <span class=\"ds-rank\" style=\"--rc:var(--c-6)\">Event</span> <span class=\"ds-rank\" style=\"--rc:var(--c-a)\">Premium</span> <span class=\"ds-rank\">Non-premium</span> <span class=\"ds-rank\" style=\"--rc:var(--c-c)\">Alpha</span>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-rank{--rc:var(--c-7);display:inline-flex;align-items:center;height:18px;padding:0 5px;border-radius:2px;font-family:var(--pixel);font-size:11px;letter-spacing:.02em;line-height:1;text-transform:uppercase;color:var(--rc);background:color-mix(in srgb,var(--rc) 12%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-rank::before{content:'[';margin-right:1px;color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));} .ds-rank::after{content:']';margin-left:1px;color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));}"
-    },
-    {
-      "name": "Instance MOTD",
-      "kind": "custom",
-      "refersTo": "panel",
-      "description": "Instance name in condensed caps over its § coloured MOTD line and loader tags.",
-      "html": "<div class=\"ds-inst\"><h3>Test Naprawy</h3><div class=\"ds-motd\"><span style=\"color:var(--c-6)\">NeoForge</span><span style=\"color:#7a7a7a\"> – </span><span>własne mody</span></div><div class=\"ds-tags\"><span class=\"ds-ltag\">1.21.1</span><span class=\"ds-ltag\" style=\"--lc:var(--c-6)\"><i></i>NeoForge</span><span class=\"ds-ltag\" style=\"--lc:var(--c-d)\"><i></i>Nore Client</span></div></div>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-inst{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px;} .ds-inst h3{margin:0;font-family:var(--display);font-stretch:72%;font-weight:900;font-size:40px;line-height:.95;text-transform:uppercase;letter-spacing:.01em;} .ds-motd{margin-top:8px;font-size:14px;line-height:1.45;color:var(--c-7);} .ds-tags{display:flex;gap:5px;margin-top:12px;} .ds-ltag{--lc:var(--c-7);display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 6px;border-radius:2px;font-family:var(--pixel);font-size:11px;letter-spacing:.02em;text-transform:uppercase;color:color-mix(in srgb,var(--lc) 80%,#fff);background:color-mix(in srgb,var(--lc) 13%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-ltag i{width:5px;height:5px;background:var(--lc);}"
-    },
-    {
-      "name": "Module with Header Tab",
+      "name": "Sticker",
       "kind": "card",
-      "refersTo": "panel",
-      "description": "Hairline-boxed module; a 34x3 tab on the top keyline coloured by content.",
-      "html": "<section class=\"ds-mod\" style=\"--tab:var(--c-b)\"><div class=\"ds-mod-t\">Ostatnio grane</div><div class=\"ds-row\">Cave Horror Project <span>1.20.1 · 3 dni temu</span></div><div class=\"ds-row\">Nore Client <span>1.21.1 · 4 dni temu</span></div></section>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-mod{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;transition:border-color .15s;} .ds-mod::before{content:'';position:absolute;left:15px;top:-1px;width:34px;height:3px;background:var(--tab,var(--accent));} .ds-mod:hover{border-color:rgba(var(--accent-rgb),.55);} .ds-mod-t{font-family:var(--display);font-stretch:82%;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;padding-bottom:10px;border-bottom:1px solid var(--line);} .ds-row{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-top:1px solid var(--line);font-size:13px;} .ds-mod-t+.ds-row{border-top:0;} .ds-row span{color:var(--text-muted);font-size:12px;}"
+      "refersTo": "sticker",
+      "description": "Die-cut object with a vinyl rim, flat at rest, lifts with a peel corner on hover.",
+      "html": "<div class=\"sticker\"></div>",
+      "css": ".sticker{border:3px solid var(--nore-vinyl);border-radius:16px;background:var(--nore-page-raised)}"
     },
     {
-      "name": "Server List Row",
-      "kind": "custom",
-      "refersTo": "panel",
-      "description": "Icon, name, MOTD, signal, count and § status; lit until seen after a state change.",
-      "html": "<div class=\"ds-srv lit\"><div class=\"ds-ico\"></div><div class=\"ds-txt\"><b>Mój serwer SMP</b><div class=\"ds-motd\"><span style=\"color:var(--c-d)\">Serwer</span> Nore</div></div><div class=\"ds-right\"><div class=\"ds-sig on\"><i></i><i></i><i></i><i></i><i></i></div><b class=\"ds-count\">3<span>/20</span></b><div style=\"color:var(--c-a);font-size:12.5px;font-weight:600\">Włączony</div></div></div>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-srv{position:relative;display:flex;gap:14px;align-items:flex-start;padding:12px 14px;background:var(--surface);border:1px solid rgba(85,255,85,.4);border-radius:var(--radius);} .ds-srv:hover{border-color:rgba(var(--accent-rgb),.55);} .ds-ico{width:64px;height:64px;border-radius:var(--radius-sm);background:var(--accent-deep);flex:none;} .ds-txt{flex:1;min-width:0;} .ds-txt b{font-family:var(--display);font-stretch:90%;font-weight:800;font-size:17px;} .ds-motd{font-size:13.5px;margin-top:2px;color:var(--c-7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;} .ds-right{display:grid;justify-items:end;gap:4px;min-width:96px;} .ds-sig{display:flex;align-items:flex-end;gap:2px;height:14px;} .ds-sig i{width:3px;background:#3a3346;} .ds-sig i:nth-child(1){height:3px}.ds-sig i:nth-child(2){height:5px}.ds-sig i:nth-child(3){height:8px}.ds-sig i:nth-child(4){height:11px}.ds-sig i:nth-child(5){height:14px} .ds-sig.on i{background:var(--c-a);} .ds-count{font-family:var(--display);font-stretch:80%;font-weight:800;font-size:18px;font-variant-numeric:tabular-nums;} .ds-count span{color:var(--text-muted);font-weight:600;} .lit::after{content:'';position:absolute;top:4px;right:4px;width:6px;height:6px;background:var(--c-e);animation:dsLit 1.2s steps(2,end) infinite;} @keyframes dsLit{50%{opacity:.25}} .ds-srv:hover::after{display:none;}"
+      "name": "Ghost slot",
+      "kind": "container",
+      "refersTo": "slot",
+      "description": "Where a sticker goes when it is off or missing: slot fill, dashed die line, ghost silhouette.",
+      "html": "<div class=\"slot\"></div>",
+      "css": ".slot{border-radius:16px;background:var(--nore-slot);outline:2px dashed var(--nore-ghost);outline-offset:-7px}"
     },
     {
-      "name": "Input",
-      "kind": "input",
-      "refersTo": "input",
-      "description": "Sunken well field with accent focus.",
-      "html": "<input class=\"ds-input\" placeholder=\"Szukaj modów…\">",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-input{height:38px;padding:0 12px;border-radius:var(--radius-sm);background:#0a0710;border:1px solid var(--line);color:var(--text);caret-color:var(--accent);font:400 14px 'Inter',sans-serif;outline:0;transition:border-color .15s;} .ds-input::placeholder{color:var(--text-muted);} .ds-input:hover{border-color:rgba(var(--accent-rgb),.35);} .ds-input:focus-visible,.ds-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}"
+      "name": "Dot sticker",
+      "kind": "badge",
+      "refersTo": "dot",
+      "description": "State: ready, wait, error, event, info, nore, off.",
+      "html": "<i class=\"dot ready\"></i>",
+      "css": ".dot{width:12px;height:12px;border-radius:50%;background:var(--nore-dot-ready);box-shadow:0 0 0 2px var(--nore-vinyl)}"
     },
     {
-      "name": "Rail Navigation",
-      "kind": "nav",
-      "refersTo": "nav-item",
-      "description": "Grouped nav on the rail field; active item is a 42% accent field; badges are rank tags.",
-      "html": "<nav class=\"ds-rail\"><div class=\"ds-lab\">GRA</div><a class=\"on\">Start</a><a>Instancje <span class=\"ds-b\" style=\"--rc:var(--c-b)\">3</span></a><a>Serwery <span class=\"ds-b\" style=\"--rc:var(--c-e)\">Beta</span></a><a>Halloween <span class=\"ds-b\" style=\"--rc:var(--c-6)\">Event</span></a></nav>",
-      "css": ":host{--accent:#9d5cff;--accent-2:#c8a8ff;--accent-deep:#6a2fe0;--accent-rgb:157,92,255;--rail:color-mix(in oklab,var(--accent) 13%,#0a0610);--bg:#0d0913;--surface:#150f1e;--line:rgba(190,160,255,.13);--text:#f3eefa;--text-dim:#b8adc9;--text-muted:#8f84a3;--c-a:#55ff55;--c-e:#ffff55;--c-c:#ff5555;--c-6:#ffaa00;--c-b:#55ffff;--c-d:#ff55ff;--c-7:#aaaaaa;--c-3:#00aaaa;--radius:6px;--radius-sm:4px;--ease:cubic-bezier(.16,1,.3,1);--display:'Archivo','Inter','Segoe UI',sans-serif;--pixel:'Silkscreen','Archivo',monospace;font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--text);} .ds-rail{width:224px;padding:10px;background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:1px;} .ds-lab{font-size:11px;font-weight:700;letter-spacing:.16em;color:#a89cbd;padding:14px 10px 5px;} .ds-rail a{display:flex;align-items:center;height:34px;padding:0 10px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:500;color:var(--text-dim);cursor:pointer;transition:background .15s,color .15s;} .ds-rail a:hover{background:rgba(255,255,255,.05);color:var(--text);} .ds-rail a.on{background:color-mix(in oklab,var(--accent) 42%,transparent);color:#fff;} .ds-rail a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;} .ds-b{--rc:var(--c-7);margin-left:auto;height:18px;padding:0 5px;border-radius:2px;display:inline-flex;align-items:center;font-family:var(--pixel);font-size:11px;text-transform:uppercase;color:var(--rc);background:color-mix(in srgb,var(--rc) 12%,rgba(0,0,0,.35));-webkit-font-smoothing:none;} .ds-b::before{content:'[';color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));} .ds-b::after{content:']';color:color-mix(in srgb,var(--rc) 55%,var(--text-muted));}"
+      "name": "Label sticker",
+      "kind": "tag",
+      "refersTo": "label",
+      "description": "Loader, version, RAM, rank.",
+      "html": "<span class=\"label fabric\">Fabric</span>",
+      "css": ".label{height:24px;padding:0 10px;border-radius:7px;background:var(--nore-label-fabric);box-shadow:0 0 0 2px var(--nore-vinyl)}"
+    },
+    {
+      "name": "Index tab",
+      "kind": "navigation",
+      "refersTo": "tab-active",
+      "description": "Active tab is a piece of page pulled over the cover, joined with concave corners.",
+      "html": "<a class=\"tab on\">Start</a>",
+      "css": ".tab.on{background:var(--nore-page);border-radius:11px 0 0 11px}"
+    },
+    {
+      "name": "Clipping",
+      "kind": "card",
+      "refersTo": "clipping",
+      "description": "Paper news card with one washi tape strip.",
+      "html": "<article class=\"clip\"><span class=\"tape\"></span>…</article>",
+      "css": ".clip{background:var(--nore-paper);color:var(--nore-vinyl-ink);border-radius:3px;padding:16px 18px}"
     }
   ],
   "narrative": {
-    "northStar": "The Server List",
-    "overview": "Nore Launcher is set in the same material a player already reads every session: the multiplayer server list, the chat line and the item tooltip. The ground is the tooltip's violet-black, panels are flat and opaque with a thin violet keyline the way a tooltip border is, and state is not drawn with icons or glows but written in § formatting colours. Rank tags in square brackets ([BETA], [EVENT], [NON-PREMIUM], [1.21.1]) carry status, and every instance and server introduces itself with a one-line MOTD.\n\nThe shell is dense and practical. A solid accent-tinted rail holds the logo, grouped navigation with rank-tag badges, the account chip and a mini-play strip; the main column stacks hairline-boxed modules tightly, each marked with a small coloured header tab on its top keyline. One element is allowed to shout: the solid Graj block. Everything else stays tinted, outlined, and quiet, so the § codes can be read at a glance.\n\nThe signature is §k: obfuscated pixel glyphs that resolve, left to right, into the instance name when the page opens and when the game launches. It is the one moment of theatre, and it switches off with reduced motion. The category default of glowing glass cards over a blurred wallpaper is explicitly rejected; the background scene stays, held back behind a 74 to 97% violet-black shade and opaque panels.",
+    "northStar": "Album",
+    "overview": "Everything a player owns in Nore is a sticker in their album. Black card pages, die-cut stickers with a white vinyl rim, ghost slots for what is off or missing, dot stickers for state, an accent-dyed bookcloth cover. Source of truth: design/tokens.json.",
     "keyCharacteristics": [
-      "Tooltip violet-black ground, flat opaque panels, 1px violet keyline.",
-      "§ formatting colours used only where they mean a state.",
-      "Rank tags in Silkscreen pixel caps, always bracketed.",
-      "Archivo condensed heavy caps for headings; Inter for all working text.",
-      "One solid colour block per view: Graj.",
-      "Changed rows stay lit until the player has seen them.",
-      "Accent is user-themable; every accent use resolves through the accent tokens."
+      "Black album card ground with fibre grain",
+      "Accent-dyed cover for rails, installer, updater, login",
+      "Stickers flat at rest; shadow only while peeled",
+      "Ghost slots for off and empty",
+      "Dot stickers carry state",
+      "One violet hero per view",
+      "Dela Gothic One display, Onest text, Minecraft font in game"
     ],
     "rules": [
-      {
-        "name": "The Codes Carry State Rule",
-        "body": "A § colour appears only where it means its state. Never use §a for decoration or §c for emphasis; if a colour does not mean ready, pending, error, event, info or Nore, it is §7.",
-        "section": "colors"
-      },
-      {
-        "name": "The Themable Accent Rule",
-        "body": "Every accent use goes through `--accent`, `--accent-2`, `--accent-deep`, `--accent-rgb` or `--rail`. A literal violet hex in a component breaks the user's theme (the updater, which runs before settings load, is the one place the default is inlined).",
-        "section": "colors"
-      },
-      {
-        "name": "The Pixel In Brackets Rule",
-        "body": "Silkscreen appears only in rank tags, loader tags, step numbers and the §k glyphs. Never set a heading, button or paragraph in it.",
-        "section": "typography"
-      },
-      {
-        "name": "The Tabular Numbers Rule",
-        "body": "Every number that updates (stats, progress, player counts, device-code cells) uses tabular figures.",
-        "section": "typography"
-      },
-      {
-        "name": "The Tooltip Keyline Rule",
-        "body": "Panels are opaque fills with a 1px violet keyline. No glow, no glass, no backdrop blur, no gradient borders or gradient text.",
-        "section": "elevation"
-      }
-    ],
-    "dos": [
-      "**Do** give every instance and server a single MOTD line in § codes, §7 by default.",
-      "**Do** express status as a bracketed rank tag in the matching code colour.",
-      "**Do** keep panels opaque surface (#150f1e) with a 1px keyline and 6px corners.",
-      "**Do** mark each module with a 34 by 3px header tab coloured by what it holds.",
-      "**Do** keep Graj the only solid accent block in a view, with the 4px lower bevel.",
-      "**Do** route every accent through the accent tokens and the derived rail so the user's theme recolours the whole shell and the logo.",
-      "**Do** hold a changed row lit in §e until the player hovers or focuses it.",
-      "**Do** use tabular figures for every live number."
-    ],
-    "donts": [
-      "**Don't** use glass: no translucent cards, backdrop blur, glows or gradient borders over the wallpaper.",
-      "**Don't** use gradient text or coloured text shadows.",
-      "**Don't** use a § colour for decoration; a code that does not mean its state is §7.",
-      "**Don't** set headings, buttons or body copy in Silkscreen; it lives inside brackets and §k only.",
-      "**Don't** round past 6px or use pill shapes for tags and dots.",
-      "**Don't** add uppercase tracked kickers above headings; the rank tag and the MOTD line do that job.",
-      "**Don't** fold event styling (pumpkins, frost, event gradients) into base components; it belongs to the event overlays."
+      "One violet hero",
+      "Dots mean",
+      "Derived cover",
+      "No glass, no glow outside Halloween phosphor",
+      "No tilt in game or in lists"
     ]
   }
 }

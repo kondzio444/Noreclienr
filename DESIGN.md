@@ -1,365 +1,357 @@
 ---
-name: Nore Launcher
-description: A Minecraft launcher that speaks the server list's language. Tooltip violet-black, § colour codes for state, rank tags for status.
+name: Nore – Album
+description: Everything a player owns in Nore is a sticker in their album. Black card pages, die-cut stickers with a white vinyl rim, ghost slots for what is missing, dot stickers for state.
 colors:
   accent: "#9d5cff"
-  accent-light: "#c8a8ff"
-  accent-deep: "#6a2fe0"
-  rail: "color-mix(in oklab, #9d5cff 13%, #0a0610)"
-  ground: "#0d0913"
-  surface: "#150f1e"
-  surface-raised: "#1c1428"
-  overlay: "#120c1a"
-  well: "#0a0710"
-  keyline: "rgba(190, 160, 255, .13)"
-  text: "#f3eefa"
-  text-dim: "#b8adc9"
-  text-muted: "#8f84a3"
-  code-a-green: "#55ff55"
-  code-e-yellow: "#ffff55"
-  code-c-red: "#ff5555"
-  code-6-gold: "#ffaa00"
-  code-b-aqua: "#55ffff"
-  code-d-pink: "#ff55ff"
-  code-5-purple: "#c23bc2"
-  code-7-gray: "#aaaaaa"
-  code-8-dark-gray: "#7a7a7a"
-  code-3-teal: "#00aaaa"
-  running-green: "#1f9d3f"
+  accent-light: "#c6a3ff"
+  accent-deep: "#6d38dc"
+  page: "#141216"
+  page-raised: "#1e1b21"
+  page-raised-2: "#28242c"
+  slot: "#0c0b0e"
+  ghost: "#2e2a33"
+  ink: "#f3efe9"
+  ink-soft: "#b3abb0"
+  ink-faint: "#837b82"
+  vinyl: "#fbfaf7"
+  vinyl-ink: "#17141a"
+  vinyl-ink-soft: "#5d5560"
+  paper: "#e8e5e0"
+  cover: "color-mix(in oklab, var(--nore-accent) 18%, #0f0d12)"
+  cover-tab: "color-mix(in oklab, var(--nore-accent) 26%, #18151c)"
+  cover-ink: "#e9e2f5"
+  cover-ink-soft: "#ab9fc0"
+  dot-ready: "#3fd27f"
+  dot-wait: "#ffd23a"
+  dot-error: "#ff5a4f"
+  dot-event: "#ff8a1f"
+  dot-info: "#4aa3ff"
+  dot-off: "#6c656d"
+  halloween-page: "#0b0a0c"
+  halloween-phosphor: "#d2ff7a"
+  halloween-pumpkin: "#ff7417"
+  winter-page: "#11141b"
+  winter-frost: "#e9f4ff"
+  winter-ice: "#8fd3ff"
 typography:
-  display:
-    fontFamily: "Archivo, Inter, Segoe UI, sans-serif"
-    fontSize: "54px"
-    fontWeight: 900
-    lineHeight: 0.95
-    letterSpacing: "0.01em"
-    fontVariation: "'wdth' 72"
-  headline:
-    fontFamily: "Archivo, Inter, Segoe UI, sans-serif"
-    fontSize: "34px"
-    fontWeight: 800
-    lineHeight: 1
-    letterSpacing: "0.01em"
-    fontVariation: "'wdth' 78"
+  hero:
+    fontFamily: "Dela Gothic One, Onest, system-ui, sans-serif"
+    fontSize: "44px"
+    fontWeight: 400
+    lineHeight: 1.05
+    letterSpacing: "-0.015em"
   title:
-    fontFamily: "Archivo, Inter, Segoe UI, sans-serif"
-    fontSize: "19px"
-    fontWeight: 800
-    lineHeight: 1.1
-    letterSpacing: "0.01em"
-    fontVariation: "'wdth' 78"
-  section:
-    fontFamily: "Archivo, Inter, Segoe UI, sans-serif"
-    fontSize: "14px"
-    fontWeight: 800
-    letterSpacing: "0.05em"
-    fontVariation: "'wdth' 82"
-  stat:
-    fontFamily: "Archivo, Inter, Segoe UI, sans-serif"
-    fontSize: "19px"
-    fontWeight: 800
-    fontFeature: "'tnum'"
-    fontVariation: "'wdth' 80"
-  body:
-    fontFamily: "Inter, Segoe UI, system-ui, sans-serif"
-    fontSize: "14px"
+    fontFamily: "Dela Gothic One, Onest, system-ui, sans-serif"
+    fontSize: "30px"
     fontWeight: 400
-    fontFeature: "'cv11', 'ss01'"
-  motd:
-    fontFamily: "Inter, Segoe UI, system-ui, sans-serif"
-    fontSize: "14px"
-    fontWeight: 400
-    lineHeight: 1.45
-  label:
-    fontFamily: "Silkscreen, Archivo, monospace"
-    fontSize: "11px"
+    lineHeight: 1.13
+    letterSpacing: "-0.01em"
+  play:
+    fontFamily: "Dela Gothic One, Onest, system-ui, sans-serif"
+    fontSize: "24px"
     fontWeight: 400
     lineHeight: 1
     letterSpacing: "0.02em"
+  section:
+    fontFamily: "Onest, Segoe UI, system-ui, sans-serif"
+    fontSize: "18px"
+    fontWeight: 700
+    lineHeight: 1.33
+  lead:
+    fontFamily: "Onest, Segoe UI, system-ui, sans-serif"
+    fontSize: "16px"
+    fontWeight: 600
+    lineHeight: 1.5
+  body:
+    fontFamily: "Onest, Segoe UI, system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+    lineHeight: 1.5
+  label:
+    fontFamily: "Onest, Segoe UI, system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 600
+    lineHeight: 1.38
+  meta:
+    fontFamily: "Onest, Segoe UI, system-ui, sans-serif"
+    fontSize: "12px"
+    fontWeight: 500
+    lineHeight: 1.33
+  keycap:
+    fontFamily: "Pixelify Sans, Onest, monospace"
+    fontSize: "13px"
+    fontWeight: 600
 rounded:
-  tag: "2px"
-  sm: "4px"
-  md: "6px"
+  xs: "4px"
+  sm: "8px"
+  md: "12px"
+  sticker: "16px"
+  sheet: "18px"
+  pill: "999px"
 spacing:
-  tight: "8px"
-  grid: "12px"
-  module: "14px"
-  panel: "18px"
-  page: "28px"
+  "1": "4px"
+  "2": "8px"
+  "3": "12px"
+  "4": "16px"
+  "6": "24px"
+  "8": "32px"
+  "10": "40px"
+  "14": "56px"
 components:
   button-play:
     backgroundColor: "{colors.accent}"
     textColor: "#ffffff"
-    typography: "{typography.display}"
-    rounded: "{rounded.sm}"
-    padding: "0 34px"
-    height: "54px"
-  button-play-hover:
-    backgroundColor: "color-mix(in oklab, #9d5cff 86%, #fff)"
-  button-play-running:
-    backgroundColor: "{colors.running-green}"
-    textColor: "#ffffff"
+    typography: "{typography.play}"
+    rounded: "{rounded.pill}"
+    padding: "0 40px 0 34px"
+    height: "64px"
   button:
-    backgroundColor: "rgba(157, 92, 255, .16)"
-    textColor: "{colors.text}"
-    typography: "{typography.body}"
-    rounded: "{rounded.sm}"
-    padding: "0 14px"
-    height: "36px"
-  button-hover:
-    backgroundColor: "rgba(157, 92, 255, .28)"
-  button-ghost:
-    backgroundColor: "rgba(255, 255, 255, .03)"
-    textColor: "{colors.text-dim}"
-    rounded: "{rounded.sm}"
-    padding: "0 14px"
-    height: "36px"
-  button-small:
-    rounded: "{rounded.sm}"
-    padding: "0 10px"
-    height: "30px"
-  rank-tag:
-    backgroundColor: "rgba(0, 0, 0, .35)"
-    textColor: "{colors.code-7-gray}"
+    backgroundColor: "{colors.page-raised-2}"
+    textColor: "{colors.ink}"
     typography: "{typography.label}"
-    rounded: "{rounded.tag}"
-    padding: "0 5px"
-    height: "18px"
-  loader-tag:
-    backgroundColor: "rgba(0, 0, 0, .35)"
-    textColor: "{colors.code-7-gray}"
-    typography: "{typography.label}"
-    rounded: "{rounded.tag}"
-    padding: "0 6px"
-    height: "20px"
-  panel:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.md}"
-    padding: "18px"
-  input:
-    backgroundColor: "{colors.well}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.sm}"
-    height: "38px"
-  nav-item:
-    textColor: "{colors.text-dim}"
-    rounded: "{rounded.sm}"
-    padding: "0 10px"
-    height: "34px"
-  nav-item-active:
-    backgroundColor: "color-mix(in oklab, #9d5cff 42%, transparent)"
+    rounded: "{rounded.pill}"
+    padding: "0 18px"
+    height: "40px"
+  button-sticker:
+    backgroundColor: "{colors.accent-deep}"
     textColor: "#ffffff"
-  modal:
-    backgroundColor: "{colors.overlay}"
-    textColor: "{colors.text}"
+    rounded: "{rounded.pill}"
+    padding: "0 18px"
+    height: "40px"
+  sticker:
+    backgroundColor: "{colors.page-raised}"
+    rounded: "{rounded.sticker}"
+  label:
+    backgroundColor: "{colors.vinyl}"
+    textColor: "{colors.vinyl-ink}"
+    rounded: "7px"
+    padding: "0 10px"
+    height: "24px"
+  slot:
+    backgroundColor: "{colors.slot}"
+    rounded: "{rounded.sticker}"
+  input:
+    backgroundColor: "{colors.slot}"
+    textColor: "{colors.ink}"
     rounded: "{rounded.md}"
+    padding: "0 16px"
+    height: "44px"
+  sheet:
+    backgroundColor: "{colors.page-raised}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.sheet}"
+  tab-active:
+    backgroundColor: "{colors.page}"
+    textColor: "{colors.ink}"
+    rounded: "11px 0 0 11px"
+    height: "33px"
+  clipping:
+    backgroundColor: "{colors.paper}"
+    textColor: "{colors.vinyl-ink}"
+    rounded: "3px"
+    padding: "16px 18px"
 ---
 
-# Design System: Nore Launcher
+# Design System: Nore – Album
 
-## Overview
+The machine-readable source of every value below is `design/tokens.json`; `node design/build-tokens.mjs` writes `design/tokens.css` (all `--nore-*` custom properties) and `common/src/main/java/dev/noreclient/util/ThemeTokens.java`. When this file and the JSON disagree, the JSON wins and this file gets fixed. Mocks, PNGs, motion storyboards and per-surface checklists live in `design/` (start at `design/README.md`).
 
-**Creative North Star: "The Server List"**
+## 1. Concept
 
-Nore Launcher is set in the same material a player already reads every session: the multiplayer server list, the chat line and the item tooltip. The ground is the tooltip's violet-black, panels are flat and opaque with a thin violet keyline the way a tooltip border is, and state is not drawn with icons or glows but written in § formatting colours. Rank tags in square brackets ([BETA], [EVENT], [NON-PREMIUM], [1.21.1]) carry status, and every instance and server introduces itself with a one-line MOTD.
+**Creative North Star: "Album"** – a collector's sticker album with black card pages.
 
-The shell is dense and practical. A solid accent-tinted rail holds the logo, grouped navigation with rank-tag badges, the account chip and a mini-play strip; the main column stacks hairline-boxed modules tightly, each marked with a small coloured header tab on its top keyline. One element is allowed to shout: the solid Graj block. Everything else stays tinted, outlined, and quiet, so the § codes can be read at a glance.
+**The one idea.** Everything a player owns in Nore is a sticker in their album: instances, modules, cosmetics, friends, servers, event items. Turning something on *sticks it* into its slot; turning it off *peels it* and leaves the printed ghost of where it goes. The whole product, from the website to the in-game module menu, is one album seen at different pages.
 
-The signature is §k: obfuscated pixel glyphs that resolve, left to right, into the instance name when the page opens and when the game launches. It is the one moment of theatre, and it switches off with reduced motion. The category default of glowing glass cards over a blurred wallpaper is explicitly rejected; the background scene stays, held back behind a 74 to 97% violet-black shade and opaque panels.
+Why it belongs to Nore and no other launcher: Nore's heart is collecting and switching things on (97 modules, wardrobe capes, seasonal cosmetics that are always on, instances, a server list). Players of this age stick stickers on laptops, controllers and school folders; a Minecraft player's own world is made of placed blocks and collected items. A sticker album is that ritual made into an interface, and it gives every on/off state a physical, legible form.
 
-**Key Characteristics:**
-- Tooltip violet-black ground, flat opaque panels, 1px violet keyline.
-- § formatting colours used only where they mean a state.
-- Rank tags in Silkscreen pixel caps, always bracketed.
-- Archivo condensed heavy caps for headings; Inter for all working text.
-- One solid colour block per view: Graj.
-- Changed rows stay lit until the player has seen them.
-- Accent is user-themable; every accent use resolves through the accent tokens.
+What it refuses: the category default of glowing glass cards on a blurred wallpaper, purple gradients, neon edges; and the previous "server list / § codes" look, which is retired.
 
-## Colors
+**Key characteristics**
+- Black album card ground (`page` #141216) with a faint fibre grain. Dark is chosen by scene: an evening gaming desk lit by the monitor.
+- The rail, the installer sidebar, the updater and the login gate are the album **cover**: bookcloth dyed with the user's accent.
+- **Stickers**: flat at rest, a white vinyl rim (2/3/5 px), rounded die-cut corners, optionally tilted ±3°. They only cast a shadow while being peeled (hover, drag, the instant before sticking).
+- **Ghost slots**: recessed `slot` wells with a dashed die line and the item's silhouette in `ghost` ink. Empty and "off" are designed as carefully as "on".
+- **Dot stickers** carry state, one meaning each.
+- **Washi tape** holds paper clippings (news). **Label stickers** carry loader, version, rank.
+- One violet hero per view: the Graj sticker (or the page's single primary action).
+- The metaphor is visual. Copy stays plain Polish: "Zainstalowano", not "Przyklejono".
 
-A near-black violet world where the only saturated colours are the user's accent and the Minecraft formatting codes, and each code has a fixed meaning.
+## 2. Colour
 
-### Primary
-- **Nore Violet** (accent): the themable accent (default #9d5cff, overridden at runtime through `--accent`, `--accent-2`, `--accent-deep`, `--accent-rgb`). Fills the Graj block, the active nav field (42% mix), switches, sliders, focus outlines, selected-card keylines and the default module header tab. The logo is hue-rotated to match it.
-- **Lilac** (accent-light): the accent's light partner. Name highlights in headings (the second word of a split title), the §k glyphs while scrambling, the Nore Client MOTD code (§x), icon tints in the login side list and wizard chips.
-- **Deep Violet** (accent-deep): avatar fields and the Microsoft sign-in button, where a solid fill is needed that must not compete with Graj.
-- **Rail Field** (rail): derived from the accent, 13% accent into #0a0610. The rail, title bar, wizard rail, login side panel and updater footer. It recolours with the accent; never hard-code it.
+Strategy: Restrained neutrals tinted warm-black, one accent (themable violet), a fixed four-colour state set, and full-field colour only where a surface earns it (website bands, event posters).
 
-### Neutral
-- **Tooltip Black** (ground): the page ground behind everything, splash and wizard backgrounds.
-- **Panel** (surface): every card, module and quick-link strip. Opaque.
-- **Panel Raised** (surface-raised): the rail collapse toggle and small raised controls inside the rail.
-- **Overlay** (overlay): modals, pop menus, toasts and the login card, the layers that sit above panels.
-- **Well** (well): the sunken fill of inputs, search, segmented controls, progress tracks, switch tracks, stat pills and the device-code cells.
-- **Tooltip Keyline** (keyline): every 1px border, divider and row separator. Accent-tinted keylines (accent at 35 to 55% alpha) mark the hero band, modals and hovered panels.
-- **Text / Dim / Muted** (text, text-dim, text-muted): primary copy; nav items and secondary copy; captions, placeholders, rank-tag brackets.
+### Base (dark only; there is no light theme)
+| Token | Value | Role |
+|---|---|---|
+| `page` | #141216 | Ground of every page. |
+| `page-raised` | #1e1b21 | Loose sheet: settings groups, instance header, modals, menus. A tone step, no border. |
+| `page-raised-2` | #28242c | Hover on a sheet, secondary (slot) buttons. |
+| `slot` | #0c0b0e | Recessed: inputs, tracks, empty sticker places, code wells. |
+| `ghost` | #2e2a33 | Printed silhouette and dashed die line inside empty slots. |
+| `ink` / `ink-soft` / `ink-faint` | #f3efe9 / #b3abb0 / #837b82 | Text 16.3:1 / 8.3:1 / 4.5:1 on `page`. `ink-faint` only ≥13px. |
+| `vinyl` | #fbfaf7 | Sticker rims; face of white stickers. |
+| `vinyl-ink` / `vinyl-ink-soft` | #17141a / #5d5560 | Text on white stickers and paper (17.5:1 / 5.7:1). |
+| `paper` | #e8e5e0 | Clippings and the login nameplate. |
+| `cover` | color-mix(accent 18%, #0f0d12) | Album cover (rail etc.). Derived, never hard-coded; fallback #291c3d. |
+| `cover-tab`, `cover-ink`, `cover-ink-soft` | derived, #e9e2f5, #ab9fc0 | Inactive tab hover, text on the cover (6.4:1). |
+| `scrim` | rgba(8,7,10,.72) | Behind a modal. Flat, no blur. |
 
-### State: the § formatting codes
-The codes are a named state-colour set. They render as MOTD text, rank-tag colour, module header tabs, progress fills and status dots. Each keeps one meaning:
-- **§a Green** (code-a-green): ready, online, running, done. Progress fills, server online state, signal bars, premium account tag, completed wizard steps, the updater's success.
-- **§e Yellow** (code-e-yellow): pending, update, beta, attention. The [1.4 BETA] version chip, [BETA] Serwery badge, update module tab, the "lit until seen" mark, servers in a starting/transitional state, the updater's installing bar, Fabric loader MOTD.
-- **§c Red** (code-c-red): error, stopped, danger. Stopped servers, alerts, the console badge, alpha version tags, the updater's error state.
-- **§6 Gold** (code-6-gold): events. [EVENT] Halloween badge, the event chip, the servers module tab, version-type tags; also the Forge/NeoForge loader colour in MOTD lines.
-- **§b Aqua** (code-b-aqua): info and links. All links, the default nav count badge, the "Ostatnio grane" module tab.
-- **§d Pink / §5 Purple** (code-d-pink, code-5-purple): Nore itself. The Nore Client loader tag, the "Nowe w" news tab, Quilt loader MOTD.
-- **§7 Gray / §8 Dark Gray** (code-7-gray, code-8-dark-gray): neutral MOTD body text and separators; offline account tag, the [WKRÓTCE] shop badge, plain version tags. §8 and §9 render lifted (#7a7a7a, #7a7aff) so they stay legible on the ground.
-- **§3 Teal** (code-3-teal): the modpack loader tag.
-- **Running Green** (running-green): the Graj block's running state only, a darker green so white text stays legible on a solid fill.
+### Accent (brand commitment: violet stays, user-themable)
+`accent` #9d5cff (runtime `--nore-accent`), `accent-light` #c6a3ff (links, accent text on dark, 8.9:1), `accent-deep` #6d38dc (fields that carry small white text, 6.5:1). **White on `accent` is 3.9:1: only large text (Graj at 24px Dela, display headings).** Small text on violet always sits on `accent-deep`. The logo is recoloured to the accent with `hue-rotate` (238° for the default).
 
-### Named Rules
-**The Codes Carry State Rule.** A § colour appears only where it means its state. Never use §a for decoration or §c for emphasis; if a colour does not mean ready, pending, error, event, info or Nore, it is §7.
+### Dot stickers (state) – one meaning each
+`dot-ready` #3fd27f ready, online, running, installed · `dot-wait` #ffd23a waiting, update available, beta, starting, pending invite · `dot-error` #ff5a4f error, crash, offline server · `dot-event` #ff8a1f events, seasonal items, countdowns · `dot-info` #4aa3ff information, LAN, docs · `dot-nore` = accent: Nore Client, Nore Hub · `dot-off` #6c656d offline, disabled, unknown. A dot always has a 2px vinyl rim (1 GUI px in game). Never use a dot colour for decoration.
 
-**The Themable Accent Rule.** Every accent use goes through `--accent`, `--accent-2`, `--accent-deep`, `--accent-rgb` or `--rail`. A literal violet hex in a component breaks the user's theme (the updater, which runs before settings load, is the one place the default is inlined).
+### Label stickers
+Loader fills with dark text: Fabric #e8c873, Quilt #d99be8, Forge/NeoForge #e09a5b, Vanilla #8fd18b, Modpack #7cc7d6; Nore Client = accent-deep with white; version = vinyl with dark text; dark label = page with ink.
 
-## Typography
+### Tape, foil
+Washi tape: lilac rgba(198,163,255,.78), mint rgba(150,228,196,.74), kraft rgba(214,190,150,.8). At most two strips per view. **Foil** (holographic conic of #c6a3ff → #9fe6ff → #c7ffd9 → #ffe9a3 → #ffc1e3) only on rare/seasonal cosmetic stickers, rotated by pointer position; never on resting website surfaces.
 
-**Display Font:** Archivo variable (wdth 62 to 125%, wght 500 to 900), with Inter, Segoe UI
-**Body Font:** Inter (wght 400 to 800, cv11 and ss01 on), with Segoe UI, system-ui
-**Label Font:** Silkscreen (400), with Archivo, monospace
+### Named rules
+- **One violet hero.** One solid accent sticker per view (Graj, or the page's primary action). Everything else is page, sheet, slot, white sticker.
+- **Dots mean.** A dot colour means its state or it is `dot-off`.
+- **Derived cover.** Every cover/rail colour is computed from `--nore-accent`.
 
-**Character:** Condensed heavy caps for anything that names a place, an instance or a number, set like a server name; neutral Inter for everything the player reads to work; a pixel face kept inside brackets so the game shows through without the interface becoming a pastiche. All three are bundled and self-hosted (CSP `font-src 'self'`).
+## 3. Typography
 
-### Hierarchy
-- **Display** (Archivo 900, 54px, line-height 0.95, wdth 72%, uppercase): the instance name in the Start band only. Wizard headings use the same voice at 44px / wdth 74%, login at 40px / 30px, updater at 34px.
-- **Headline** (Archivo 800, 34px, line-height 1, wdth 78%, uppercase): page heads and the server hero. Modal titles step down to 24px.
-- **Title** (Archivo 800, 19px, wdth 78%, uppercase): instance card names. Server rows use 17px at wdth 90% in sentence case, as a server list does.
-- **Section** (Archivo 800, 14px, wdth 82%, 0.05em, uppercase): module titles beside the coloured header tab.
-- **Stat** (Archivo 800, 18 to 19px, wdth 80%, tabular figures): play time, player counts, RAM. Labels beneath at 11px uppercase 0.06em Inter.
-- **Body** (Inter 400, 14px): all working copy; secondary lines 12.5 to 13.5px.
-- **MOTD** (Inter 400, 14px, line-height 1.45, §7 by default): the one-line description under every instance and server; 12px in instance cards, 13.5px in server rows, single line with ellipsis.
-- **Label** (Silkscreen 400, 11px, 0.02em, uppercase, unsmoothed): rank tags, loader tags, the version chip, wizard step numbers, the updater's version.
+| Family | Source / licence | Use |
+|---|---|---|
+| **Dela Gothic One** (400) | Google Fonts, SIL OFL 1.1 | Display: wordmark, page titles, instance names, the Graj label, big figures, sticker letters. Never below 18px, never running text. Polish diacritics verified. |
+| **Onest** (variable 100–900; use 400/500/600/700) | Google Fonts, SIL OFL 1.1 | Everything a player reads to work. `font-variant-numeric: tabular-nums` on every live number. |
+| **Pixelify Sans** (400/600) | Google Fonts, SIL OFL 1.1 | Only keycaps (Prawy Shift, F5, Ctrl F) and in-game UI fragments shown on the web or launcher. |
+| system mono (`ui-monospace, Cascadia Mono, Consolas`) | system | Real code/JSON only (API docs, console). |
+| Minecraft default font | the game's own | All in-game text. |
 
-### Named Rules
-**The Pixel In Brackets Rule.** Silkscreen appears only in rank tags, loader tags, step numbers and the §k glyphs. Never set a heading, button or paragraph in it.
+Website loads the two web faces from Google Fonts (`display=swap`). The launcher and updater are offline and CSP `font-src 'self'`: download the OFL woff2 (latin + latin-ext subsets) into `launcher/src/renderer/assets/fonts/` with the OFL text beside them, replacing Archivo/Inter/Silkscreen. Never inline fonts as data URIs.
 
-**The Tabular Numbers Rule.** Every number that updates (stats, progress, player counts, device-code cells) uses tabular figures.
+### Scales
+**Launcher** (px, font/line): meta 12/16 Onest 500 · label 13/18 Onest 600 · body 14/21 Onest 400 · lead 16/24 Onest 600 · section 18/24 Onest 700 · title 30/34 Dela (-0.01em) · hero 44/46 Dela (-0.015em) · play 24 Dela (+0.02em, uppercase GRAJ).
+**Website**: small 16px Onest 500 · body clamp(16px, 1.05vw + 12px, 19px)/1.55 · lead clamp(20px, 1.2vw + 14px, 28px)/1.35 · heading clamp(34px, 4.2vw, 64px)/1.0 Dela -0.02em · display clamp(64px, 12.5vw, 200px)/0.86 Dela -0.035em (hero uses up to 112px so the headline stays on two lines). Headlines ≤2 lines at every width.
+**Game**: Minecraft font at integer scales only: 1x body (9px line), 2x titles, 3x hero numerals (clock).
 
-## Layout
+### Rules
+- Sentence case everywhere except GRAJ. No tracked uppercase kickers, no eyebrows.
+- Dela is set tight and large or not at all; long Polish words get a smaller step, never letter-spacing.
 
-A fixed desktop shell: a 36px title bar on the rail field, a 224px rail with a 1px keyline on its right, and a main view padded 18px top, 28px right, 30px bottom, 24px left. Page heads sit 18px above content.
+## 4. Space, radii, elevation
 
-Start stacks a wide instance band (min-height 290px, padding 28px 30px 22px) with the name, MOTD line and tags top-left, the Graj block bottom-left and a tabular stat strip bottom-right; then a single hairline-boxed quick-link strip (cells divided by keylines, not separate cards); then two columns of modules with a 14px gap. Grids use a 12px gap; panels pad 18px, modules 14px 16px. Density is deliberate: lists divide rows with 1px keylines rather than spacing them into floating cards.
+- **Spacing** 4px base: 4, 8, 12, 16, 20, 24, 32, 40, 56, 80, 120, 160. Launcher shell: rail 224px, titlebar 36px, page padding 28px top / 32px sides, gaps 16px, groups 28px. Website margin clamp(16px, 2.2vw, 32px), section gap clamp(96px, 12vw, 200px), board gap 8px. Game: 2px unit, 8px padding, 4px gap, 12px screen edge (GUI px).
+- **Radii**: xs 4 · sm 8 · md 12 (inputs, small stickers) · sticker 16 · sheet 18 · large hero sticker 22 · pill 999 (all buttons, segmented, switches). Game: 2 / 3 / 4 GUI px.
+- **Rim**: 2px small labels and dots, 3px stickers and buttons, 5px hero objects (web 5–6px). Game 1 GUI px.
+- **Elevation**: `flat` (page, slots, stickers at rest) → `lift` `0 10px 20px -8px rgba(0,0,0,.65), 0 2px 4px rgba(0,0,0,.35)` (sticker being peeled) → `float` `0 24px 48px -12px rgba(0,0,0,.7), 0 4px 10px rgba(0,0,0,.4)` (modals, menus, toasts, dropdowns, save bars). Surfaces separate by tone steps, not borders or glows. The only glow in the system is Halloween `phosphor`.
 
-Responsive: below 1100px the quick-link strip wraps to three columns with keylines redrawn; the login card drops its side panel below 860px. Further steps at 1120px, 1000px and 760px rearrange page grids.
+## 5. Components
 
-## Elevation & Depth
+- **Sticker** (`.sticker` in `design/mocks/kit.css`): vinyl rim, artwork inside, `--tilt`. Hover = lift 3px, tilt eases toward 0 by 40%, `lift` shadow, a peel corner (folded triangle showing the cream paper back) grows from 18 to 22px. Press = scale .97, no shadow. Variants: white (vinyl face, dark text), ink (page face), violet (large text only).
+- **Die-cut contour** for transparent art (logo, heads, sprites): four `drop-shadow(±2px 0 0 vinyl)` filters in the launcher; pre-baked rim PNGs on the website and in game (`design/mocks/assets/*-sticker.png`, `logo-sticker-*.png`, `logo-rim-256.png`).
+- **Ghost slot**: `slot` fill, 2px dashed `ghost` outline inset 7px, silhouette in `ghost`, name in `ink-faint`. Used for: module off, mod disabled, empty collection place, "Nowa instancja", offline server icon.
+- **Graj sticker**: pill 64px (46px small), accent fill, 4px vinyl rim, Dela 24 white "GRAJ" with a filled play glyph. States in §7.
+- **Buttons**: secondary = `page-raised-2` pill 40px Onest 600 14; sticker button = `accent-deep` pill with 3px rim; white = vinyl pill; quiet = pen link (2px accent-light underline, offset 4px).
+- **Inputs**: `slot` well, 12px radius, 44px, no border; focus = 2px accent ring. Caret accent-light.
+- **Switch**: a dot sticker on a slot track: off = grey dot left, on = accent dot right on a 34% accent track; knob travels on `spring.knob`.
+- **Slider**: 10px slot track, accent fill (exact length of the value), white dot thumb with accent centre; value shown in a label sticker.
+- **Segmented**: slot track, chosen option is a white sticker pill that travels on `spring.tab`.
+- **Index tabs (nav)**: on the cover; inactive tabs are cover-ink at 82%; the active tab is a piece of page pulled out over the cover, joined with 12px concave corners; its icon turns accent-light. Group labels sentence case 12px cover-ink-soft. Count = plain number; state = dot.
+- **Label sticker**: 24px (20 small), 7px radius, 2px rim. Loader, version, RAM, Java, rank.
+- **Clipping**: paper card, 3px radius, tilted ±1.2°, one washi tape strip. News only.
+- **Toast**: white sticker slapped bottom-right (tilt -1°), dot + two lines, `float` shadow.
+- **Sheet / modal**: `page-raised`, 18px radius, `float`; scrim flat.
+- **Nameplate** (login): paper label "Ten album należy do" with the nick written on a 2px ink rule in Dela 44.
 
-Flat by default. Panels sit on the ground with a keyline and no shadow; depth between panel layers is tonal (well below surface below overlay). Shadow appears only on layers that genuinely float above the page, and as the bevel on solid blocks.
+## 6. Iconography and illustration
 
-### Shadow Vocabulary
-- **Float** (`box-shadow: 0 14px 34px rgba(0, 0, 0, .5)`): modals, pop menus, toasts, the login card, the wizard preview screen.
-- **Block bevel** (`box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .28)`, pressed `inset 0 -2px 0`): the Graj block and the Microsoft sign-in button; the darker lower edge of a Minecraft button.
-- **Selected keyline** (`box-shadow: inset 0 0 0 1px var(--accent)` with an accent border): selected cards, the active recent instance, chosen wizard scenes. A 2px keyline, never a glow.
-- **Focus** (`outline: 2px solid var(--accent); outline-offset: 2px`; inputs `0 0 0 1px var(--accent)` with accent border).
+- **Icons**: Lucide geometry (ISC), 24 grid, 1.9 stroke, round caps and joins, 17–18px in the launcher, 18px on the web. In game: the existing pixel glyph font `assets/noreclient/font/icons.json` (9px grid), drawn in the text colour.
+- **Illustration**: pixel stickers authored as string grids (`design/mocks/assets/make-sprites.py`) so launcher, website and game draw the same sprite: pumpkin, bat, ghost (phosphor), spider, witch hat, candy, snowflake, gift; heads are 8×8 faces. Rendered nearest-neighbour, always with a vinyl rim.
+- **Photography**: only real game imagery (panoramas `assets/noreclient/panorama/cherry_*`, `web/public/assets/home/*`) inside stickers. No stock, no gradients standing in for pictures.
+- **Texture**: page fibre grain (SVG turbulence tile, ~9% light specks); cover bookcloth (two stretched turbulence passes). Both static; never animated.
 
-### Named Rules
-**The Tooltip Keyline Rule.** Panels are opaque fills with a 1px violet keyline. No glow, no glass, no backdrop blur, no gradient borders or gradient text.
+## 7. Motion
 
-## Shapes
+All values are tokens (`--nore-dur-*`, `--nore-ease-*`, `--nore-spring-*`, `--nore-stagger`, `--nore-shift-*`). Springs are generated into CSS `linear()` curves by the build script and exported as {stiffness, damping, mass} to Java.
 
-Small, near-square corners that read as blocky without becoming pixel art: 6px for panels, modals and cards; 4px for buttons, inputs, nav items and icons; 2px for rank tags, loader tags and slider thumbs; 0 for progress bars, status dots, signal bars, the scrollbar thumb and the spinner (which steps in 8). Square dots replace round ones everywhere state is shown. Rank tags draw their own `[` and `]` in a muted mix of the tag colour.
+| Token | Value | Use |
+|---|---|---|
+| `dur.tap` | 90ms | press |
+| `dur.quick` | 140ms | hover, colour, state |
+| `dur.base` | 220ms | routine, value swaps, rub sweep |
+| `dur.exit` | 160ms | anything leaving (always shorter than it came) |
+| `dur.peel` | 260ms | sticker peeling off |
+| `dur.overlay` | 280ms | sheet/menu/toast arriving |
+| `dur.page` | 320ms | page turn |
+| `dur.stick` | 380ms (spring settles ~445ms) | sticker slapping in |
+| `dur.launch` | 900ms | app launch storyboard |
+| `dur.reveal` | 1400ms | event reveal |
+| `dur.ambient` | 9000ms | slow loops (torch sway, snow) |
+| `ease.out` | cubic-bezier(.22,1,.36,1) | arrivals |
+| `ease.in` | cubic-bezier(.55,0,1,.45) | departures |
+| `ease.in-out` | cubic-bezier(.65,0,.35,1) | loops, swaps |
+| `ease.peel` | cubic-bezier(.45,0,.2,1) | corner lift then release |
+| `ease.rub` | cubic-bezier(.3,0,.1,1) | rub-down highlight |
+| `spring.stick` | k700 c30 m1 (~11% overshoot) | sticker into slot |
+| `spring.tab` | k430 c32 m1 (~3%) | active tab, segmented pill |
+| `spring.knob` | k520 c26 m1 | switch knob |
+| `spring.soft` | k180 c22 m1 | album cover opening, event poster |
+| `stagger` | 45ms, max 8 | list/grid entrances (~360ms cap) |
+| shifts | lift 3, press 1, page 28 in / 14 out, drop 10, stick scale 1.12, stick tilt +4°, resting tilt ±3° | |
 
-**Drift repaired.** The legacy "Nore 2.1 design refresh" block in styles.css (16px/11px corners, translucent `--surface`, glass `.card` gradients and shadow, the sidebar gradient and the nav gradient) has been removed, and `body.halloween` no longer makes `--surface` translucent. Panels compute to the tokens above: 6px/4px corners, opaque surfaces, 1px keylines, no glass. Do not reintroduce a second `:root` block that redeclares these tokens.
+**Micro-interactions**: *Stick* (scale 1.12 → 1, tilt +4° → own tilt, opacity 0 → 1 by 40%, `lift` shadow → none, `spring.stick`). *Peel* (corner lifts 3°, 4px up with `lift` shadow over 35%, then flies 18px up-right +8° and fades; `dur.peel`, `ease.peel`). *Rub* (after a press, a pale band sweeps once across the sticker in `dur.base`, `ease.rub`). *Dot slap* (scale 1.6 → .92 → 1). *Lift* on hover. Values count up with tabular figures. Progress fills are exact lengths (scaleX), never decorative.
 
-## Components
+**Page and scene transitions** (launcher): the outgoing page drops 14px left and fades in `dur.exit`/`ease.in`; the incoming page arrives 28px from the right in `dur.page`/`ease.out` and its stickers stick in with the stagger. Moving *up* the tab list mirrors the direction. Detail pages (instance, server) arrive from the right and leave back to the left. A second click mid-transition starts the next one immediately. The active tab travels on `spring.tab`.
 
-### Buttons
-Tinted and outlined, so the one solid block stands alone.
-- **Shape:** gently squared (4px).
-- **Default:** accent tint at 16% with a 55% accent border, Inter 600 13px, 36px tall, 14px side padding; 30px small, 36px square icon variant. The tint colour is a per-button channel (`--c`), so danger and success reuse the same form.
-- **Hover / Active:** tint rises to 28% and the border to 90%; press nudges 1px down. Transitions 0.15s. No lift, no glow.
-- **Ghost:** 3% white with a keyline border and dim text; hover brightens text and swaps the border to the accent.
-- **Disabled:** 40% opacity.
+**Reduced motion** (`prefers-reduced-motion` or the in-app "Animacje: Wyłączone"; "Oszczędne" keeps fades only): all shifts and tilt animation become 0, springs become `ease.out` at 140ms, durations cap at 200ms, no ambient loops (torch sway, snow, foil, drift, bats), event reveals become a 200ms crossfade. Colour and opacity changes stay so state remains readable. Content is visible by default; entrances use `backwards` fill only.
 
-### The Graj Block (signature)
-- One solid accent field, 54px tall, 34px side padding, Archivo 900 21px at wdth 80% with 0.1em tracking, white text, the block bevel on its lower edge.
-- Hover mixes 14% white into the accent; press drops it 2px and halves the bevel.
-- Running: the field turns running-green.
-- At most one per view; the rail's mini-play is the compact repeat for other pages.
+Storyboards for app launch, page change, the Graj sequence and event reveals: `design/README.md` § Motion storyboards.
 
-### Rank Tags
-- Silkscreen 11px uppercase on an 18px strip (loader tags 20px), 2px corners, background = the tag's code at 12 to 13% over 35% black, text in the code colour, brackets drawn in a muted mix.
-- Assignments: version chip §e, nav count §b, Serwery §e, Halloween §6, Sklep §7, Konsola §c, premium §a, offline §7, upd §e, alpha §c, loader tags by loader with a 5px square swatch, Nore Client §d, modpack §3.
+## 8. Surfaces
 
-### MOTD Lines
-- Rendered from § strings by the MOTD renderer: colour codes 0 to f plus §x (accent-light), §l bold, §o italic, §n underline, §m strike, §r reset; unknown codes dropped, text escaped.
-- Instance MOTD: loader name in its code (Fabric §e, Quilt §d, Forge/NeoForge §6, vanilla §a, Nore Client §x), §8 separator, §7 description.
-- Server rows: the server's own MOTD, then a status line in §a running, §c stopped, §e otherwise.
+### Website (noroclient.pl) – Persuade; /api – Read; /panel – Operate
+Direction dealt by the taste skill: "Dressed as something else" (borrowed category: a sticker album / sticker drop), counter-object hero. Mocks: `design/mocks/web-home.html`, `web-api.html`, `web-panel.html`.
+- **Home**: plain bar (logo sticker + "Nore", five links, one "Pobierz" pill). Hero: one object on the counter: a 4:5 die-cut sticker (26vw) holding real product screens that slowly crossfade (in-game menu → Szatnia → launcher, 6s each), with the logo sticker, a pumpkin sticker and an event label stuck on its corners; below it "Minecraft po swojemu." in Dela on two lines, then one row: versions · download pill · "Za darmo · premium albo sam nick". Second screen: full-bleed violet field with a two-line headline interrupted by letter-height screenshot stickers. Inner sections: a board of flat tiles, each an enlarged real UI fragment (`data-ui`) cropped by two edges; the updater clip (`web/public/assets/api/updater.webm`) is the page's moving picture. The live thing (from today's site): type your nick and get it back as a name sticker with your head.
+- Taste-skill house rules apply: two faces, no rules/gradients/eyebrows/mono outside code, shadows only on floating things, pill buttons, ≥4 real pictures, every section has an entrance. Run with `--allow palette-purple` (violet is a brand commitment). Body ≥16px; small text on violet sits on `accent-deep`.
+- **API docs**: left index as pills (method label sticker + path), endpoint heading in code type, parameter table (lines allowed in real tables), "Zapytaj na żywo" panel (`data-ui`) with response status as dots and a rendered preview of what the launcher shows.
+- **Bot panel**: the launcher's grammar on the web: cover rail with index tabs (modules with on/off dots), form fields rendered from the bot schema (channel select, textarea with variable label stickers, colour dot swatches, role chips, switch), a Discord preview, recent events with dots, and a white floating save bar ("Masz N niezapisane zmiany · Cofnij · Zapisz"); 409 conflict and schema errors appear as a red-dot line under the field (JSON pointer mapped to the field).
 
-### Cards / Containers
-- **Corner Style:** 6px.
-- **Background:** surface, opaque; modules draw a 34 by 3px header tab on the top keyline at 15px from the left, coloured by content (`--tab`: §b recent, §7 screenshots, §e updates, §d news, §a friends, §6 servers); the title icon takes the same colour.
-- **Border:** 1px keyline; hover moves it to 55% accent and mixes 8% accent into the fill; selected uses the accent keyline; running servers and instances take a §a keyline.
-- **Shadow Strategy:** none at rest (see Elevation).
-- **Internal Padding:** 18px panels, 14px 16px modules, 12px 14px server rows and quick links.
+### Nore MC (mc.noreclient.pl) – the partner server, same family
+Mock: `design/mocks/web-server.html`. The server's signature object is the **address label**: `mc.noreclient.pl` printed on a white die-cut sticker that copies itself on click (toast "Skopiowano adres"). Hero: "Nore MC" in Dela, live status row (dot, players, version, ping, read from `/api/v2/servers/mc.noreclient.pl`), "Graj przez Nore Launcher" (deep link) and the rules; a tilted spawn-screenshot sticker with player heads stuck on it. Sections: three ways to join (launcher path stickers, the pinned server in the client's list, plain address), ranks as a sticker sheet (each rank its own die-cut shape and colour; Gracz free, paid ranks on `accent-deep` and `dot-wait`), then rules, vote, staff (head stickers with role labels), news (clippings) and Discord. Prices, perks, ping and player counts in the mock are **sample content**.
+- **In game**: Multiplayer pins the official server above the player's list as an `accent-deep` sticker with a vinyl "oficjalny" label, live players and a white "Dołącz" pill (`design/mocks/game-multiplayer.html`). It cannot be deleted, only collapsed.
+- **Launcher**: Start features it as a violet sticker card "Nore MC · oficjalny serwer" with live count and Dołącz (`launcher-home.html`); the Serwery page lists it first. During events this card yields its place to the event poster.
 
-### Inputs / Fields
-- **Style:** well fill, 1px keyline, 4px corners, 38px tall, accent caret, muted placeholder.
-- **Focus:** accent border plus a 1px accent ring.
-- **Segmented / chips / switches:** well track; the chosen segment or chip takes a 40 to 45% accent mix; switches fill solid accent with a white knob; sliders are a 6px square track filled with accent and a 14 by 18px white thumb.
+### Launcher – Operate
+Mocks: `launcher-home.html`, `launcher-instance.html`, `launcher-settings.html`, `launcher-login.html`, `launcher-home-halloween.html` (1280×800). Shell: cover rail (224px) with index tabs and the account chip at the foot; page with a 36px titlebar (status dot left, window controls right). **Start**: the current instance as a 272px hero sticker tilted -3° with loader/version labels stuck on it; name in Dela 44; meta line (play time, last played, mods); label stickers; Graj + Zmień + folder; a ready line with a dot. Below: recent instances in slots ending with a ghost "Nowa instancja"; "Twoja kolekcja" (cosmetics as small stickers with acquisition dates, ghost slots for the coming series, a count). Right: featured server or event poster, taped news clippings, friends as round head stickers with dots. **Instance**: header sheet with the hero sticker small, segmented tabs, mods as rows with a mod sticker + switch (disabled mod → ghost), worlds as photo stickers, facts sheet. **Settings**: sheets in two columns; accent swatches are dot stickers (chosen one bigger with a check) with a live Graj preview; "Animacje: Pełne / Oszczędne / Wyłączone". **Login**: the closed album cover with a blind-debossed "Nore", the logo sticker, the nameplate for the nick (non-premium, always available, primary), and a Microsoft device-code sheet whose code is eight letter stickers.
 
-### Navigation
-- Grouped rail nav: group labels 11px, 0.16em, #a89cbd; items 34px tall, 13.5px Inter, 17px stroke icons, dim text.
-- Hover: 5% white field, full text; the icon nudges 1px. Press: scale .98. Active: one 42% accent field for the whole rail (`.rail-ind` in `.sb-scroll`) that glides between items and groups with `--ease-spring` (a few % of overshoot, then settle), interruptible mid-glide; white text and icon.
-- Rank-tag badges sit flush right in each item.
+### Installer + Updater
+- **NSIS** (`installer.html`, 497×390): Windows chrome and system buttons stay Windows; `MUI_BGCOLOR 141216`, `MUI_TEXTCOLOR F3EFE9`. The 164×314 sidebar bitmap is the cover: bookcloth, the logo sticker tilted -6°, "Nore Launcher" in Dela 22, a version label sticker, three dots + noroclient.pl. The 150×57 header bitmap: cloth, version label, small logo sticker. Progress bar: remove its theme (`UxTheme::SetWindowTheme` with empty strings) then `PBM_SETBARCOLOR` accent and `PBM_SETBKCOLOR` slot. `installer-art.py` regenerates the bitmaps from the tokens (Dela/Onest TTF fetched at build time, not committed).
+- **Nore Updater** (`updater.html`, 400×480 frameless): the cover with a **sticker pack** (crimped foil sachet, page black, vinyl outline, tilted -3°) showing the logo sticker, "Nore Launcher" and the new version label. The pack's **tear strip is the progress bar**: the torn part (accent) curls up and follows the download; at 100% and a verified SHA-256 the pack opens and the new version sticker sticks out (`spring.soft`) with "Witaj w X" and up to three notes. Status line with a dot (wait → ready, error = red dot + "Spróbuj ponownie"), MB and speed in tabular figures, the current version as a dark label in the footer.
 
-### Server List Rows
-- 64px server icon, name at 17px, a single MOTD line with ellipsis, and on the right a five-bar signal (3px bars, §a when online, #3a3346 off), the player or RAM count in stat type, and the status line. Actions sit below a keyline. The add row is a dashed keyline box.
+### In-game client – Nore Client (`Theme`, `ThemeTokens`, `Render2D`, `gui/**`)
+Mocks: `game-main-menu.html`, `game-clickgui.html`, `game-pause.html`, `game-multiplayer.html`, `game-main-menu-halloween.html`, drawn at 533×300 GUI px and rendered at GUI scale 3 (1600×900).
+- **Scale**: every value in GUI pixels; layouts must also hold at GUI scale 2 and 4. No fractional text scales: `g.scale(2)` for titles, `3` for the clock.
+- **Text**: Minecraft's own font. Text shadow only over the world; never on sheets or stickers. The mocks use Pixelify Sans as a visual stand-in.
+- **What Render2D draws**: sheets = `roundedRect` with `PAGE` (92% alpha) or `RAISED`; stickers = `roundedRect` VINYL 1px larger behind the face (the rim); slots = `roundedRect` SLOT + dashed die line as 2-px `rect` dashes along the edges; dots = `circle` vinyl r+1 then colour; peel corner = two `TRIANGLES` via `mesh`; tape = a skewed quad via `mesh` (`TAPE_*`); lift shadow = `shadow()` with `LIFT`; flashlight = `radial()`; logo = `texture` (bake `logo-sticker` and `logo-rim` textures from `design/mocks/assets`, accent recolour stays on the logo layer). Gfx has no rotation: **in-game stickers never tilt** (tape quads may be skewed).
+- **Main menu**: left album sheet (spine strip in `cover`), logo sticker + "NORE" 2x + version, menu items as rows where the hovered one becomes a white sticker with a peel corner, quit in soft red; right side: clock on a dark label, a taped "Nowe w X" clipping, quick-join to Nore MC, friends' heads. **ClickGUI**: one sheet with a cover column of index tabs (categories + collections) and a 4-column grid where an enabled module is a white sticker (accent icon, dark name, category, keycap) and a disabled one is a ghost slot; hovering a ghost shows the sticker at 50% lifted ("LPM włącz · PPM ustawienia"); toggling sticks or peels. **Pause**: violet "Wróć do gry" pill on top, the same rows, a session clipping, friends, today's screenshots as stickers, keycaps for F2 / P.Shift / Esc.
+- **Motion in game**: add a `Spring` next to `Animation` using `ThemeTokens.SPRING_*` (dt capped 0.05s); screen open = sheet slides 6 GUI px + stagger 45ms per sticker (max 8); toggles use stick/peel; respect `ClientSettings` animation option (off = instant).
+- **Sounds**: stick = short soft "pap" (UI click pitched down, 0.6 volume), peel = paper rip (very short), page = page flip; all behind `Theme.sounds()`.
 
-### Lit Until Seen
-- When a row's state changes (a server starts or stops, an instance gets content updates), it takes a 6px square §e mark in its top-right corner that blinks in two steps every 1.2s. Hover or focus clears it. Once-only marks are remembered across restarts.
+## 9. Events (forced on; cannot be disabled)
 
-### §k Reveal
-- Instance names scramble through pixel glyphs (A to Z without I/O, digits, #$%&?@) in accent-light and resolve left to right over 560ms when the page opens and when the game launches. Screen readers get the final name via aria-label. Skipped under reduced motion or the in-app animation switch.
+### Halloween 2026 – "Zgaszone światło" (lights out), 15 Oct – 3 Nov
+- **Palette shift** (`[data-event=halloween]`): page #0b0a0c, raised #151317, slot #060507, cover = 9% accent into #070609, ink #e9e4dc, ink-soft raised to #b8b0b6 so secondary text keeps 4.5:1. New: `phosphor` #d2ff7a (glow-in-the-dark stickers, the only glowing colour in the system), `pumpkin` #ff7417 (event tab, poster title, Łap dynie), torch rgba(255,236,196,.16). Accent and Graj stay the user's colour.
+- **Motifs**: glow-in-the-dark stickers (ghost, the three capes Dynia / Nietoperz / Pajęczyna), pixel pumpkins whose faces flicker like candles, bats, a spider on a thread, a phosphor cobweb in a page corner, an event poster taped with kraft tape.
+- **The torch**: the pointer carries a warm flashlight cone over the page background. Non-text art (sticker artwork, clippings) dims to `brightness(.58–.7)` with distance from the torch, then returns to full near it; text and controls never dim. Glow stickers **charge**: passing the torch over one makes it glow brighter for ~4s, then it fades back to its resting glow. The mini-game "Łap dynie" lives on the Halloween page.
+- **Particles**: 2–3 bats on slow figure-eight paths (existing `HalloweenDecor` flights), dust motes inside the torch cone (launcher only, ≤12).
+- **Sound cues**: on reveal, a light-switch click and a low room hum fading out in 1.2s; candle flicker crackle on pumpkin hover (launcher Halloween page only).
+- **Reach**: website = poster label on the hero object + one tile; launcher = full palette + torch + poster + glow collection; game = main menu lights out (night panorama, torch radial around the cursor, glowing pumpkins, bats, ghost sticker on the logo, event poster instead of the news clipping), ClickGUI and pause only swap the clipping tape to kraft and add the countdown dot; installer/updater: none.
 
-### Motion
-One token set in styles.css `:root`, read by motion.css and by `Motion` in js/ui.js (WAAPI for anything interruptible or measured). Movement uses transform and opacity only; colour and border changes are plain transitions. Content is visible by default: entrances use `backwards` fill, never a hidden resting state.
+### Winter – "Seria zimowa", from 10 December 2026
+- **Palette shift** (`[data-event=winter]`): page #11141b, raised #1a1e27, slot #0a0c11, cover = 14% accent into #0d1220. New: `frost` #e9f4ff, `ice` #8fd3ff, string-light dots red #ff5a5a, green #5be38f, gold #ffd257, blue #6cb8ff.
+- **Motifs**: frost creeping from the page corners (static after the reveal), holographic **foil** winter stickers (snowflake, gift), a string of light dot stickers along the titlebar that twinkle in steps, snow made of hole-punch confetti (paper circles from the album's own puncher) falling slowly.
+- **Particles**: confetti snow ≤40 flakes in the launcher, ≤60 in the game menu, 0 under reduced motion.
+- **Sound cues**: on reveal a soft crackle of frost and one small bell; none afterwards.
+- **Reach**: same as Halloween (website label + tile, full launcher, game main menu, light touches elsewhere).
 
-- **Durations:** `--dur-press` 90ms (press), `--dur-fast` 140ms (hover, control state), `--dur-base` 220ms (routine state, value tweens), `--dur-page` 300ms (page and list entrances), `--dur-overlay` 260ms (modal, menu, toast arriving), `--dur-exit` 130ms (anything leaving, always faster than it came), `--dur-focal` 560ms (the §k reveal, number count-ups).
-- **Curves:** `--ease-out` `cubic-bezier(.16, 1, .3, 1)` for arrivals; `--ease-in` `cubic-bezier(.55, 0, .8, .25)` for departures; `--ease-in-out` for loops; `--ease-spring` `cubic-bezier(.3, 1.25, .55, 1)` only for things that travel to a slot (rail indicator, segmented pill, switch knob). No bounce or elastic.
-- **Distances:** `--shift-page` 10px, `--shift-rise` 8px, `--shift-pop` 6px. Lists stagger by `--stagger-step` 30ms, capped at `--stagger-max` 8 items, so no list takes longer than ~0.3s to arrive; a list refreshed in place does not replay its entrance (`stagger(el, false)` / `.settled`).
-- **Pages:** `go()` is never blocked. The leaving page becomes an inert ghost under the new one and drops out in `--dur-exit`; the new page enters in `--dur-page` from its direction: down/up follow the rail order, in/out drill into or back out of a detail page (instance, server). A second click mid-transition simply starts the next one. The Settings choice (Kierunkowe default, fade, slide, zoom, bounded 6px blur) changes the entrance.
-- **Controls:** buttons press 1px down and to .98; trailing arrows nudge 2px on hover; icon-only buttons grow to 1.08; cards and rows keep their frame still (keyline and fill change on hover, .992 on press) while art inside drifts 3.5%; chips and tabs press to .96; the segmented pill glides (its width change is FLIPped into a scale); switch knobs stretch while held.
-- **Live values:** numbers count up (`Motion.count`, tabular figures), badges bump once when their value changes, progress fills scale on X (no width animation), a server that changes state climbs or drops its five signal bars one by one, a changed label swaps with a 7px out/in (`Motion.swap`).
-- **Loading:** skeletons fade in after 120ms (no flash on fast loads) with a transform sweep; results crossfade over them (`Motion.ghost`).
-- **Overlays:** modals and menus grow from their origin (6px, .985) and leave in `--dur-exit`; toasts slide in from the right edge, the stack closes up with FLIP, hovering holds a toast and pauses its bar.
-- **Graj block:** press drops it 2px; preparing fills the block left to right with the download (a 18% white layer scaled on X) and shows the percent; playing turns it running-green with a two-step live mark; each label change swaps out and in. The instance page uses the same block.
-- **Start hero (ambient):** the art drifts slowly (46s), leans a few pixels toward the pointer, and every 7 to 12s one letter of the instance name flickers through a §k glyph; nothing runs while the window is hidden or unfocused.
-- **Mechanical things step:** spinners in 8 steps, the splash bar in 10, the lit mark and the live mark in 2.
-- **Reduced motion:** `prefers-reduced-motion` zeroes the distances and the spring, shortens entrances and stops ambient loops (hero drift, event overlays); fades and colour changes stay so feedback remains legible. The in-app animation switch (`body.no-anim`) removes all motion.
+## 10. Do and don't
 
-### Znajomi (friends and chat)
-- One view for both kinds of friend: a Minecraft nick on the list Nore Client highlights in game (main/social.js, written into every instance) and a chat contact keyed by Nore ID (main/chat.js, P2P in js/chat.js). They are matched by name into one person; the old "Czat i głos" page opens this view.
-- Left: your Nore ID (copy), one add field that recognises a nick or a Nore ID (with an optional nick for an ID), search from 7 people, invitations, then Online and the rest. A row is a 36px head with a square status mark (§a online or in game, §e waiting for them to add you, dark when offline, none for a nick-only friend), the name, and a presence line in § codes or the unread message, with an accent unread count.
-- Right: the person's header (head, condensed caps name, presence line, `[LISTA W GRZE]` §d and `[NORE ID]` §b rank tags, Zadzwoń when they are online, a menu for copy, NameMC, voice settings, clearing history and removing from either list), then the conversation inline; a nick-only friend shows their skin and a field to link their Nore ID; a chat-only contact offers adding their nick to the in-game list.
+**Do**: route every accent use through `--nore-accent` / `Theme.accent()`; give every live object one of the state dots; design the ghost slot of anything that can be off or empty; keep one violet hero per view; use exact-length bars; date acquisitions in the collection; keep copy plain.
 
-### Satellite surfaces
-- **Login gate:** an overlay card (320px rail-field side + 440px main), device code set as server-address cells in condensed caps on the well; Microsoft button in accent-deep with the block bevel.
-- **Nore Updater:** the same world in a frameless window: logo where a server icon sits, condensed caps title, status in accent-light then §a done or §c error, a square progress bar (§a downloading, §e installing), version as a §e rank tag in the rail-field footer.
-- **Installer bitmaps:** generated from the same tokens (ground, rail, keyline, accent, Silkscreen [1.4 BETA] tag) by the installer art script.
-
-### Event overlays
-Halloween and winter are forced seasonal overlays layered on top of this system through `body.halloween` / `body.winter` and their own stylesheets. They add scene art and event components but are not part of the base system; the rail stays one accent field during events.
-
-## Do's and Don'ts
-
-### Do:
-- **Do** give every instance and server a single MOTD line in § codes, §7 by default.
-- **Do** express status as a bracketed rank tag in the matching code colour.
-- **Do** keep panels opaque surface (#150f1e) with a 1px keyline and 6px corners.
-- **Do** mark each module with a 34 by 3px header tab coloured by what it holds.
-- **Do** keep Graj the only solid accent block in a view, with the 4px lower bevel.
-- **Do** route every accent through the accent tokens and the derived rail so the user's theme recolours the whole shell and the logo.
-- **Do** hold a changed row lit in §e until the player hovers or focuses it.
-- **Do** use tabular figures for every live number.
-
-### Don't:
-- **Don't** use glass: no translucent cards, backdrop blur, glows or gradient borders over the wallpaper.
-- **Don't** use gradient text or coloured text shadows.
-- **Don't** use a § colour for decoration; a code that does not mean its state is §7.
-- **Don't** set headings, buttons or body copy in Silkscreen; it lives inside brackets and §k only.
-- **Don't** round past 6px or use pill shapes for tags and dots.
-- **Don't** add uppercase tracked kickers above headings; the rank tag and the MOTD line do that job.
-- **Don't** fold event styling (pumpkins, frost, event gradients) into base components; it belongs to the event overlays.
+**Don't**: glass, backdrop blur, glows (outside Halloween phosphor), gradient text or gradient fields; borders as separators between surfaces (tone steps instead); tilted stickers in long lists or in game; more than three tilted objects per view; small white text on `accent`; pixel font outside keycaps and game fragments; the old § codes, rank brackets and server-list styling.
