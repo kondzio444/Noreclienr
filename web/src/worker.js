@@ -33,7 +33,7 @@ import { HubError, readHello, readNames, hubCall } from './hub.js';
 import { launcherConfig, curseforge } from './launcher.js';
 import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView } from './data.js';
 import { handleV2 } from './v2/index.js';
-import { siteOf, wwwRedirect, mcAsset, MC_HOST } from './hosts.js';
+import { siteOf, wwwRedirect, mcAsset, effectiveUrl, MC_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
 export { NoreBot } from './v2/store.js';
@@ -257,7 +257,7 @@ function withPageHeaders(res, html) {
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+    const url = effectiveUrl(request, env);
     const www = wwwRedirect(url);
     if (www) return www;
     if (url.pathname === '/api/v2' || url.pathname.startsWith('/api/v2/')) return handleV2(request, url, env, ctx);
@@ -275,7 +275,7 @@ export default {
         return fail(request, e.status || 502, String(e.message || e));
       }
     }
-    const site = siteOf(url.hostname, env);
+    const site = siteOf(url.hostname);
     if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
       return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
     }

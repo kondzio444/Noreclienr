@@ -103,9 +103,10 @@ export async function login(request, url, env) {
   const state = randomToken(24);
   const verifier = randomToken(48);
   const next = safeNext(url.searchParams.get('next'));
-  const value = await sign(env, 'nore-o1', { state, verifier, next, exp: Date.now() + OAUTH_MS });
+  const redirect_uri = redirectUri(url);
+  const value = await sign(env, 'nore-o1', { state, verifier, next, redirectUri: redirect_uri, exp: Date.now() + OAUTH_MS });
   const q = new URLSearchParams({
-    response_type: 'code', client_id: env.DISCORD_CLIENT_ID, scope: 'identify guilds', redirect_uri: redirectUri(url),
+    response_type: 'code', client_id: env.DISCORD_CLIENT_ID, scope: 'identify guilds', redirect_uri,
     state, prompt: 'none', code_challenge: await pkceChallenge(verifier), code_challenge_method: 'S256',
   });
   return redirect(`${discordAuthorize(env)}?${q}`, [cookie(OAUTH_COOKIE, value, OAUTH_MS / 1000)]);
@@ -140,7 +141,7 @@ export async function callback(request, url, env) {
   const tokenRes = await discordFetch(env, '/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body: new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, client_secret: env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code, redirect_uri: redirectUri(url), code_verifier: o.verifier }),
+    body: new URLSearchParams({ client_id: env.DISCORD_CLIENT_ID, client_secret: env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code, redirect_uri: o.redirectUri || redirectUri(url), code_verifier: o.verifier }),
   });
   const token = await tokenRes.json().catch(() => null);
   if (!tokenRes.ok || !token || typeof token.access_token !== 'string') return loginFailed(request, next, 'token', 'Discord nie przyjął kodu logowania – spróbuj jeszcze raz', 401);

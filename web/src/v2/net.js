@@ -24,6 +24,7 @@ export function parseAddress(raw) {
   host = host.replace(/\.$/, '');
   const ip = ipKind(host);
   if (!ip && !HOST.test(host)) throw new ApiError(400, 'bad_address', 'Zły adres serwera – dozwolone są nazwy domen i adresy IP');
+  if (!ip && isBlockedName(host)) throw new ApiError(403, 'private_address', 'Adresy lokalne i prywatne są zablokowane');
   if (!ip && !host.includes('.')) throw new ApiError(400, 'bad_address', 'Podaj pełną nazwę domeny, np. play.example.pl');
   return { host, port, ip };
 }

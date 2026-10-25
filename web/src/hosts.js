@@ -3,14 +3,19 @@
  *   www.<anything>       → 301 to the apex host (same path and query)
  *   mc.noreclient.pl     → static files from public/mc/ (the Minecraft server site); /api/* is the same API
  *   other hosts          → public/ as before; /mc/… there redirects to the mc host
- * MC_HOSTS (comma list) adds hosts treated as the Minecraft site (local tests only).
+ * TEST_HOST_HEADER names a request header that replaces the host (local tests only: wrangler dev
+ * maps every request onto the first route host).
  */
 export const MC_HOST = 'mc.noreclient.pl';
 
-export function siteOf(hostname, env) {
-  const h = hostname.toLowerCase();
-  const extra = String(env.MC_HOSTS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-  return h === MC_HOST || extra.includes(h) ? 'mc' : 'main';
+export const siteOf = (hostname) => (hostname.toLowerCase() === MC_HOST ? 'mc' : 'main');
+
+/** The request URL with the test host applied (only when TEST_HOST_HEADER is set). */
+export function effectiveUrl(request, env) {
+  const url = new URL(request.url);
+  const h = env.TEST_HOST_HEADER && request.headers.get(env.TEST_HOST_HEADER);
+  if (h && /^[a-z0-9.-]{1,253}$/i.test(h)) url.hostname = h;
+  return url;
 }
 
 /** www.* → apex, or null. */
