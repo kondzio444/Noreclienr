@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nore MC – mc.noreclient.pl</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="web.css">
+<style>
+  /* Nore MC: the partner server's own page in the Album family. Same card, same stickers; its signature object
+     is the address label: the IP printed on a white die-cut sticker that copies itself when clicked. */
+  .nav .mark small { margin-left: 4px; padding: 6px 10px; border-radius: 8px; border: 3px solid var(--nore-vinyl); background: var(--nore-dot-ready); color: #0e1a12; font: 700 13px/1 var(--nore-font-text); rotate: -4deg; }
+  main { overflow-x: clip; }
+  .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(32px, 4vw, 72px); align-items: center; min-height: calc(100svh - 76px); padding: 10px var(--nore-web-margin) 60px; }
+  .hero h1 { margin: 0; font: var(--nore-web-display); font-size: clamp(64px, 9vw, 150px); letter-spacing: var(--nore-web-display-tracking); }
+  .hero p.lead { margin: 18px 0 0; max-width: 34ch; font: var(--nore-web-lead); color: var(--nore-ink-soft); }
+  .ip { display: inline-flex; align-items: center; gap: 18px; margin-top: 34px; padding: 18px 26px 18px 30px; border-radius: 22px; border: 6px solid var(--nore-vinyl); background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font: 400 clamp(28px, 3vw, 46px)/1 var(--nore-font-display); letter-spacing: -.02em; rotate: -1.5deg; text-decoration: none; transition: translate var(--nore-dur-quick) var(--nore-ease-out); }
+  .ip:hover { translate: 0 -3px; }
+  .ip small { font: 700 15px/1 var(--nore-font-text); color: var(--nore-vinyl-ink-soft); letter-spacing: 0; }
+  .live { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 28px; font: 500 17px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); font-variant-numeric: tabular-nums; }
+  .live b { color: var(--nore-ink); font-weight: 600; }
+  .live .on { display: inline-flex; align-items: center; gap: 10px; color: var(--nore-ink); }
+  .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--nore-vinyl); background: var(--c, var(--nore-dot-ready)); }
+  .acts { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
+  .world { position: relative; aspect-ratio: 4 / 5; }
+  .world .st { position: absolute; inset: 0; --tilt: 2.5deg; background-image: url(../../web/public/assets/home/panorama.webp); background-position: 42% 50%; }
+  .world .heads { position: absolute; left: -9%; bottom: 8%; display: flex; }
+  .world .heads img { width: clamp(52px, 5vw, 76px); border-radius: 16px; border: 5px solid var(--nore-vinyl); image-rendering: pixelated; margin-left: -14px; rotate: var(--r); }
+  .world .rank { position: absolute; right: -6%; top: 8%; rotate: 7deg; padding: 12px 18px; border-radius: 14px; border: 5px solid var(--nore-vinyl); background: var(--nore-accent); color: #fff; font: 400 26px/1 var(--nore-font-display); }
+
+  /* join: three ways, ordered by how close you are to Nore; no numbers, the stickers lead */
+  .join { background: var(--nore-page-raised); padding: clamp(80px, 9vw, 150px) var(--nore-web-margin); }
+  .join h2, .ranks h2 { margin: 0 0 clamp(36px, 4vw, 60px); font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); max-width: 18ch; }
+  .ways { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
+  .way { padding: 30px; border-radius: 6px; min-height: 340px; display: flex; flex-direction: column; justify-content: space-between; }
+  .way h3 { margin: 0 0 10px; font: 600 24px/1.2 var(--nore-font-text); }
+  .way p { margin: 0; font: var(--nore-web-body); }
+  .way.a { background: var(--nore-accent); color: var(--nore-page); }
+  .way.b { background: var(--nore-page); }
+  .way.c { background: var(--nore-paper); color: var(--nore-vinyl-ink); }
+  .way .path { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font: 700 17px/1 var(--nore-font-text); }
+  .way .path span { padding: 10px 14px; border-radius: 12px; border: 3px solid var(--nore-vinyl); background: var(--nore-page); color: var(--nore-ink); }
+  .way .path span.go { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+  .way.b .path span { background: var(--nore-page-raised-2); }
+  .way .slot { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; background: var(--nore-page-raised); }
+  .way .slot .ico { width: 54px; height: 54px; border-radius: 10px; border: 3px solid var(--nore-vinyl); background: url(../../web/public/assets/home/panorama.webp) 40% 50% / 400%; flex: none; }
+  .way .slot b { display: block; font: 600 17px/1.2 var(--nore-font-text); }
+  .way .slot small { display: block; margin-top: 4px; color: var(--nore-ink-soft); font-size: 14px; }
+  .way .slot .pin { margin-left: auto; padding: 7px 10px; border-radius: 8px; background: var(--nore-accent); color: #fff; font: 700 13px/1 var(--nore-font-text); }
+  .way code { font: 600 22px/1.3 var(--nore-font-code); }
+
+  /* ranks: a sticker sheet, each rank its own die-cut shape and colour */
+  .ranks { padding: clamp(96px, 11vw, 180px) var(--nore-web-margin) clamp(80px, 9vw, 140px); }
+  .sheet { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(20px, 3vw, 48px); align-items: start; }
+  .rk { border: 6px solid var(--nore-vinyl); border-radius: 28px; padding: 28px 28px 30px; rotate: var(--t); }
+  .rk h3 { margin: 0; font: 400 clamp(34px, 3.4vw, 54px)/1 var(--nore-font-display); letter-spacing: -.02em; }
+  .rk .price { margin: 12px 0 20px; font: 600 20px/1.2 var(--nore-font-text); font-variant-numeric: tabular-nums; }
+  .rk ul { margin: 0 0 24px; padding: 0; list-style: none; display: grid; gap: 10px; font: var(--nore-web-body); }
+  .rk li { display: flex; gap: 12px; align-items: baseline; }
+  .rk li::before { content: ''; flex: none; width: 12px; height: 12px; border-radius: 50%; background: currentColor; translate: 0 1px; opacity: .55; }
+  .rk.g { --t: -1.5deg; background: var(--nore-page-raised); }
+  .rk.v { --t: 1deg; background: var(--nore-accent); color: #fff; margin-top: 30px; }
+  .rk.s { --t: -.5deg; background: var(--nore-dot-wait); color: #221a00; border-radius: 28px 28px 80px 28px; }
+  .rk .pill.ink { width: 100%; }
+  .fair { margin-top: 40px; max-width: 60ch; font: var(--nore-web-lead); color: var(--nore-ink-soft); }
+  @media (max-width: 760px) {
+    .nav .links { display: none; } .nav .pill { margin-left: auto; }
+    .hero { grid-template-columns: 1fr; min-height: 0; padding-top: 20px; }
+    .hero h1 { font-size: 64px; }
+    .world { order: -1; width: 82%; margin: 10px auto 0; aspect-ratio: 5 / 4; }
+    .ip { width: 100%; justify-content: space-between; font-size: 26px; padding: 16px 18px; }
+    .acts .pill { width: 100%; }
+    .ways, .sheet { grid-template-columns: 1fr; }
+    .way { min-height: 0; gap: 26px; }
+    .rk.v { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="mark" href="#"><img src="assets/logo-sticker-256.png" alt="">Nore MC<small>serwer</small></a>
+  <nav class="links" aria-label="Serwer"><a href="#">Jak dołączyć</a><a href="#">Rangi</a><a href="#">Zasady</a><a href="#">Głosuj</a><a href="#">Ekipa</a><a href="#">Aktualności</a></nav>
+  <a class="pill sm" href="#"><svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Discord</a>
+</header>
+<main>
+  <section class="hero" aria-labelledby="h">
+    <div>
+      <h1 id="h" class="in">Nore MC</h1>
+      <p class="lead in d1">Survival z przyjaciółmi na oficjalnym serwerze Nore. Wejdziesz z kontem premium albo z samym nickiem.</p>
+      <a class="ip in d2" href="#" aria-label="Kopiuj adres serwera">mc.noreclient.pl<small>Kopiuj</small></a>
+      <div class="live in d3"><span class="on"><i class="dot"></i>Online</span><span><b>37</b> / 200 graczy</span><span>wersja <b>1.21.11</b></span><span>ping z Polski <b>18 ms</b></span></div>
+      <div class="acts in d4"><a class="pill" href="#"><svg viewBox="0 0 24 24"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="currentColor" stroke="none"/></svg>Graj przez Nore Launcher</a><a class="pill ink" href="#">Zasady serwera</a></div>
+    </div>
+    <div class="world stick-in">
+      <div class="st" role="img" aria-label="Spawn serwera: wiśniowy staw"></div>
+      <span class="rank">VIP</span>
+      <div class="heads"><img src="assets/head-ola.png" style="--r:-6deg" alt=""><img src="assets/head-bartek.png" style="--r:4deg" alt=""><img src="assets/head-mila.png" style="--r:-3deg" alt=""><img src="assets/head-kondzio.png" style="--r:7deg" alt=""></div>
+    </div>
+  </section>
+
+  <section class="join" aria-labelledby="j">
+    <h2 id="j" class="in">Trzy drogi na serwer</h2>
+    <div class="ways">
+      <article class="way a in"><div><h3>Z Nore Launcher</h3><p>Nore MC jest na stronie Serwery. Jeden klik instaluje właściwą wersję i od razu łączy.</p></div><div class="path"><span>Serwery</span>→<span>Nore MC</span>→<span class="go">Graj</span></div></article>
+      <article class="way b in d1"><div><h3>Z Nore Client</h3><p>Serwer jest przypięty na górze listy Multiplayer w każdej wersji klienta.</p></div><div class="slot"><span class="ico"></span><div><b>Nore MC</b><small><i class="dot" style="width:10px;height:10px;border-width:2px"></i> 37/200 · survival</small></div><span class="pin">Oficjalny</span></div></article>
+      <article class="way c in d2"><div><h3>Z innego launchera</h3><p>Dodaj serwer w Minecraft: Java Edition 1.21.11 i wpisz adres.</p></div><code>mc.noreclient.pl</code></article>
+    </div>
+  </section>
+
+  <section class="ranks" aria-labelledby="r">
+    <h2 id="r" class="in">Rangi</h2>
+    <div class="sheet">
+      <article class="rk g in"><h3>Gracz</h3><p class="price">Za darmo</p><ul><li>Survival, działki i sklep graczy</li><li>2 domy i /tpa do znajomych</li><li>Peleryny z Nore widoczne w F5</li></ul><a class="pill white" href="#">Wejdź na serwer</a></article>
+      <article class="rk v in d1"><h3>VIP</h3><p class="price">19 zł / 30 dni</p><ul><li>5 domów i kolorowy nick</li><li>Kit co tydzień</li><li>Dostęp do /craft i /ec</li></ul><a class="pill ink" href="#">Kup VIP</a></article>
+      <article class="rk s in d2"><h3>SVIP</h3><p class="price">39 zł / 30 dni</p><ul><li>Wszystko z VIP</li><li>10 domów i /back</li><li>Własny tag na czacie</li></ul><a class="pill ink" href="#">Kup SVIP</a></article>
+    </div>
+    <p class="fair in">Rangi nie dają przewagi w walce. Każdy zakup wspiera utrzymanie serwera.</p>
+  </section>
+</main>
+</body>
+</html>

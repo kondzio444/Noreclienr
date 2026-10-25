@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Client – Multiplayer</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="game.css">
+<style>
+  .world { background-image: url(../../common/src/main/resources/assets/noreclient/panorama/cherry_sunset.jpg); background-position: -300px 0; }
+  .shade { background: rgba(8, 7, 10, .5); }
+  .sheet { position: absolute; left: 66px; top: 14px; width: 401px; height: 272px; border-radius: 6px; background: #141216f2; padding: 10px 12px; }
+  .head { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .head .search { margin-left: auto; display: flex; align-items: center; gap: 5px; width: 110px; height: 16px; padding: 0 5px; border-radius: 4px; background: #0c0b0e; color: var(--nore-ink-faint); }
+  /* the official server: a violet sticker pinned above the player's own list, with a pushpin label */
+  .pinned { position: relative; display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: center; height: 44px; padding: 6px 8px 6px 6px; border-radius: 4px; background: var(--nore-accent); color: #fff; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .pinned .ico { width: 32px; height: 32px; border-radius: 3px; background: url(../../web/public/assets/home/panorama.webp) 40% 50% / 300%; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .pinned .motd { display: block; margin-top: 3px; color: #e9dcff; }
+  .pinned .tag { position: absolute; left: 34px; top: -5px; height: 9px; padding: 0 3px; border-radius: 2px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font-size: 9px; line-height: 9px; }
+  .pinned .r { text-align: right; }
+  .pinned .r .gbtn { margin-top: 3px; }
+  .gbtn { display: inline-flex; align-items: center; height: 14px; padding: 0 7px; border-radius: 7px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+  .sig { display: inline-flex; gap: 1px; align-items: flex-end; height: 7px; margin-left: 4px; vertical-align: -1px; }
+  .sig i { width: 2px; background: var(--c, var(--nore-dot-ready)); }
+  .label { margin: 8px 0 4px; color: var(--nore-ink-faint); }
+  .rows { display: grid; gap: 3px; }
+  .row { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; height: 31px; padding: 4px 6px 4px 4px; border-radius: 4px; }
+  .row.hover { background: #1e1b21; }
+  .row .ico { width: 24px; height: 24px; border-radius: 3px; box-shadow: 0 0 0 1px var(--nore-vinyl); background: center / cover; }
+  .row small { display: block; margin-top: 2px; color: var(--nore-ink-soft); }
+  .row .r { text-align: right; color: var(--nore-ink-soft); }
+  .row.off .ico { box-shadow: none; outline: 1px dashed var(--nore-ghost); outline-offset: -1px; background: #0c0b0e; }
+  .row.off { color: var(--nore-ink-faint); }
+  .foot { position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; gap: 6px; }
+  .fb { display: inline-flex; align-items: center; gap: 4px; height: 16px; padding: 0 8px; border-radius: 8px; background: #28242c; }
+  .fb.primary { background: var(--nore-accent); color: #fff; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .fb.right { margin-left: auto; }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="world"></div><div class="shade"></div>
+<section class="sheet">
+  <div class="head"><span class="x2">Multiplayer</span><div class="search"><svg class="gic"><use href="#i-search"/></svg>Szukaj serwera</div></div>
+  <div class="pinned">
+    <span class="tag">oficjalny</span>
+    <span class="ico"></span>
+    <div>Nore MC <span class="sig"><i style="height:3px"></i><i style="height:4px"></i><i style="height:5px"></i><i style="height:6px"></i><i style="height:7px"></i></span><span class="motd">Survival 1.21.11 · premium albo sam nick</span></div>
+    <div class="r">37/200<br><span class="gbtn">Dołącz</span></div>
+  </div>
+  <div class="label">Twoje serwery</div>
+  <div class="rows">
+    <div class="row hover"><span class="ico" style="background-image:url(../../web/public/assets/home/sky.webp)"></span><div>Serwer kondzia<small><i class="gdot" style="--c:var(--nore-dot-ready)"></i> 2/10 · tunel playit.gg</small></div><span class="r">24 ms</span></div>
+    <div class="row"><span class="ico" style="background-image:url(../../web/public/assets/home/ward-history.webp)"></span><div>mc.przyklad.pl<small><i class="gdot" style="--c:var(--nore-dot-ready)"></i> 112/500 · Bedwars, SkyBlock</small></div><span class="r">41 ms</span></div>
+    <div class="row off"><span class="ico"></span><div>Stary SMP<small><i class="gdot" style="--c:var(--nore-dot-error)"></i> nie odpowiada od 3 dni</small></div><span class="r">–</span></div>
+    <div class="row"><span class="ico" style="background-image:url(../../web/public/assets/home/ward-hat.webp)"></span><div>LAN · Świat oli<small><i class="gdot" style="--c:var(--nore-dot-info)"></i> w Twojej sieci</small></div><span class="r">2 ms</span></div>
+  </div>
+  <div class="foot"><span class="fb primary"><svg class="gic"><use href="#i-play"/></svg>Dołącz</span><span class="fb"><svg class="gic"><use href="#i-plus"/></svg>Dodaj</span><span class="fb">Bezpośrednio</span><span class="fb right"><svg class="gic"><use href="#i-refresh"/></svg>Odśwież</span></div>
+</section>
+</body>
+</html>
