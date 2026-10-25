@@ -252,7 +252,7 @@ function normalize(d, source) {
     players: num(players.online != null ? players.online : d.playersOnline),
     max: num(players.max != null ? players.max : d.playersMax),
     version: typeof d.version === 'object' && d.version ? (d.version.name || '') : (d.version || ''),
-    motd: String(motd).replace(/§./g, ''),
+    motd: String(motd), // § colour codes stay: the renderer draws them (Motd.html)
     ping: num(d.ping != null ? d.ping : d.latency),
     favicon: typeof d.favicon === 'string' && d.favicon.startsWith('data:image/') ? d.favicon : null,
     source,
