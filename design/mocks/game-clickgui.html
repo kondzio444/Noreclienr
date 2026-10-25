@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Client – moduły (ClickGUI)</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="game.css">
+<style>
+  .world { background-image: url(../../web/public/assets/home/panorama.webp); background-size: cover; background-position: center; }
+  .shade { background: rgba(8, 7, 10, .55); }
+  .sheet { position: absolute; left: 31px; top: 18px; width: 471px; height: 264px; border-radius: 6px; overflow: hidden; display: grid; grid-template-columns: 102px 1fr; background: #141216f2; }
+  .cover { position: relative; background: var(--nore-cover); padding: 10px 0 8px 7px; display: flex; flex-direction: column; }
+  .cover .brand { display: flex; align-items: center; gap: 5px; padding: 0 0 9px 3px; color: var(--nore-cover-ink); }
+  .cover .brand img { width: 16px; height: 16px; }
+  .tab { position: relative; display: flex; align-items: center; gap: 5px; height: 15px; padding: 0 6px 0 6px; margin-bottom: 1px; border-radius: 4px 0 0 4px; color: var(--nore-cover-ink); opacity: .85; }
+  .tab .n { margin-left: auto; color: var(--nore-cover-ink-soft); }
+  .tab.on { background: #141216; color: var(--nore-ink); opacity: 1; }
+  .tab.on .gic { color: var(--nore-accent-light); }
+  .tab.on::before, .tab.on::after { content: ''; position: absolute; right: 0; width: 4px; height: 4px; }
+  .tab.on::before { top: -4px; background: radial-gradient(circle at 0 0, transparent 3.6px, #141216 4px); }
+  .tab.on::after { bottom: -4px; background: radial-gradient(circle at 0 100%, transparent 3.6px, #141216 4px); }
+  .cover h6 { margin: 7px 0 3px 6px; font: inherit; color: var(--nore-cover-ink-soft); }
+  .cover .foot { margin-top: auto; display: grid; gap: 4px; padding-right: 7px; }
+  .cbtn { display: flex; align-items: center; gap: 5px; height: 15px; padding: 0 6px; border-radius: 8px; }
+  .cbtn.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .cbtn.white .gic { color: var(--nore-accent); }
+  .cbtn.slot { background: rgba(0, 0, 0, .28); color: var(--nore-cover-ink); }
+  .page { position: relative; padding: 10px 10px 0 10px; }
+  .head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 9px; }
+  .head .soft { display: block; margin-top: 3px; }
+  .search { margin-left: auto; display: flex; align-items: center; gap: 5px; width: 120px; height: 16px; padding: 0 5px; border-radius: 4px; background: #0c0b0e; color: var(--nore-ink-faint); }
+  .search .gkey { margin-left: auto; height: 9px; font-size: 9px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 6px; }
+  .m { height: 43px; padding: 5px 6px; display: grid; grid-template-rows: 11px 1fr 9px; }
+  .m .top { display: flex; align-items: center; justify-content: space-between; }
+  .m .gic { width: 11px; height: 11px; stroke-width: 2.2; }
+  .m.gst.white .gic { color: var(--nore-accent); }
+  .m .name { align-self: end; white-space: nowrap; overflow: hidden; }
+  .m .cat { color: var(--nore-vinyl-ink-soft); display: flex; justify-content: space-between; align-items: center; }
+  .m .cat .k { height: 9px; padding: 0 2px; border-radius: 2px; background: #e4e0da; color: var(--nore-vinyl-ink); line-height: 9px; }
+  .m.gslot .gic { color: var(--nore-ghost); }
+  .m.gslot .cat { color: var(--nore-ink-faint); }
+  .m.gslot .name { color: var(--nore-ink-faint); }
+  .m.preview { opacity: 1; }
+  .m.preview .ghost { position: absolute; inset: 0; border-radius: 4px; background: rgba(251, 250, 247, .5); box-shadow: 0 0 0 1px rgba(251, 250, 247, .8), 0 3px 5px -1px rgba(0, 0, 0, .5); translate: 0 -1px; }
+  .m.preview .name, .m.preview .gic, .m.preview .cat { position: relative; color: var(--nore-vinyl-ink); }
+  .new { position: absolute; right: -3px; top: -4px; height: 8px; padding: 0 2px; border-radius: 2px; background: var(--nore-dot-event); color: #1a0d04; font-size: 9px; line-height: 8px; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .tip { position: absolute; z-index: 5; left: 392px; top: 151px; padding: 4px 6px; border-radius: 3px; background: #0c0b0ef2; box-shadow: 0 0 0 1px #2e2a33, 0 3px 6px rgba(0, 0, 0, .5); white-space: nowrap; }
+  .ms { position: absolute; left: 434px; top: 118px; width: 9px; height: 9px; z-index: 6; }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="world"></div><div class="shade"></div>
+<section class="sheet">
+  <aside class="cover">
+    <div class="brand"><img class="px" src="assets/logo-sticker-game.png" alt=""><span>Nore</span></div>
+    <a class="tab on"><svg class="gic"><use href="#i-grid"/></svg>Wszystkie<span class="n">88</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-layout"/></svg>HUD<span class="n">24</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-eye"/></svg>Render<span class="n">21</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-run"/></svg>Gracz<span class="n">3</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-wrench"/></svg>Narzędzia<span class="n">14</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-cog"/></svg>Klient<span class="n">4</span></a>
+    <h6>Kolekcje</h6>
+    <a class="tab"><svg class="gic"><use href="#i-star"/></svg>Ulubione<span class="n">6</span></a>
+    <a class="tab"><svg class="gic"><use href="#i-sparkles"/></svg>Nowe<span class="n">13</span></a>
+    <div class="foot"><a class="cbtn white"><svg class="gic"><use href="#i-layout"/></svg>Edytuj HUD</a><a class="cbtn slot"><svg class="gic"><use href="#i-layers"/></svg>Profil: PvP</a></div>
+  </aside>
+  <div class="page">
+    <div class="head"><div><span class="x2">Moduły</span><span class="soft">23 z 88 włączonych</span></div><div class="search"><svg class="gic"><use href="#i-search"/></svg>Szukaj<span class="gkey">Ctrl F</span></div></div>
+    <div class="grid">
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-shield"/></svg></span><span class="name">Armor Status</span><span class="cat">HUD</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-keyboard"/></svg></span><span class="name">Keystrokes</span><span class="cat">HUD</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-chart"/></svg></span><span class="name">CPS</span><span class="cat">HUD</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-search"/></svg></span><span class="name">Zoom</span><span class="cat">Render<span class="k">C</span></span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-eye"/></svg></span><span class="name">Freelook</span><span class="cat">Render<span class="gkey" style="height:9px;font-size:9px">Alt</span></span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-sun"/></svg></span><span class="name">Fullbright</span><span class="cat">Render</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-run"/></svg></span><span class="name">Toggle Sprint</span><span class="cat">Gracz</span></div>
+      <div class="m gslot preview"><span class="ghost"></span><span class="top"><svg class="gic"><use href="#i-grid"/></svg></span><span class="name">Auto Craft</span><span class="cat">Gracz</span><span class="new">nowy</span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-crosshair"/></svg></span><span class="name">Hit Marker</span><span class="cat">Render</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-square"/></svg></span><span class="name">Block Outline</span><span class="cat">Render</span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-chat"/></svg></span><span class="name">Chat Macros</span><span class="cat">Narzędzia</span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-flag"/></svg></span><span class="name">Waypoints</span><span class="cat">Narzędzia</span></div>
+      <div class="m gst white"><span class="top"><svg class="gic"><use href="#i-gauge"/></svg></span><span class="name">FPS Graph</span><span class="cat">HUD</span></div>
+      <div class="m gst violet"><span class="top"><svg class="gic" style="color:#fff"><use href="#i-sparkles"/></svg></span><span class="name">Sky Style</span><span class="cat" style="color:#e9dcff">Zachód</span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-chat"/></svg></span><span class="name">Auto GG</span><span class="cat">Narzędzia</span></div>
+      <div class="m gslot"><span class="top"><svg class="gic"><use href="#i-star"/></svg></span><span class="name">Totem Pop</span><span class="cat">HUD</span></div>
+    </div>
+  </div>
+</section>
+<div class="tip">LPM włącz · PPM ustawienia</div>
+<svg class="ms" viewBox="0 0 9 9" style="left:452px;top:136px"><path d="M0 0v8l2-2 2 3 1-1-2-3h3z" fill="#fff" stroke="#000" stroke-width=".8"/></svg>
+</body>
+</html>

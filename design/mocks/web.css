@@ -1,0 +1,51 @@
+/* noroclient.pl – Album world for the web. Two faces (Dela Gothic One, Onest), flat fields, no rules, no gradients,
+   no shadows at rest. Stickers carry a vinyl rim drawn as a border, never as a shadow. */
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&display=swap');
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--nore-page); color: var(--nore-ink); -webkit-text-size-adjust: 100%; }
+body { margin: 0; font: var(--nore-web-body); overflow-x: hidden; }
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+::selection { background: var(--nore-accent); color: #fff; }
+:focus-visible { outline: 3px solid var(--nore-accent-light); outline-offset: 3px; border-radius: 8px; }
+.wrap { padding-inline: var(--nore-web-margin); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* nav: wordmark, a few links, one action */
+.nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 36px); height: 76px; padding-inline: var(--nore-web-margin); }
+.nav .mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 400 24px/1 var(--nore-font-display); letter-spacing: -.02em; }
+.nav .mark img { width: 40px; height: 40px; }
+.nav .links { display: flex; gap: clamp(14px, 2vw, 30px); margin-left: auto; font: 500 16px/1 var(--nore-font-text); }
+.nav .links a { text-decoration: none; color: var(--nore-ink-soft); }
+.nav .links a:hover { color: var(--nore-ink); }
+
+/* the one button shape on the site: a pill sticker */
+.pill { display: inline-flex; align-items: center; justify-content: center; gap: 10px; height: 52px; padding: 0 26px; border-radius: 999px; border: 3px solid var(--nore-vinyl); background: var(--nore-accent); color: #fff; font: 700 17px/1 var(--nore-font-text); text-decoration: none; white-space: nowrap; transition: translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out); }
+.pill:hover { translate: 0 calc(var(--nore-shift-lift) * -1); }
+.pill:active { scale: .97; translate: 0 0; }
+.pill.sm { height: 44px; padding: 0 20px; font-size: 15px; }
+.pill.ink { background: var(--nore-page); color: var(--nore-ink); }
+.pill.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.pill svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* stickers on the web: border rim, square-ish die-cut corners */
+.st { border: 5px solid var(--nore-vinyl); border-radius: 22px; background: var(--nore-page-raised) center / cover no-repeat; rotate: var(--tilt, 0deg); overflow: hidden; }
+.st.sm { border-width: 4px; border-radius: 14px; }
+
+/* motion: entrance once per section, transform and opacity only */
+@keyframes rise { from { opacity: 0; translate: 0 24px; } }
+@keyframes stick { from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(var(--tilt, 0deg) + var(--nore-stick-tilt)); } 40% { opacity: 1; } }
+@keyframes fade3 { 0%, 30% { opacity: 1; } 36%, 94% { opacity: 0; } 100% { opacity: 1; } }
+.in { animation: rise 640ms var(--nore-ease-out) backwards; }
+.in.d1 { animation-delay: 80ms; } .in.d2 { animation-delay: 160ms; } .in.d3 { animation-delay: 240ms; } .in.d4 { animation-delay: 320ms; }
+.stick-in { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; }
+@media (prefers-reduced-motion: reduce) { .in, .stick-in { animation: none; } }
+
+/* bookcloth (album cover) – same as the launcher rail */
+.cloth {
+  background-color: var(--nore-cover);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .06' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.6 -.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.10'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.06 .9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.22'/%3E%3C/svg%3E");
+  color: var(--nore-cover-ink);
+}
