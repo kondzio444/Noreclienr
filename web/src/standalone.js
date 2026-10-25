@@ -5,7 +5,7 @@
  */
 import worker from './worker.js';
 
-export { NoreHub } from './worker.js';
+export { NoreHub, NoreBot, NoreCounters } from './worker.js';
 import INDEX from '../public/index.html';
 import NOT_FOUND from '../public/404.html';
 import API_PAGE from '../public/api.html';

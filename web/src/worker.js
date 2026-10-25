@@ -20,6 +20,9 @@
  *   GET|POST /api/v1/cf/v1/…              CurseForge for the launcher, key added on the server
  *   GET /api/v1/openapi.json              OpenAPI 3.1 description of all of the above
  *
+ * API v2 (/api/v2/*, src/v2/index.js, OpenAPI at /api/v2/openapi.json) is a separate router; this
+ * file keeps API v1 exactly as released launchers and mods expect it. Host routing: src/hosts.js.
+ *
  * Background work: a Cron Trigger (wrangler.jsonc) refreshes the GitHub data every 15 minutes, and
  * every request serves cached data at once while a stale copy is refreshed with ctx.waitUntil
  * (stale-while-revalidate), so the API answers fast and GitHub rate limits are never hit.
@@ -29,8 +32,12 @@ import NEWS from './news.json';
 import { HubError, readHello, readNames, hubCall } from './hub.js';
 import { launcherConfig, curseforge } from './launcher.js';
 import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView } from './data.js';
+import { handleV2 } from './v2/index.js';
+import { siteOf, wwwRedirect, mcAsset, MC_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
+export { NoreBot } from './v2/store.js';
+export { NoreCounters } from './v2/counters.js';
 
 const API_VERSION = '1.3.0';
 
@@ -251,10 +258,9 @@ function withPageHeaders(res, html) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.hostname.startsWith('www.')) {
-      url.hostname = url.hostname.slice(4);
-      return Response.redirect(url.toString(), 301);
-    }
+    const www = wwwRedirect(url);
+    if (www) return www;
+    if (url.pathname === '/api/v2' || url.pathname.startsWith('/api/v2/')) return handleV2(request, url, env, ctx);
     // the API documentation page
     if (url.pathname === '/api' || url.pathname === '/api/') {
       const res = await env.ASSETS.fetch(new Request(url.origin + '/api', request));
@@ -269,7 +275,11 @@ export default {
         return fail(request, e.status || 502, String(e.message || e));
       }
     }
-    const res = await env.ASSETS.fetch(request);
+    const site = siteOf(url.hostname, env);
+    if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
+      return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
+    }
+    const res = site === 'mc' ? await mcAsset(request, url, env) : await env.ASSETS.fetch(request);
     return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
   },
 

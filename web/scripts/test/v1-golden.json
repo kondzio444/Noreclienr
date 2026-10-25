@@ -1,0 +1,631 @@
+[
+ {
+  "method": "GET",
+  "path": "/api/v1",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600, stale-while-revalidate=600",
+   "etag": "\"54b8a86acdc19e8c536e\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"api\": \"Nore Client API\",\n  \"version\": \"1.3.0\",\n  \"docs\": \"https://noroclient.pl/api\",\n  \"endpoints\": [\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/status\",\n      \"about\": \"Stan API, najnowsza wersja i ostatnia synchronizacja w tle\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/version\",\n      \"about\": \"Najnowsze wydanie z plikami launchera i moda\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/releases?limit=10\",\n      \"about\": \"Ostatnie wydania (1–30)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/stats\",\n      \"about\": \"Liczniki pobrań\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/updates/launcher?platform=win&current=1.4.0\",\n      \"about\": \"Czy jest nowszy launcher (dla aktualizatora)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/updates/mod?mc=1.21.8&loader=fabric\",\n      \"about\": \"Plik Nore Client dla wersji Minecraft\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/download/{win|linux|mac}\",\n      \"about\": \"Przekierowanie do instalatora\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/events\",\n      \"about\": \"Wydarzenia (zawsze włączone)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/news\",\n      \"about\": \"Aktualności\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/platforms\",\n      \"about\": \"Obsługiwane wersje i loadery\"\n    },\n    {\n      \"method\": \"POST\",\n      \"path\": \"/api/v1/hub/hello\",\n      \"about\": \"Nore Hub: launcher zgłasza gracza (podpisane, co 60 s w trakcie gry)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/hub/players?names=Steve,Alex\",\n      \"about\": \"Nore Hub: którzy z tych graczy używają Nore i co noszą (do 100 nicków)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/hub/stats\",\n      \"about\": \"Nore Hub: gracze online i znani\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/launcher/config\",\n      \"about\": \"Ustawienia dla Nore Launchera (identyfikator aplikacji Microsoft do logowania)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/openapi.json\",\n      \"about\": \"Opis OpenAPI 3.1\"\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600, stale-while-revalidate=600",
+   "etag": "\"54b8a86acdc19e8c536e\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"api\": \"Nore Client API\",\n  \"version\": \"1.3.0\",\n  \"docs\": \"https://noroclient.pl/api\",\n  \"endpoints\": [\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/status\",\n      \"about\": \"Stan API, najnowsza wersja i ostatnia synchronizacja w tle\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/version\",\n      \"about\": \"Najnowsze wydanie z plikami launchera i moda\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/releases?limit=10\",\n      \"about\": \"Ostatnie wydania (1–30)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/stats\",\n      \"about\": \"Liczniki pobrań\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/updates/launcher?platform=win&current=1.4.0\",\n      \"about\": \"Czy jest nowszy launcher (dla aktualizatora)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/updates/mod?mc=1.21.8&loader=fabric\",\n      \"about\": \"Plik Nore Client dla wersji Minecraft\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/download/{win|linux|mac}\",\n      \"about\": \"Przekierowanie do instalatora\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/events\",\n      \"about\": \"Wydarzenia (zawsze włączone)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/news\",\n      \"about\": \"Aktualności\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/platforms\",\n      \"about\": \"Obsługiwane wersje i loadery\"\n    },\n    {\n      \"method\": \"POST\",\n      \"path\": \"/api/v1/hub/hello\",\n      \"about\": \"Nore Hub: launcher zgłasza gracza (podpisane, co 60 s w trakcie gry)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/hub/players?names=Steve,Alex\",\n      \"about\": \"Nore Hub: którzy z tych graczy używają Nore i co noszą (do 100 nicków)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/hub/stats\",\n      \"about\": \"Nore Hub: gracze online i znani\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/launcher/config\",\n      \"about\": \"Ustawienia dla Nore Launchera (identyfikator aplikacji Microsoft do logowania)\"\n    },\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/v1/openapi.json\",\n      \"about\": \"Opis OpenAPI 3.1\"\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/openapi.json",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600, stale-while-revalidate=600",
+   "etag": "\"5c08e6e40476adb9b8f7\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"openapi\": \"3.1.0\",\n  \"info\": {\n    \"title\": \"Nore Client API\",\n    \"version\": \"1.3.0\",\n    \"description\": \"Publiczne API Nore Client: wydania, aktualizacje launchera i moda, wydarzenia, aktualności i Nore Hub (kto jeszcze gra z Nore). Bez klucza, CORS otwarty, odpowiedzi z ETag.\"\n  },\n  \"servers\": [\n    {\n      \"url\": \"https://noroclient.pl\"\n    }\n  ],\n  \"paths\": {\n    \"/api/v1/status\": {\n      \"get\": {\n        \"summary\": \"Stan API i synchronizacji w tle\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Stan\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"ok\": {\n                      \"type\": \"boolean\"\n                    },\n                    \"api\": {\n                      \"type\": \"string\"\n                    },\n                    \"latest\": {\n                      \"type\": \"string\"\n                    },\n                    \"sync\": {\n                      \"type\": \"object\",\n                      \"properties\": {\n                        \"at\": {\n                          \"type\": \"string\"\n                        },\n                        \"ok\": {\n                          \"type\": \"boolean\"\n                        },\n                        \"ms\": {\n                          \"type\": \"integer\"\n                        },\n                        \"releases\": {\n                          \"type\": \"integer\"\n                        },\n                        \"ageSeconds\": {\n                          \"type\": \"integer\"\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/version\": {\n      \"get\": {\n        \"summary\": \"Najnowsze wydanie\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Wydanie\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"version\": {\n                      \"type\": \"string\"\n                    },\n                    \"published\": {\n                      \"type\": \"string\"\n                    },\n                    \"notes\": {\n                      \"type\": \"string\"\n                    },\n                    \"downloads\": {\n                      \"type\": \"integer\"\n                    },\n                    \"assets\": {\n                      \"type\": \"object\",\n                      \"properties\": {\n                        \"win\": {\n                          \"type\": \"object\",\n                          \"properties\": {\n                            \"name\": {\n                              \"type\": \"string\"\n                            },\n                            \"size\": {\n                              \"type\": \"integer\"\n                            },\n                            \"url\": {\n                              \"type\": \"string\"\n                            },\n                            \"digest\": {\n                              \"type\": [\n                                \"string\",\n                                \"null\"\n                              ]\n                            },\n                            \"downloads\": {\n                              \"type\": \"integer\"\n                            }\n                          }\n                        },\n                        \"linux\": {\n                          \"type\": \"object\",\n                          \"properties\": {\n                            \"name\": {\n                              \"type\": \"string\"\n                            },\n                            \"size\": {\n                              \"type\": \"integer\"\n                            },\n                            \"url\": {\n                              \"type\": \"string\"\n                            },\n                            \"digest\": {\n                              \"type\": [\n                                \"string\",\n                                \"null\"\n                              ]\n                            },\n                            \"downloads\": {\n                              \"type\": \"integer\"\n                            }\n                          }\n                        },\n                        \"mac\": {\n                          \"type\": \"object\",\n                          \"properties\": {\n                            \"name\": {\n                              \"type\": \"string\"\n                            },\n                            \"size\": {\n                              \"type\": \"integer\"\n                            },\n                            \"url\": {\n                              \"type\": \"string\"\n                            },\n                            \"digest\": {\n                              \"type\": [\n                                \"string\",\n                                \"null\"\n                              ]\n                            },\n                            \"downloads\": {\n                              \"type\": \"integer\"\n                            }\n                          }\n                        }\n                      }\n                    },\n                    \"mods\": {\n                      \"type\": \"array\",\n                      \"items\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                          \"name\": {\n                            \"type\": \"string\"\n                          },\n                          \"size\": {\n                            \"type\": \"integer\"\n                          },\n                          \"url\": {\n                            \"type\": \"string\"\n                          },\n                          \"digest\": {\n                            \"type\": [\n                              \"string\",\n                              \"null\"\n                            ]\n                          },\n                          \"downloads\": {\n                            \"type\": \"integer\"\n                          }\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/releases\": {\n      \"get\": {\n        \"summary\": \"Ostatnie wydania\",\n        \"parameters\": [\n          {\n            \"name\": \"limit\",\n            \"in\": \"query\",\n            \"schema\": {\n              \"type\": \"integer\",\n              \"minimum\": 1,\n              \"maximum\": 30,\n              \"default\": 10\n            }\n          }\n        ],\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Lista\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"count\": {\n                      \"type\": \"integer\"\n                    },\n                    \"releases\": {\n                      \"type\": \"array\",\n                      \"items\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                          \"version\": {\n                            \"type\": \"string\"\n                          },\n                          \"published\": {\n                            \"type\": \"string\"\n                          },\n                          \"downloads\": {\n                            \"type\": \"integer\"\n                          },\n                          \"url\": {\n                            \"type\": \"string\"\n                          }\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/stats\": {\n      \"get\": {\n        \"summary\": \"Liczniki pobrań\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Liczniki\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"releases\": {\n                      \"type\": \"integer\"\n                    },\n                    \"downloads\": {\n                      \"type\": \"object\",\n                      \"properties\": {\n                        \"total\": {\n                          \"type\": \"integer\"\n                        },\n                        \"win\": {\n                          \"type\": \"integer\"\n                        },\n                        \"linux\": {\n                          \"type\": \"integer\"\n                        },\n                        \"mac\": {\n                          \"type\": \"integer\"\n                        },\n                        \"mods\": {\n                          \"type\": \"integer\"\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/updates/launcher\": {\n      \"get\": {\n        \"summary\": \"Aktualizacja launchera\",\n        \"parameters\": [\n          {\n            \"name\": \"platform\",\n            \"in\": \"query\",\n            \"required\": true,\n            \"schema\": {\n              \"enum\": [\n                \"win\",\n                \"linux\",\n                \"mac\"\n              ]\n            }\n          },\n          {\n            \"name\": \"current\",\n            \"in\": \"query\",\n            \"schema\": {\n              \"type\": \"string\"\n            }\n          }\n        ],\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Wynik\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"update\": {\n                      \"type\": \"boolean\"\n                    },\n                    \"version\": {\n                      \"type\": \"string\"\n                    },\n                    \"download\": {\n                      \"type\": \"object\",\n                      \"properties\": {\n                        \"name\": {\n                          \"type\": \"string\"\n                        },\n                        \"size\": {\n                          \"type\": \"integer\"\n                        },\n                        \"url\": {\n                          \"type\": \"string\"\n                        },\n                        \"digest\": {\n                          \"type\": [\n                            \"string\",\n                            \"null\"\n                          ]\n                        },\n                        \"downloads\": {\n                          \"type\": \"integer\"\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/updates/mod\": {\n      \"get\": {\n        \"summary\": \"Plik moda dla wersji Minecraft\",\n        \"parameters\": [\n          {\n            \"name\": \"mc\",\n            \"in\": \"query\",\n            \"required\": true,\n            \"schema\": {\n              \"type\": \"string\"\n            }\n          },\n          {\n            \"name\": \"loader\",\n            \"in\": \"query\",\n            \"schema\": {\n              \"enum\": [\n                \"fabric\",\n                \"forge\"\n              ]\n            }\n          }\n        ],\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Plik\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"mc\": {\n                      \"type\": \"string\"\n                    },\n                    \"loader\": {\n                      \"type\": \"string\"\n                    },\n                    \"platform\": {\n                      \"type\": \"string\"\n                    },\n                    \"java\": {\n                      \"type\": \"integer\"\n                    },\n                    \"jar\": {\n                      \"type\": \"object\",\n                      \"properties\": {\n                        \"name\": {\n                          \"type\": \"string\"\n                        },\n                        \"size\": {\n                          \"type\": \"integer\"\n                        },\n                        \"url\": {\n                          \"type\": \"string\"\n                        },\n                        \"digest\": {\n                          \"type\": [\n                            \"string\",\n                            \"null\"\n                          ]\n                        },\n                        \"downloads\": {\n                          \"type\": \"integer\"\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/download/{platform}\": {\n      \"get\": {\n        \"summary\": \"Pobierz instalator\",\n        \"parameters\": [\n          {\n            \"name\": \"platform\",\n            \"in\": \"path\",\n            \"required\": true,\n            \"schema\": {\n              \"enum\": [\n                \"win\",\n                \"linux\",\n                \"mac\"\n              ]\n            }\n          }\n        ],\n        \"responses\": {\n          \"302\": {\n            \"description\": \"Przekierowanie do pliku w GitHub Releases\"\n          }\n        }\n      }\n    },\n    \"/api/v1/events\": {\n      \"get\": {\n        \"summary\": \"Wydarzenia\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Wydarzenia\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"events\": {\n                      \"type\": \"array\",\n                      \"items\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                          \"id\": {\n                            \"type\": \"string\"\n                          },\n                          \"name\": {\n                            \"type\": \"string\"\n                          },\n                          \"active\": {\n                            \"type\": \"boolean\"\n                          },\n                          \"forced\": {\n                            \"type\": \"boolean\"\n                          }\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/news\": {\n      \"get\": {\n        \"summary\": \"Aktualności\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Aktualności\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"news\": {\n                      \"type\": \"array\"\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/platforms\": {\n      \"get\": {\n        \"summary\": \"Obsługiwane wersje\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Platformy\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"platforms\": {\n                      \"type\": \"array\",\n                      \"items\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                          \"name\": {\n                            \"type\": \"string\"\n                          },\n                          \"loader\": {\n                            \"type\": \"string\"\n                          },\n                          \"java\": {\n                            \"type\": \"integer\"\n                          },\n                          \"versions\": {\n                            \"type\": \"array\",\n                            \"items\": {\n                              \"type\": \"string\"\n                            }\n                          }\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/hub/hello\": {\n      \"post\": {\n        \"summary\": \"Nore Hub: launcher zgłasza gracza (też heartbeat co 60 s)\",\n        \"description\": \"Podpis ECDSA P-256 (DER, base64) kluczem Nore ID nad: nore-hub/1|name|uuid|hex|ts|online(1/0)|sha256hex(JSON.stringify(cosmetics)). hex = pierwsze 20 znaków sha256(pub). Konto premium: serverId po session/minecraft/join w Mojang. Najwyżej jedno hello na Nore ID co 15 s.\",\n        \"requestBody\": {\n          \"required\": true,\n          \"content\": {\n            \"application/json\": {\n              \"schema\": {\n                \"type\": \"object\",\n                \"required\": [\n                  \"name\",\n                  \"uuid\",\n                  \"hex\",\n                  \"pub\",\n                  \"ts\",\n                  \"online\",\n                  \"cosmetics\",\n                  \"sig\"\n                ],\n                \"properties\": {\n                  \"name\": {\n                    \"type\": \"string\"\n                  },\n                  \"uuid\": {\n                    \"type\": \"string\"\n                  },\n                  \"premium\": {\n                    \"type\": \"boolean\"\n                  },\n                  \"serverId\": {\n                    \"type\": \"string\"\n                  },\n                  \"hex\": {\n                    \"type\": \"string\"\n                  },\n                  \"pub\": {\n                    \"type\": \"string\"\n                  },\n                  \"ts\": {\n                    \"type\": \"integer\"\n                  },\n                  \"online\": {\n                    \"type\": \"boolean\"\n                  },\n                  \"cosmetics\": {\n                    \"type\": \"object\",\n                    \"description\": \"Garderoba z moda: { v, slots: { <slot>: { id, color, variant, opts } } }, najwyżej 2048 bajtów\",\n                    \"properties\": {\n                      \"v\": {\n                        \"type\": \"integer\"\n                      },\n                      \"slots\": {\n                        \"type\": \"object\"\n                      }\n                    }\n                  },\n                  \"sig\": {\n                    \"type\": \"string\"\n                  }\n                }\n              }\n            }\n          }\n        },\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Zapisano\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"ok\": {\n                      \"type\": \"boolean\"\n                    },\n                    \"verified\": {\n                      \"type\": \"boolean\"\n                    },\n                    \"name\": {\n                      \"type\": \"string\"\n                    }\n                  }\n                }\n              }\n            }\n          },\n          \"400\": {\n            \"description\": \"Złe pola\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"error\": {\n                      \"type\": \"string\"\n                    },\n                    \"status\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          },\n          \"401\": {\n            \"description\": \"Zły podpis, klucz, czas albo brak potwierdzenia Mojang\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"error\": {\n                      \"type\": \"string\"\n                    },\n                    \"status\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          },\n          \"409\": {\n            \"description\": \"Nick należy do innego gracza Nore\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"error\": {\n                      \"type\": \"string\"\n                    },\n                    \"status\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          },\n          \"429\": {\n            \"description\": \"Za często\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"error\": {\n                      \"type\": \"string\"\n                    },\n                    \"status\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/hub/players\": {\n      \"get\": {\n        \"summary\": \"Nore Hub: którzy z tych graczy używają Nore\",\n        \"parameters\": [\n          {\n            \"name\": \"names\",\n            \"in\": \"query\",\n            \"required\": true,\n            \"description\": \"Do 100 nicków po przecinku, wielkość liter bez znaczenia\",\n            \"schema\": {\n              \"type\": \"string\"\n            }\n          }\n        ],\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Gracze Nore (klucze to nicki małymi literami)\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"players\": {\n                      \"type\": \"object\",\n                      \"additionalProperties\": {\n                        \"type\": \"object\",\n                        \"properties\": {\n                          \"name\": {\n                            \"type\": \"string\"\n                          },\n                          \"uuid\": {\n                            \"type\": \"string\"\n                          },\n                          \"hex\": {\n                            \"type\": \"string\"\n                          },\n                          \"verified\": {\n                            \"type\": \"boolean\"\n                          },\n                          \"online\": {\n                            \"type\": \"boolean\"\n                          },\n                          \"seen\": {\n                            \"type\": \"integer\"\n                          },\n                          \"cosmetics\": {\n                            \"type\": \"object\",\n                            \"description\": \"Garderoba z moda: { v, slots: { <slot>: { id, color, variant, opts } } }, najwyżej 2048 bajtów\",\n                            \"properties\": {\n                              \"v\": {\n                                \"type\": \"integer\"\n                              },\n                              \"slots\": {\n                                \"type\": \"object\"\n                              }\n                            }\n                          }\n                        }\n                      }\n                    }\n                  }\n                }\n              }\n            }\n          },\n          \"400\": {\n            \"description\": \"Za dużo nicków\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"error\": {\n                      \"type\": \"string\"\n                    },\n                    \"status\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/hub/stats\": {\n      \"get\": {\n        \"summary\": \"Nore Hub: liczba graczy\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Liczniki\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"online\": {\n                      \"type\": \"integer\"\n                    },\n                    \"known\": {\n                      \"type\": \"integer\"\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    },\n    \"/api/v1/launcher/config\": {\n      \"get\": {\n        \"summary\": \"Ustawienia dla Nore Launchera\",\n        \"responses\": {\n          \"200\": {\n            \"description\": \"Ustawienia\",\n            \"content\": {\n              \"application/json\": {\n                \"schema\": {\n                  \"type\": \"object\",\n                  \"properties\": {\n                    \"microsoftClientId\": {\n                      \"type\": [\n                        \"string\",\n                        \"null\"\n                      ]\n                    }\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n    }\n  }\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/events",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=300, stale-while-revalidate=600",
+   "etag": "\"12e4808a5a40ad17c1ae\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"events\": [\n    {\n      \"id\": \"halloween\",\n      \"name\": \"Halloween w Nore\",\n      \"forced\": true,\n      \"active\": true,\n      \"accent\": \"#ff8a1f\",\n      \"features\": [\n        \"Dyniowe dekoracje\",\n        \"Peleryny Halloween\",\n        \"Kapelusz Wiedźmy\",\n        \"Skrzydła Nietoperza\",\n        \"Mini-gra Cukierek albo psikus\"\n      ]\n    },\n    {\n      \"id\": \"christmas\",\n      \"name\": \"Święta w Nore\",\n      \"forced\": true,\n      \"active\": false,\n      \"startsAt\": \"2026-12-10T00:00:00+01:00\",\n      \"accent\": \"#ff4d6d\",\n      \"features\": [\n        \"Śnieg w menu i w launcherze\",\n        \"Świąteczne lampki\",\n        \"Zimowy motyw launchera\"\n      ]\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/news",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=300, stale-while-revalidate=600",
+   "etag": "\"18c7e3f4789aca2c4fdd\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"news\": [\n    {\n      \"id\": \"2026-10-premium\",\n      \"date\": \"2026-10-16\",\n      \"title\": \"Nowy wygląd i nowe logowanie premium\",\n      \"text\": \"Nowe logowanie Microsoft: tokeny szyfrowane systemowo i sprawdzane w Mojang przy starcie. Konta non-premium działają jak dotąd. Do tego nowy fioletowy motyw i logo dopasowujące się do akcentu.\",\n      \"tag\": \"Launcher\"\n    },\n    {\n      \"id\": \"2026-10-wardrobe\",\n      \"date\": \"2026-10-16\",\n      \"title\": \"Szatnia: Kapelusz Wiedźmy i Skrzydła Nietoperza\",\n      \"text\": \"W grze pojawiła się Szatnia – animowane skrzydła, kapelusz z klamrą i peleryny Halloween widoczne w F5.\",\n      \"tag\": \"Nore Client\"\n    },\n    {\n      \"id\": \"2026-10-events\",\n      \"date\": \"2026-10-15\",\n      \"title\": \"Halloween trwa, zima od 10 grudnia\",\n      \"text\": \"Halloween jest teraz włączony dla wszystkich. 10 grudnia 2026 sam włączy się zimowy event: śnieg i świąteczne lampki w menu gry.\",\n      \"tag\": \"Wydarzenia\"\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/platforms",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600, stale-while-revalidate=600",
+   "etag": "\"83ac5669689c34e17aee\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"platforms\": [\n    {\n      \"name\": \"fabric-1.20.1\",\n      \"loader\": \"fabric\",\n      \"java\": 17,\n      \"versions\": [\n        \"1.20\",\n        \"1.20.1\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.20.4\",\n      \"loader\": \"fabric\",\n      \"java\": 17,\n      \"versions\": [\n        \"1.20.2\",\n        \"1.20.3\",\n        \"1.20.4\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.20.6\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.20.5\",\n        \"1.20.6\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.1\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21\",\n        \"1.21.1\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.4\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21.2\",\n        \"1.21.3\",\n        \"1.21.4\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.5\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21.5\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.8\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21.6\",\n        \"1.21.7\",\n        \"1.21.8\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.10\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21.9\",\n        \"1.21.10\"\n      ]\n    },\n    {\n      \"name\": \"fabric-1.21.11\",\n      \"loader\": \"fabric\",\n      \"java\": 21,\n      \"versions\": [\n        \"1.21.11\"\n      ]\n    },\n    {\n      \"name\": \"fabric-26.1\",\n      \"loader\": \"fabric\",\n      \"java\": 25,\n      \"versions\": [\n        \"26.1\",\n        \"26.1.1\",\n        \"26.1.2\"\n      ]\n    },\n    {\n      \"name\": \"fabric-26.2\",\n      \"loader\": \"fabric\",\n      \"java\": 25,\n      \"versions\": [\n        \"26.2\"\n      ]\n    },\n    {\n      \"name\": \"fabric-26.3\",\n      \"loader\": \"fabric\",\n      \"java\": 25,\n      \"versions\": [\n        \"26.3\"\n      ]\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/version",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"8c49c7c22368c38f5bdc\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"version\": \"1.5.0\",\n  \"name\": \"Nore 1.5.0\",\n  \"prerelease\": false,\n  \"published\": \"2026-10-20T12:00:00Z\",\n  \"notes\": \"Nowości w 1.5.0\",\n  \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.5.0\",\n  \"downloads\": 210,\n  \"assets\": {\n    \"win\": {\n      \"name\": \"NoreLauncher-Setup-1.5.0.exe\",\n      \"size\": 90000000,\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe\",\n      \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000001\",\n      \"downloads\": 120\n    },\n    \"linux\": {\n      \"name\": \"NoreLauncher-1.5.0.AppImage\",\n      \"size\": 110000000,\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0.AppImage\",\n      \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000002\",\n      \"downloads\": 30\n    },\n    \"mac\": {\n      \"name\": \"NoreLauncher-1.5.0.dmg\",\n      \"size\": 100000000,\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0.dmg\",\n      \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000003\",\n      \"downloads\": 15\n    },\n    \"macZip\": {\n      \"name\": \"NoreLauncher-1.5.0-mac.zip\",\n      \"size\": 99000000,\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0-mac.zip\",\n      \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000004\",\n      \"downloads\": 5\n    }\n  },\n  \"mods\": [\n    {\n      \"name\": \"noreclient-fabric-1.21.8.jar\",\n      \"size\": 2000000,\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.21.8/noreclient-fabric-1.21.8.jar\",\n      \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000005\",\n      \"downloads\": 40\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/releases",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"1b1d6f99e84c3c4a2963\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"count\": 2,\n  \"releases\": [\n    {\n      \"version\": \"1.5.0\",\n      \"name\": \"Nore 1.5.0\",\n      \"prerelease\": false,\n      \"published\": \"2026-10-20T12:00:00Z\",\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.5.0\",\n      \"downloads\": 210\n    },\n    {\n      \"version\": \"1.4.0\",\n      \"name\": \"Nore 1.4.0\",\n      \"prerelease\": false,\n      \"published\": \"2026-09-01T12:00:00Z\",\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.4.0\",\n      \"downloads\": 310\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/releases?limit=1",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"db88f65a5bf953f0bd8d\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"count\": 1,\n  \"releases\": [\n    {\n      \"version\": \"1.5.0\",\n      \"name\": \"Nore 1.5.0\",\n      \"prerelease\": false,\n      \"published\": \"2026-10-20T12:00:00Z\",\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.5.0\",\n      \"downloads\": 210\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/releases?limit=999",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"1b1d6f99e84c3c4a2963\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"count\": 2,\n  \"releases\": [\n    {\n      \"version\": \"1.5.0\",\n      \"name\": \"Nore 1.5.0\",\n      \"prerelease\": false,\n      \"published\": \"2026-10-20T12:00:00Z\",\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.5.0\",\n      \"downloads\": 210\n    },\n    {\n      \"version\": \"1.4.0\",\n      \"name\": \"Nore 1.4.0\",\n      \"prerelease\": false,\n      \"published\": \"2026-09-01T12:00:00Z\",\n      \"url\": \"https://github.com/kondzio444/Noreclienr/releases/tag/v1.4.0\",\n      \"downloads\": 310\n    }\n  ]\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/stats",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"cc2c6f621697a5ef678f\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"releases\": 2,\n  \"downloads\": {\n    \"total\": 520,\n    \"win\": 420,\n    \"linux\": 30,\n    \"mac\": 20,\n    \"mods\": 50\n  },\n  \"latest\": {\n    \"version\": \"1.5.0\",\n    \"downloads\": 210\n  },\n  \"note\": \"Liczniki z GitHub Releases z ostatnich 30 wydań.\"\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/launcher?platform=win&current=1.4.0",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"b7b7cd801cd5b9d547e7\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"update\": true,\n  \"current\": \"1.4.0\",\n  \"version\": \"1.5.0\",\n  \"published\": \"2026-10-20T12:00:00Z\",\n  \"notes\": \"Nowości w 1.5.0\",\n  \"prerelease\": false,\n  \"download\": {\n    \"name\": \"NoreLauncher-Setup-1.5.0.exe\",\n    \"size\": 90000000,\n    \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe\",\n    \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000001\",\n    \"downloads\": 120\n  }\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/launcher?platform=mac&current=9.9.9",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"fa948c4b6530548cf22c\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"update\": false,\n  \"current\": \"9.9.9\",\n  \"version\": \"1.5.0\",\n  \"published\": \"2026-10-20T12:00:00Z\",\n  \"notes\": \"Nowości w 1.5.0\",\n  \"prerelease\": false,\n  \"download\": {\n    \"name\": \"NoreLauncher-1.5.0.dmg\",\n    \"size\": 100000000,\n    \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0.dmg\",\n    \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000003\",\n    \"downloads\": 15\n  }\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/launcher?platform=xbox",
+  "status": 400,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"eccbd1fc05484c786d63\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"platform musi być win, linux albo mac\",\n  \"status\": 400\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/mod?mc=1.21.8",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=60, stale-while-revalidate=600",
+   "etag": "\"2a5c00b7502bd1bc0eb8\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"mc\": \"1.21.8\",\n  \"loader\": \"fabric\",\n  \"platform\": \"fabric-1.21.8\",\n  \"java\": 21,\n  \"version\": \"1.5.0\",\n  \"jar\": {\n    \"name\": \"noreclient-fabric-1.21.8.jar\",\n    \"size\": 2000000,\n    \"url\": \"https://github.com/kondzio444/Noreclienr/releases/download/v1.21.8/noreclient-fabric-1.21.8.jar\",\n    \"digest\": \"sha256:0000000000000000000000000000000000000000000000000000000000000005\",\n    \"downloads\": 40\n  },\n  \"bundled\": false\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/mod?mc=1.21.8&loader=forge",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"06386a1c23c976353dcd\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Nore Client nie wspiera 1.21.8 na forge\",\n  \"status\": 404\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/mod",
+  "status": 400,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"d49757ee95e12dca4665\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Podaj wersję Minecraft, np. ?mc=1.21.8\",\n  \"status\": 400\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/updates/mod?mc=0.1",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"9e400d03652ea776916a\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Nore Client nie wspiera wersji 0.1\",\n  \"status\": 404\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/download/win",
+  "status": 302,
+  "headers": {
+   "location": "https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe"
+  },
+  "body": ""
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/download/linux",
+  "status": 302,
+  "headers": {
+   "location": "https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0.AppImage"
+  },
+  "body": ""
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/download/mac",
+  "status": 302,
+  "headers": {
+   "location": "https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-1.5.0.dmg"
+  },
+  "body": ""
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/download/xbox",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"67bc6fc44b8815a10a52\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Nie ma takiego endpointu – lista: /api/v1\",\n  \"status\": 404\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/launcher/config",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=3600, stale-while-revalidate=600",
+   "etag": "\"a8906fbb966f870b493e\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"microsoftClientId\": null\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/hub/stats",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=30",
+   "etag": "\"36ae78acf55b33db726d\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"online\": 0,\n  \"known\": 0\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/hub/players?names=a,b",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=20",
+   "etag": "\"948782d1e10f04396180\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"players\": {}\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/hub/players?names=p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16,p17,p18,p19,p20,p21,p22,p23,p24,p25,p26,p27,p28,p29,p30,p31,p32,p33,p34,p35,p36,p37,p38,p39,p40,p41,p42,p43,p44,p45,p46,p47,p48,p49,p50,p51,p52,p53,p54,p55,p56,p57,p58,p59,p60,p61,p62,p63,p64,p65,p66,p67,p68,p69,p70,p71,p72,p73,p74,p75,p76,p77,p78,p79,p80,p81,p82,p83,p84,p85,p86,p87,p88,p89,p90,p91,p92,p93,p94,p95,p96,p97,p98,p99,p100",
+  "status": 400,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"d2d80a320f2236826f00\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Najwyżej 100 nicków naraz\",\n  \"status\": 400\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/hub/hello",
+  "status": 405,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"01b76f909b6194099173\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Tylko POST\",\n  \"status\": 405\n}"
+ },
+ {
+  "method": "POST",
+  "path": "/api/v1/hub/hello",
+  "status": 400,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"1387aab77d7f16160d44\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Zły nick: 2–16 znaków, litery, cyfry lub _\",\n  \"status\": 400\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/hub/nope",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"67bc6fc44b8815a10a52\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Nie ma takiego endpointu – lista: /api/v1\",\n  \"status\": 404\n}"
+ },
+ {
+  "method": "POST",
+  "path": "/api/v1/version",
+  "status": 405,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"948e689780a4e596cf94\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Tylko GET\",\n  \"status\": 405\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/nope",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"67bc6fc44b8815a10a52\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Nie ma takiego endpointu – lista: /api/v1\",\n  \"status\": 404\n}"
+ },
+ {
+  "method": "OPTIONS",
+  "path": "/api/v1/version",
+  "status": 204,
+  "headers": {
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api"
+  },
+  "body": ""
+ },
+ {
+  "method": "PUT",
+  "path": "/api/v1/version",
+  "status": 405,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store",
+   "etag": "\"948e689780a4e596cf94\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": "{\n  \"error\": \"Tylko GET\",\n  \"status\": 405\n}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/cf/v1/nope",
+  "status": 404,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store"
+  },
+  "body": "{\"error\":\"Nie ma takiego zapytania CurseForge\",\"status\":404}"
+ },
+ {
+  "method": "GET",
+  "path": "/api/v1/cf/v1/categories",
+  "status": 503,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "no-store"
+  },
+  "body": "{\"error\":\"CurseForge nie jest skonfigurowany na serwerze\",\"status\":503}"
+ },
+ {
+  "method": "HEAD",
+  "path": "/api/v1/news",
+  "status": 200,
+  "headers": {
+   "content-type": "application/json; charset=utf-8",
+   "cache-control": "public, max-age=300, stale-while-revalidate=600",
+   "etag": "\"18c7e3f4789aca2c4fdd\"",
+   "x-nore-api": "1.3.0",
+   "access-control-allow-origin": "*",
+   "access-control-allow-methods": "GET, HEAD, POST, OPTIONS",
+   "access-control-allow-headers": "Content-Type, If-None-Match",
+   "access-control-expose-headers": "ETag, X-Nore-Cache, X-Nore-Api",
+   "x-content-type-options": "nosniff",
+   "strict-transport-security": "max-age=31536000; includeSubDomains",
+   "referrer-policy": "strict-origin-when-cross-origin"
+  },
+  "body": ""
+ }
+]
