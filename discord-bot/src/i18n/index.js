@@ -58,6 +58,16 @@ export function loadLocales(dir = path.join(ROOT, 'locales')) {
     const lang = file.slice(0, -5);
     dicts.set(lang, flatten(JSON.parse(readFileSync(path.join(dir, file), 'utf8'))));
   }
+  // builder template texts live in locales/templates/<lang>.json (merged under "tpl.")
+  const tplDir = path.join(dir, 'templates');
+  let files = [];
+  try { files = readdirSync(tplDir).filter(f => f.endsWith('.json')); } catch { /* none */ }
+  for (const file of files) {
+    const lang = file.slice(0, -5);
+    const d = dicts.get(lang) || {};
+    Object.assign(d, flatten(JSON.parse(readFileSync(path.join(tplDir, file), 'utf8')), 'tpl'));
+    dicts.set(lang, d);
+  }
   return dicts;
 }
 
