@@ -22,8 +22,21 @@ export async function run(env = readEnv()) {
   };
   process.once('SIGINT', () => stop('SIGINT'));
   process.once('SIGTERM', () => stop('SIGTERM'));
-  await bot.start();
-  return bot;
+  // configuration errors are fatal (with a hint), network problems are retried with backoff
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await bot.start();
+      return bot;
+    } catch (err) {
+      const msg = String(err?.message || err);
+      if (err?.code === 'TokenInvalid') { log.error('Discord rejected DISCORD_TOKEN – reset the token in the Developer Portal and update .env'); process.exit(1); }
+      if (/disallowed intents/i.test(msg) || err?.code === 4014) { log.error('Privileged intents are not enabled – turn on Server Members Intent and Message Content Intent in the Developer Portal (Bot tab)'); process.exit(1); }
+      const wait = Math.min(300_000, 5000 * 2 ** (attempt - 1));
+      log.warn('login failed, retrying', { attempt, waitMs: wait, err: msg });
+      try { await bot.client?.destroy(); } catch { /* ignore */ }
+      await new Promise(r => setTimeout(r, wait));
+    }
+  }
 }
 
 // spawned by ShardingManager as a separate process
