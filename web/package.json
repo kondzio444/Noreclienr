@@ -5,9 +5,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "build:standalone": "mkdir -p dist && cp public/app.js dist/app.js.txt && cp public/api.js dist/api.js.txt && cp public/mc/status.js dist/mc-status.js.txt && esbuild src/standalone.js --bundle --format=esm --platform=neutral --loader:.html=text --loader:.css=text --loader:.txt=text --external:cloudflare:* --minify --outfile=dist/site.mjs",
+    "build:standalone": "mkdir -p dist && cp public/app.js dist/app.js.txt && cp public/api.js dist/api.js.txt && cp public/assets/album.js dist/album.js.txt && cp public/mc/mc.js dist/mc.js.txt && cp public/panel/panel.js dist/panel.js.txt && cp public/panel/locales/pl.json dist/locale-pl.json.txt && cp public/panel/locales/en.json dist/locale-en.json.txt && esbuild src/standalone.js --bundle --format=esm --platform=neutral --loader:.html=text --loader:.css=text --loader:.txt=text --external:cloudflare:* --minify --outfile=dist/site.mjs",
     "test": "node scripts/v2-test.mjs",
     "build:schema": "node scripts/copy-bot-schema.mjs",
+    "build:tokens": "node scripts/copy-tokens.mjs",
     "bundle": "wrangler deploy --dry-run --outdir dist/wr --minify"
   },
   "devDependencies": {

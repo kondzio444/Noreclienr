@@ -1,0 +1,213 @@
+/* Nore – Album: the shared stylesheet of noroclient.pl, noreclient.pl and mc.noreclient.pl.
+   Values come from /assets/tokens.css (design/tokens.json). Stickers carry a vinyl rim drawn as a border,
+   never as a shadow; shadows appear only while a sticker is being peeled (hover) or on floating things.
+   Served from /assets/ so the Minecraft server host (mc.noreclient.pl) shares it. */
+
+/* ------------------------------------------------------------------ fonts (self-hosted, SIL OFL 1.1, see /assets/fonts/OFL-*.txt) */
+@font-face { font-family: 'Dela Gothic One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/assets/fonts/dela-gothic-one-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Dela Gothic One'; font-style: normal; font-weight: 400; font-display: swap; src: url(/assets/fonts/dela-gothic-one-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Onest'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(/assets/fonts/onest-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Onest'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(/assets/fonts/onest-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'Pixelify Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(/assets/fonts/pixelify-sans-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'Pixelify Sans'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(/assets/fonts/pixelify-sans-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+/* ------------------------------------------------------------------ base */
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  background-color: var(--nore-page);
+  color: var(--nore-ink);
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 84px;
+  transition: background-color var(--nore-dur-page) var(--nore-ease-in-out);
+}
+body {
+  margin: 0;
+  min-height: 100svh;
+  font: var(--nore-web-body);
+  overflow-x: clip;
+  background-color: var(--nore-page);
+  /* the black album card: a faint fibre grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 .97  0 0 0 0 .94  0 0 0 2.2 -1.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--nore-dur-page) var(--nore-ease-in-out);
+}
+img, video { display: block; max-width: 100%; height: auto; }
+a { color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
+::selection { background: var(--nore-accent-deep); color: #fff; }
+:focus-visible { outline: 3px solid var(--nore-accent-light); outline-offset: 3px; border-radius: 8px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 50; padding: 10px 16px; border-radius: 999px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font: 600 16px/1 var(--nore-font-text); text-decoration: none; }
+.skip:focus { top: 12px; }
+.tnum { font-variant-numeric: tabular-nums; }
+.wrap { padding-inline: var(--nore-web-margin); }
+.pixel { font-family: var(--nore-font-pixel); }
+main, .site-nav, .site-foot { position: relative; z-index: 1; }
+
+/* ------------------------------------------------------------------ nav: wordmark, a few links, one action */
+.site-nav { display: flex; align-items: center; gap: clamp(16px, 2.4vw, 36px); height: 76px; padding-inline: var(--nore-web-margin); }
+.site-nav .mark { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 400 24px/1 var(--nore-font-display); letter-spacing: -.02em; white-space: nowrap; }
+.site-nav .mark img { width: 42px; height: 42px; transition: rotate var(--nore-dur-base) var(--nore-ease-out); }
+.site-nav .mark:hover img { rotate: -8deg; }
+.site-nav .mark small { margin-left: 2px; padding: 6px 10px; border-radius: 8px; border: 3px solid var(--nore-vinyl); background: var(--nore-dot-ready); color: #0e1a12; font: 700 14px/1 var(--nore-font-text); letter-spacing: 0; rotate: -4deg; }
+.site-nav .links { display: flex; gap: clamp(14px, 2vw, 30px); margin-left: auto; font: 500 16px/1 var(--nore-font-text); }
+.site-nav .links a { text-decoration: none; color: var(--nore-ink-soft); padding: 8px 0; transition: color var(--nore-dur-quick); }
+.site-nav .links a:hover, .site-nav .links a[aria-current] { color: var(--nore-ink); }
+.site-nav .links a[aria-current] { text-decoration: underline 2px var(--nore-accent-light); text-underline-offset: 6px; }
+@media (max-width: 900px) { .site-nav .links { display: none; } .site-nav .pill { margin-left: auto; } }
+
+/* ------------------------------------------------------------------ the one button shape: a pill sticker */
+.pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 52px; padding: 0 26px;
+  border-radius: 999px; border: 3px solid var(--nore-vinyl);
+  background: var(--nore-accent-deep); color: #fff;
+  font: 700 17px/1 var(--nore-font-text); text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out), background-color var(--nore-dur-quick);
+}
+.pill:hover { translate: 0 calc(var(--nore-shift-lift) * -1); }
+.pill:active { scale: .97; translate: 0 0; }
+.pill.sm { min-height: 44px; padding: 0 20px; font-size: 16px; }
+.pill.lg { min-height: 62px; padding: 0 34px; font-size: 18px; }
+.pill.ink { background: var(--nore-page); color: var(--nore-ink); }
+.pill.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.pill.quiet { background: var(--nore-page-raised-2); color: var(--nore-ink); border-color: transparent; }
+.pill[disabled], .pill[aria-disabled="true"] { opacity: .55; cursor: not-allowed; translate: none; }
+.pill svg, .ic { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+.pen { color: var(--nore-ink); font-weight: 600; text-decoration: underline 2px color-mix(in oklab, var(--nore-accent-light) 70%, transparent); text-underline-offset: 4px; }
+.pen:hover { text-decoration-color: var(--nore-accent-light); }
+
+/* ------------------------------------------------------------------ stickers */
+.st { position: relative; border: 5px solid var(--nore-vinyl); border-radius: 22px; background: var(--nore-page-raised) center / cover no-repeat; rotate: var(--tilt, 0deg); overflow: hidden; }
+.st.sm { border-width: 4px; border-radius: 14px; }
+.st.rim3 { border-width: 3px; border-radius: 16px; }
+.lift { transition: translate var(--nore-dur-quick) var(--nore-ease-out), rotate var(--nore-dur-base) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out); }
+.lift:hover { translate: 0 calc(var(--nore-shift-lift) * -1); rotate: calc(var(--tilt, 0deg) * .6); box-shadow: var(--nore-shadow-lift); } /* taste-skill-ignore: a peeled sticker lifts off the page */
+.lift:active { scale: .97; translate: 0 0; box-shadow: none; } /* taste-skill-ignore: back flat when pressed */
+/* the die-cut rim of a transparent picture is baked into the PNG (assets/album/*-sticker.png) */
+.sprite { image-rendering: pixelated; }
+
+/* dot sticker: state, one meaning each */
+.dot { --c: var(--nore-dot-off); display: inline-block; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--nore-vinyl); background: var(--c); vertical-align: -1px; }
+.dot.sm { width: 11px; height: 11px; border-width: 2px; }
+.dot.ready { --c: var(--nore-dot-ready); } .dot.wait { --c: var(--nore-dot-wait); } .dot.error { --c: var(--nore-dot-error); }
+.dot.event { --c: var(--nore-dot-event); } .dot.info { --c: var(--nore-dot-info); } .dot.nore { --c: var(--nore-accent); } .dot.off { --c: var(--nore-dot-off); }
+.dot.slap { animation: dot-slap var(--nore-dur-stick) var(--nore-ease-out) backwards; }
+
+/* label sticker: loader, version, rank */
+.label { --bg: var(--nore-vinyl); display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px; border-radius: 8px; border: 2px solid var(--nore-vinyl); background: var(--bg); color: var(--nore-vinyl-ink); font: 600 14px/1 var(--nore-font-text); white-space: nowrap; }
+.label.fabric { --bg: var(--nore-label-fabric); } .label.forge { --bg: var(--nore-label-forge); } .label.quilt { --bg: var(--nore-label-quilt); }
+.label.vanilla { --bg: var(--nore-label-vanilla); } .label.modpack { --bg: var(--nore-label-modpack); }
+.label.nore { --bg: var(--nore-accent-deep); color: #fff; } .label.event { --bg: var(--nore-dot-event); color: #1a0d04; }
+.label.dark { --bg: var(--nore-page); color: var(--nore-ink); }
+
+/* keycap (Pixelify only here and inside game fragments) */
+kbd, .key { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 8px; border: 2px solid var(--nore-vinyl); background: var(--nore-page); color: var(--nore-ink); font: 600 15px/1 var(--nore-font-pixel); white-space: nowrap; }
+
+/* ghost slot: where a sticker goes */
+.slot { position: relative; border-radius: var(--nore-radius-sticker); background: var(--nore-slot); outline: 2px dashed var(--nore-ghost); outline-offset: -7px; color: var(--nore-ink-faint); }
+
+/* clipping + washi tape (news) */
+.clip { position: relative; background: var(--nore-paper); color: var(--nore-vinyl-ink); border-radius: 3px; padding: 26px 24px 24px; rotate: var(--tilt, 0deg); }
+.clip p { color: var(--nore-vinyl-ink-soft); }
+.tape { position: absolute; z-index: 2; left: 50%; top: -12px; width: 96px; height: 26px; translate: -50% 0; background: var(--nore-tape-lilac); rotate: -4deg;
+  clip-path: polygon(0 8%, 4% 0, 8% 9%, 12% 0, 88% 0, 92% 10%, 96% 0, 100% 8%, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 12% 100%, 8% 91%, 4% 100%, 0 92%); }
+.tape.mint { background: var(--nore-tape-mint); } .tape.kraft { background: var(--nore-tape-kraft); }
+
+/* sheet: a loose page one tone up */
+.sheet { background: var(--nore-page-raised); border-radius: var(--nore-radius-sheet); }
+
+/* switch: a dot sticker on a slot track */
+.switch { position: relative; flex: none; width: 56px; height: 32px; border: 0; padding: 0; border-radius: 999px; background: var(--nore-slot); cursor: pointer; transition: background-color var(--nore-dur-quick); }
+.switch::after { content: ''; position: absolute; top: 5px; left: 5px; width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--nore-vinyl); background: var(--nore-dot-off); transition: translate var(--nore-spring-knob-dur) var(--nore-spring-knob), background-color var(--nore-dur-quick); }
+.switch[aria-checked="true"] { background: color-mix(in oklab, var(--nore-accent) 34%, var(--nore-slot)); }
+.switch[aria-checked="true"]::after { translate: 24px 0; background: var(--nore-accent); }
+
+/* segmented: slot track, the chosen option is a white sticker pill */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 5px; border-radius: 26px; background: var(--nore-slot); }
+.seg button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: transparent; color: var(--nore-ink-soft); font: 600 16px/1 var(--nore-font-text); cursor: pointer; transition: background-color var(--nore-dur-quick), color var(--nore-dur-quick), scale var(--nore-dur-tap); }
+.seg button:hover { color: var(--nore-ink); }
+.seg button[aria-selected="true"], .seg button[aria-pressed="true"] { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.seg button:active { scale: .96; }
+
+/* toast: a white sticker slapped bottom-right */
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: center; gap: 12px; max-width: min(380px, calc(100vw - 40px)); padding: 14px 18px; border-radius: 16px; border: 3px solid var(--nore-vinyl); background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font: 600 16px/1.3 var(--nore-font-text); rotate: -1deg; box-shadow: var(--nore-shadow-float); animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; } /* taste-skill-ignore: a toast floats */
+.toast[hidden] { display: none; }
+.toast small { display: block; font-weight: 500; color: var(--nore-vinyl-ink-soft); }
+
+/* FAQ: loose sheets */
+.qa-list { display: grid; gap: 8px; }
+.qa { border-radius: 16px; background: var(--nore-page-raised); }
+.qa summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; cursor: pointer; list-style: none; font: 600 clamp(18px, 1.4vw, 21px)/1.3 var(--nore-font-text); }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::after { content: ''; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--nore-vinyl); background: var(--nore-dot-off); transition: background-color var(--nore-dur-quick), scale var(--nore-dur-quick); }
+.qa[open] summary::after { background: var(--nore-accent); scale: 1.15; }
+.qa p { padding: 0 22px 22px; max-width: 64ch; }
+
+
+/* ------------------------------------------------------------------ type */
+.display { font: var(--nore-web-display); letter-spacing: var(--nore-web-display-tracking); }
+.heading { margin: 0; font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); text-wrap: balance; }
+.lead { font: var(--nore-web-lead); }
+.soft { color: var(--nore-ink-soft); }
+p { margin: 0; }
+code, pre { font-family: var(--nore-font-code); }
+
+/* ------------------------------------------------------------------ footer: the name returns at full width */
+.site-foot { margin-top: max(160px, var(--nore-web-section)); padding: 0 var(--nore-web-margin) 28px; }
+.site-foot .name { margin: 0; font: 400 clamp(84px, 21vw, 340px)/.8 var(--nore-font-display); letter-spacing: -.05em; color: var(--nore-accent); }
+.site-foot .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 28px 48px; margin-top: 40px; }
+.site-foot ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font: 500 16px/1.3 var(--nore-font-text); }
+.site-foot a { color: var(--nore-ink-soft); text-decoration: none; }
+.site-foot a:hover { color: var(--nore-ink); }
+.site-foot .cols { display: flex; flex-wrap: wrap; gap: 28px clamp(28px, 5vw, 80px); }
+.site-foot .state { display: inline-flex; align-items: center; gap: 10px; font: 500 16px/1.3 var(--nore-font-text); color: var(--nore-ink-soft); }
+.site-foot .legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 24px; margin-top: 40px; font: 400 16px/1.45 var(--nore-font-text); color: var(--nore-ink-soft); }
+
+/* ------------------------------------------------------------------ motion (tokens; transform and opacity only) */
+@keyframes rise { from { opacity: 0; translate: 0 24px; } }
+@keyframes stick { from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(var(--tilt, 0deg) + var(--nore-stick-tilt)); } 40% { opacity: 1; } }
+@keyframes dot-slap { 0% { scale: 1.6; opacity: 0; } 60% { scale: .92; opacity: 1; } 100% { scale: 1; } }
+@keyframes show3 { 0% { opacity: 0; } 4%, 33% { opacity: 1; } 37%, 100% { opacity: 0; } }
+@keyframes sway { 0%, 100% { rotate: -3deg; } 50% { rotate: 3deg; } }
+@keyframes flicker { 0%, 100% { opacity: 1; } 10% { opacity: .35; } 18% { opacity: .9; } 30% { opacity: .2; } 45% { opacity: 1; } }
+/* JS marks below-the-fold parts .rv-wait, then .in when they enter; without JS nothing is hidden */
+.rv-wait { opacity: 0; }
+.in { animation: rise 640ms var(--nore-ease-out) backwards; animation-delay: var(--d, 0ms); }
+.stick-in { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; animation-delay: var(--d, 0ms); }
+@media (prefers-reduced-motion: reduce) {
+  .rv-wait { opacity: 1; }
+  .in, .stick-in, .dot.slap { animation: none; }
+  html { scroll-behavior: auto; }
+}
+
+/* ------------------------------------------------------------------ events: Halloween "Zgaszone światło" (lights out) */
+.lights, .web, .bats { display: none; }
+[data-event="halloween"] .lights {
+  display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-color: rgba(3, 2, 5, .62);
+  -webkit-mask-image: radial-gradient(circle var(--torch-r, 300px) at var(--tx, 50%) var(--ty, 38%), transparent 0, transparent 34%, #000 100%); /* taste-skill-ignore: the torch cone (DESIGN.md §9) */
+  mask-image: radial-gradient(circle var(--torch-r, 300px) at var(--tx, 50%) var(--ty, 38%), transparent 0, transparent 34%, #000 100%); /* taste-skill-ignore: the torch cone (DESIGN.md §9) */
+  animation: flicker 260ms linear 1 backwards;
+}
+[data-event="halloween"] .art { filter: brightness(var(--lit, .64)); transition: filter 380ms var(--nore-ease-out); }
+[data-event="halloween"] .glow { filter: drop-shadow(0 0 8px var(--nore-halloween-phosphor-glow)); transition: filter 600ms var(--nore-ease-out); } /* taste-skill-ignore: phosphor, the one glow in the system */
+[data-event="halloween"] .glow.charged { filter: drop-shadow(0 0 18px var(--nore-halloween-phosphor)) brightness(1.08); } /* taste-skill-ignore: a charged glow sticker */
+[data-event="halloween"] .web { display: block; position: absolute; right: 0; top: 0; z-index: 0; width: clamp(140px, 16vw, 240px); pointer-events: none; opacity: .5; }
+[data-event="halloween"] .web path { fill: none; stroke: var(--nore-halloween-phosphor); stroke-width: 1.4; }
+[data-event="halloween"] .bats { display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.bats img { position: absolute; width: 58px; image-rendering: pixelated; opacity: .75; offset-rotate: 0deg; animation: bat-a var(--nore-dur-ambient) var(--nore-ease-in-out) infinite; }
+.bats img:nth-child(2) { width: 42px; top: 64%; animation-name: bat-b; animation-duration: 13s; animation-delay: -4s; }
+.bats img:nth-child(3) { width: 34px; top: 30%; animation-name: bat-c; animation-duration: 17s; animation-delay: -9s; }
+@keyframes bat-a { 0% { translate: 8vw 18vh; } 25% { translate: 34vw 8vh; } 50% { translate: 62vw 22vh; } 75% { translate: 34vw 34vh; } 100% { translate: 8vw 18vh; } }
+@keyframes bat-b { 0% { translate: 92vw 0; } 25% { translate: 70vw -12vh; } 50% { translate: 48vw 4vh; } 75% { translate: 70vw 14vh; } 100% { translate: 92vw 0; } }
+@keyframes bat-c { 0% { translate: 40vw 0; scale: 1; } 50% { translate: 86vw -8vh; scale: .8; } 100% { translate: 40vw 0; scale: 1; } }
+@media (prefers-reduced-motion: reduce) { .bats { display: none !important; } [data-event="halloween"] .lights { animation: none; } }
+@media (hover: none) { [data-event="halloween"] .lights { --torch-r: 420px; } }
+
+/* winter: hole-punch confetti snow (paper circles), frost from the corners */
+.snow { display: none; }
+[data-event="winter"] .snow { display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.snow i { position: absolute; top: -20px; width: var(--s, 10px); height: var(--s, 10px); border-radius: 50%; background: var(--nore-winter-frost); opacity: .8; animation: fall var(--t, 14s) linear infinite; animation-delay: var(--dl, 0s); }
+@keyframes fall { from { translate: 0 -5vh; } to { translate: 3vw 110vh; } }
+@media (prefers-reduced-motion: reduce) { .snow { display: none !important; } }

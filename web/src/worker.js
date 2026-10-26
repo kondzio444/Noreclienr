@@ -250,7 +250,7 @@ function withPageHeaders(res, html) {
   const out = new Response(res.body, res);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) out.headers.set(k, v);
   if (html) {
-    out.headers.set('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src https://fonts.gstatic.com https://cdn.fontshare.com; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'");
+    out.headers.set('Content-Security-Policy', "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'");
   }
   return out;
 }
@@ -279,7 +279,11 @@ export default {
     if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
       return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
     }
-    const res = site === 'mc' ? await mcAsset(request, url, env) : await env.ASSETS.fetch(request);
+    // the bot panel is one page: /panel/<guildId> serves /panel/ and the script reads the id from the path
+    const panelGuild = site === 'main' && /^\/panel\/\d{17,20}\/?$/.test(url.pathname);
+    const res = site === 'mc' ? await mcAsset(request, url, env)
+      : panelGuild ? await env.ASSETS.fetch(new Request(`${url.origin}/panel/`, request))
+      : await env.ASSETS.fetch(request);
     return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
   },
 
