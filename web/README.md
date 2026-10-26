@@ -7,8 +7,22 @@ and **mc.noreclient.pl** (`www.*` redirects to the apex host).
 |---|---|
 | `/api/v1/*` | API v1 – unchanged, used by released launchers and mods (`src/worker.js`) |
 | `/api/v2/*` | API v2 – `src/v2/` (router `index.js`, OpenAPI at `/api/v2/openapi.json`) |
-| `mc.noreclient.pl/*` | static files from `public/mc/` (placeholder until the server site is designed) |
+| `mc.noreclient.pl/*` | the Nore MC server site, static files from `public/mc/` (`/assets/*` is shared) |
+| `/panel`, `/panel/<guildId>` | the Nore Bot panel (`public/panel/`, one page; the Worker maps `/panel/<id>` to it) |
 | everything else | static files from `public/` |
+
+## Website (Album)
+
+* Design source: `../DESIGN.md`, `../design/tokens.json`. `scripts/copy-tokens.mjs` (build step) copies the
+  generated `design/tokens.css` to `public/assets/tokens.css`.
+* Shared by every host: `public/assets/album.css` + `album.js` (API helper, entrances, the seasonal event:
+  Halloween torch 15.10 – 3.11, winter snow from 10.12), fonts in `public/assets/fonts/` (Dela Gothic One,
+  Onest, Pixelify Sans – woff2 latin + latin-ext, SIL OFL 1.1, licences beside them; CSP `font-src 'self'`).
+* Pages: `index.html` (+ `style.css`, `app.js`), `api.html` (rendered from `/api/v2/openapi.json`, v1 table from
+  `/api/v1/openapi.json`), `mc/` (Nore MC: live `/api/v2/servers/mc.noreclient.pl`), `panel/` (forms rendered
+  only from `/api/v2/bot/config.schema.json`, labels from `panel/locales/{pl,en}.json`).
+* Gates: `node ../.claude/skills/taste-skill/scripts/lint.mjs public` and `inspect.mjs <url> --allow palette-purple`
+  (violet is the brand) on `/`, `/api` and the mc host.
 
 ## API v2 in short
 

@@ -8,36 +8,44 @@ import worker from './worker.js';
 export { NoreHub, NoreBot, NoreCounters } from './worker.js';
 import INDEX from '../public/index.html';
 import NOT_FOUND from '../public/404.html';
+import STYLE from '../public/style.css';
+import APP from '../dist/app.js.txt';
 import API_PAGE from '../public/api.html';
 import API_STYLE from '../public/api.css';
 import API_APP from '../dist/api.js.txt';
-import STYLE from '../public/style.css';
+import TOKENS from '../public/assets/tokens.css';
+import ALBUM_CSS from '../public/assets/album.css';
+import ALBUM_JS from '../dist/album.js.txt';
 import MC_INDEX from '../public/mc/index.html';
-import MC_STATUS from '../dist/mc-status.js.txt';
-import APP from '../dist/app.js.txt';
+import MC_404 from '../public/mc/404.html';
+import MC_STYLE from '../public/mc/mc.css';
+import MC_APP from '../dist/mc.js.txt';
+import PANEL from '../public/panel/index.html';
+import PANEL_STYLE from '../public/panel/panel.css';
+import PANEL_APP from '../dist/panel.js.txt';
+import LOCALE_PL from '../dist/locale-pl.json.txt';
+import LOCALE_EN from '../dist/locale-en.json.txt';
 
+// Images and fonts come from this pinned commit; bump it after the Album website (assets/album, assets/fonts) is merged.
 const RAW = 'https://raw.githubusercontent.com/kondzio444/Noreclienr/3fa206c97bdc40bfcf07af15f68bb1bbba50ab5d/web/public';
+const HTML = 'text/html; charset=utf-8', CSS = 'text/css; charset=utf-8', JS = 'text/javascript; charset=utf-8', JSON_T = 'application/json; charset=utf-8';
 const TEXT = {
-  '/': [INDEX, 'text/html; charset=utf-8'],
-  '/index.html': [INDEX, 'text/html; charset=utf-8'],
-  '/style.css': [STYLE, 'text/css; charset=utf-8'],
-  '/app.js': [APP, 'text/javascript; charset=utf-8'],
-  '/api': [API_PAGE, 'text/html; charset=utf-8'],
-  '/api.html': [API_PAGE, 'text/html; charset=utf-8'],
-  '/api.css': [API_STYLE, 'text/css; charset=utf-8'],
-  '/api.js': [API_APP, 'text/javascript; charset=utf-8'],
-  '/mc/': [MC_INDEX, 'text/html; charset=utf-8'],
-  '/mc/index.html': [MC_INDEX, 'text/html; charset=utf-8'],
-  '/mc/status.js': [MC_STATUS, 'text/javascript; charset=utf-8'],
+  '/': [INDEX, HTML], '/index.html': [INDEX, HTML], '/404.html': [NOT_FOUND, HTML],
+  '/style.css': [STYLE, CSS], '/app.js': [APP, JS],
+  '/api': [API_PAGE, HTML], '/api.html': [API_PAGE, HTML], '/api.css': [API_STYLE, CSS], '/api.js': [API_APP, JS],
+  '/assets/tokens.css': [TOKENS, CSS], '/assets/album.css': [ALBUM_CSS, CSS], '/assets/album.js': [ALBUM_JS, JS],
+  '/mc/': [MC_INDEX, HTML], '/mc/index.html': [MC_INDEX, HTML], '/mc/404.html': [MC_404, HTML], '/mc/mc.css': [MC_STYLE, CSS], '/mc/mc.js': [MC_APP, JS],
+  '/panel/': [PANEL, HTML], '/panel/index.html': [PANEL, HTML], '/panel/panel.css': [PANEL_STYLE, CSS], '/panel/panel.js': [PANEL_APP, JS],
+  '/panel/locales/pl.json': [LOCALE_PL, JSON_T], '/panel/locales/en.json': [LOCALE_EN, JSON_T],
 };
-const TYPES = { png: 'image/png', gif: 'image/gif', jpg: 'image/jpeg', svg: 'image/svg+xml', ico: 'image/x-icon', webp: 'image/webp', webm: 'video/webm', mp4: 'video/mp4' };
+const TYPES = { png: 'image/png', gif: 'image/gif', jpg: 'image/jpeg', svg: 'image/svg+xml', ico: 'image/x-icon', webp: 'image/webp', webm: 'video/webm', mp4: 'video/mp4', woff2: 'font/woff2', txt: 'text/plain; charset=utf-8' };
 
 const ASSETS = {
   async fetch(request, ctx) {
     const url = new URL(request.url);
     const t = TEXT[url.pathname];
     if (t) return new Response(t[0], { headers: { 'Content-Type': t[1], 'Cache-Control': 'public, max-age=300' } });
-    const m = url.pathname.match(/^\/assets\/([\w./-]+)\.(png|gif|jpg|svg|ico|webp|webm|mp4)$/);
+    const m = url.pathname.match(/^\/assets\/([\w./-]+)\.(png|gif|jpg|svg|ico|webp|webm|mp4|woff2|txt)$/);
     if (m) {
       const cache = caches.default;
       const key = new Request(url.origin + url.pathname);
@@ -49,7 +57,8 @@ const ASSETS = {
       if (ctx) ctx.waitUntil(cache.put(key, out.clone()));
       return out;
     }
-    return new Response(NOT_FOUND, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    if (url.pathname === '/panel') return Response.redirect(url.origin + '/panel/', 307);
+    return new Response(url.pathname.startsWith('/mc/') ? MC_404 : NOT_FOUND, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   },
 };
 

@@ -382,6 +382,9 @@ try {
   h = await hostGet('noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore/); assert.ok(h.headers['content-security-policy']);
   h = await hostGet('noroclient.pl', '/api'); assert.equal(h.status, 200);
   h = await hostGet('noroclient.pl', '/nope'); assert.equal(h.status, 404);
+  h = await hostGet('noreclient.pl', '/panel/900000000000000001'); assert.equal(h.status, 200); assert.match(h.text, /Panel Nore Bota/);
+  h = await hostGet('mc.noreclient.pl', '/assets/fonts/onest-latin.woff2'); assert.equal(h.status, 200);
+  h = await hostGet('noreclient.pl', '/'); assert.match(h.headers['content-security-policy'], /font-src 'self'/);
   step('hosts: www → apex, mc host serves public/mc/ (own 404, shared /assets, same API), /mc on main → mc host, main pages unchanged');
 
   // ------------------------------------------------------------ rate limit (last: it uses up this IP's pings)
