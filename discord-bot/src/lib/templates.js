@@ -3,7 +3,7 @@
  * language and size. Pure (takes a translator), so tests can compile every template in every
  * language and check Discord's limits.
  *
- * Template format (see templates/README.md):
+ * Template format (see README.md, section "Szablony kreatora"):
  *   roles:      [{ key, color, hoist, mentionable, perms: "<set>" | [names], icon, size, separator, menu, level, each, bind }]
  *   categories: [{ key, emoji, access, size, each, channels: [{ key, type, emoji, mode, slowmode, size, content, panel, bind, each, name, topic, tags }] }]
  *   lists:      named lists used by `each` (generated roles / categories / channels)
