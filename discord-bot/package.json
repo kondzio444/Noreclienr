@@ -14,7 +14,7 @@
     "deploy-commands": "node scripts/deploy-commands.js",
     "schema": "node scripts/build-schema.js",
     "check": "node scripts/check-syntax.js",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "discord.js": "^14.27.0"

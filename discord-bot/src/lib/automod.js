@@ -10,7 +10,7 @@ const INVITE_RE = /(?:discord(?:app)?\.com\/invite|discord\.gg|dsc\.gg|discord\.
 const URL_RE = /\bhttps?:\/\/([^\s/<>?#]+)[^\s<>]*/gi;
 const BARE_DOMAIN_RE = /\b((?:[a-z0-9-]+\.)+(?:com|net|org|pl|gg|io|xyz|ru|de|tk|ml|ga|cf|link|site|online|shop|app|dev|me|tv|co|info|biz|top|click))\b(?:\/[^\s]*)?/gi;
 
-const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', 8: 'b', '@': 'a', $: 's', '!': 'i', '|': 'l' };
+const LEET = { 0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', 8: 'b', '@': 'a', $: 's' };
 
 /** Lowercase, no diacritics, leetspeak undone, repeated letters collapsed to two. */
 export function normalizeText(s) {
@@ -18,7 +18,7 @@ export function normalizeText(s) {
     .toLowerCase()
     .replace(/ł/g, 'l')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[0134578@$!|]/g, (c) => LEET[c] ?? c)
+    .replace(/[0134578@$]/g, (c) => LEET[c] ?? c)
     .replace(/(.)\1{2,}/g, '$1$1');
 }
 

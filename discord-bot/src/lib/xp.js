@@ -1,6 +1,6 @@
 /**
  * XP math. The XP needed to go from level n to n+1 is 5n² + 50n + 100 (the curve players know from
- * popular Discord level bots): level 1 at 100 XP, level 5 at 1 255 XP, level 10 at 4 675 XP …
+ * popular Discord level bots): level 1 at 100 XP, level 5 at 1 150 XP, level 10 at 4 675 XP …
  */
 export const xpToNext = (level) => 5 * level * level + 50 * level + 100;
 

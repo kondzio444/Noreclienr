@@ -32,7 +32,8 @@ export function eventTimes(ev, now = Date.now()) {
       }
     }
   }
-  const active = typeof ev.active === 'boolean' ? ev.active && (!endsAt || now < endsAt) : (startsAt ? now >= startsAt && (!endsAt || now < endsAt) : false);
+  const fromWindow = !ev.startsAt;
+  const active = typeof ev.active === 'boolean' ? ev.active && (!endsAt || now < endsAt) && (!fromWindow || !startsAt || now >= startsAt) : (startsAt ? now >= startsAt && (!endsAt || now < endsAt) : false);
   return { startsAt, peakAt, endsAt, active, upcoming: !active && !!startsAt && startsAt > now };
 }
 
