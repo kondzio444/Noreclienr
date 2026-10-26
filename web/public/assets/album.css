@@ -31,7 +31,7 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color var(--nore-dur-page) var(--nore-ease-in-out);
 }
-img, video { display: block; max-width: 100%; }
+img, video { display: block; max-width: 100%; height: auto; }
 a { color: inherit; }
 button, input, select, textarea { font: inherit; color: inherit; }
 ::selection { background: var(--nore-accent-deep); color: #fff; }
@@ -83,7 +83,7 @@ main, .site-nav, .site-foot { position: relative; z-index: 1; }
 .st.rim3 { border-width: 3px; border-radius: 16px; }
 .lift { transition: translate var(--nore-dur-quick) var(--nore-ease-out), rotate var(--nore-dur-base) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out); }
 .lift:hover { translate: 0 calc(var(--nore-shift-lift) * -1); rotate: calc(var(--tilt, 0deg) * .6); box-shadow: var(--nore-shadow-lift); } /* taste-skill-ignore: a peeled sticker lifts off the page */
-.lift:active { scale: .97; translate: 0 0; box-shadow: none; }
+.lift:active { scale: .97; translate: 0 0; box-shadow: none; } /* taste-skill-ignore: back flat when pressed */
 /* the die-cut rim of a transparent picture is baked into the PNG (assets/album/*-sticker.png) */
 .sprite { image-rendering: pixelated; }
 
@@ -154,7 +154,7 @@ p { margin: 0; }
 code, pre { font-family: var(--nore-font-code); }
 
 /* ------------------------------------------------------------------ footer: the name returns at full width */
-.site-foot { margin-top: var(--nore-web-section); padding: 0 var(--nore-web-margin) 28px; }
+.site-foot { margin-top: max(160px, var(--nore-web-section)); padding: 0 var(--nore-web-margin) 28px; }
 .site-foot .name { margin: 0; font: 400 clamp(84px, 21vw, 340px)/.8 var(--nore-font-display); letter-spacing: -.05em; color: var(--nore-accent); }
 .site-foot .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 28px 48px; margin-top: 40px; }
 .site-foot ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font: 500 16px/1.3 var(--nore-font-text); }

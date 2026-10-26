@@ -98,8 +98,8 @@
     const fields = okSchema ? fieldsOf(okSchema) : [];
     const sec = security(op);
     return `<article class="ep rv" id="${o.id}">
-      <div class="ep-head"><span class="m ${method}">${method.toUpperCase()}</span><code>${esc(path)}</code>${sec ? `<span class="lock"><i class="dot wait"></i>${esc(sec)}</span>` : ''}</div>
       <h4>${esc(op.summary || '')}</h4>
+      <div class="ep-head"><span class="m ${method}">${method.toUpperCase()}</span><code>${esc(path)}</code>${sec ? `<span class="lock"><span class="dot wait"></span>${esc(sec)}</span>` : ''}</div>
       ${op.description ? `<p class="desc">${esc(op.description)}</p>` : ''}
       <div class="cols">
         <div>
@@ -109,7 +109,7 @@
         </div>
         <div>
           <h5>Odpowiedzi</h5>
-          <ul class="codes">${Object.entries(op.responses || {}).map(([c, r]) => `<li><b><i class="dot ${codeDot(+c)}"></i>${esc(c)}</b><span>${esc(deref(r).description || '')}</span></li>`).join('')}</ul>
+          <ul class="codes">${Object.entries(op.responses || {}).map(([c, r]) => `<li><b><span class="dot ${codeDot(+c)}"></span>${esc(c)}</b><span>${esc(deref(r).description || '')}</span></li>`).join('')}</ul>
           ${o.consoleable ? `<button type="button" class="pill quiet sm try" data-try="${esc(o.id)}">Wypróbuj w konsoli</button>` : ''}
         </div>
       </div>
@@ -189,8 +189,8 @@
       if (mine !== seq) return;
       $('#res-status').innerHTML = `<i class="dot ${codeDot(r.status)} slap"></i>${r.status} ${r.ok ? 'OK' : esc(r.statusText || 'błąd')}`;
       $('#res-time').textContent = `${Math.round(performance.now() - t0)} ms`;
-      $('#res-cache').textContent = `cache ${r.headers.get('X-Nore-Cache') || '—'}`;
-      $('#res-etag').textContent = `ETag ${r.headers.get('ETag') || '—'}`;
+      $('#res-cache').textContent = `cache ${r.headers.get('X-Nore-Cache') || '–'}`;
+      $('#res-etag').textContent = `ETag ${r.headers.get('ETag') || '–'}`;
       let json = null, pretty = text;
       try { json = JSON.parse(text); pretty = JSON.stringify(json, null, 2); } catch { /* not JSON */ }
       if (pretty.length > 60000) pretty = pretty.slice(0, 60000) + '\n…';
@@ -261,7 +261,7 @@
   }
 
   // ------------------------------------------------------------------ stages of a request (the slider of the old page, as a segmented control)
-  const ago = (s) => (s == null ? '—' : s < 60 ? 'przed chwilą' : s < 3600 ? `${Math.round(s / 60)} min temu` : `${Math.round(s / 3600)} godz. temu`);
+  const ago = (s) => (s == null ? '–' : s < 60 ? 'przed chwilą' : s < 3600 ? `${Math.round(s / 60)} min temu` : `${Math.round(s / 3600)} godz. temu`);
   const STAGES = [
     { clause: 'Zapytanie trafia na krawędź', note: () => `Odpowiada serwer Cloudflare najbliżej Ciebie${status && status.colo ? ` (${COLO[status.colo] || status.colo})` : ''}, nie jeden komputer gdzieś daleko.`, rows: () => [['Serwer', status && status.colo ? status.colo : 'najbliższy', true], ['Połączenie', 'HTTPS'], ['Klucz', 'niepotrzebny']], flow: 1 },
     { clause: 'Odpowiedź czeka w pamięci', note: () => 'Dane młodsze niż kilka minut wracają od razu. Z nagłówkiem If-None-Match dostajesz puste 304.', rows: () => [['X-Nore-Cache', 'HIT', true], ['ETag', '"9f2c41d07ab3e5c1"'], ['Cache-Control', 'public, max-age=60']], flow: 2 },

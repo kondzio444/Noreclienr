@@ -1,7 +1,7 @@
 /* mc.noreclient.pl – Nore MC, the partner server, in the Album family (DESIGN.md §8, design/mocks/web-server.html). */
 .hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(32px, 4vw, 72px); align-items: center; min-height: calc(100svh - 76px); padding: 10px var(--nore-web-margin) 60px; }
 .hero h1 { margin: 0; font: var(--nore-web-display); font-size: clamp(64px, 9vw, 150px); letter-spacing: var(--nore-web-display-tracking); }
-.hero .lead { margin-top: 18px; max-width: 36ch; color: var(--nore-ink-soft); }
+.hero .lead { margin-top: 18px; max-width: 36ch; }
 .ip { display: inline-flex; align-items: center; gap: 18px; margin-top: 34px; padding: 18px 26px 18px 30px; border-radius: 22px; border: 6px solid var(--nore-vinyl); background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font: 400 clamp(26px, 3vw, 46px)/1 var(--nore-font-display); letter-spacing: -.02em; rotate: -1.5deg; cursor: pointer; transition: translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out), rotate var(--nore-dur-base) var(--nore-ease-out); }
 .ip:hover { translate: 0 -3px; rotate: -.8deg; }
 .ip:active { scale: .97; }
@@ -17,7 +17,7 @@
 .world { position: relative; aspect-ratio: 4 / 5; }
 .world .st { position: absolute; inset: 0; }
 .world .st img { width: 100%; height: 100%; object-fit: cover; object-position: 42% 50%; }
-.world .badge { position: absolute; right: -6%; top: 8%; rotate: 7deg; padding: 12px 18px; border-radius: 14px; border: 5px solid var(--nore-vinyl); background: var(--nore-accent-deep); color: #fff; font: 400 22px/1.1 var(--nore-font-display); }
+.world .badge { position: absolute; right: -3%; top: 8%; rotate: 7deg; padding: 12px 18px; border-radius: 14px; border: 5px solid var(--nore-vinyl); background: var(--nore-accent-deep); color: #fff; font: 400 22px/1.1 var(--nore-font-display); }
 .world .logo { position: absolute; left: -10%; bottom: -6%; width: 34%; rotate: -9deg; }
 .world .heads { position: absolute; right: 4%; bottom: 6%; display: flex; }
 .world .heads[hidden] { display: none; }
@@ -29,6 +29,7 @@
 .ways { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 8px; }
 .way { padding: 30px; border-radius: 6px; min-height: 360px; display: flex; flex-direction: column; justify-content: space-between; gap: 26px; }
 .way h3 { margin: 0 0 10px; font: 600 24px/1.2 var(--nore-font-text); }
+.way .shot { flex: none; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; object-position: 0 0; border-radius: 12px; border: 4px solid var(--nore-vinyl); }
 .way.a { background: var(--nore-accent); color: var(--nore-page); }
 .way.a .pill { align-self: flex-start; }
 .way.b { background: var(--nore-page); }
@@ -87,7 +88,8 @@
 /* vote + shop placeholders */
 .soon { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: var(--nore-web-section) var(--nore-web-margin) 0; }
 .soon-card { padding: 34px; min-height: 220px; }
-.soon-card h3 { margin: 16px 0 8px; font: 400 clamp(26px, 2.6vw, 40px)/1.05 var(--nore-font-display); color: var(--nore-ink); letter-spacing: -.02em; }
+.soon-card .label { margin-bottom: 12px; }
+.soon-card h3 { margin: 0 0 14px; font: 400 clamp(26px, 2.6vw, 40px)/1.05 var(--nore-font-display); color: var(--nore-ink); letter-spacing: -.02em; }
 .soon-card p { max-width: 44ch; color: var(--nore-ink-soft); }
 
 /* news */

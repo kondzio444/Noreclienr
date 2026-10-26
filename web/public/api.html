@@ -66,12 +66,23 @@
         <div class="out rv" data-ui>
           <div class="url"><span class="m get">GET</span><code id="req-url">/api/v2/status</code><a class="pen" id="res-open" href="/api/v2/status" target="_blank" rel="noopener">Otwórz w nowej karcie</a></div>
           <div class="status tnum" aria-live="polite">
-            <b id="res-status"><i class="dot off"></i>—</b><span id="res-time">— ms</span><span id="res-cache">cache —</span><span id="res-etag">ETag —</span>
+            <b id="res-status"><i class="dot off"></i>–</b><span id="res-time">– ms</span><span id="res-cache">cache –</span><span id="res-etag">ETag –</span>
           </div>
           <pre><code id="res-body">Wybierz endpoint i wyślij zapytanie.</code></pre>
           <div class="seen" id="preview" hidden></div>
         </div>
         <p class="hint rv">To samo z terminala: <code id="curl">curl https://noroclient.pl/api/v2/status</code></p>
+      </section>
+
+      <section class="shots" aria-labelledby="seen-title">
+        <h2 id="seen-title" class="heading rv">Te dane widzisz w grze</h2>
+        <div class="shots-grid">
+          <figure class="shot wide rv"><img class="art" src="/assets/api/menu-news.webp" width="1180" height="700" alt="Menu główne Nore Client z wiśniowym stawem w tle i kartą Nowe w 1.4 Beta"><figcaption><code>/news</code> i <code>/events</code> w menu głównym moda.</figcaption></figure>
+          <figure class="shot rv"><video class="art" width="400" height="480" muted loop playsinline autoplay preload="none" poster="/assets/api/updater-download.webp" aria-label="Nore Updater pobiera nową wersję i sprawdza sumę kontrolną"><source src="/assets/api/updater.webm" type="video/webm"><source src="/assets/api/updater.mp4" type="video/mp4"></video><figcaption><code>/releases/latest</code>: Nore Updater sprawdza SHA-256 pobranego pliku.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/launcher-winter.webp" width="1220" height="760" alt="Ekran główny Nore Launcher z kartą wydarzenia Święta w Nore i odliczaniem"><figcaption><code>/events</code>: zimowy motyw włącza się sam 10 grudnia.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/radial-menu.webp" width="1180" height="700" alt="Radialne menu Nore: kategorie w wewnętrznym pierścieniu i moduły na zewnętrznym"><figcaption>Radialne menu, wersja z <code>/releases/latest</code>.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/updater-done.webp" width="400" height="480" alt="Nore Updater po aktualizacji: zielony pierścień i napis Zaktualizowano"><figcaption>Po aktualizacji Updater wita nową wersję.</figcaption></figure>
+        </div>
       </section>
 
       <!-- every v2 endpoint, rendered from /api/v2/openapi.json -->
@@ -107,20 +118,9 @@
         </div>
       </section>
 
-      <section class="shots" aria-labelledby="seen-title">
-        <h2 id="seen-title" class="heading rv">Te dane widzisz w grze</h2>
-        <div class="shots-grid">
-          <figure class="shot wide rv"><img class="art" src="/assets/api/menu-news.webp" width="1180" height="700" alt="Menu główne Nore Client z wiśniowym stawem w tle i kartą Nowe w 1.4 Beta" loading="lazy"><figcaption><code>/news</code> i <code>/events</code> w menu głównym moda.</figcaption></figure>
-          <figure class="shot rv"><video class="art" width="400" height="480" muted loop playsinline autoplay preload="none" poster="/assets/api/updater-download.webp" aria-label="Nore Updater pobiera nową wersję i sprawdza sumę kontrolną"><source src="/assets/api/updater.webm" type="video/webm"><source src="/assets/api/updater.mp4" type="video/mp4"></video><figcaption><code>/releases/latest</code>: Nore Updater sprawdza SHA-256 pobranego pliku.</figcaption></figure>
-          <figure class="shot rv"><img class="art" src="/assets/api/launcher-winter.webp" width="1220" height="760" alt="Ekran główny Nore Launcher z kartą wydarzenia Święta w Nore i odliczaniem" loading="lazy"><figcaption><code>/events</code>: zimowy motyw włącza się sam 10 grudnia.</figcaption></figure>
-          <figure class="shot rv"><img class="art" src="/assets/api/radial-menu.webp" width="1180" height="700" alt="Radialne menu Nore: kategorie w wewnętrznym pierścieniu i moduły na zewnętrznym" loading="lazy"><figcaption>Radialne menu, wersja z <code>/releases/latest</code>.</figcaption></figure>
-          <figure class="shot rv"><img class="art" src="/assets/api/updater-done.webp" width="400" height="480" alt="Nore Updater po aktualizacji: zielony pierścień i napis Zaktualizowano" loading="lazy"><figcaption>Po aktualizacji Updater wita nową wersję.</figcaption></figure>
-        </div>
-      </section>
-
       <!-- API v1, kept for released launchers and mods -->
       <section class="v1" id="v1" aria-labelledby="v1-title">
-        <h2 id="v1-title" class="heading rv">API v1 dla starszych launcherów</h2>
+        <h2 id="v1-title" class="heading rv">Starsze API v1</h2>
         <p class="rv">Adresy <code>/api/v1</code> działają bez zmian: wołają je wydane wersje Nore Launchera, Nore Updatera i moda. Nowe programy niech używają v2. Odpowiedzi v1 nie mają koperty <code>ok</code>.</p>
         <div class="v1-table rv">
           <table>
