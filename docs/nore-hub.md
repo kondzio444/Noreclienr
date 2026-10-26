@@ -5,7 +5,7 @@ Nore Hub is a small directory on the Nore website worker that answers one questi
 the tab list, other players' wardrobe items (wings, hats, ears…), and the player menu (message /
 add friend) when the player under the crosshair is a Nore user.
 
-Base URL: `https://noroclient.pl` (override in the game with `-Dnoreclient.hub=<url>`,
+Base URL: `https://noreclient.pl` (override in the game with `-Dnoreclient.hub=<url>`,
 in the launcher with the `NORE_HUB` env var). All JSON, UTF-8.
 
 ## Identity

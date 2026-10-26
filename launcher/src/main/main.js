@@ -81,7 +81,7 @@ async function msClientId() {
   const own = keys.microsoftClientId() || store.get().settings.msClientId;
   if (own) return own;
   try {
-    const res = await net.fetchWithRetry('https://noroclient.pl/api/v1/launcher/config', {}, 2);
+    const res = await net.fetchWithRetry('https://noreclient.pl/api/v1/launcher/config', {}, 2);
     const id = res.ok ? String((await res.json()).microsoftClientId || '') : '';
     if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
       if (store.get().msClientIdRemote !== id) store.update(s => { s.msClientIdRemote = id; });

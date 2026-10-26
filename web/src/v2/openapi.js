@@ -30,7 +30,7 @@ export function openapi() {
         + 'Każda odpowiedź JSON to obiekt: sukces { ok: true, … }, błąd { ok: false, status, code, error, errors? }. Odpowiedzi GET mają ETag (If-None-Match → 304). '
         + 'Publiczne ścieżki mają otwarty CORS; /servers ma limit 20 zapytań na minutę na IP. API v1 (/api/v1) działa bez zmian.',
     },
-    servers: [{ url: 'https://noroclient.pl' }, { url: 'https://noreclient.pl' }],
+    servers: [{ url: 'https://noreclient.pl' }, { url: 'https://noreclient.pl' }],
     tags: [{ name: 'public' }, { name: 'bot', description: 'Nore Bot → API (Authorization: Bot <NORE_BOT_SECRET>)' }, { name: 'panel', description: 'Panel na stronie (sesja po logowaniu Discord)' }],
     components: {
       securitySchemes: {

@@ -1,5 +1,5 @@
 # Deploys the website + API (web/) to Cloudflare Workers – static assets, no R2.
-# Needs repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts:Edit + Zone:DNS for noroclient.pl)
+# Needs repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts:Edit + Zone:DNS for noreclient.pl)
 # and CLOUDFLARE_ACCOUNT_ID.
 name: Website
 

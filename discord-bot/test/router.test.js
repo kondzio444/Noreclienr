@@ -66,7 +66,7 @@ function interaction(world, { name, sub = null, group = null, options = {}, user
 const text = (p) => JSON.stringify(p);
 
 test('router: commands run end to end with permissions, config and translations', async () => {
-  const bot = await new Bot({ env: { noreApi: 'https://noroclient.pl', dataDir: '/tmp/none', botSecret: '' }, dryRun: true }).init();
+  const bot = await new Bot({ env: { noreApi: 'https://noreclient.pl', dataDir: '/tmp/none', botSecret: '' }, dryRun: true }).init();
   const world = fakeWorld();
   bot.client = { guilds: { cache: new Collection([[GUILD, world.guild]]) }, user: { id: 'bot' }, ws: { ping: 42 } };
 

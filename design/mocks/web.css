@@ -1,4 +1,4 @@
-/* noroclient.pl – Album world for the web. Two faces (Dela Gothic One, Onest), flat fields, no rules, no gradients,
+/* noreclient.pl – Album world for the web. Two faces (Dela Gothic One, Onest), flat fields, no rules, no gradients,
    no shadows at rest. Stickers carry a vinyl rim drawn as a border, never as a shadow. */
 @import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&family=Pixelify+Sans:wght@600&display=swap');
 *, *::before, *::after { box-sizing: border-box; }

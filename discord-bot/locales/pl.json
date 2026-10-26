@@ -2126,7 +2126,7 @@
     "svc": {
       "api": "Nore API",
       "hub": "Nore Hub",
-      "website": "noroclient.pl"
+      "website": "noreclient.pl"
     },
     "down_since": "nie działa od {when}",
     "incident_title": "{service} nie odpowiada",

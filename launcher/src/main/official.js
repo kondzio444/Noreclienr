@@ -16,7 +16,7 @@ const OFFICIAL = Object.freeze({
   port: 25565,
   tagline: 'Oficjalny serwer partnerski Nore Client',
 });
-const API = (process.env.NORE_API_V2 || 'https://noroclient.pl/api/v2').replace(/\/+$/, '');
+const API = (process.env.NORE_API_V2 || 'https://noreclient.pl/api/v2').replace(/\/+$/, '');
 
 /** True when an address points at the official server (any case, with or without :25565, trailing dot). */
 function matches(address) {

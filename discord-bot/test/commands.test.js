@@ -16,7 +16,7 @@ import { formQuestions } from '../src/modules/applications.js';
 import { translator } from '../src/i18n/index.js';
 import { htmlTranscript, escapeHtml } from '../src/lib/transcript.js';
 
-const env = { noreApi: 'https://noroclient.pl', dataDir: '/tmp/none', botSecret: '' };
+const env = { noreApi: 'https://noreclient.pl', dataDir: '/tmp/none', botSecret: '' };
 
 test('every command builds, passes Discord limits and is translated in pl and en', async () => {
   const bot = await new Bot({ env, dryRun: true }).init();

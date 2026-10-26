@@ -4,7 +4,7 @@ Two parts that are built separately and must agree on this file:
 
 * **Nore Bot** – `discord-bot/`, a standalone Node.js (22+) process: `npm install` then `node .`
   (or `npm start`). discord.js gateway bot, many languages. Secrets only in `discord-bot/.env`
-  (git-ignored): `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `NORE_API=https://noroclient.pl`,
+  (git-ignored): `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `NORE_API=https://noreclient.pl`,
   `NORE_BOT_SECRET`.
 * **Panel** – on the website (`/panel`), Discord OAuth2 login (`identify guilds`), lets a member with
   *Manage Server* on a guild where the bot is present edit that guild's configuration. Served by the
@@ -25,7 +25,7 @@ same files (copied to `web/public/panel/locales/`). Languages: pl (default) and 
 
 ## Endpoints
 
-All JSON, UTF-8, under `https://noroclient.pl/api/v2`.
+All JSON, UTF-8, under `https://noreclient.pl/api/v2`.
 
 Bot → API (header `Authorization: Bot <NORE_BOT_SECRET>`):
 

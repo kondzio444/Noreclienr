@@ -7,7 +7,7 @@
  *
  * When electron-updater cannot update this copy (unpacked folder, missing app-update.yml, a
  * broken latest.yml…) the launcher falls back to its own updater: it asks the Nore API
- * (noroclient.pl, GitHub API as a backup) for the newest release, downloads the installer /
+ * (noreclient.pl, GitHub API as a backup) for the newest release, downloads the installer /
  * AppImage itself, checks its SHA-256 and runs it, so an old version can always move to the new
  * one without visiting GitHub.
  */
@@ -21,7 +21,7 @@ const { spawn } = require('child_process');
 const net = require('./net');
 
 const REPO = 'kondzio444/Noreclienr';
-const API = 'https://noroclient.pl/api/v1';
+const API = 'https://noreclient.pl/api/v1';
 
 let updater = null;
 let emit = () => {};

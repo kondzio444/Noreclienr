@@ -237,7 +237,7 @@
     "beta_feedback": "Feedback about beta builds.",
     "beta_bugs": "Bugs found in beta builds.",
     "dev_log": "Development diary.",
-    "api_docs": "The public API: noroclient.pl/api",
+    "api_docs": "The public API: noreclient.pl/api",
     "plugin_dev": "Plugins and integrations with Nore.",
     "translations": "Help translate Nore.",
     "open_source": "Source code and contributions.",

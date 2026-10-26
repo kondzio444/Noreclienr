@@ -8,6 +8,7 @@ import http from 'node:http';
 import { startHttpFakes, startModernMc, startLegacyMc, startSilentMc, PNG_1PX, MODERN_STATUS } from './test/fakes.mjs';
 import { startDev } from './test/dev.mjs';
 import { snapshotV1 } from './test/v1-snapshot.mjs';
+import { allowedOrigin } from '../src/v2/http.js';
 import GOLDEN from './test/v1-golden.json' with { type: 'json' };
 
 const FAKE = 8790, DEV = 8788;
@@ -316,8 +317,10 @@ try {
   r = await put({ config: { welcome: { message: 'x'.repeat(2001) } }, version: 2 }); assert.equal(r.json.errors[0].path, '/welcome/message');
   step('PUT config: schema errors as JSON pointers (type, enum, pattern, min/max, additionalProperties, items), CSRF origin, content type');
 
+  // wrangler dev rewrites every *noreclient.pl origin to its own host, so the site list is checked directly
+  for (const o of ['https://noreclient.pl', 'https://mc.noreclient.pl']) assert.equal(allowedOrigin(new Request('https://x.invalid/api/v2/me', { headers: { Origin: o } }), {}), o);
   r = await req('OPTIONS', '/api/v2/me', { headers: { Origin: 'https://noreclient.pl', 'Access-Control-Request-Method': 'GET' } });
-  assert.equal(r.headers.get('access-control-allow-origin'), 'https://noreclient.pl'); assert.equal(r.headers.get('access-control-allow-credentials'), 'true');
+  assert.ok(r.headers.get('access-control-allow-origin')); assert.equal(r.headers.get('access-control-allow-credentials'), 'true');
   r = await req('OPTIONS', '/api/v2/me', { headers: { Origin: 'https://evil.example' } }); assert.equal(r.headers.get('access-control-allow-origin'), null);
   step('session routes: credentialed CORS only for the Nore sites');
 
@@ -371,17 +374,17 @@ try {
 
   // ------------------------------------------------------------ hosts + site
   let h = await hostGet('www.noreclient.pl', '/api/v1/version?x=1');
-  assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/noreclient\.pl\/api\/v1\/version\?x=1$/);
-  h = await hostGet('www.noroclient.pl', '/'); assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noroclient\.pl|127\.0\.0\.1:\d+)\/$/); // wrangler dev rewrites its own host
+  assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noreclient\.pl|127\.0\.0\.1:\d+)\/api\/v1\/version\?x=1$/); // wrangler dev rewrites its own host
+  h = await hostGet('www.noreclient.pl', '/'); assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noreclient\.pl|127\.0\.0\.1:\d+)\/$/); // wrangler dev rewrites its own host
   h = await hostGet('mc.noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore MC/);
   h = await hostGet('mc.noreclient.pl', '/mc.js'); assert.equal(h.status, 200); assert.match(h.headers['content-type'], /javascript/);
   h = await hostGet('mc.noreclient.pl', '/nope'); assert.equal(h.status, 404); assert.match(h.text, /Strona serwera/);
   h = await hostGet('mc.noreclient.pl', '/api/v2/events'); assert.equal(h.status, 200);
   h = await hostGet('mc.noreclient.pl', '/assets/logo.png'); assert.equal(h.status, 200);
-  h = await hostGet('noreclient.pl', '/mc/'); assert.equal(h.status, 301); assert.equal(h.headers.location, 'https://mc.noreclient.pl/');
+  h = await hostGet('noreclient.pl', '/mc/'); assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/mc\.(noreclient\.pl|127\.0\.0\.1:\d+)\/$/);
   h = await hostGet('noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore/); assert.ok(h.headers['content-security-policy']);
-  h = await hostGet('noroclient.pl', '/api'); assert.equal(h.status, 200);
-  h = await hostGet('noroclient.pl', '/nope'); assert.equal(h.status, 404);
+  h = await hostGet('noreclient.pl', '/api'); assert.equal(h.status, 200);
+  h = await hostGet('noreclient.pl', '/nope'); assert.equal(h.status, 404);
   h = await hostGet('noreclient.pl', '/panel/900000000000000001'); assert.equal(h.status, 200); assert.match(h.text, /Panel Nore Bota/);
   h = await hostGet('mc.noreclient.pl', '/assets/fonts/onest-latin.woff2'); assert.equal(h.status, 200);
   h = await hostGet('noreclient.pl', '/'); assert.match(h.headers['content-security-policy'], /font-src 'self'/);

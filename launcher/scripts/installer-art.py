@@ -79,7 +79,7 @@ def sidebar(path, title):
     # the formatting-code row: the colours the launcher uses for state
     for i, c in enumerate(CODES):
         d.rectangle([18 + i * 12, h - 34, 18 + i * 12 + 7, h - 27], fill=c)
-    d.text((18, h - 20), 'noroclient.pl', font=small, fill=MUTED)
+    d.text((18, h - 20), 'noreclient.pl', font=small, fill=MUTED)
     im.save(path)
 
 

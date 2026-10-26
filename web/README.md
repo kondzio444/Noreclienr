@@ -1,6 +1,6 @@
 # Nore website + API (Cloudflare Worker)
 
-One Worker (`src/worker.js`) serves the website and the API for **noroclient.pl**, **noreclient.pl**
+One Worker (`src/worker.js`) serves the website and the API for **noreclient.pl**, **noreclient.pl**
 and **mc.noreclient.pl** (`www.*` redirects to the apex host).
 
 | path | what |
@@ -57,7 +57,7 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 ```
 
 In the Discord developer portal add the OAuth2 redirects
-`https://noroclient.pl/api/v2/auth/discord/callback` and `https://noreclient.pl/api/v2/auth/discord/callback`
+`https://noreclient.pl/api/v2/auth/discord/callback` and `https://noreclient.pl/api/v2/auth/discord/callback`
 (the redirect is built from the host the panel is opened on). Without these secrets the related
 routes answer 503 with an explanation; everything else keeps working.
 

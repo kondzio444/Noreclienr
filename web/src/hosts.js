@@ -1,5 +1,5 @@
 /*
- * Host routing: one Worker answers noroclient.pl, noreclient.pl and mc.noreclient.pl.
+ * Host routing: one Worker answers noreclient.pl, www.noreclient.pl and mc.noreclient.pl.
  *   www.<anything>       → 301 to the apex host (same path and query)
  *   mc.noreclient.pl     → static files from public/mc/ (the Minecraft server site); /api/* is the same API
  *   other hosts          → public/ as before; /mc/… there redirects to the mc host

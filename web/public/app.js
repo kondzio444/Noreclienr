@@ -1,5 +1,5 @@
 'use strict';
-/* noroclient.pl home: the download (visitor's system, newest release), live numbers from API v2, the nick
+/* noreclient.pl home: the download (visitor's system, newest release), live numbers from API v2, the nick
    sticker with a Nore Hub lookup, the module sheet, the MOTD editor, the wardrobe, event countdowns, news and
    the changelog. Needs /assets/album.js (window.Nore). Without script the page stays complete and static. */
 (() => {

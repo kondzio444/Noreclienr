@@ -16,9 +16,6 @@
     "run_worker_first": true
   },
   "routes": [
-    { "pattern": "noroclient.pl", "custom_domain": true },
-    { "pattern": "www.noroclient.pl", "custom_domain": true },
-    // zone noreclient.pl: needs its nameservers on Cloudflare before these deploy
     { "pattern": "noreclient.pl", "custom_domain": true },
     { "pattern": "www.noreclient.pl", "custom_domain": true },
     { "pattern": "mc.noreclient.pl", "custom_domain": true }

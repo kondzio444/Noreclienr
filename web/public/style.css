@@ -1,4 +1,4 @@
-/* noroclient.pl – home page in the Album direction (DESIGN.md §8). Shared parts live in /assets/album.css. */
+/* noreclient.pl – home page in the Album direction (DESIGN.md §8). Shared parts live in /assets/album.css. */
 
 /* ------------------------------------------------------------------ hero: one object on the counter */
 .hero { min-height: calc(100svh - 76px); display: grid; justify-items: center; align-content: center; padding: 8px var(--nore-web-margin) 40px; text-align: center; }

@@ -45,7 +45,7 @@ public final class NoreHub {
     /** Where lookups may happen: nowhere, only the local player, every observed name. */
     public static final int SCOPE_NONE = 0, SCOPE_LOCAL = 1, SCOPE_ALL = 2;
 
-    private static final String BASE = trimSlash(System.getProperty("noreclient.hub", "https://noroclient.pl"));
+    private static final String BASE = trimSlash(System.getProperty("noreclient.hub", "https://noreclient.pl"));
     private static final long TTL = 60_000L, VISIBLE = 15_000L, FORGET = 10 * 60_000L, EXPLICIT = 2 * 60_000L;
     private static final int BATCH = 100;
 

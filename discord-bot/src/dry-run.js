@@ -42,7 +42,7 @@ export async function dryRun(env) {
   for (const [id, tpl] of Object.entries(templates)) {
     for (const lang of LANGUAGES) {
       for (const size of SIZES) {
-        const c = compileTemplate(tpl, { t: translator(lang), size, vars: { server: 'Test', website: 'https://noroclient.pl', address: 'MC.noreclient.pl' } });
+        const c = compileTemplate(tpl, { t: translator(lang), size, vars: { server: 'Test', website: 'https://noreclient.pl', address: 'MC.noreclient.pl' } });
         for (const p of validateLayout(c.layout)) problems.push(`template ${id}/${lang}/${size}: ${p}`);
         for (const x of [...c.layout.roles, ...c.layout.channels]) if (/tpl\.[a-z]/.test(x.name) || /tpl\.[a-z]/.test(x.topic || '')) problems.push(`template ${id}/${lang}: untranslated ${x.key} "${x.name}"`);
         for (const x of c.layout.channels) if (x.topicKey && !has(lang, x.topicKey, { exact: true })) problems.push(`template ${id}/${lang}: no topic ${x.topicKey}`);

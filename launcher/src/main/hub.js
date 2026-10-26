@@ -12,7 +12,7 @@ const crypto = require('crypto');
 const chat = require('./chat');
 const store = require('./store');
 
-const HUB = (process.env.NORE_HUB || 'https://noroclient.pl').replace(/\/+$/, '');
+const HUB = (process.env.NORE_HUB || 'https://noreclient.pl').replace(/\/+$/, '');
 const MOJANG_JOIN = 'https://sessionserver.mojang.com/session/minecraft/join';
 const BEAT_MS = 60 * 1000;
 const GAP_MS = 16 * 1000;  // the worker takes one hello per Nore ID per 15 s

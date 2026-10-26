@@ -1,6 +1,6 @@
 # Nore Bot
 
-Bot Discord społeczności **Nore Client** (klient i launcher Minecrafta, [noroclient.pl](https://noroclient.pl)).
+Bot Discord społeczności **Nore Client** (klient i launcher Minecrafta, [noreclient.pl](https://noreclient.pl)).
 Działa po polsku (domyślnie) i po angielsku – każdy tekst pochodzi z `locales/pl.json` / `locales/en.json`
 (oraz `locales/templates/*.json` dla kreatora serwera), a prywatne odpowiedzi trafiają do członka w jego
 języku Discorda.
@@ -82,7 +82,7 @@ node .                      # albo: npm start
 |---|---|---|
 | `DISCORD_TOKEN` | tak | token bota |
 | `DISCORD_CLIENT_ID` | tak | Application ID |
-| `NORE_API` | nie | domyślnie `https://noroclient.pl` |
+| `NORE_API` | nie | domyślnie `https://noreclient.pl` |
 | `NORE_BOT_SECRET` | dla panelu | wspólny sekret z Workerem (API v2, nagłówek `Authorization: Bot …`); pusty = tryb offline |
 | `DEPLOY_GUILD_ID` | nie | rejestracja komend tylko na jednym serwerze (natychmiast, do testów); pusty = globalnie |
 | `BOT_SHARDS` | nie | `auto` (domyślnie) albo liczba shardów |
@@ -115,7 +115,7 @@ npm run schema     # odtwarza config.schema.json ze src/config/schema-source.js
 ## 4. Konfiguracja
 
 Konfiguracja każdego serwera = **wartości domyślne** ze schematu ⊕ **konfiguracja z panelu**
-(`https://noroclient.pl/panel`, API v2) ⊕ **lokalne zmiany** z `/config`.
+(`https://noreclient.pl/panel`, API v2) ⊕ **lokalne zmiany** z `/config`.
 
 * Bot pobiera konfigurację przez `GET /api/v2/bot/guilds/:id/config`, co 15 s pyta `GET /bot/changes`,
   co 10 minut (i po zmianach kanałów/ról) wysyła listę kanałów i ról do panelu (`PUT …/meta`).

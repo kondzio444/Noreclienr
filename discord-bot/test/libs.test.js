@@ -90,7 +90,7 @@ test('AutoMod engine rules', () => {
     duplicates: { enabled: true, max: 3, action: 'delete' },
     mentions: { enabled: true, max: 3, action: 'warn' },
     invites: { enabled: true, allowed: ['nore'], action: 'delete' },
-    links: { enabled: true, allowList: ['noroclient.pl'], action: 'delete' },
+    links: { enabled: true, allowList: ['noreclient.pl'], action: 'delete' },
     badWords: { enabled: true, words: ['noob*'], action: 'warn' },
     caps: { enabled: true, minLength: 8, percent: 70, action: 'delete' },
     raid: { enabled: true, joins: 3, perSeconds: 10 },
@@ -100,7 +100,7 @@ test('AutoMod engine rules', () => {
   assert.equal(e.check(m('hello'), cfg, 0), null);
   assert.equal(e.check(m('discord.gg/nore'), cfg, 10_000), null, 'allowed invite');
   assert.equal(e.check(m('discord.gg/other'), cfg, 20_000).rule, 'invites');
-  assert.equal(e.check(m('https://noroclient.pl ok'), cfg, 30_000), null);
+  assert.equal(e.check(m('https://noreclient.pl ok'), cfg, 30_000), null);
   assert.equal(e.check(m('go to https://scam.xyz'), cfg, 40_000).rule, 'links');
   assert.equal(e.check(m('you noobs'), cfg, 50_000).rule, 'badWords');
   assert.equal(e.check(m('THIS IS LOUD TEXT'), cfg, 60_000).rule, 'caps');

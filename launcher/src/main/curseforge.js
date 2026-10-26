@@ -6,7 +6,7 @@
  *
  * The official API (api.curseforge.com) needs a free key from console.curseforge.com – the user's
  * own key from Settings, or one baked into the build from a CI secret (scripts/keys.js). Builds without
- * a key go through the Nore API (noroclient.pl/api/v1/cf), which adds its own key on the server, so
+ * a key go through the Nore API (noreclient.pl/api/v1/cf), which adds its own key on the server, so
  * the key never ships to players.
  */
 const fs = require('fs');
@@ -17,7 +17,7 @@ const net = require('./net');
 const store = require('./store');
 
 const API = process.env.NORE_CF_API || 'https://api.curseforge.com';
-const PROXY = process.env.NORE_CF_PROXY || 'https://noroclient.pl/api/v1/cf';
+const PROXY = process.env.NORE_CF_PROXY || 'https://noreclient.pl/api/v1/cf';
 const GAME = 432; // Minecraft
 const CLASS = { mod: 6, modpack: 4471, resourcepack: 12, shader: 6552, datapack: 6945 };
 const CLASS_KIND = Object.fromEntries(Object.entries(CLASS).map(([k, v]) => [v, k]));

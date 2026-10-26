@@ -7,7 +7,7 @@ related_targets: ["launcher/src/renderer/updater.html","launcher/build/installer
 
 # Nore – whole identity, launcher shell first (Operate; website Persuade/Read)
 
-Scope: the replacement visual world for every Nore surface: Electron renderer (index.html, styles, js), Nore Updater splash, NSIS installer art, the website (noroclient.pl, /api, /panel), the in-game client UI (Theme/Render2D/gui) and the seasonal events. Mode: Operate for launcher and game, Persuade for the website home, Read for the API docs.
+Scope: the replacement visual world for every Nore surface: Electron renderer (index.html, styles, js), Nore Updater splash, NSIS installer art, the website (noreclient.pl, /api, /panel), the in-game client UI (Theme/Render2D/gui) and the seasonal events. Mode: Operate for launcher and game, Persuade for the website home, Read for the API docs.
 
 Audience: PvP players who want to be in game in one click and modpack players who manage several instances; premium and non-premium alike; mostly Polish teenagers playing in the evening.
 

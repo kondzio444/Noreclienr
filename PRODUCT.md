@@ -34,8 +34,8 @@ Four things together, confirmed by the owner as the heart of the product:
 
 - First run: Windows NSIS installer → Nore Updater splash (checks/installs updates, greets new versions) → onboarding wizard (account, look, RAM, install) → home.
 - Daily: pick an instance, press Play; browse Modrinth/CurseForge content; manage servers; talk to friends; check events.
-- Updates come from GitHub Releases through the noroclient.pl API; the launcher updates itself and the mod.
-- Website and public API: noroclient.pl (+ /api docs).
+- Updates come from GitHub Releases through the noreclient.pl API; the launcher updates itself and the mod.
+- Website and public API: noreclient.pl (+ /api docs).
 
 ## Capabilities and Constraints
 

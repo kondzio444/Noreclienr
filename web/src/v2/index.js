@@ -1,5 +1,5 @@
 /*
- * API v2 router – https://noroclient.pl/api/v2 (OpenAPI: /api/v2/openapi.json).
+ * API v2 router – https://noreclient.pl/api/v2 (OpenAPI: /api/v2/openapi.json).
  * API v1 (src/worker.js) is untouched and keeps serving released launchers and mods.
  *
  * Route kinds decide CORS: public (any origin), session (Nore sites with credentials), bot (none).
@@ -61,7 +61,7 @@ export const ENDPOINTS_V2 = [
 ];
 
 function index() {
-  return { api: 'Nore Client API', version: API2_VERSION, docs: 'https://noroclient.pl/api', openapi: '/api/v2/openapi.json', v1: '/api/v1', endpoints: ENDPOINTS_V2.map(([method, path, about]) => ({ method, path, about })) };
+  return { api: 'Nore Client API', version: API2_VERSION, docs: 'https://noreclient.pl/api', openapi: '/api/v2/openapi.json', v1: '/api/v1', endpoints: ENDPOINTS_V2.map(([method, path, about]) => ({ method, path, about })) };
 }
 
 // ---------------------------------------------------------------- servers

@@ -66,7 +66,7 @@ function fakeGuild({ community = false } = {}) {
 }
 
 async function bot() {
-  const b = await new Bot({ env: { noreApi: 'https://noroclient.pl', dataDir: '/tmp/none', botSecret: '' }, dryRun: true }).init();
+  const b = await new Bot({ env: { noreApi: 'https://noreclient.pl', dataDir: '/tmp/none', botSecret: '' }, dryRun: true }).init();
   b.queueSpacingMs = 0;
   b.client = { guilds: { cache: new Collection() }, user: { id: 'bot' } };
   return b;

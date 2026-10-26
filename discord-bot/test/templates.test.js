@@ -6,7 +6,7 @@ import { translator, LANGUAGES, has } from '../src/i18n/index.js';
 import { PermissionFlagsBits } from 'discord.js';
 
 const templates = loadTemplates();
-const vars = { server: 'Test', website: 'https://noroclient.pl', address: 'MC.noreclient.pl' };
+const vars = { server: 'Test', website: 'https://noreclient.pl', address: 'MC.noreclient.pl' };
 
 test('the four templates exist', () => {
   assert.deepEqual(Object.keys(templates).sort(), ['gaming', 'mc-server', 'nore-client', 'support']);

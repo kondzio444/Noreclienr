@@ -179,7 +179,7 @@
     const mine = ++seq;
     $('#req-url').textContent = url;
     $('#res-open').href = url;
-    $('#curl').textContent = `curl https://noroclient.pl${url}`;
+    $('#curl').textContent = `curl https://noreclient.pl${url}`;
     const pre = $('#res-body').parentElement;
     pre.classList.add('loading');
     const t0 = performance.now();

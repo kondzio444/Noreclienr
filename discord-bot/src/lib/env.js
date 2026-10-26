@@ -25,7 +25,7 @@ export function env() {
   return {
     token: str('DISCORD_TOKEN'),
     clientId: str('DISCORD_CLIENT_ID'),
-    noreApi: str('NORE_API', 'https://noroclient.pl').replace(/\/+$/, ''),
+    noreApi: str('NORE_API', 'https://noreclient.pl').replace(/\/+$/, ''),
     botSecret: str('NORE_BOT_SECRET'),
     deployGuildId: str('DEPLOY_GUILD_ID'),
     // BOT_SHARDS, not SHARDS: discord.js reads process.env.SHARDS itself and expects JSON there

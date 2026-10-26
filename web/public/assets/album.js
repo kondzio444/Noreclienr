@@ -1,5 +1,5 @@
 'use strict';
-/* Nore – Album: shared behaviour of the Nore sites (noroclient.pl, noreclient.pl, mc.noreclient.pl).
+/* Nore – Album: shared behaviour of the Nore sites (noreclient.pl, noreclient.pl, mc.noreclient.pl).
    API helper (v2 envelope), entrances, the seasonal event (Halloween torch, winter snow), toasts.
    Everything degrades to the static page without script. */
 (() => {

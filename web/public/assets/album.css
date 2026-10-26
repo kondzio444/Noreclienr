@@ -1,4 +1,4 @@
-/* Nore – Album: the shared stylesheet of noroclient.pl, noreclient.pl and mc.noreclient.pl.
+/* Nore – Album: the shared stylesheet of noreclient.pl, noreclient.pl and mc.noreclient.pl.
    Values come from /assets/tokens.css (design/tokens.json). Stickers carry a vinyl rim drawn as a border,
    never as a shadow; shadows appear only while a sticker is being peeled (hover) or on floating things.
    Served from /assets/ so the Minecraft server host (mc.noreclient.pl) shares it. */

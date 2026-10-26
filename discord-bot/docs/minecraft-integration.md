@@ -83,7 +83,7 @@ listy → `{ "ok": true, "added": ["…"], "removed": ["…"] }`. Wywołuj przy 
 ```java
 HttpClient http = HttpClient.newHttpClient();
 String token = getConfig().getString("nore.token"); // z /minecraft token
-URI base = URI.create(getConfig().getString("nore.url")); // np. https://bot.noroclient.pl
+URI base = URI.create(getConfig().getString("nore.url")); // np. https://bot.noreclient.pl
 
 void chat(Player p, String msg) {
   JsonObject json = new JsonObject(); // com.google.gson (bundled with Paper)

@@ -1,6 +1,6 @@
 // Build step (wrangler.jsonc "build", also `npm run build:tokens`): copies the generated design tokens
 // (design/tokens.css, written by `node design/build-tokens.mjs`) into the website as
-// public/assets/tokens.css. /assets/ is shared by noroclient.pl, noreclient.pl and mc.noreclient.pl.
+// public/assets/tokens.css. /assets/ is shared by noreclient.pl, noreclient.pl and mc.noreclient.pl.
 // Two token lines are legitimate exceptions to the taste-skill lint (the holographic foil of seasonal
 // cosmetics and the code font) and get a taste-skill-ignore marker. Without ../design the committed copy is kept.
 import fs from 'node:fs';

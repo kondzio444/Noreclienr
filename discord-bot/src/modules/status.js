@@ -156,7 +156,7 @@ async function board(bot, guild, results) {
     e.addFields({ name: tg('status.board_servers'), value: clip(results.map(({ s, status }) => `${status.online ? '🟢' : '🔴'} **${s.name || s.address}** \`${s.address}\`${status.online ? ` · ${status.players.online}/${status.players.max} · ${clip(status.version || '', 30)}` : ''}`).join('\n'), 1024) });
   }
   e.setFooter({ text: tg('status.board_footer') });
-  await liveMessage(bot, guild, st.live, 'board', cfg.board.channel, { embeds: [e], components: [row(linkButton(`${bot.env.noreApi}`, 'noroclient.pl', '🌐'))] });
+  await liveMessage(bot, guild, st.live, 'board', cfg.board.channel, { embeds: [e], components: [row(linkButton(`${bot.env.noreApi}`, 'noreclient.pl', '🌐'))] });
 }
 
 export default {

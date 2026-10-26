@@ -2,7 +2,7 @@
  * fetch() with timeout, JSON helpers and per-source exponential backoff, shared by the Nore API
  * client and the feed pollers. Never throws for network problems when using `safe*` helpers.
  */
-export const UA = 'NoreBot/1.0 (+https://noroclient.pl)';
+export const UA = 'NoreBot/1.0 (+https://noreclient.pl)';
 
 export class HttpError extends Error {
   constructor(status, message, body) { super(message); this.status = status; this.body = body; }

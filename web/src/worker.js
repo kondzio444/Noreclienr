@@ -1,6 +1,6 @@
 /*
  * Nore Client – website + public API on Cloudflare Workers (static assets, no R2).
- * Documentation for people: https://noroclient.pl/api   ·   machine readable: /api/v1/openapi.json
+ * Documentation for people: https://noreclient.pl/api   ·   machine readable: /api/v1/openapi.json
  *
  *   GET /api/v1                           index of the endpoints
  *   GET /api/v1/status                    health, version and the last background sync
@@ -110,7 +110,7 @@ async function api(request, url, env, ctx) {
   if (p === '/api/v1/launcher/config') return json(request, launcherConfig(env), { maxAge: 3600 });
 
   if (p === '/api/v1') {
-    return json(request, { api: 'Nore Client API', version: API_VERSION, docs: 'https://noroclient.pl/api', endpoints: ENDPOINTS.map(([method, path, about]) => ({ method, path, about })) }, { maxAge: 3600 });
+    return json(request, { api: 'Nore Client API', version: API_VERSION, docs: 'https://noreclient.pl/api', endpoints: ENDPOINTS.map(([method, path, about]) => ({ method, path, about })) }, { maxAge: 3600 });
   }
   if (p === '/api/v1/openapi.json') return json(request, openapi(), { maxAge: 3600 });
   if (p === '/api/v1/events') return json(request, { events: events() }, { maxAge: 300 });
@@ -219,7 +219,7 @@ function openapi() {
   return {
     openapi: '3.1.0',
     info: { title: 'Nore Client API', version: API_VERSION, description: 'Publiczne API Nore Client: wydania, aktualizacje launchera i moda, wydarzenia, aktualności i Nore Hub (kto jeszcze gra z Nore). Bez klucza, CORS otwarty, odpowiedzi z ETag.' },
-    servers: [{ url: 'https://noroclient.pl' }],
+    servers: [{ url: 'https://noreclient.pl' }],
     paths: {
       '/api/v1/status': { get: { summary: 'Stan API i synchronizacji w tle', responses: ok('Stan', obj({ ok: b, api: s, latest: s, sync: obj({ at: s, ok: b, ms: n, releases: n, ageSeconds: n }) })) } },
       '/api/v1/version': { get: { summary: 'Najnowsze wydanie', responses: ok('Wydanie', obj({ version: s, published: s, notes: s, downloads: n, assets: obj({ win: asset, linux: asset, mac: asset }), mods: { type: 'array', items: asset } })) } },

@@ -16,7 +16,7 @@ export const SECURITY_HEADERS = {
 };
 
 /** Sites that may call the cookie-authenticated routes (panel, /me, logout) from a browser. */
-export const SITE_ORIGINS = ['https://noroclient.pl', 'https://noreclient.pl', 'https://mc.noreclient.pl'];
+export const SITE_ORIGINS = ['https://noreclient.pl', 'https://mc.noreclient.pl'];
 
 export class ApiError extends Error {
   /** @param {number} status @param {string} code @param {string} message @param {object} [extra] fields added to the error body */
