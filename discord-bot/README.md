@@ -84,7 +84,7 @@ node .                      # albo: npm start
 | `DISCORD_CLIENT_ID` | tak | Application ID |
 | `NORE_API` | nie | domyślnie `https://noreclient.pl` |
 | `NORE_BOT_SECRET` | dla panelu | wspólny sekret z Workerem (API v2, nagłówek `Authorization: Bot …`); pusty = tryb offline |
-| `DEPLOY_GUILD_ID` | nie | rejestracja komend tylko na jednym serwerze (natychmiast, do testów); pusty = globalnie |
+| `DEPLOY_GUILD_ID` | nie | rejestracja komend od razu na wybranych serwerach – jedno ID albo kilka po przecinku (`123,456`); pusty = globalnie na wszystkich serwerach |
 | `BOT_SHARDS` | nie | `auto` (domyślnie) albo liczba shardów |
 | `DATA_DIR` | nie | katalog danych (domyślnie `./data`) |
 | `LOG_LEVEL`, `LOG_FORMAT` | nie | `debug/info/warn/error`, `pretty/json` |
@@ -97,7 +97,7 @@ Pliki `.env` i `data/` są w `.gitignore` – **repozytorium jest publiczne, nig
 ### Rejestracja komend
 
 * `npm run deploy-commands` – globalnie (pojawiają się do godziny),
-* `DEPLOY_GUILD_ID=123… npm run deploy-commands` albo `npm run deploy-commands -- --guild 123…` – od razu na jednym serwerze,
+* `DEPLOY_GUILD_ID=123…,456… npm run deploy-commands` albo `npm run deploy-commands -- --guild 123…,456…` – od razu na podanych serwerach,
 * `npm run deploy-commands -- --clear` – usuwa komendy.
 
 Nazwy komend są angielskie (opisy, opcje i wybory są przetłumaczone na polski), `/help` ma też polską nazwę `/pomoc`.
