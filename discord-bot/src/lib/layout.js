@@ -66,12 +66,16 @@ function findRole(current, map, r) {
   return current.roles.find(x => !x.managed && normName(x.name) === normName(r.name)) || null;
 }
 
+/** Channel types that replace each other on servers without Community (forum → text, stage → voice). */
+const kind = (t) => ({ announcement: 'text', forum: 'text', stage: 'voice' }[t] || t);
+
 function findChannel(current, map, c, parentId) {
   const byId = map[`c:${c.key}`] && current.channels.find(x => x.id === map[`c:${c.key}`]);
   if (byId) return byId;
   const n = normName(c.name);
-  return current.channels.find(x => x.type === c.type && normName(x.name) === n && (c.type === 'category' || (x.parentId || null) === (parentId || null)))
-    || current.channels.find(x => x.type === c.type && normName(x.name) === n) || null;
+  const same = (x) => kind(x.type) === kind(c.type) && normName(x.name) === n;
+  return current.channels.find(x => same(x) && (c.type === 'category' || (x.parentId || null) === (parentId || null)))
+    || current.channels.find(same) || null;
 }
 
 const colorNum = (c) => (typeof c === 'number' ? c : c ? parseInt(String(c).replace('#', ''), 16) || 0 : 0);

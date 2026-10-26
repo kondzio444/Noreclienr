@@ -58,6 +58,8 @@ export function buildPlan(bot, guild, { template, lang, size, content = true, se
   const st = state(bot, guild.id);
   const plan = planLayout(compiled.layout, snapshotForPlan(guild, protect), { map: st.map, update, prune });
   const ops = [...plan.ops];
+  // forums, announcement and stage channels need Community – enable it before the channels are created
+  if (settings && compiled.settings.community && !guild.features.includes('COMMUNITY')) ops.unshift({ op: 'community.early' });
   ops.push({ op: 'config', binds: compiled.binds, levels: compiled.levels, menus: compiled.menus, groups: compiled.groups, lang, template, address: v.address, status: tpl.statusServer !== false && !!tpl.address });
   if (content) {
     for (const c of compiled.content) if (update ? !st.posted.includes(`${c.channelKey}:${c.kind}`) : true) ops.push({ op: 'post', channelKey: c.channelKey, kind: c.kind });
@@ -81,6 +83,21 @@ function extraOps(bot, guild, job) {
   const cid = (map, key) => map[`c:${key}`];
   const rid = (map, key) => map[`r:${key}`];
   return async (op, map) => {
+    if (op.op === 'community.early') {
+      if (guild.features.includes('COMMUNITY')) return;
+      const { GuildVerificationLevel, GuildExplicitContentFilter } = await import('discord.js');
+      // "1" lets Discord create placeholder rules / updates channels; the settings step points
+      // Community at the template's channels afterwards and removes the placeholders
+      try {
+        const g = await guild.edit({
+          features: [...guild.features, 'COMMUNITY'], rulesChannel: '1', publicUpdatesChannel: '1',
+          verificationLevel: Math.max(guild.verificationLevel, GuildVerificationLevel.Low), explicitContentFilter: GuildExplicitContentFilter.AllMembers,
+          reason: 'Nore Bot builder',
+        });
+        map['c:__tmp_rules'] = g.rulesChannelId; map['c:__tmp_updates'] = g.publicUpdatesChannelId;
+      } catch (err) { log.warn('could not enable Community – forums become text channels', { err: err.message }); }
+      return;
+    }
     if (op.op === 'config') {
       const lists = {};
       const items = {}; // "applications.forms" -> cloned list, for paths like applications.forms[partner].role
@@ -183,8 +200,14 @@ function extraOps(bot, guild, job) {
       if (s.afkChannel && cid(map, s.afkChannel)) { edit.afkChannel = cid(map, s.afkChannel); edit.afkTimeout = s.afkTimeout || 900; }
       if (s.systemChannel && cid(map, s.systemChannel)) edit.systemChannel = cid(map, s.systemChannel);
       if (Object.keys(edit).length) await guild.edit({ ...edit, reason: 'Nore Bot builder' }).catch(err => log.warn('settings failed', { err: err.message }));
-      if (s.community && cid(map, s.rulesChannel) && cid(map, s.updatesChannel) && !guild.features.includes('COMMUNITY')) {
-        await guild.edit({ features: [...guild.features, 'COMMUNITY'], rulesChannel: cid(map, s.rulesChannel), publicUpdatesChannel: cid(map, s.updatesChannel), reason: 'Nore Bot builder' }).catch(err => log.warn('community enable failed', { err: err.message }));
+      if (s.community && cid(map, s.rulesChannel) && cid(map, s.updatesChannel)) {
+        const features = guild.features.includes('COMMUNITY') ? undefined : [...guild.features, 'COMMUNITY'];
+        await guild.edit({ ...(features ? { features } : {}), rulesChannel: cid(map, s.rulesChannel), publicUpdatesChannel: cid(map, s.updatesChannel), reason: 'Nore Bot builder' }).catch(err => log.warn('community settings failed', { err: err.message }));
+        for (const k of ['c:__tmp_rules', 'c:__tmp_updates']) {
+          const id = map[k];
+          if (id && id !== cid(map, s.rulesChannel) && id !== cid(map, s.updatesChannel)) await guild.channels.cache.get(id)?.delete('Nore Bot builder: placeholder').catch(() => {});
+          delete map[k];
+        }
       }
       if (s.autoPublish) bot.config.set(guild.id, 'community.autoPublish', s.autoPublish.map(k => cid(map, k)).filter(Boolean), { by: job.by });
     }

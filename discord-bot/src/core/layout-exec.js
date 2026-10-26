@@ -68,15 +68,20 @@ function overwrites(guild, map, list) {
 }
 
 /** Runs ops; `extra(op, map)` handles builder specific ops (posts, config bindings). */
-export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckpoint, extra, reason = 'Nore Bot builder', desired } = {}) {
+export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckpoint, extra, reason = 'Nore Bot builder', spacingMs = bot?.queueSpacingMs ?? 300 } = {}) {
   const roleIcons = guild.features.includes('ROLE_ICONS');
+  // a bot can only grant permissions it has itself (Administrator grants everything)
+  const grantable = (bits) => {
+    const mine = guild.members.me.permissions.bitfield;
+    return (mine & PermissionFlagsBits.Administrator) ? bits : bits & mine;
+  };
   const steps = ops.map((op) => ({
     label: `${op.op} ${op.key || op.name || ''}`.trim(),
     run: async () => {
       switch (op.op) {
         case 'role.create': {
           const r = op.data;
-          const role = await guild.roles.create({ name: r.name, colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: toBits(r.permissions) & guild.members.me.permissions.bitfield, unicodeEmoji: roleIcons && r.icon ? r.icon : undefined, reason });
+          const role = await guild.roles.create({ name: r.name, colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), unicodeEmoji: roleIcons && r.icon ? r.icon : undefined, reason });
           map[`r:${op.key}`] = role.id;
           break;
         }
@@ -84,7 +89,7 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
           const role = guild.roles.cache.get(op.id);
           if (!role?.editable) break;
           const r = op.data;
-          await role.edit({ colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: toBits(r.permissions) & guild.members.me.permissions.bitfield, reason });
+          await role.edit({ colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), reason });
           break;
         }
         case 'role.positions': {
@@ -101,7 +106,11 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
           if (c.type !== 'category' && c.type !== 'voice' && c.type !== 'stage') { if (c.topic) data.topic = c.topic; data.nsfw = !!c.nsfw; data.rateLimitPerUser = c.slowmode || 0; }
           if (c.type === 'voice' || c.type === 'stage') { if (c.userLimit) data.userLimit = c.userLimit; if (c.bitrate) data.bitrate = Math.min(c.bitrate, guild.maximumBitrate); }
           if (c.type === 'forum' && c.tags?.length) data.availableTags = c.tags.slice(0, 20).map(t => ({ name: t.name, emoji: t.emoji ? { name: t.emoji } : null, moderated: !!t.moderated }));
-          if ((c.type === 'announcement' || c.type === 'forum') && !guild.features.includes('COMMUNITY')) data.type = ChannelType.GuildText;
+          // announcement, forum and stage channels need Community; without it fall back to text/voice
+          if (['announcement', 'forum', 'stage'].includes(c.type) && !guild.features.includes('COMMUNITY')) {
+            data.type = c.type === 'stage' ? ChannelType.GuildVoice : ChannelType.GuildText;
+            delete data.availableTags;
+          }
           const ch = await guild.channels.create(data);
           map[`c:${op.key}`] = ch.id;
           break;
@@ -151,7 +160,7 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
       }
     },
   }));
-  return new JobQueue(steps, { startAt, onProgress, onCheckpoint, spacingMs: 300 });
+  return new JobQueue(steps, { startAt, onProgress, onCheckpoint, spacingMs });
 }
 
 export { permNames };
