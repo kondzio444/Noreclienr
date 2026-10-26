@@ -2,6 +2,8 @@
  * Translations: locales/<lang>.json (nested objects, dotted keys), `{var}` placeholders and plurals
  * via Intl.PluralRules ({ "one": "…", "few": "…", "many": "…", "other": "…" } with a `count` var).
  *
+ * Supported languages: Polish (default) and English. Members whose Discord client uses another
+ * language get the server language.
  * Fallback chain for a key: requested language → English → Polish (default) → the key itself.
  * Polish is the bot's default language for guilds; English is the base for Discord's
  * command definitions (the description shown for locales the bot does not translate).
@@ -10,7 +12,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../lib/env.js';
 
-export const LANGUAGES = ['pl', 'en', 'de', 'es', 'fr', 'uk', 'ru', 'cs', 'pt-BR', 'tr'];
+export const LANGUAGES = ['pl', 'en'];
 export const DEFAULT_LANG = 'pl';
 const FALLBACKS = ['en', 'pl'];
 
@@ -18,21 +20,10 @@ const FALLBACKS = ['en', 'pl'];
 export const DISCORD_LOCALES = {
   pl: ['pl'],
   en: ['en-US', 'en-GB'],
-  de: ['de'],
-  es: ['es-ES', 'es-419'],
-  fr: ['fr'],
-  uk: ['uk'],
-  ru: ['ru'],
-  cs: ['cs'],
-  'pt-BR': ['pt-BR'],
-  tr: ['tr'],
 };
 
 /** Native names for language pickers. */
-export const LANGUAGE_NAMES = {
-  pl: 'Polski', en: 'English', de: 'Deutsch', es: 'Español', fr: 'Français', uk: 'Українська',
-  ru: 'Русский', cs: 'Čeština', 'pt-BR': 'Português (Brasil)', tr: 'Türkçe',
-};
+export const LANGUAGE_NAMES = { pl: 'Polski', en: 'English' };
 
 const dicts = new Map();
 const pluralRules = new Map();
@@ -81,7 +72,6 @@ export function normalizeLang(code) {
   if (!code) return null;
   if (LANGUAGES.includes(code)) return code;
   const lower = String(code).toLowerCase();
-  if (lower === 'pt-br' || lower === 'pt') return 'pt-BR';
   const base = lower.split('-')[0];
   return LANGUAGES.includes(base) ? base : null;
 }
@@ -124,7 +114,7 @@ export function t(lang, key, vars) {
   return interpolate(String(v), vars);
 }
 
-/** Bound translator: const tr = translator('de'); tr('help.title') */
+/** Bound translator: const tr = translator('en'); tr('help.title') */
 export function translator(lang) {
   const l = normalizeLang(lang) || DEFAULT_LANG;
   const fn = (key, vars) => t(l, key, vars);

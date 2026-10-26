@@ -13,7 +13,7 @@
 
 const ID = '^(\\d{17,20})?$';
 const ID_STRICT = '^\\d{17,20}$';
-const LANGS = ['pl', 'en', 'de', 'es', 'fr', 'uk', 'ru', 'cs', 'pt-BR', 'tr'];
+const LANGS = ['pl', 'en'];
 
 // ------------------------------------------------------------------ field helpers
 // `key` overrides the derived label key (shared labels live under panel.common.*)

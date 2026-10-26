@@ -21,7 +21,7 @@ export const SIZES = ['small', 'medium', 'full'];
 const rank = (s) => SIZES.indexOf(s || 'small');
 const SEP = '┃';
 
-const FLAGS = { pl: '🇵🇱', en: '🇬🇧', de: '🇩🇪', es: '🇪🇸', fr: '🇫🇷', uk: '🇺🇦', ru: '🇷🇺', cs: '🇨🇿', 'pt-BR': '🇧🇷', tr: '🇹🇷' };
+const FLAGS = { pl: '🇵🇱', en: '🇬🇧' };
 export const BUILTIN_LISTS = {
   languages: Object.fromEntries(Object.entries(LANGUAGE_NAMES).map(([k, v]) => [k, { name: v, emoji: FLAGS[k] }])),
 };

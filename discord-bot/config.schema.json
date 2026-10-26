@@ -7,15 +7,7 @@
   "x-version": 1,
   "x-languages": [
     "pl",
-    "en",
-    "de",
-    "es",
-    "fr",
-    "uk",
-    "ru",
-    "cs",
-    "pt-BR",
-    "tr"
+    "en"
   ],
   "type": "object",
   "additionalProperties": false,
@@ -28,30 +20,14 @@
           "type": "string",
           "enum": [
             "pl",
-            "en",
-            "de",
-            "es",
-            "fr",
-            "uk",
-            "ru",
-            "cs",
-            "pt-BR",
-            "tr"
+            "en"
           ],
           "default": "pl",
           "x-ui": "select",
           "x-i18n": "panel.general.language",
           "x-i18n-options": {
             "pl": "panel.options.languages.pl",
-            "en": "panel.options.languages.en",
-            "de": "panel.options.languages.de",
-            "es": "panel.options.languages.es",
-            "fr": "panel.options.languages.fr",
-            "uk": "panel.options.languages.uk",
-            "ru": "panel.options.languages.ru",
-            "cs": "panel.options.languages.cs",
-            "pt-BR": "panel.options.languages.pt-BR",
-            "tr": "panel.options.languages.tr"
+            "en": "panel.options.languages.en"
           }
         },
         "useMemberLocale": {
@@ -3432,15 +3408,7 @@
                 "enum": [
                   "",
                   "pl",
-                  "en",
-                  "de",
-                  "es",
-                  "fr",
-                  "uk",
-                  "ru",
-                  "cs",
-                  "pt-BR",
-                  "tr"
+                  "en"
                 ],
                 "default": "",
                 "x-ui": "select",
@@ -3448,15 +3416,7 @@
                 "x-i18n-options": {
                   "": "panel.options.languages.default",
                   "pl": "panel.options.languages.pl",
-                  "en": "panel.options.languages.en",
-                  "de": "panel.options.languages.de",
-                  "es": "panel.options.languages.es",
-                  "fr": "panel.options.languages.fr",
-                  "uk": "panel.options.languages.uk",
-                  "ru": "panel.options.languages.ru",
-                  "cs": "panel.options.languages.cs",
-                  "pt-BR": "panel.options.languages.pt-BR",
-                  "tr": "panel.options.languages.tr"
+                  "en": "panel.options.languages.en"
                 }
               }
             }
