@@ -9,7 +9,7 @@ import { lintCommand, requiredKeys } from './core/commands.js';
 import { validate } from './config/validate.js';
 import { LANGUAGES, keysOf, translator, has } from './i18n/index.js';
 import { loadTemplates, compileTemplate, SIZES } from './lib/templates.js';
-import { validateLayout } from './lib/layout.js';
+import { validateLayout, planLayout } from './lib/layout.js';
 import { CONTENT_KINDS } from './modules/builder/content.js';
 
 export async function dryRun(env) {
@@ -45,8 +45,19 @@ export async function dryRun(env) {
         const c = compileTemplate(tpl, { t: translator(lang), size, vars: { server: 'Test', website: 'https://noroclient.pl', address: 'MC.noreclient.pl' } });
         for (const p of validateLayout(c.layout)) problems.push(`template ${id}/${lang}/${size}: ${p}`);
         for (const x of [...c.layout.roles, ...c.layout.channels]) if (/tpl\.[a-z]/.test(x.name) || /tpl\.[a-z]/.test(x.topic || '')) problems.push(`template ${id}/${lang}: untranslated ${x.key} "${x.name}"`);
+        for (const x of c.layout.channels) if (x.topicKey && !has(lang, x.topicKey, { exact: true })) problems.push(`template ${id}/${lang}: no topic ${x.topicKey}`);
         for (const k of c.content) if (!CONTENT_KINDS.includes(k.kind)) problems.push(`template ${id}: unknown content ${k.kind}`);
-        if (lang === 'pl') sizes[`${id}/${size}`] = `${c.layout.roles.length} roles, ${c.layout.channels.filter(x => x.type === 'category').length} categories, ${c.layout.channels.filter(x => x.type !== 'category').length} channels`;
+        for (const k of c.content) if (!has(lang, `tpl.content.${k.kind}.title`, { exact: true })) problems.push(`template ${id}/${lang}: no content tpl.content.${k.kind}`);
+        for (const m of Object.keys(c.menus)) if (!has(lang, `tpl.menu.${m}.title`, { exact: true })) problems.push(`template ${id}/${lang}: no menu ${m}`);
+        if (lang === 'pl') {
+          // apply against an empty fake guild: what the builder would create
+          const plan = planLayout(c.layout, { roles: [], channels: [] });
+          sizes[`${id}/${size}`] = `${c.layout.roles.length} roles, ${c.layout.channels.filter(x => x.type === 'category').length} categories, ${c.layout.channels.filter(x => x.type !== 'category').length} channels → ${plan.ops.length} layout steps, ${c.content.length} posts, ${c.panels.length} panels, ${c.binds.length} config bindings`;
+          // and again against the result: a rerun must create nothing (idempotency)
+          const fake = { roles: c.layout.roles.map((r, i) => ({ id: `r${i}`, name: r.name, color: 0, permissions: [] })), channels: c.layout.channels.map((x, i) => ({ id: `c${i}`, name: x.name, type: x.type, parentId: x.parent ? `c${c.layout.channels.findIndex(y => y.key === x.parent)}` : null })) };
+          const again = planLayout(c.layout, fake);
+          if (again.summary.create.roles || again.summary.create.channels) problems.push(`template ${id}/${size}: rerun would create ${again.summary.create.roles} roles / ${again.summary.create.channels} channels`);
+        }
       }
     }
   }

@@ -83,19 +83,31 @@ function extraOps(bot, guild, job) {
   return async (op, map) => {
     if (op.op === 'config') {
       const lists = {};
+      const items = {}; // "applications.forms" -> cloned list, for paths like applications.forms[partner].role
       for (const b of op.binds) {
         const [path, append] = b.path.endsWith('+') ? [b.path.slice(0, -1), true] : [b.path, false];
         let value;
-        if (b.value !== undefined) value = b.value;
+        if (b.refs) value = b.refs.map(([rank, key]) => ({ rank, role: rid(map, key) })).filter(x => x.role);
+        else if (b.refsChannels) value = b.refsChannels.map(x => ({ ...x, channel: cid(map, x.channel) })).filter(x => x.channel);
+        else if (b.value !== undefined) value = b.value;
         else if (b.ref?.channel) value = cid(map, b.ref.channel);
         else if (b.ref?.role) value = rid(map, b.ref.role);
         else if (b.ref?.roles) value = b.ref.roles.map(k => rid(map, k)).filter(Boolean);
         else if (b.ref?.channels) value = b.ref.channels.map(k => cid(map, k)).filter(Boolean);
         if (value === undefined || value === null) continue;
+        const li = /^(.+)\[([\w-]+)\]\.(\w+)$/.exec(path);
+        if (li) {
+          const [, listPath, id, field] = li;
+          items[listPath] ??= structuredClone(getPath(bot.cfg(guild.id), listPath) || []);
+          const it = items[listPath].find(x => x.id === id);
+          if (it) it[field] = value;
+          continue;
+        }
         if (append) { lists[path] ??= [...(getPath(bot.cfg(guild.id), path) || [])]; for (const x of [].concat(value)) if (!lists[path].includes(x)) lists[path].push(x); }
         else set(path, value);
       }
       for (const [p, list] of Object.entries(lists)) set(p, list);
+      for (const [p, list] of Object.entries(items)) set(p, list);
       // level rewards
       if (op.levels.length) set('leveling.rewards', op.levels.map(l => ({ level: l.level, role: rid(map, l.key) })).filter(r => r.role));
       // staff tiers → general.staffRoles, moderation roles, ticket staff

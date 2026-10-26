@@ -26,6 +26,18 @@ export const BUILTIN_LISTS = {
   languages: Object.fromEntries(Object.entries(LANGUAGE_NAMES).map(([k, v]) => [k, { name: v, emoji: FLAGS[k] }])),
 };
 
+/** One overwrite per target (Discord rejects duplicates); allow wins over deny of the same entry. */
+export function mergeOverwrites(list) {
+  const by = new Map();
+  for (const o of list) {
+    const cur = by.get(o.target) || { target: o.target, allow: new Set(), deny: new Set() };
+    for (const p of o.allow) { cur.allow.add(p); cur.deny.delete(p); }
+    for (const p of o.deny) if (!cur.allow.has(p)) cur.deny.add(p);
+    by.set(o.target, cur);
+  }
+  return [...by.values()].map(o => ({ target: o.target, allow: [...o.allow], deny: [...o.deny] }));
+}
+
 export function loadTemplates(dir = path.join(ROOT, 'templates')) {
   const out = {};
   for (const f of readdirSync(dir).filter(f => f.endsWith('.json'))) {
@@ -40,7 +52,10 @@ function expand(item, lists) {
   if (!item.each) return [{ key: item.key, vars: {}, item }];
   const src = Array.isArray(item.each) ? item.each : (lists[item.each] || BUILTIN_LISTS[item.each]);
   if (!src) throw new Error(`unknown list ${item.each}`);
-  const entries = Array.isArray(src) ? src.map(v => [String(v), { name: String(v) }]) : Object.entries(src).map(([k, v]) => [k, typeof v === 'string' ? { name: v } : v]);
+  // arrays keep their order ([5, 10] or [{ id, name, color, emoji }]); objects are { id: { name, … } }
+  const entries = Array.isArray(src)
+    ? src.map(v => (v && typeof v === 'object' ? [String(v.id), { name: String(v.name ?? v.id), ...v }] : [String(v), { name: String(v) }]))
+    : Object.entries(src).map(([k, v]) => [k, typeof v === 'string' ? { name: v } : v]);
   return entries.map(([id, v], i) => ({ key: item.key.replace('{id}', id.toLowerCase().replace(/[^a-z0-9]/g, '')), vars: { id, item: v.name, n: Number.isFinite(+id) ? +id : i + 1, emoji: v.emoji || item.emoji }, item, entry: v }));
 }
 
@@ -112,11 +127,13 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
   // ---- categories and channels
   for (const c of tpl.categories) {
     if (rank(c.size) > R) continue;
-    for (const { key: catKey, vars: cv } of expand(c, lists)) {
+    for (const { key: rawCatKey, vars: cv } of expand(c, lists)) {
+      const catKey = `cat_${rawCatKey}`; // categories and channels share one key space
       const catName = `${cv.emoji || c.emoji} ${SEP} ${tv(`tpl.cat.${c.key.replace(/_?\{id\}/, '')}`, cv).toUpperCase()}`;
       const catOver = access(c.access);
       for (const k of groupKeys('muted')) catOver.push({ target: k, allow: [], deny: ['SendMessages', 'AddReactions', 'Speak', 'SendMessagesInThreads', 'CreatePublicThreads'] });
-      channels.push({ key: catKey, name: catName.slice(0, 100), type: 'category', parent: null, overwrites: catOver });
+      channels.push({ key: catKey, name: catName.slice(0, 100), type: 'category', parent: null, overwrites: mergeOverwrites(catOver) });
+      if (c.bindCategory) binds.push({ path: c.bindCategory, ref: { channel: catKey } });
       for (const ch of c.channels) {
         if (rank(ch.size) > R) continue;
         for (const { key: chKey, vars: v } of expand(ch, lists)) {
@@ -132,8 +149,9 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
             key: fullKey, name, type: ch.type || 'text', parent: catKey,
             topic: topic === topicKey ? '' : topic.slice(0, 1024),
             slowmode: ch.slowmode || 0, nsfw: false, userLimit: ch.userLimit || undefined,
-            overwrites: (ch.mode || ch.access) ? modeOverwrites(ch.mode, ch.access ? access(ch.access) : catOver, ch.access ? { access: ch.access } : c) : catOver,
+            overwrites: mergeOverwrites((ch.mode || ch.access) ? modeOverwrites(ch.mode, ch.access ? access(ch.access) : catOver, ch.access ? { access: ch.access } : c) : catOver),
             tags: ch.tags ? ch.tags.map(tg => ({ name: tv(`tpl.tag.${tg.key}`, {}).slice(0, 20), emoji: tg.emoji, moderated: !!tg.moderated })) : undefined,
+            topicKey: isVoice ? null : topicKey,
           };
           channels.push(out);
           for (const k of ch.content || []) content.push({ channelKey: fullKey, kind: k });
@@ -143,10 +161,13 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
       }
     }
   }
-  for (const b of tpl.binds || []) {
+  for (const raw of tpl.binds || []) {
+    const b = structuredClone(raw);
     if (b.ref?.role && !roleKeys.has(b.ref.role)) continue;
     if (b.ref?.roles) b.ref.roles = b.ref.roles.filter(k => roleKeys.has(k));
     if (b.ref?.channel && !channels.some(c => c.key === b.ref.channel)) continue;
+    if (b.refs) b.refs = b.refs.filter(([, k]) => roleKeys.has(k));
+    if (b.refsChannels) { b.refsChannels = b.refsChannels.filter(x => channels.some(c => c.key === x.channel)); if (!b.refsChannels.length) continue; }
     binds.push(b);
   }
   return { layout: { roles, channels }, content, panels, binds, menus, levels, settings: tpl.settings || {}, groups: Object.fromEntries(Object.keys(tpl.groups || {}).map(g => [g, groupKeys(g)])) };

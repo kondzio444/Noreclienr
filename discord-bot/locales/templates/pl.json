@@ -1,0 +1,455 @@
+{
+  "meta": {
+    "nore-client": { "name": "Społeczność Nore Client", "description": "Społeczność w stylu oficjalnego serwera Nore Client i Nore Launchera: wydania i listy zmian, pomoc z klientem i launcherem, zgłoszenia błędów dla każdego systemu, propozycje, program beta, prezentacja szatni, twórcy, partnerzy i pełna sekcja ekipy." },
+    "mc-server": { "name": "Serwer Minecraft MC.noreclient.pl", "description": "Kompletna społeczność serwera Minecraft MC.noreclient.pl: status serwera na żywo, jak dołączyć, tryby gry z własnymi kanałami, handel, klany, eventy, support z odwołaniami od banów, współprace, rangi z gry, most czatu i pełna sekcja ekipy." },
+    "gaming": { "name": "Społeczność graczy", "description": "Społeczność graczy z sekcją dla każdej gry (czat, szukanie drużyny, klipy, głosowe), eventami, supportem i zwartą strefą ekipy." },
+    "support": { "name": "Tylko support", "description": "Serwer nastawiony na pomoc: tickety, forum pomocy, zgłoszenia błędów, znane problemy, status i strefa ekipy." }
+  },
+  "role": {
+    "sep_staff": "Ekipa", "sep_special": "Wyróżnienia", "sep_ranks": "Rangi z gry", "sep_levels": "Poziomy", "sep_community": "Społeczność",
+    "owner": "Właściciel", "board": "Zarząd", "admin": "Administrator", "developer": "Developer", "moderator": "Moderator", "helper": "Pomocnik", "trial": "Okres próbny",
+    "builder": "Budowniczy", "event_team": "Ekipa eventów", "nore_team": "Nore Team",
+    "partner": "Partner", "translator": "Tłumacz", "contributor": "Współtwórca", "content_creator": "Twórca", "youtuber": "YouTuber", "streamer": "Streamer", "tiktoker": "TikToker",
+    "beta_tester": "Beta tester", "booster": "Booster serwera", "vip": "VIP", "supporter": "Wspierający",
+    "rank_legend": "Ranga Legenda", "rank_elite": "Ranga Elita", "rank_mvp": "Ranga MVP", "rank_svip": "Ranga SVIP", "rank_vip": "Ranga VIP",
+    "level": "Poziom {n}", "member": "Gracz", "mode": "{item}", "game": "{item}", "platform": "{item}", "lang_pl": "Polski", "lang_en": "English",
+    "ping_announcements": "Ping: ogłoszenia", "ping_updates": "Ping: aktualizacje", "ping_events": "Ping: eventy", "ping_giveaways": "Ping: konkursy", "ping_status": "Ping: status",
+    "ping_polls": "Ping: ankiety", "ping_streams": "Ping: streamy", "ping_partners": "Ping: współprace", "ping_beta": "Ping: beta",
+    "muted": "Wyciszony", "bots": "Boty"
+  },
+  "roledesc": {
+    "owner": "właściciel serwera, ostatnie słowo we wszystkim",
+    "board": "zarząd – decyduje o kierunku rozwoju serwera",
+    "admin": "administratorzy – konfiguracja, ekipa i ważniejsze decyzje",
+    "developer": "rozwija serwer, pluginy i narzędzia",
+    "moderator": "dba o to, żeby na czacie było miło i bezpiecznie",
+    "helper": "pierwsza linia pomocy – pytaj o wszystko",
+    "trial": "nowe osoby w ekipie na okresie próbnym",
+    "builder": "buduje mapy, spawny i areny eventów",
+    "event_team": "organizuje eventy, turnieje i konkursy",
+    "nore_team": "twórcy Nore Client i Nore Launchera",
+    "partner": "serwery i projekty partnerskie",
+    "translator": "tłumaczy Nore na inne języki",
+    "contributor": "dołożył(a) kod, pomysły albo grafiki",
+    "content_creator": "tworzy treści o serwerze",
+    "youtuber": "twórcy na YouTube",
+    "streamer": "streamuje na Twitchu lub YouTube",
+    "tiktoker": "tworzy TikToki",
+    "beta_tester": "testuje nowe wersje przed wszystkimi",
+    "booster": "boostuje serwer – dziękujemy! 💜",
+    "vip": "członkowie VIP",
+    "supporter": "wspiera projekt",
+    "rank_legend": "ranga Legenda na serwerze Minecraft (synchronizowana z gry)",
+    "rank_elite": "ranga Elita na serwerze Minecraft (synchronizowana z gry)",
+    "rank_mvp": "ranga MVP na serwerze Minecraft (synchronizowana z gry)",
+    "rank_svip": "ranga SVIP na serwerze Minecraft (synchronizowana z gry)",
+    "rank_vip": "ranga VIP na serwerze Minecraft (synchronizowana z gry)",
+    "level": "osiągnął(-ęła) poziom {n} dzięki aktywności",
+    "member": "zweryfikowany członek – odblokowuje serwer",
+    "mode": "powiadomienia i dostęp do trybu {item}",
+    "game": "grasz w {item}",
+    "platform": "używasz systemu {item}",
+    "lang_pl": "mówisz po polsku",
+    "lang_en": "mówisz po angielsku",
+    "ping_announcements": "oznaczenie przy ważnych ogłoszeniach",
+    "ping_updates": "oznaczenie przy aktualizacjach i nowych wersjach",
+    "ping_events": "oznaczenie przy eventach",
+    "ping_giveaways": "oznaczenie przy konkursach",
+    "ping_status": "oznaczenie, gdy coś przestanie działać",
+    "ping_polls": "oznaczenie przy ankietach",
+    "ping_streams": "oznaczenie przy streamach",
+    "ping_partners": "oznaczenie przy nowościach od partnerów",
+    "ping_beta": "oznaczenie przy nowych wersjach beta",
+    "muted": "na razie nie może pisać ani mówić",
+    "bots": "boty serwera"
+  },
+  "menu": {
+    "pings": { "title": "🔔 Powiadomienia", "text": "Wybierz, o czym chcesz dostawać oznaczenia. Kliknij ponownie, żeby zdjąć rolę." },
+    "languages": { "title": "🌍 Języki", "text": "W jakich językach mówisz?" },
+    "modes": { "title": "⚔️ Tryby gry", "text": "Wybierz tryby, w które grasz – dostaniesz ich nowości." },
+    "games": { "title": "🎮 Gry", "text": "Wybierz gry, w które grasz, żeby łatwiej znaleźć drużynę." },
+    "platforms": { "title": "💻 System", "text": "Na jakim systemie używasz Nore? Dzięki temu łatwiej ci pomożemy." }
+  },
+  "cat": {
+    "start": "Zacznij tutaj", "news": "Nowości", "nore_news": "Nowości Nore", "community": "Społeczność", "international": "Międzynarodowe",
+    "mode": "{item}", "game": "{item}", "market": "Handel", "clans": "Klany", "events": "Eventy", "help_center": "Centrum pomocy",
+    "support": "Pomoc", "partners": "Współprace", "creators": "Twórcy", "vip": "VIP i boosterzy", "voice": "Głosowe",
+    "tickets": "Tickety", "staff": "Ekipa", "logs": "Logi", "archive": "Archiwum", "nore_client": "Nore Client", "launcher": "Nore Launcher",
+    "bugs": "Zgłoszenia błędów", "versions": "Wersje Minecrafta", "ideas": "Pomysły", "beta": "Beta", "dev": "Rozwój", "showcase": "Galeria"
+  },
+  "ch": {
+    "start": "zacznij-tutaj", "rules": "regulamin", "verify": "weryfikacja", "announcements": "ogłoszenia", "server_ip": "ip-serwera", "how_to_join": "jak-dołączyć",
+    "faq": "faq", "links": "linki", "roles": "role", "boosts_info": "boosty", "download": "pobierz",
+    "updates": "aktualizacje", "events_news": "eventy-info", "nore_updates": "wydania-nore", "status": "status", "sneak_peeks": "zapowiedzi", "socials": "social-media",
+    "changelog": "lista-zmian", "news": "aktualności", "github_feed": "github",
+    "general": "ogólny", "greetings": "powitania", "mc_chat": "czat-minecraft", "introductions": "przedstaw-się", "media": "media", "screenshots": "screeny",
+    "clips": "klipy", "memes": "memy", "off_topic": "off-topic", "commands": "komendy-bota", "level_ups": "awanse", "hall_of_fame": "galeria-sław",
+    "counting": "liczenie", "mc_servers": "reklamy-serwerów",
+    "chat_pl": "polski", "chat_en": "english", "chat_other": "inne-języki",
+    "mode_chat": "czat", "mode_news": "nowości", "mode_lfg": "szukam-drużyny", "mode_guides": "poradniki", "mode_media": "media", "mode_voice": "{item}",
+    "shop_info": "rangi-sklep", "trading": "wymiana", "buying": "kupię", "selling": "sprzedam", "auctions": "aukcje", "services": "usługi", "price_check": "wycena",
+    "clan_recruitment": "rekrutacja-klanów", "clan_showcase": "prezentacja-klanów", "clan_wars": "wojny-klanów", "clan_voice": "Klan {n}",
+    "event_info": "eventy", "event_chat": "czat-eventów", "giveaways": "konkursy", "polls": "ankiety", "tournaments": "turnieje", "contests": "zawody", "event_stage": "Scena eventów",
+    "commands_guide": "komendy", "economy_guide": "ekonomia", "vote": "głosowanie", "leaderboards": "rankingi",
+    "support_info": "pomoc", "help_forum": "forum-pomocy", "bug_reports": "zgłoś-błąd", "suggestions": "propozycje", "appeals_info": "odwołania-od-banów", "staff_apply": "dołącz-do-ekipy",
+    "install_help": "pomoc-z-instalacją", "crash_reports": "crashe", "known_issues": "znane-problemy",
+    "partner_info": "współprace-info", "partners": "partnerzy", "partner_chat": "czat-partnerów",
+    "creator_info": "dla-twórców", "creator_content": "materiały-twórców", "creator_chat": "czat-twórców", "creator_assets": "pliki-dla-twórców",
+    "vip_chat": "czat-vip", "vip_voice": "Strefa VIP",
+    "lobby": "Poczekalnia", "talk": "Rozmowy {n}", "gaming": "Granie {n}", "duo": "Duo {n}", "squad": "Drużyna {n}", "music": "Muzyka {n}", "stream": "Stream", "afk": "AFK", "support_voice": "Pomoc",
+    "staff_announcements": "ogłoszenia-ekipy", "staff_chat": "czat-ekipy", "mod_chat": "czat-moderacji", "admin_chat": "czat-administracji", "staff_guide": "poradnik-ekipy",
+    "reports": "zgłoszenia", "applications": "podania", "suggestion_review": "propozycje-do-sprawdzenia", "staff_todo": "do-zrobienia", "mc_staff": "ekipa-minecraft",
+    "release_planning": "planowanie-wydań", "staff_voice": "Ekipa", "staff_meeting": "Zebranie ekipy", "admin_voice": "Administracja",
+    "mod_log": "logi-moderacji", "automod_log": "logi-automoda", "ticket_log": "logi-ticketów", "message_log": "logi-wiadomości", "member_log": "logi-członków", "server_log": "logi-serwera", "voice_log": "logi-głosowe",
+    "archive": "archiwum",
+    "client_chat": "czat-klienta", "features": "funkcje", "wardrobe": "szatnia", "hud_layouts": "układy-hud", "configs": "konfiguracje", "capes": "peleryny", "pvp_tips": "porady-pvp", "fps_boost": "więcej-fps",
+    "launcher_chat": "czat-launchera", "modpacks": "modpacki", "mods_packs": "mody-i-paczki", "shaders": "shadery", "local_servers": "serwery-lokalne", "friends_lfg": "szukam-znajomych",
+    "bug_tracker": "lista-błędów", "bugs_client": "błędy-klienta", "bugs_launcher": "błędy-launchera", "bugs_windows": "błędy-windows", "bugs_linux": "błędy-linux", "bugs_macos": "błędy-macos",
+    "ver": "{item}", "roadmap": "plan-rozwoju",
+    "beta_info": "beta-info", "beta_builds": "wersje-beta", "beta_feedback": "opinie-beta", "beta_bugs": "błędy-beta",
+    "dev_log": "dziennik-rozwoju", "api_docs": "api", "plugin_dev": "pluginy", "translations": "tłumaczenia", "open_source": "open-source",
+    "builds": "budowle", "skins": "skiny", "packs_showcase": "paczki-tekstur", "art": "rysunki", "video_edits": "montaże",
+    "game_chat": "czat", "game_lfg": "szukam-drużyny", "game_clips": "klipy", "game_voice": "{item} {n}"
+  },
+  "topic": {
+    "start": "Zacznij tutaj: o czym jest ten serwer i pierwsze kroki.",
+    "rules": "Regulamin serwera – zostając tutaj, akceptujesz go.",
+    "verify": "Zweryfikuj się, żeby odblokować serwer.",
+    "announcements": "Ważne ogłoszenia od ekipy.",
+    "server_ip": "Adres serwera i status na żywo.",
+    "how_to_join": "Jak dołączyć do serwera krok po kroku.",
+    "faq": "Najczęściej zadawane pytania.",
+    "links": "Strona, pobieranie i przydatne linki.",
+    "roles": "Wybierz swoje role i powiadomienia.",
+    "boosts_info": "Korzyści boosterów – dziękujemy za boosty!",
+    "download": "Pobierz Nore Launcher z wbudowanym Nore Client.",
+    "updates": "Aktualizacje i zmiany na serwerze.",
+    "events_news": "Ogłoszenia eventów i odliczanie.",
+    "nore_updates": "Nowe wersje Nore Client i Nore Launchera (publikowane automatycznie).",
+    "status": "Status usług i serwerów na żywo.",
+    "sneak_peeks": "Zajrzyj, nad czym pracujemy.",
+    "socials": "Nowe filmy, streamy i posty.",
+    "changelog": "Co się zmieniło w każdej wersji.",
+    "news": "Aktualności Nore (publikowane automatycznie).",
+    "github_feed": "Wydania z GitHuba (publikowane automatycznie).",
+    "general": "Główny czat – bądźmy dla siebie mili!",
+    "greetings": "Kto dołączył, a kto wyszedł.",
+    "mc_chat": "Czat połączony z serwerem Minecraft – wiadomości idą w obie strony.",
+    "introductions": "Przedstaw się społeczności.",
+    "media": "Obrazki i filmy.",
+    "screenshots": "Twoje najlepsze screeny.",
+    "clips": "Klipy i najlepsze momenty.",
+    "memes": "Memy – w granicach dobrego smaku.",
+    "off_topic": "Wszystko inne.",
+    "commands": "Tu używaj komend bota.",
+    "level_ups": "Ogłoszenia awansów.",
+    "hall_of_fame": "Wiadomości z największą liczbą gwiazdek.",
+    "counting": "Liczymy razem – jedna liczba na wiadomość.",
+    "mc_servers": "Pochwal się swoim serwerem Minecraft (jeden post na godzinę).",
+    "chat_pl": "Rozmowy po polsku.",
+    "chat_en": "Chat in English.",
+    "chat_other": "Rozmowy w każdym innym języku.",
+    "mode_chat": "Rozmowy o trybie {item}.",
+    "mode_news": "Nowości i aktualizacje trybu {item}.",
+    "mode_lfg": "Znajdź osoby do gry w {item}.",
+    "mode_guides": "Poradniki, triki i pytania o {item}.",
+    "mode_media": "Screeny i klipy z {item}.",
+    "shop_info": "Rangi i sklep – co dają.",
+    "trading": "Wymiana przedmiotów – uczciwie.",
+    "buying": "Chcesz coś kupić? Napisz tutaj.",
+    "selling": "Sprzedajesz coś? Napisz tutaj.",
+    "auctions": "Aukcje rzadkich przedmiotów.",
+    "services": "Budowle, farmy i inne usługi.",
+    "price_check": "Zapytaj, ile coś jest warte.",
+    "clan_recruitment": "Klany szukające członków (jeden post na 10 minut).",
+    "clan_showcase": "Pokaż bazę i budowle swojego klanu.",
+    "clan_wars": "Wojny klanów i wyzwania.",
+    "event_info": "Nadchodzące eventy i jak wziąć udział.",
+    "event_chat": "Rozmowy o eventach.",
+    "giveaways": "Konkursy – kliknij przycisk, żeby wziąć udział.",
+    "polls": "Ankiety – twój głos się liczy.",
+    "tournaments": "Turnieje, drabinki i wyniki.",
+    "contests": "Konkursy na budowle, screeny i grafiki.",
+    "commands_guide": "Komendy serwera wyjaśnione.",
+    "economy_guide": "Jak działa ekonomia.",
+    "vote": "Głosuj na serwer i odbieraj nagrody.",
+    "leaderboards": "Najlepsi gracze.",
+    "support_info": "Potrzebujesz pomocy? Otwórz tutaj ticket.",
+    "help_forum": "Zapytaj społeczność – jeden post na pytanie.",
+    "bug_reports": "Zgłaszaj błędy – jeden post na błąd, z krokami do odtworzenia.",
+    "suggestions": "Pomysły na serwer – głosuj przyciskami.",
+    "appeals_info": "Jak odwołać się od bana.",
+    "staff_apply": "Dołącz do ekipy – rekrutacja jest otwarta.",
+    "install_help": "Pomoc z instalacją i uruchomieniem.",
+    "crash_reports": "Zgłoszenia crashy – dołącz log crasha.",
+    "known_issues": "Znane problemy i obejścia.",
+    "partner_info": "Współprace: wymagania i jak złożyć wniosek.",
+    "partners": "Nasi partnerzy.",
+    "partner_chat": "Czat dla partnerów.",
+    "creator_info": "Program dla twórców: wymagania i korzyści.",
+    "creator_content": "Nowe materiały naszych twórców.",
+    "creator_chat": "Czat dla twórców.",
+    "creator_assets": "Logo, banery i paczki grafik dla twórców.",
+    "vip_chat": "Czat dla VIP-ów i boosterów.",
+    "staff_announcements": "Ogłoszenia dla ekipy.",
+    "staff_chat": "Czat ekipy.",
+    "mod_chat": "Dyskusje o moderacji.",
+    "admin_chat": "Tylko dla administracji.",
+    "staff_guide": "Jak pracujemy – przeczytaj przed pierwszym dyżurem.",
+    "reports": "Zgłoszenia od graczy.",
+    "applications": "Podania czekające na rozpatrzenie.",
+    "suggestion_review": "Propozycje czekające na akceptację.",
+    "staff_todo": "Lista zadań ekipy – jeden post na zadanie.",
+    "mc_staff": "Koordynacja moderacji w grze.",
+    "release_planning": "Planowanie kolejnych wydań.",
+    "mod_log": "Logi moderacji.",
+    "automod_log": "Logi AutoModa.",
+    "ticket_log": "Logi ticketów i zapisy rozmów.",
+    "message_log": "Edytowane i usunięte wiadomości.",
+    "member_log": "Wejścia, wyjścia i zmiany ról.",
+    "server_log": "Zmiany kanałów, ról i serwera.",
+    "voice_log": "Aktywność na kanałach głosowych.",
+    "archive": "Stare kanały i wiadomości.",
+    "client_chat": "Wszystko o Nore Client.",
+    "features": "Funkcje Nore Client – poradniki i pomysły.",
+    "wardrobe": "Pokaż swoją szatnię: peleryny, skrzydła, kapelusze.",
+    "hud_layouts": "Podziel się swoim układem HUD.",
+    "configs": "Podziel się ustawieniami i konfiguracjami.",
+    "capes": "Galeria peleryn.",
+    "pvp_tips": "Porady i triki PvP.",
+    "fps_boost": "Jak wycisnąć więcej FPS.",
+    "launcher_chat": "Wszystko o Nore Launcherze.",
+    "modpacks": "Modpacki – pytania i polecenia.",
+    "mods_packs": "Mody, paczki zasobów i data packi.",
+    "shaders": "Screeny i ustawienia shaderów.",
+    "local_servers": "Lokalne serwery jednym kliknięciem i granie ze znajomymi.",
+    "friends_lfg": "Znajdź znajomych do wspólnej gry.",
+    "bug_tracker": "Jak zgłaszać błędy i co właśnie naprawiamy.",
+    "bugs_client": "Błędy w Nore Client.",
+    "bugs_launcher": "Błędy w Nore Launcherze.",
+    "bugs_windows": "Błędy na Windowsie.",
+    "bugs_linux": "Błędy na Linuksie.",
+    "bugs_macos": "Błędy na macOS.",
+    "ver": "Czat i pomoc dla Minecrafta {item}.",
+    "roadmap": "Co planujemy dalej.",
+    "beta_info": "Program beta: zasady i instalacja wersji beta.",
+    "beta_builds": "Nowe wersje beta.",
+    "beta_feedback": "Opinie o wersjach beta.",
+    "beta_bugs": "Błędy znalezione w wersjach beta.",
+    "dev_log": "Dziennik prac nad projektem.",
+    "api_docs": "Publiczne API: noroclient.pl/api",
+    "plugin_dev": "Pluginy i integracje z Nore.",
+    "translations": "Pomóż tłumaczyć Nore.",
+    "open_source": "Kod źródłowy i wkład w projekt.",
+    "builds": "Wasze budowle.",
+    "skins": "Skiny i ich przeróbki.",
+    "packs_showcase": "Paczki tekstur waszego autorstwa.",
+    "art": "Rysunki i grafiki.",
+    "video_edits": "Montaże i edycje wideo.",
+    "game_chat": "Rozmowy o {item}.",
+    "game_lfg": "Znajdź osoby do gry w {item}.",
+    "game_clips": "Klipy z {item}."
+  },
+  "tag": {
+    "guide": "Poradnik", "question": "Pytanie", "tip": "Porada", "solved": "Rozwiązane", "bug": "Błąd", "confirmed": "Potwierdzone", "fixed": "Naprawione",
+    "new": "Nowa", "considering": "Rozważana", "accepted": "Zaakceptowana", "rejected": "Odrzucona", "implemented": "Wdrożona",
+    "todo": "Do zrobienia", "in_progress": "W toku", "done": "Zrobione", "hud": "HUD", "pvp": "PvP", "performance": "Wydajność", "wardrobe": "Szatnia",
+    "fabric": "Fabric", "forge": "Forge", "crash": "Crash"
+  },
+  "content": {
+    "rules": {
+      "title": "📜 Regulamin serwera",
+      "intro": "Witaj na **{server}**! Żeby wszystkim było tu dobrze, przestrzegaj poniższych zasad. Ekipa może reagować na wszystko, co łamie ich ducha.",
+      "s": {
+        "1": "**Szanuj innych.** Żadnych obelg, nękania, mowy nienawiści, dyskryminacji ani gróźb.",
+        "2": "**Bez spamu i floodu.** Żadnych powtarzanych wiadomości, ścian tekstu, caps locka ani masowych wzmianek.",
+        "3": "**Treści odpowiednie dla każdego.** Żadnych treści NSFW, drastycznych ani szokujących – również w awatarach i nickach.",
+        "4": "**Bez reklam.** Promowanie serwerów, kanałów i usług jest dozwolone tylko w ramach współpracy.",
+        "5": "**Pisz na właściwych kanałach.** Trzymaj się tematu, a komend bota używaj na kanale do komend.",
+        "6": "**Bez cheatów i exploitów.** Nie udostępniaj, nie promuj i nie proś o cheaty, zmodyfikowane klienty ani exploity.",
+        "7": "**Chroń prywatność.** Nie udostępniaj niczyich danych osobowych, także swoich haseł i kodów.",
+        "8": "**Bez oszustw.** Wymiany są na własne ryzyko – oszustwa zgłaszaj ekipie.",
+        "9": "**Słuchaj ekipy.** Jeśli nie zgadzasz się z decyzją, otwórz ticket zamiast kłócić się publicznie.",
+        "10": "**Przestrzegaj Warunków korzystania z Discorda i Wytycznych dla społeczności.** discord.com/terms · discord.com/guidelines"
+      },
+      "footer": "Łamanie zasad kończy się ostrzeżeniem, wyciszeniem, wyrzuceniem albo banem – zależnie od wagi przewinienia. Dzięki, że dbasz o przyjazną społeczność! 💜"
+    },
+    "start": {
+      "title": "👋 Witaj na {server}!",
+      "intro": "Super, że jesteś! Tak zaczniesz:",
+      "step": {
+        "1": "Przeczytaj regulamin – dzięki niemu jest tu przyjaźnie.",
+        "2": "Zweryfikuj się przyciskiem, żeby odblokować serwer.",
+        "3": "Wybierz swoje role i powiadomienia.",
+        "4": "Przywitaj się na czacie ogólnym i przedstaw się.",
+        "5": "Potrzebujesz pomocy? Otwórz ticket na kanale pomocy – chętnie pomożemy."
+      },
+      "channels": "Przydatne kanały"
+    },
+    "faq": {
+      "title": "❓ Najczęściej zadawane pytania",
+      "q": {
+        "1": "Czym jest Nore Client?",
+        "2": "Skąd go pobrać?",
+        "3": "Czy jest darmowy?",
+        "4": "Czy działa z kontami non-premium?",
+        "5": "Jakie wersje Minecrafta są wspierane?",
+        "6": "Coś nie działa – co teraz?",
+        "7": "Jak zaproponować nową funkcję?",
+        "8": "Jak dołączyć do ekipy?"
+      },
+      "a": {
+        "1": "To klient Minecrafta z wbudowanym modem PvP/QoL (HUD, szatnia, menu kołowe) i Nore Launcher, który instaluje i uruchamia grę jednym kliknięciem.",
+        "2": "Ze strony {website} – wybierz swój system i uruchom instalator.",
+        "3": "Tak, Nore Client i Nore Launcher są darmowe.",
+        "4": "Tak – działają zarówno konta premium (Microsoft), jak i non-premium (sam nick).",
+        "5": "Wiele wersji na Fabricu i Forge – launcher pokazuje, które są dostępne.",
+        "6": "Zajrzyj na kanał ze znanymi problemami, a potem otwórz ticket albo napisz na forum pomocy i dołącz logi.",
+        "7": "Użyj /suggest albo kanału propozycji – każdy może głosować.",
+        "8": "Obserwuj kanał dołącz-do-ekipy – gdy rekrutacja jest otwarta, kliknij tam przycisk."
+      }
+    },
+    "info": {
+      "title": "⬇️ Pobierz Nore",
+      "text": "**Nore Launcher** instaluje i uruchamia Minecrafta z wbudowanym **Nore Client**: HUD, szatnia, menu kołowe, mody, modpacki, shadery, serwery jednym kliknięciem i znajomi – wszystko w jednym miejscu.",
+      "website": "Strona",
+      "address": "Serwer"
+    },
+    "links": {
+      "title": "🔗 Linki",
+      "text": "Wszystko, czego potrzebujesz, w jednym miejscu:",
+      "website": "Strona",
+      "download": "Pobierz"
+    },
+    "roles": {
+      "title": "🎭 Role",
+      "intro": "Co oznaczają role na tym serwerze. Swoje role wybierzesz w menu poniżej."
+    },
+    "howtojoin": {
+      "title": "🧭 Jak dołączyć",
+      "intro": "Dołącz do nas w kilku krokach:",
+      "step": {
+        "1": "Pobierz Nore Launcher ze strony {website} (albo użyj dowolnego launchera).",
+        "2": "Zaloguj się kontem Microsoft – nicki non-premium też działają.",
+        "3": "Uruchom grę, wejdź w Tryb wieloosobowy i dodaj serwer z adresem poniżej.",
+        "4": "Wejdź, wpisz /register (za pierwszym razem) i baw się dobrze!",
+        "5": "Połącz konto Discord komendą /link, żeby dostać tutaj swoją rangę z gry."
+      },
+      "address": "Adres serwera",
+      "versions": "Wersje",
+      "versions_text": "Wspierane wersje i status na żywo znajdziesz na kanale ip-serwera."
+    },
+    "ip": {
+      "title": "🌐 Adres serwera",
+      "text": "Skopiuj adres poniżej i dodaj go w Trybie wieloosobowym. Status na żywo (gracze, wersja) odświeża się na tym kanale co minutę."
+    },
+    "ranks": {
+      "title": "💳 Rangi",
+      "intro": "Rangi w grze i co dają:",
+      "r": {
+        "1": "✧ **VIP** – [korzyści do uzupełnienia przez administrację]",
+        "2": "✦ **SVIP** – [korzyści do uzupełnienia przez administrację]",
+        "3": "💠 **MVP** – [korzyści do uzupełnienia przez administrację]",
+        "4": "🔱 **Elita** – [korzyści do uzupełnienia przez administrację]",
+        "5": "🏆 **Legenda** – [korzyści do uzupełnienia przez administrację]"
+      },
+      "note": "Administracjo: zedytujcie tę wiadomość, wpisując prawdziwe ceny i korzyści. Rangi same synchronizują się z rolami na Discordzie, gdy gracze połączą konta."
+    },
+    "vote": {
+      "title": "🗳️ Głosuj na serwer",
+      "text": "Głosy pomagają nowym graczom nas znaleźć – a ty dostajesz nagrody w grze! [Tu wstaw linki do list serwerów]",
+      "note": "Administracjo: zastąpcie ten tekst linkami do głosowania."
+    },
+    "partners": {
+      "title": "🤝 Współprace",
+      "intro": "Współpracujemy z serwerami, społecznościami i twórcami, którzy wyznają podobne wartości.",
+      "requirements": "Wymagania",
+      "req": {
+        "1": "Aktywna społeczność przestrzegająca wytycznych Discorda.",
+        "2": "Brak treści NSFW, cheatów i oszustw.",
+        "3": "Nasza reklama na twoim kanale partnerów.",
+        "4": "Osoba do kontaktu odpowiedzialna za współpracę."
+      },
+      "how": "Kliknij przycisk poniżej i wypełnij formularz. Odpowiemy w wiadomości prywatnej."
+    },
+    "staffapp": {
+      "title": "📝 Dołącz do ekipy",
+      "intro": "Szukamy pomocnych, cierpliwych i aktywnych osób do naszej ekipy.",
+      "requirements": "Oczekujemy",
+      "req": {
+        "1": "Co najmniej 15 lat i czystej karty.",
+        "2": "Aktywności przez kilka godzin w tygodniu.",
+        "3": "Dobrej komunikacji i spokoju w trudnych sytuacjach.",
+        "4": "Znajomości regulaminu i Nore."
+      },
+      "how": "Kliknij przycisk poniżej i odpowiedz na kilka pytań. Czytamy każde podanie."
+    },
+    "creators": {
+      "title": "🎬 Program dla twórców",
+      "intro": "Nagrywasz filmy, streamujesz albo robisz TikToki o nas? Dołącz do programu dla twórców!",
+      "req": {
+        "1": "Regularne materiały o serwerze albo o Nore.",
+        "2": "Link do twojego kanału w zgłoszeniu.",
+        "3": "Korzyści: rola twórcy, własny czat, wcześniejszy dostęp i promocja twoich materiałów."
+      },
+      "how": "Otwórz ticket z kategorią Współpraca, żeby się zgłosić."
+    },
+    "beta": {
+      "title": "🧪 Program beta",
+      "text": "Beta testerzy dostają nowe wersje jako pierwsi. Wersje beta mogą być niestabilne – rób kopie światów i zgłaszaj każdy błąd na forum błędów beta. Nie udostępniaj wersji beta poza tą kategorią."
+    },
+    "boosts": {
+      "title": "💎 Zboostuj serwer",
+      "intro": "Boosty odblokowują lepszy dźwięk, więcej emoji i inne korzyści dla wszystkich – a ty dostajesz:",
+      "perk": {
+        "1": "Rolę Booster serwera wysoko na liście członków",
+        "2": "Dostęp do czatu i kanału głosowego VIP",
+        "3": "Kolorowy nick i naszą dozgonną wdzięczność 💜"
+      }
+    },
+    "support": {
+      "title": "🎫 Pomoc",
+      "text": "Potrzebujesz pomocy? Wybierz kategorię w panelu poniżej – otworzymy prywatny ticket dla ciebie i ekipy. Opisz problem jak najdokładniej."
+    },
+    "changelog": {
+      "title": "📝 Lista zmian",
+      "text": "Tu publikujemy każdą zmianę na serwerze. Format: **wersja / data** – lista zmian. Zaobserwuj ten kanał, żeby dostawać aktualizacje na swoim serwerze."
+    },
+    "announcement": {
+      "text": "🎉",
+      "title": "Serwer jest otwarty!",
+      "body": "Witaj na **{server}**! Przeczytaj regulamin, zweryfikuj się i wybierz role. Baw się dobrze i zaproś znajomych!"
+    },
+    "staffguide": {
+      "title": "📘 Poradnik ekipy",
+      "i": {
+        "1": "Bądź spokojny(-a), uprzejmy(-a) i sprawiedliwy(-a) – reprezentujesz ekipę.",
+        "2": "Zawsze podawaj powód kary; trafia on automatycznie do logów moderacji.",
+        "3": "Zanim kogoś wyrzucisz albo zbanujesz, wybierz ostrzeżenie lub wyciszenie.",
+        "4": "Przejmij ticket, zanim na niego odpowiesz, i zamknij go krótkim podsumowaniem.",
+        "5": "Wątpliwe sprawy omów na czacie moderacji, zanim zareagujesz.",
+        "6": "Nigdy nie wynoś wewnętrznych informacji poza kanały ekipy."
+      }
+    },
+    "bugs": {
+      "title": "🐞 Jak zgłosić błąd",
+      "text": "1. Najpierw przeszukaj fora – może ktoś już go zgłosił.\n2. Jeden post na jeden błąd, z jasnym tytułem.\n3. Podaj system, wersję Minecrafta i wersję Nore.\n4. Opisz kroki do odtworzenia i dołącz logi albo zrzuty ekranu.\n\nObsłużone zgłoszenia oznaczamy tagami **Potwierdzone** i **Naprawione**."
+    },
+    "appeals": {
+      "title": "⚖️ Odwołania od banów",
+      "text": "Masz bana w grze? Otwórz ticket z kategorią **Odwołanie od bana**. Podaj nick, datę i powód, dla którego ban powinien zostać zdjęty. Pisz szczerze – odwołanie rozpatruje ktoś inny niż osoba, która nałożyła bana."
+    },
+    "events": {
+      "title": "📅 Eventy",
+      "text": "Regularnie organizujemy eventy, turnieje i konkursy. Wybierz ping eventów na kanale z rolami, żeby niczego nie przegapić. Sezonowe wydarzenia Nore (Halloween, zima) ogłaszamy automatycznie."
+    },
+    "market": {
+      "title": "🔄 Zasady wymiany",
+      "text": "• Jedna oferta na wiadomość, z ceną.\n• Żadnych oszustw – zgłoszeni oszuści dostają bana.\n• Przy dużych wymianach skorzystaj z pośrednictwa ekipy.\n• Handel za prawdziwe pieniądze jest zabroniony."
+    },
+    "international": {
+      "title": "🌍 Międzynarodowe",
+      "text": "Mamy czaty po polsku i po angielsku. Każdy inny język jest mile widziany tutaj – na głównych czatach trzymajmy się ich języka."
+    }
+  }
+}
