@@ -135,6 +135,16 @@ kbd, .key { display: inline-flex; align-items: center; height: 30px; padding: 0 
 .toast[hidden] { display: none; }
 .toast small { display: block; font-weight: 500; color: var(--nore-vinyl-ink-soft); }
 
+/* FAQ: loose sheets */
+.qa-list { display: grid; gap: 8px; }
+.qa { border-radius: 16px; background: var(--nore-page-raised); }
+.qa summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; cursor: pointer; list-style: none; font: 600 clamp(18px, 1.4vw, 21px)/1.3 var(--nore-font-text); }
+.qa summary::-webkit-details-marker { display: none; }
+.qa summary::after { content: ''; flex: none; width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--nore-vinyl); background: var(--nore-dot-off); transition: background-color var(--nore-dur-quick), scale var(--nore-dur-quick); }
+.qa[open] summary::after { background: var(--nore-accent); scale: 1.15; }
+.qa p { padding: 0 22px 22px; max-width: 64ch; }
+
+
 /* ------------------------------------------------------------------ type */
 .display { font: var(--nore-web-display); letter-spacing: var(--nore-web-display-tracking); }
 .heading { margin: 0; font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); text-wrap: balance; }
