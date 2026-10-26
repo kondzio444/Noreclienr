@@ -27,7 +27,7 @@ import LOCALE_PL from '../dist/locale-pl.json.txt';
 import LOCALE_EN from '../dist/locale-en.json.txt';
 
 // Images and fonts come from this pinned commit; bump it after the Album website (assets/album, assets/fonts) is merged.
-const RAW = 'https://raw.githubusercontent.com/kondzio444/Noreclienr/3fa206c97bdc40bfcf07af15f68bb1bbba50ab5d/web/public';
+const RAW = 'https://raw.githubusercontent.com/kondzio444/Noreclienr/4279ca91fbfc72b1610a2f3de3df6ab502ad42ff/web/public';
 const HTML = 'text/html; charset=utf-8', CSS = 'text/css; charset=utf-8', JS = 'text/javascript; charset=utf-8', JSON_T = 'application/json; charset=utf-8';
 const TEXT = {
   '/': [INDEX, HTML], '/index.html': [INDEX, HTML], '/404.html': [NOT_FOUND, HTML],
