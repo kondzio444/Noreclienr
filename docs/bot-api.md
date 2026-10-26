@@ -21,8 +21,7 @@ new bot features appear in the panel without web changes. The Worker bundles a c
 (`web/src/bot-schema.json`, copied at build) and validates every write against it.
 
 Translations of the labels: `discord-bot/locales/<lang>.json` under `panel.*`; the panel uses the
-same files (copied to `web/public/panel/locales/`). Languages: pl (default), en, de, es, fr, uk, ru,
-cs, pt-BR, tr.
+same files (copied to `web/public/panel/locales/`). Languages: pl (default) and en.
 
 ## Endpoints
 

@@ -301,7 +301,7 @@ try {
   assert.equal(r.status, 200, r.text); assert.equal(r.json.version, 1); assert.ok(r.json.updatedAt);
   r = await put({ config: cfg, version: 0 });
   assert.equal(r.status, 409); assert.equal(r.json.code, 'version_conflict'); assert.equal(r.json.version, 1); assert.equal(r.json.updatedBy.name, 'Alice');
-  r = await req('PUT', `/api/v2/panel/guilds/${G1}`, { body: { config: { general: { language: 'de' } }, version: 1 }, cookie: alice });
+  r = await req('PUT', `/api/v2/panel/guilds/${G1}`, { body: { config: { general: { language: 'pl' } }, version: 1 }, cookie: alice });
   assert.equal(r.status, 200); assert.equal(r.json.version, 2);
   step('PUT config: version 0 → 1, stale version → 409 (current version + who), alias PUT /panel/guilds/:id → 2');
   r = await put({ config: { general: { language: 'xx', color: 'red', bogus: 1, staffRoles: ['1'], commandCooldownSeconds: 61 }, welcome: { enabled: 'yes' }, extra: {} }, version: 2 });
@@ -337,7 +337,7 @@ try {
   const since = r.json.now;
   r = await bot('GET', `/changes?since=${since}`); assert.deepEqual(r.json.guilds, []);
   r = await bot('GET', `/guilds/${G1}/config`);
-  assert.equal(r.json.version, 2); assert.equal(r.json.config.general.language, 'de'); assert.equal(r.json.config.general.color, '#9d5cff'); assert.equal(r.json.config.welcome.enabled, false);
+  assert.equal(r.json.version, 2); assert.equal(r.json.config.general.language, 'pl'); assert.equal(r.json.config.general.color, '#9d5cff'); assert.equal(r.json.config.welcome.enabled, false);
   assert.ok(Date.parse(r.json.updatedAt) > 0);
   await put({ config: cfg, version: 2 });
   r = await bot('GET', `/changes?since=${since}`); assert.deepEqual(r.json.guilds, [G1]);
