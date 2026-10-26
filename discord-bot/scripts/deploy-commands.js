@@ -30,6 +30,13 @@ try {
   console.log(`${clear ? 'Cleared' : 'Registered'} ${res.length} command(s) ${guildId ? `in guild ${guildId}` : 'globally'}.`);
 } catch (err) {
   console.error('Deploy failed:', err.message);
+  if (err.code === 50001 && guildId) {
+    console.error(`Bot nie jest na serwerze ${guildId} albo został dodany bez zakresu applications.commands. Dodaj go linkiem:`);
+    console.error(`https://discord.com/oauth2/authorize?client_id=${env.clientId}&scope=bot%20applications.commands&permissions=8&guild_id=${guildId}`);
+    console.error('albo usuń DEPLOY_GUILD_ID z .env, żeby zarejestrować komendy globalnie.');
+  } else if (err.status === 401) {
+    console.error('Zły DISCORD_TOKEN – skopiuj go ponownie z zakładki Bot w Discord Developer Portal.');
+  }
   if (err.rawError?.errors) console.error(JSON.stringify(err.rawError.errors, null, 2).slice(0, 4000));
   process.exit(1);
 }
