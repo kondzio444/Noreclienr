@@ -7,7 +7,7 @@
   "main": "src/worker.js",
   "compatibility_date": "2026-10-01",
   // copies discord-bot/config.schema.json (and the panel locales) into the site when present
-  "build": { "command": "node scripts/copy-bot-schema.mjs" },
+  "build": { "command": "node scripts/copy-bot-schema.mjs && node scripts/copy-tokens.mjs" },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
