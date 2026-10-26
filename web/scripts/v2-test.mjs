@@ -373,8 +373,8 @@ try {
   let h = await hostGet('www.noreclient.pl', '/api/v1/version?x=1');
   assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/noreclient\.pl\/api\/v1\/version\?x=1$/);
   h = await hostGet('www.noroclient.pl', '/'); assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noroclient\.pl|127\.0\.0\.1:\d+)\/$/); // wrangler dev rewrites its own host
-  h = await hostGet('mc.noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Serwer Nore/);
-  h = await hostGet('mc.noreclient.pl', '/status.js'); assert.equal(h.status, 200); assert.match(h.headers['content-type'], /javascript/);
+  h = await hostGet('mc.noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore MC/);
+  h = await hostGet('mc.noreclient.pl', '/mc.js'); assert.equal(h.status, 200); assert.match(h.headers['content-type'], /javascript/);
   h = await hostGet('mc.noreclient.pl', '/nope'); assert.equal(h.status, 404); assert.match(h.text, /Strona serwera/);
   h = await hostGet('mc.noreclient.pl', '/api/v2/events'); assert.equal(h.status, 200);
   h = await hostGet('mc.noreclient.pl', '/assets/logo.png'); assert.equal(h.status, 200);

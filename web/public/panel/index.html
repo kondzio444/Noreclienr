@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Panel Nore Bota</title>
+  <meta name="description" content="Panel Nore Bota: ustawienia bota Discord dla Twojego serwera. Logowanie przez Discord.">
+  <meta name="theme-color" content="#141216">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preload" href="/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <link rel="stylesheet" href="/panel/panel.css">
+</head>
+<body class="panel">
+  <a class="skip" href="#app">Przejdź do panelu</a>
+  <header class="bar">
+    <a class="mark" href="/" aria-label="Nore – strona główna"><img src="/assets/album/logo-sticker-256.png" alt="" width="36" height="36">Nore <small data-t="brand">Panel bota</small></a>
+    <div class="seg lang" role="group" aria-label="Język / Language">
+      <button type="button" data-lang="pl" aria-pressed="true">PL</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <div class="user" id="user" hidden></div>
+  </header>
+
+  <main id="app" aria-live="polite">
+    <section class="center">
+      <img class="spin" src="/assets/album/logo-sticker-256.png" alt="" width="96" height="96">
+      <p>Wczytuję panel…</p>
+      <noscript><p>Panel Nore Bota potrzebuje JavaScriptu.</p></noscript>
+    </section>
+  </main>
+
+  <script src="/assets/album.js" defer></script>
+  <script src="/panel/panel.js" defer></script>
+</body>
+</html>

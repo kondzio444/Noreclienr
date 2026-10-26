@@ -279,7 +279,11 @@ export default {
     if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
       return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
     }
-    const res = site === 'mc' ? await mcAsset(request, url, env) : await env.ASSETS.fetch(request);
+    // the bot panel is one page: /panel/<guildId> serves /panel/ and the script reads the id from the path
+    const panelGuild = site === 'main' && /^\/panel\/\d{17,20}\/?$/.test(url.pathname);
+    const res = site === 'mc' ? await mcAsset(request, url, env)
+      : panelGuild ? await env.ASSETS.fetch(new Request(`${url.origin}/panel/`, request))
+      : await env.ASSETS.fetch(request);
     return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
   },
 

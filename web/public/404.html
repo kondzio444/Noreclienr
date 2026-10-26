@@ -1,5 +1,25 @@
 <!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nore Client</title><link rel="stylesheet" href="/style.css"></head>
-<body><main class="download"><div class="wrap dl"><img src="/assets/logo.png" alt=""><h2>404. <em>Tu nic nie ma.</em></h2>
-<p class="mono">Ten chunk się jeszcze nie wygenerował.</p><div class="cta center"><a class="btn btn-primary" href="/">Strona główna</a></div></div></main></body></html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nore – 404</title>
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <style>
+    .lost { min-height: 100svh; display: grid; place-content: center; justify-items: center; gap: 22px; padding: 24px var(--nore-web-margin); text-align: center; }
+    .lost img { width: 120px; rotate: -8deg; }
+    .lost h1 { margin: 0; font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); }
+    .lost p { max-width: 40ch; color: var(--nore-ink-soft); }
+  </style>
+</head>
+<body>
+  <main class="lost">
+    <img src="/assets/album/logo-sticker-256.png" alt="" width="256" height="256">
+    <h1>404. Tu nic nie ma.</h1>
+    <p>Ten chunk się jeszcze nie wygenerował. W albumie został pusty slot.</p>
+    <a class="pill" href="/">Strona główna</a>
+  </main>
+</body>
+</html>

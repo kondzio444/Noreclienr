@@ -125,7 +125,7 @@
 
   let decorated = '';
   function decorate() {
-    if (decorated === state.event) return;
+    if (decorated === state.event || document.body.classList.contains('panel')) return; // the panel works with the event palette only
     decorated = state.event;
     for (const el of $$('.lights, .bats, .snow, body > .web')) el.remove();
     if (state.event === 'halloween') {
