@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nore – Minecraft po swojemu</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="web.css">
+<style>
+  /* ---------- hero: one object on the counter ---------- */
+  .hero { min-height: calc(100svh - 76px); display: grid; justify-items: center; align-content: center; gap: 0; padding: 8px var(--nore-web-margin) 40px; text-align: center; }
+  .object { position: relative; width: clamp(250px, 26vw, 400px); aspect-ratio: 4 / 5; }
+  .object .st { position: absolute; inset: 0; --tilt: -3deg; background: var(--nore-page-raised); }
+  .object .st img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .object .st img.a { object-position: 0 50%; }
+  .object .st img.b { animation: show3 18s 6s infinite; opacity: 0; }
+  .object .st img.c { animation: show3 18s 12s infinite; opacity: 0; object-position: 2% 50%; }
+  @keyframes show3 { 0% { opacity: 0; } 4%, 33% { opacity: 1; } 37%, 100% { opacity: 0; } }
+  .object .logo { position: absolute; left: -15%; top: -9%; width: 38%; rotate: -10deg; }
+  .object .pump { position: absolute; right: -14%; bottom: 9%; width: 27%; rotate: 9deg; image-rendering: pixelated; }
+  .object .tag { position: absolute; right: -9%; top: 12%; rotate: 6deg; padding: 9px 14px; border-radius: 12px; border: 4px solid var(--nore-vinyl); background: var(--nore-dot-event); color: #1a0d04; font: 700 15px/1.1 var(--nore-font-text); text-align: left; }
+  .hero h1 { margin: clamp(26px, 3.4vw, 44px) 0 0; font: var(--nore-web-display); font-size: clamp(54px, 6.6vw, 112px); letter-spacing: var(--nore-web-display-tracking); line-height: .92; text-wrap: balance; }
+  .row { display: flex; align-items: center; justify-content: center; gap: 48px; margin-top: clamp(24px, 3vw, 40px); font: var(--nore-web-small); color: var(--nore-ink-soft); }
+  .row .pill { height: 60px; padding: 0 32px; font-size: 18px; }
+
+  /* ---------- intro band: violet field, headline with sticker cut-outs at letter height ---------- */
+  .band { background: var(--nore-accent); color: var(--nore-page); padding: clamp(80px, 9vw, 150px) var(--nore-web-margin) clamp(80px, 9vw, 140px); }
+  .band h2 { margin: 0; max-width: 17ch; text-wrap: balance; font: var(--nore-web-display); font-size: clamp(50px, 7.4vw, 124px); line-height: .94; letter-spacing: -.035em; }
+  .band h2 .cut { display: inline-block; width: 1.15em; height: .86em; margin: 0 .08em; vertical-align: -.06em; border: .07em solid var(--nore-vinyl); border-radius: .16em; background: center / cover no-repeat; rotate: var(--tilt, -4deg); }
+  .band .lower { display: grid; grid-template-columns: minmax(0, 38ch) auto; gap: 48px; align-items: end; justify-content: space-between; margin-top: clamp(40px, 5vw, 72px); }
+  .band p { margin: 0; font: var(--nore-web-lead); color: var(--nore-page); }
+  .band .pill { background: var(--nore-page); color: var(--nore-ink); }
+
+  /* ---------- board: close-ups of the real interface ---------- */
+  .board { padding: clamp(96px, 11vw, 180px) 10px 10px; }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 104px; gap: 8px; }
+  .tile { position: relative; overflow: hidden; border-radius: 6px; padding: 20px; display: flex; flex-direction: column; justify-content: flex-end; }
+  .tile .cap b { display: block; font: 500 18px/1.25 var(--nore-font-text); }
+  .tile .cap span { display: block; margin-top: 3px; font: 400 16px/1.4 var(--nore-font-text); opacity: .82; }
+  .tile .cap { position: relative; z-index: 2; max-width: 32ch; }
+  .t-head { grid-column: span 6; grid-row: span 2; background: var(--nore-page); justify-content: flex-start; padding-left: 10px; }
+  .t-head h2 { margin: 0; font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); }
+  .t-mod { grid-column: span 6; grid-row: span 4; background: var(--nore-paper); color: var(--nore-vinyl-ink); }
+  .t-keys { grid-column: span 3; grid-row: span 4; color: var(--nore-cover-ink); }
+  .t-radial { grid-column: span 3; grid-row: span 4; background: #0e0c10 url(../../web/public/assets/home/radial.webp) 50% 38% / 210% no-repeat; }
+  .t-radial .cap { background: var(--nore-page); margin: -20px; padding: 16px 20px 20px; }
+  .t-dots { grid-column: span 3; grid-row: span 2; background: var(--nore-page-raised); }
+  .t-ev { grid-column: span 3; grid-row: span 2; background: var(--nore-dot-event); color: #1a0d04; }
+  .t-nick { grid-column: span 6; grid-row: span 2; background: var(--nore-accent-deep); color: #fff; }
+  .t-upd { grid-column: span 6; grid-row: span 3; background: #0e0c10; padding: 0; }
+  .t-upd video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+  .t-upd .cap { margin: auto 0 0; padding: 16px 20px 20px; background: var(--nore-page); width: 100%; max-width: none; }
+  .t-ver { grid-column: span 6; grid-row: span 3; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); justify-content: space-between; }
+  .t-ver .vers { margin: 0; font: 400 34px/1.15 var(--nore-font-display); letter-spacing: -.02em; }
+  .t-ver ul { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 26px; font: 400 clamp(34px, 4vw, 58px)/1 var(--nore-font-display); letter-spacing: -.02em; }
+  .t-ver li small { display: block; margin-top: 6px; font: 500 15px/1.2 var(--nore-font-text); letter-spacing: 0; color: var(--nore-vinyl-ink-soft); }
+  /* enlarged real UI elements (data-ui), pushed off-centre so two edges crop them */
+  [data-ui] { position: absolute; pointer-events: none; }
+  .ui-mods { right: -46px; top: -96px; display: grid; grid-template-columns: repeat(2, 250px); gap: 14px; }
+  .ui-mods .m { height: 132px; padding: 22px 24px; border-radius: 20px; display: grid; align-content: space-between; font: 600 24px/1.1 var(--nore-font-text); }
+  .ui-mods .m.on { background: var(--nore-vinyl); border: 6px solid #fff; color: var(--nore-vinyl-ink); }
+  .ui-mods .m.off { background: #d6d2cb; color: #5a5358; outline: 3px dashed #aaa3a8; outline-offset: -12px; }
+  .ui-mods .m i { width: 40px; height: 40px; border-radius: 11px; background: var(--nore-accent); }
+  .ui-mods .m.off i { background: transparent; border: 4px solid #aaa3a8; }
+  .t-ward { grid-column: span 6; grid-row: span 2; background: #0e0c10 url(../../web/public/assets/home/ward-capes.webp) 100% 30% / 52% no-repeat; color: var(--nore-ink); }
+  .ui-keys { left: 20px; top: 26px; display: grid; gap: 14px; }
+  .ui-keys span { display: inline-flex; align-items: center; height: 70px; padding: 0 22px; border-radius: 12px; background: var(--nore-page); color: var(--nore-ink); border: 4px solid var(--nore-vinyl); font: 600 40px/1 'Pixelify Sans', var(--nore-font-text); white-space: nowrap; }
+  .ui-keys span + span { margin-left: 46px; rotate: 4deg; background: var(--nore-accent); color: #fff; }
+  .ui-dots { right: 22px; top: 22px; display: flex; gap: 14px; }
+  .ui-dots i { width: 34px; height: 34px; border-radius: 50%; border: 5px solid var(--nore-vinyl); }
+  .ui-ev { right: -12px; top: -16px; width: 132px; rotate: 10deg; image-rendering: pixelated; }
+  .ui-switch { right: 24px; top: 50%; translate: 0 -50%; display: flex; align-items: center; gap: 18px; font: 400 44px/1 var(--nore-font-display); }
+  .ui-switch .sw { position: relative; width: 132px; height: 72px; border-radius: 999px; background: rgba(0, 0, 0, .3); }
+  .ui-switch .sw::after { content: ''; position: absolute; right: 12px; top: 12px; width: 48px; height: 48px; border-radius: 50%; background: var(--nore-dot-ready); border: 6px solid var(--nore-vinyl); box-sizing: border-box; }
+
+  @media (max-width: 1100px) { .ui-mods { grid-template-columns: repeat(2, 190px); top: -110px; } .ui-mods .m { height: 100px; font-size: 20px; } .ui-switch { font-size: 30px; top: 30%; } }
+  @media (max-width: 760px) {
+    .row { flex-direction: column; gap: 14px; }
+    .hero h1 { font-size: 40px; }
+    .band h2 { font-size: 34px; max-width: none; }
+    .band h2 .cut:first-child { display: none; }
+    .t-ward { background-size: 46% !important; background-position: 100% 12% !important; }
+    .row .pill { width: 100%; }
+    .nav .links { display: none; }
+    .nav .pill { margin-left: auto; }
+    .band .lower { grid-template-columns: 1fr; gap: 28px; }
+    .band .pill { width: 100%; }
+    .board { padding-inline: 6px; }
+    .grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 28vw; gap: 6px; }
+    .t-head, .t-mod, .t-nick, .t-ward, .t-upd, .t-ver { grid-column: span 2; }
+    .t-upd, .t-ver { grid-row: span 3; }
+    .t-ward { grid-row: span 2; background-size: 120%; }
+    .ui-mods { grid-template-columns: repeat(2, 170px); right: -30px; } .ui-mods .m { height: 92px; font-size: 21px; padding: 14px 16px; }
+    .t-head { grid-row: span 1; }
+    .t-mod { grid-row: span 3; }
+    .t-keys, .t-radial { grid-column: span 1; grid-row: span 3; }
+    .t-dots, .t-ev { grid-column: span 1; grid-row: span 2; }
+    .t-nick { grid-row: span 2; }
+    .tile .cap b { font-size: 17px; } .tile .cap span { font-size: 16px; }
+    .ui-keys span { height: 52px; font-size: 28px; padding: 0 14px; }
+    .ui-keys span + span { margin-left: 12px; }
+    .ui-switch { font-size: 26px; top: 28%; }
+    .ui-switch .sw { width: 92px; height: 52px; }
+    .ui-switch .sw::after { width: 34px; height: 34px; top: 9px; right: 9px; border-width: 4px; }
+    .ui-dots i { width: 24px; height: 24px; border-width: 4px; }
+    .ui-ev { width: 92px; }
+  }
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="mark" href="#"><img src="assets/logo-sticker-256.png" alt="">Nore</a>
+  <nav class="links" aria-label="Główne"><a href="#">Klient</a><a href="#">Launcher</a><a href="#">Szatnia</a><a href="#">Wydarzenia</a><a href="#">API</a></nav>
+  <a class="pill sm" href="#pobierz">Pobierz</a>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="h">
+    <div class="object stick-in">
+      <div class="st" data-ui>
+        <img class="a" src="png/game-main-menu.png" alt="Menu główne Nore Client w grze">
+        <img class="b" src="../../web/public/assets/home/ward-capes.webp" alt="Peleryny w Szatni">
+        <img class="c" src="png/launcher-home.png" alt="Ekran Start w Nore Launcher">
+      </div>
+      <img class="logo" src="assets/logo-sticker-256.png" alt="">
+      <img class="pump" src="assets/pumpkin-sticker.png" alt="">
+      <span class="tag">Halloween<br>do 3 listopada</span>
+    </div>
+    <h1 id="h" class="in d1">Minecraft po swojemu.</h1>
+    <div class="row in d2"><span>Wersje 1.20 – 26.3</span><a class="pill" id="pobierz" href="#"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Pobierz dla Windows</a><span>Za darmo · premium albo sam nick</span></div>
+  </section>
+
+  <section class="band" aria-labelledby="b">
+    <h2 id="b" class="in">Jeden klik <span class="cut" style="background-image:url(../../web/public/assets/home/radial.webp)" role="img" aria-label="Menu radialne"></span>i jesteś w grze<span class="cut" style="--tilt:5deg;background-image:url(../../web/public/assets/home/ward-wings.webp)" role="img" aria-label="Skrzydła nietoperza w Szatni"></span></h2>
+    <div class="lower">
+      <p class="in d1">Launcher sam instaluje grę, mody i Nore Client. Radialne menu, 97 modułów i Szatnia są już w środku.</p>
+      <a class="pill in d2" href="#">Zobacz, co jest w środku</a>
+    </div>
+  </section>
+
+  <section class="board" aria-labelledby="k">
+    <div class="grid">
+      <div class="tile t-head"><h2 id="k" class="in">Wszystko pod ręką</h2></div>
+      <div class="tile t-mod in d1">
+        <div data-ui class="ui-mods" aria-hidden="true"><div class="m on"><i></i>Keystrokes</div><div class="m on"><i></i>Armor Status</div><div class="m off"><i></i>Freelook</div><div class="m on"><i></i>Zoom</div><div class="m on"><i></i>CPS</div><div class="m off"><i></i>Auto GG</div></div>
+        <div class="cap"><b>97 modułów jak naklejki</b><span>Włączony moduł to naklejka w albumie. Wyłączony zostawia pusty slot.</span></div>
+      </div>
+      <div class="tile t-keys cloth in d1">
+        <div data-ui class="ui-keys" aria-hidden="true"><span>Prawy</span><span>Shift</span></div>
+        <div class="cap"><b>Menu pod jednym klawiszem</b><span>Prawy Shift w każdej wersji.</span></div>
+      </div>
+      <div class="tile t-radial in d1"><div class="cap"><b>Menu radialne</b><span>Osiem sektorów, dwa pierścienie.</span></div></div>
+      <div class="tile t-dots in d1"><div data-ui class="ui-dots" aria-hidden="true"><i style="background:var(--nore-dot-ready)"></i><i style="background:var(--nore-dot-wait)"></i></div><div class="cap"><b>Serwer w minutę</b><span>Paper, Fabric, Forge i tunel playit.gg.</span></div></div>
+      <div class="tile t-ev in d1"><img data-ui class="ui-ev" src="assets/pumpkin-sticker.png" alt=""><div class="cap"><b>Halloween trwa</b><span>3 peleryny do 3 listopada.</span></div></div>
+      <div class="tile t-ward in d1"><div class="cap"><b>Szatnia na F5</b><span>Peleryny, skrzydła, kapelusz i uszy, widoczne w F5.</span></div></div>
+      <div class="tile t-upd in"><video src="../../web/public/assets/api/updater.webm" poster="../../web/public/assets/home/updater.webp" muted loop autoplay playsinline aria-label="Nore Updater pobiera nową wersję"></video><div class="cap"><b>Aktualizuje się sam</b><span>Nore Updater pobiera wydanie i sprawdza SHA-256, zanim cokolwiek zainstaluje.</span></div></div>
+      <div class="tile t-ver in d1"><p class="vers">26.3 · 26.2 · 26.1 · 1.21 · 1.20</p><div class="cap"><b>Wersje Minecraft</b><span>Nore Client na każdej: 26.x z Javą 25, 1.21 z Javą 21, 1.20 z Javą 17 albo 21.</span></div></div>
+      <div class="tile t-nick in d1"><div data-ui class="ui-switch" aria-hidden="true">Bez premium<span class="sw"></span></div><div class="cap"><b>Sam nick wystarczy</b><span>Singleplayer, LAN i serwery non-premium od razu.</span></div></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

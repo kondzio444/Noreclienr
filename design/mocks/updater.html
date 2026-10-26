@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Updater</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+  body { width: 400px; height: 480px; overflow: hidden; }
+  .win { position: relative; width: 400px; height: 480px; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+  .close { position: absolute; right: 8px; top: 8px; width: 30px; height: 26px; display: grid; place-items: center; color: var(--nore-cover-ink-soft); }
+  .close .ic { width: 14px; height: 14px; }
+  /* the sticker pack: an authored SVG body with the tear strip as a separate element so it can follow progress */
+  .pack { position: relative; width: 210px; height: 252px; margin-top: 34px; rotate: -3deg; }
+  .pack svg.body { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pack .front { position: absolute; inset: 52px 0 26px; display: flex; flex-direction: column; align-items: center; }
+  .pack .logo-sticker img { width: 84px; height: 84px; }
+  .pack h1 { margin: 12px 0 9px; font: 400 21px/1 var(--nore-font-display); letter-spacing: -.01em; color: var(--nore-ink); }
+  .pack .label { rotate: 3deg; }
+  /* tear strip: torn part curls up, untorn part stays dotted */
+  .tear { position: absolute; left: 0; right: 0; top: 30px; height: 14px; }
+  .tear .torn { position: absolute; left: 0; top: 0; height: 12px; width: var(--p); background: var(--nore-accent); border-radius: 2px 6px 6px 2px; transform-origin: right bottom; rotate: -4deg; translate: 0 -5px; box-shadow: 0 6px 10px -4px rgba(0, 0, 0, .6); }
+  .tear .torn::after { content: ''; position: absolute; right: -4px; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--nore-vinyl); box-shadow: 0 0 0 0 transparent; }
+  .tear .rest { position: absolute; left: var(--p); right: 6px; top: 5px; height: 0; border-top: 2px dashed color-mix(in oklab, var(--nore-ink) 35%, transparent); }
+  .status { margin-top: 30px; width: 300px; }
+  .status b { display: flex; align-items: center; gap: 9px; font: 600 15px/1.3 var(--nore-font-text); color: var(--nore-cover-ink); }
+  .status .progress { margin: 12px 0 9px; height: 8px; background: color-mix(in oklab, var(--nore-cover) 50%, #000); }
+  .status small { display: flex; justify-content: space-between; font: 500 12.5px/1.3 var(--nore-font-text); color: var(--nore-cover-ink-soft); font-variant-numeric: tabular-nums; }
+  .foot { margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; font: 500 12px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+  .foot .label { height: 20px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="win cloth">
+  <span class="close"><svg class="ic"><use href="#i-x"/></svg></span>
+  <div class="pack" style="--p: 62%">
+    <svg class="body" viewBox="0 0 210 252" aria-hidden="true">
+      <!-- crimped foil sachet: sawtooth seams top and bottom, body in page black with a faint sheen band -->
+      <path d="M6 14 L12 6 L18 14 L24 6 L30 14 L36 6 L42 14 L48 6 L54 14 L60 6 L66 14 L72 6 L78 14 L84 6 L90 14 L96 6 L102 14 L108 6 L114 14 L120 6 L126 14 L132 6 L138 14 L144 6 L150 14 L156 6 L162 14 L168 6 L174 14 L180 6 L186 14 L192 6 L198 14 L204 6 L204 238 L198 246 L192 238 L186 246 L180 238 L174 246 L168 238 L162 246 L156 238 L150 246 L144 238 L138 246 L132 238 L126 246 L120 238 L114 246 L108 238 L102 246 L96 238 L90 246 L84 238 L78 246 L72 238 L66 246 L60 238 L54 246 L48 238 L42 246 L36 238 L30 246 L24 238 L18 246 L12 238 L6 246 Z" fill="#141216" stroke="#fbfaf7" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="9" y="16" width="192" height="12" fill="#1e1b21"/>
+      <rect x="9" y="222" width="192" height="12" fill="#1e1b21"/>
+      <path d="M150 16 L201 16 L201 70 Z" fill="#fbfaf7" opacity=".05"/>
+    </svg>
+    <div class="tear"><span class="torn"></span><span class="rest"></span></div>
+    <div class="front"><span class="logo-sticker lg"><img src="../../web/public/assets/logo.png" alt=""></span><h1>Nore Launcher</h1><span class="label nore">nowa wersja 1.4.2</span></div>
+  </div>
+  <div class="status">
+    <b><i class="dot sm wait"></i>Pobieram aktualizację</b>
+    <div class="progress" style="--v:62%"><i></i></div>
+    <small><span>18,4 z 29,7 MB</span><span>4,1 MB/s · 3 s</span></small>
+  </div>
+  <div class="foot"><span>Potem sprawdzę sumę SHA-256</span><span class="label dark">1.4.1</span></div>
+</div>
+<script src="icons.js"></script>
+</body>
+</html>

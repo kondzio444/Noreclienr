@@ -58,3 +58,25 @@ least: `status`, `releases`, `releases/latest`, `downloads`, `events` (with coun
 `platforms`, `players/:name` (Nore Hub lookup: Nore user, verified, online, wardrobe),
 `servers/:address` (Minecraft server ping: online, players, version, MOTD, favicon), `stats`
 (downloads, Nore players online/known), with ETag, CORS and OpenAPI at `/api/v2/openapi.json`.
+
+## Implementation notes (Worker, `web/src/v2/`)
+
+* Every JSON answer has an envelope: success `{ "ok": true, ...fields }` (the fields above sit at the
+  top level), error `{ "ok": false, "status", "code", "error" }` with a Polish `error` message.
+  Exceptions without envelope: `/api/v2/openapi.json`, `/api/v2/bot/config.schema.json`.
+* `updatedAt` / `metaAt` / event `at` are ISO 8601 strings (`null` when never saved); `/bot/changes`
+  `now` is milliseconds – pass it back as the next `since`.
+* `GET /bot/guilds/:id/config` returns the stored config with schema defaults filled in and fields
+  the schema no longer knows dropped; `version` is 0 when never saved.
+* `POST /bot/guilds/:id/events` → `201 { id, at }`; over 100/min per guild → `429` with `Retry-After`.
+  `type` matches `^[a-z][a-z0-9_.:-]{0,47}$`, `data` is an object of at most 4 KB. The newest 500
+  events per guild are kept; the panel saves its own `panel_config_saved` events.
+* `PUT /bot/guilds/:id/meta`: `name` required; channels `{ id, name, type (number or string),
+  parentId, position? }`, roles `{ id, name, color, position, managed }`; unknown fields are dropped.
+  `DELETE /bot/guilds/:id` of an unknown guild → 404.
+* Public lookups used by the bot: `GET /players/:name` → `{ player: { name, nore, … } }`,
+  `GET /servers/:address` → `{ server: { online, players, version, motd, favicon, latencyMs, … } }`
+  (offline is 200 with `online: false`, private addresses 403, 429 over 20/min per IP),
+  `GET /releases/latest` → `{ release }`, `GET /stats` has `online` / `known` at the top level.
+* Panel `PUT` errors: 400 `{ code: "invalid_config", errors: [{ path, pointer, message, keyword }] }`
+  (JSON pointers), 409 `{ code: "version_conflict", version, updatedAt, updatedBy }`.

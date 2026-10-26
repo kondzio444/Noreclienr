@@ -26,6 +26,20 @@ public final class ServerCard {
 
     /** Compact row (h ≥ 36). */
     public static void row(Gfx g, ServerInfo.Info info, String name, float x, float y, float w, float h, float hover, boolean selected) {
+        row(g, info, name, null, x, y, w, h, hover, selected);
+    }
+
+    /** Small pill after a server name ("PARTNER"); returns its width. */
+    public static float badge(Gfx g, String text, float x, float y) {
+        float bw = Render2D.textWidth(text) * 0.6f + 8;
+        Render2D.roundedRect(g, x, y, bw, 9, 4.5f, ColorUtil.withAlpha(Theme.accent(), 90));
+        Render2D.roundedOutline(g, x, y, bw, 9, 4.5f, 1, ColorUtil.withAlpha(Theme.accent(), 200));
+        Render2D.scaledText(g, text, x + 4, y + 2.2f, 0.6f, 0xFFFFFFFF, false);
+        return bw;
+    }
+
+    /** Compact row (h ≥ 36) with an optional badge after the name. */
+    public static void row(Gfx g, ServerInfo.Info info, String name, String badge, float x, float y, float w, float h, float hover, boolean selected) {
         float r = Theme.radius();
         if (hover > 0.01f || selected) Render2D.shadow(g, x, y, w, h, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) (40 + 40 * Math.max(hover, selected ? 1 : 0))));
         Render2D.roundedRect(g, x, y, w, h, r, ColorUtil.lerp(0xB0160F26, 0xD0201634, hover));
@@ -38,7 +52,10 @@ public final class ServerCard {
         float nx = tx + (flag ? 13 : 0);
         boolean narrow = w < 200;
         float reserve = info != null && info.online >= 0 ? Render2D.textWidth(info.online + "/" + info.max) * 0.75f + 22 : 40;
-        Render2D.text(g, Render2D.trim(name, (int) (right - nx - reserve)), nx, y + 5, Theme.TEXT, true);
+        float badgeW = badge == null ? 0 : Render2D.textWidth(badge) * 0.6f + 12;
+        String shown = Render2D.trim(name, (int) (right - nx - reserve - badgeW));
+        Render2D.text(g, shown, nx, y + 5, Theme.TEXT, true);
+        if (badge != null) badge(g, badge, nx + Render2D.textWidth(shown) + 4, y + 4.5f);
         // right side: players + ping
         if (info != null && info.state == ServerInfo.State.OFFLINE && info.online < 0) {
             String off = narrow ? "offline" : info.error != null ? info.error : "offline";

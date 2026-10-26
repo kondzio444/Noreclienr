@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://noroclient.pl/api/v2/bot/config.schema.json",
+  "title": "Nore Bot guild configuration",
+  "description": "Placeholder until discord-bot/config.schema.json exists – scripts/copy-bot-schema.mjs replaces this file with the bot's schema at build time.",
+  "x-version": 0,
+  "x-placeholder": true,
+  "x-languages": ["pl", "en", "de", "es", "fr", "uk", "ru", "cs", "pt-BR", "tr"],
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "general": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-module": true,
+      "x-i18n": "panel.general._label",
+      "properties": {
+        "language": {
+          "type": "string",
+          "enum": ["pl", "en", "de", "es", "fr", "uk", "ru", "cs", "pt-BR", "tr"],
+          "default": "pl",
+          "x-ui": "select",
+          "x-i18n": "panel.general.language"
+        },
+        "color": {
+          "type": "string",
+          "default": "#9d5cff",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "x-ui": "color",
+          "x-i18n": "panel.general.color"
+        },
+        "staffRoles": {
+          "type": "array",
+          "default": [],
+          "maxItems": 25,
+          "items": { "type": "string", "pattern": "^\\d{17,20}$", "x-ui": "role" },
+          "x-ui": "list",
+          "x-i18n": "panel.general.staffRoles"
+        },
+        "commandCooldownSeconds": {
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 60,
+          "x-ui": "number",
+          "x-i18n": "panel.general.commandCooldownSeconds"
+        }
+      }
+    },
+    "welcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-module": true,
+      "x-i18n": "panel.welcome._label",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false, "x-ui": "toggle", "x-i18n": "panel.common.enabled" },
+        "channel": { "type": "string", "default": "", "pattern": "^(\\d{17,20})?$", "x-ui": "channel", "x-channel-types": ["text"], "x-i18n": "panel.common.channel" },
+        "message": { "type": "string", "default": "", "maxLength": 2000, "x-ui": "textarea", "x-i18n": "panel.welcome.message" }
+      }
+    }
+  }
+}

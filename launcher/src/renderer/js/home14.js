@@ -44,6 +44,8 @@ Pages.home = (root) => {
         </div>
       </section>
 
+      <section id="h-official" style="--i:1"></section>
+
       <div class="h14-quick" style="--i:1">${QUICK_14.map(([p, ic, t, d]) => `<button class="card hover h14-q" data-go="${p}">${icon(ic)}<b>${t}</b><small>${d}</small></button>`).join('')}</div>
 
       <div class="h14-cols">
@@ -76,6 +78,7 @@ Pages.home = (root) => {
   for (const id of ['#st-play', '#st-inst']) { const n = $(id, root); n._num = 0; n._shown = 0; }
 
   $$('[data-go]', root).forEach(c => c.onclick = () => go(c.dataset.go));
+  Official.card($('#h-official', root));
   $('#pick', root).onclick = () => instancePickerModal();
   $('#h-open', root).onclick = () => { const i = App.instance(); if (i) go('instance', { id: i.id }); };
   $('#play', root).onclick = () => {

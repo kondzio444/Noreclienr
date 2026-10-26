@@ -71,7 +71,11 @@ Pages.servers = (root) => {
         </div>
         <button class="btn" id="new">${icon('plus')} Nowy serwer</button>
       </div>
-      <div class="srv2-list" id="grid" style="margin-top:16px"></div>`;
+      <div class="section-title" style="margin-top:18px">${icon('crown')} Oficjalny serwer</div>
+      <section id="srv-official" style="margin-top:10px"></section>
+      <div class="section-title" style="margin-top:18px">${icon('server')} Twoje serwery</div>
+      <div class="srv2-list" id="grid" style="margin-top:10px"></div>`;
+    Official.card($('#srv-official', root));
     const grid = $('#grid', root);
     grid.innerHTML = list.map(s => {
       const e = engine(s.type);

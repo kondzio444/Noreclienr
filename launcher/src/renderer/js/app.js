@@ -178,7 +178,7 @@ function renderAccountChip() {
 
 // ------------------------------------------------------------------ launching (shared by pages)
 
-async function launchSelected(instance) {
+async function launchSelected(instance, opts) {
   const inst = instance || App.instance();
   if (!inst) return toast('Brak instancji', 'Utwórz instancję, aby zagrać.', 'error');
   if (!App.account()) {
@@ -189,8 +189,8 @@ async function launchSelected(instance) {
   try {
     App.progress = { stage: 'Przygotowywanie…' };
     App.emit();
-    await nore.game.launch(inst.id);
-    toast('Uruchamianie', `${inst.name} • ${inst.mcVersion}`, 'success');
+    await nore.game.launch(inst.id, opts || {});
+    toast('Uruchamianie', `${inst.name} • ${inst.mcVersion}${opts && opts.joinServer ? ` → ${opts.joinServer}` : ''}`, 'success');
   } catch (e) {
     App.progress = null;
     App.emit();

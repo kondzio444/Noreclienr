@@ -1464,3 +1464,12 @@ body.sb-collapsed .account-chip .meta { display: none; }
 
 /* the logo follows the accent colour everywhere (artwork is orange, recoloured by hue) */
 img[src$="assets/logo.png"] { filter: hue-rotate(var(--logo-hue)) !important; transition: filter .6s var(--ease); }
+
+/* Nore MC – official partner server card (Start, Serwery); plain on purpose, the redesign restyles it */
+.off-card { padding: 18px; border-left: 3px solid var(--accent); }
+.off-card h3 { font-size: 18px; }
+.off-sub { font-size: 12.5px; margin-top: 3px; }
+.off-sub .mono { font-family: 'JetBrains Mono', Consolas, monospace; }
+.off-motd { margin-top: 6px; font-size: 12.5px; min-height: 16px; }
+.off-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.off-stats { font-size: 12px; }

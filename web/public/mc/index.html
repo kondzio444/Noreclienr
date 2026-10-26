@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serwer Nore</title>
+<meta name="description" content="Serwer Minecraft Nore – mc.noreclient.pl">
+<link rel="icon" href="/assets/logo.png">
+<style>
+  :root { color-scheme: dark; --bg: #0d0b14; --fg: #ece8f5; --muted: #a39cb8; --accent: #9d5cff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, sans-serif; padding: 16px; }
+  main { max-width: 34rem; text-align: center; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); margin: 0 0 .5rem; }
+  p { color: var(--muted); margin: .25rem 0; }
+  code { color: var(--accent); font-size: 1.1rem; }
+  #st { margin-top: 1.25rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Serwer Nore</h1>
+  <p>Strona serwera Minecraft jest w budowie.</p>
+  <p>Adres: <code>mc.noreclient.pl</code></p>
+  <p id="st"></p>
+</main>
+<script src="/status.js" defer></script>
+</body>
+</html>

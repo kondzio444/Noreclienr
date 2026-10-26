@@ -20,6 +20,9 @@
  *   GET|POST /api/v1/cf/v1/…              CurseForge for the launcher, key added on the server
  *   GET /api/v1/openapi.json              OpenAPI 3.1 description of all of the above
  *
+ * API v2 (/api/v2/*, src/v2/index.js, OpenAPI at /api/v2/openapi.json) is a separate router; this
+ * file keeps API v1 exactly as released launchers and mods expect it. Host routing: src/hosts.js.
+ *
  * Background work: a Cron Trigger (wrangler.jsonc) refreshes the GitHub data every 15 minutes, and
  * every request serves cached data at once while a stale copy is refreshed with ctx.waitUntil
  * (stale-while-revalidate), so the API answers fast and GitHub rate limits are never hit.
@@ -28,14 +31,15 @@ import PLATFORMS from '../../platforms/platforms.json';
 import NEWS from './news.json';
 import { HubError, readHello, readNames, hubCall } from './hub.js';
 import { launcherConfig, curseforge } from './launcher.js';
+import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView } from './data.js';
+import { handleV2 } from './v2/index.js';
+import { siteOf, wwwRedirect, mcAsset, effectiveUrl, MC_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
+export { NoreBot } from './v2/store.js';
+export { NoreCounters } from './v2/counters.js';
 
-const REPO = 'kondzio444/Noreclienr';
 const API_VERSION = '1.3.0';
-const FRESH_SECONDS = 300;        // data younger than this is served as is
-const KEEP_SECONDS = 7 * 86400;   // stale data is still served (and refreshed in the background)
-const INTERNAL = 'https://nore-internal.invalid/';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -52,10 +56,6 @@ const CORS = {
   'Access-Control-Expose-Headers': 'ETag, X-Nore-Cache, X-Nore-Api',
   'Access-Control-Max-Age': '86400',
 };
-
-class HttpError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
-}
 
 async function etagOf(text) {
   const d = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
@@ -80,128 +80,7 @@ async function json(request, data, { status = 200, maxAge = 60, swr = 600, cache
 
 const fail = (request, status, message) => json(request, { error: message, status }, { status, maxAge: 0 });
 
-// ---------------------------------------------------------------- cache (stale-while-revalidate)
-
-async function readCache(name) {
-  const hit = await caches.default.match(new Request(INTERNAL + name));
-  if (!hit) return null;
-  return { data: await hit.json(), storedAt: Number(hit.headers.get('X-Stored-At') || 0) };
-}
-
-async function writeCache(name, data) {
-  await caches.default.put(new Request(INTERNAL + name), new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': `public, max-age=${KEEP_SECONDS}`, 'X-Stored-At': String(Date.now()) },
-  }));
-}
-
-/** Cached value: fresh → served; stale → served now and refreshed in the background; missing → loaded. */
-async function cached(name, loader, ctx) {
-  const hit = await readCache(name);
-  if (hit) {
-    const age = (Date.now() - hit.storedAt) / 1000;
-    if (age < FRESH_SECONDS) return { data: hit.data, state: 'HIT' };
-    ctx.waitUntil(loader().then(d => writeCache(name, d)).catch(() => {}));
-    return { data: hit.data, state: 'STALE' };
-  }
-  const data = await loader();
-  ctx.waitUntil(writeCache(name, data));
-  return { data, state: 'MISS' };
-}
-
-// ---------------------------------------------------------------- GitHub releases
-
-async function fetchReleases(env) {
-  const headers = { 'User-Agent': 'nore-web', Accept: 'application/vnd.github+json' };
-  if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
-  const res = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers });
-  if (!res.ok) throw new HttpError(502, `GitHub odpowiedział ${res.status}`);
-  const list = await res.json();
-  return list.filter(r => !r.draft).map(shapeRelease);
-}
-
-const ASSET_PATTERNS = {
-  win: /NoreLauncher-Setup-.*\.exe$/i,
-  linux: /NoreLauncher-.*\.AppImage$/i,
-  mac: /NoreLauncher-.*\.dmg$/i,
-  macZip: /NoreLauncher-.*-mac\.zip$|NoreLauncher-.*\.zip$/i,
-};
-
-function cmpVersion(a, b) {
-  const pa = String(a).replace(/^v/, '').split(/[.-]/).map(n => parseInt(n, 10) || 0);
-  const pb = String(b).replace(/^v/, '').split(/[.-]/).map(n => parseInt(n, 10) || 0);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
-  }
-  return 0;
-}
-
-function shapeRelease(r) {
-  const assets = {};
-  let downloads = 0;
-  for (const a of r.assets || []) {
-    downloads += a.download_count || 0;
-    for (const [k, re] of Object.entries(ASSET_PATTERNS)) {
-      if (!assets[k] && re.test(a.name)) assets[k] = { name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 };
-    }
-  }
-  const mods = (r.assets || []).filter(a => /^noreclient-.*\.jar$/i.test(a.name))
-    .map(a => ({ name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 }));
-  return {
-    version: String(r.tag_name || '').replace(/^v/, ''),
-    name: r.name,
-    prerelease: !!r.prerelease,
-    published: r.published_at,
-    notes: (r.body || '').slice(0, 8000),
-    url: r.html_url,
-    downloads,
-    assets,
-    mods,
-  };
-}
-
-async function releases(env, ctx) {
-  const r = await cached('releases', () => fetchReleases(env), ctx);
-  if (!r.data.length) throw new HttpError(404, 'Nie ma jeszcze żadnego wydania');
-  return r;
-}
-
-const brief = (r) => ({ version: r.version, name: r.name, prerelease: r.prerelease, published: r.published, url: r.url, downloads: r.downloads });
-
-// ---------------------------------------------------------------- events
-
-/** Nore events are forced on (cannot be switched off); the winter event starts on 10 December 2026. */
-const WINTER_START = '2026-12-10T00:00:00+01:00';
-function events() {
-  const winter = Date.now() >= Date.parse(WINTER_START);
-  return [
-    { id: 'halloween', name: 'Halloween w Nore', forced: true, active: true, accent: '#ff8a1f', features: ['Dyniowe dekoracje', 'Peleryny Halloween', 'Kapelusz Wiedźmy', 'Skrzydła Nietoperza', 'Mini-gra Cukierek albo psikus'] },
-    { id: 'christmas', name: 'Święta w Nore', forced: true, active: winter, startsAt: WINTER_START, accent: '#ff4d6d', features: ['Śnieg w menu i w launcherze', 'Świąteczne lampki', 'Zimowy motyw launchera'] },
-  ];
-}
-
-// ---------------------------------------------------------------- background sync (Cron Trigger)
-
-async function sync(env) {
-  const started = Date.now();
-  const meta = { at: new Date(started).toISOString(), ok: false, ms: 0, releases: 0, error: null };
-  try {
-    const list = await fetchReleases(env);
-    await writeCache('releases', list);
-    meta.ok = true;
-    meta.releases = list.length;
-  } catch (e) {
-    meta.error = String(e.message || e);
-  }
-  meta.ms = Date.now() - started;
-  await writeCache('sync', meta);
-  return meta;
-}
-
 // ---------------------------------------------------------------- API
-
-function platformsView() {
-  return PLATFORMS.map(x => ({ name: x.name, loader: x.loader, java: x.java, versions: x.versions }));
-}
 
 const ENDPOINTS = [
   ['GET', '/api/v1/status', 'Stan API, najnowsza wersja i ostatnia synchronizacja w tle'],
@@ -378,11 +257,10 @@ function withPageHeaders(res, html) {
 
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    if (url.hostname.startsWith('www.')) {
-      url.hostname = url.hostname.slice(4);
-      return Response.redirect(url.toString(), 301);
-    }
+    const url = effectiveUrl(request, env);
+    const www = wwwRedirect(url);
+    if (www) return www;
+    if (url.pathname === '/api/v2' || url.pathname.startsWith('/api/v2/')) return handleV2(request, url, env, ctx);
     // the API documentation page
     if (url.pathname === '/api' || url.pathname === '/api/') {
       const res = await env.ASSETS.fetch(new Request(url.origin + '/api', request));
@@ -397,7 +275,11 @@ export default {
         return fail(request, e.status || 502, String(e.message || e));
       }
     }
-    const res = await env.ASSETS.fetch(request);
+    const site = siteOf(url.hostname);
+    if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
+      return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
+    }
+    const res = site === 'mc' ? await mcAsset(request, url, env) : await env.ASSETS.fetch(request);
     return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
   },
 

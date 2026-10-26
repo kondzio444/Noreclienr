@@ -38,6 +38,7 @@ const doctor = require('./doctor');
 const social = require('./social');
 const chat = require('./chat');
 const chatBridge = require('./chat-bridge');
+const official = require('./official');
 const hub = require('./hub');
 const keys = require('./keys');
 
@@ -212,12 +213,20 @@ app.whenReady().then(async () => {
   servers.setEmitter(send);
   chatBridge.start(send);
   instances.ensureDefault();
+  ensureOfficialEverywhere();
   updater.init(send, store.get().settings, { checkNow: true });
   await runSplash().catch(() => {});
   createWindow();
   applyDiscord();
   discord.setActivity(LAUNCHER_ACTIVITY);
 });
+
+/** Every Nore Client instance lists the official server Nore MC in its servers.dat (the mod enforces it too). */
+function ensureOfficialEverywhere() {
+  for (const inst of instances.list().filter(i => i.noreClient)) {
+    official.ensureServersDat(instances.gameDir(inst)).catch(() => {});
+  }
+}
 
 const LAUNCHER_ACTIVITY = { details: 'W launcherze', state: 'Wybiera, w co zagrać' };
 
@@ -448,7 +457,19 @@ ipcMain.handle('versions:list', async (e, { snapshots } = {}) => {
 
 ipcMain.handle('versions:fabricLoaders', (e, mc) => versions.getFabricLoaders(mc));
 
-ipcMain.handle('instances:create', (e, opts) => instances.create(opts));
+ipcMain.handle('instances:create', async (e, opts) => {
+  const inst = instances.create(opts);
+  if (inst && inst.noreClient) await official.ensureServersDat(instances.gameDir(inst)).catch(() => {});
+  return inst;
+});
+
+// ------------------------------------------------------------------ Nore MC (official partner server)
+ipcMain.handle('official:info', () => official.OFFICIAL);
+ipcMain.handle('official:status', (e, force) => official.status({ force: !!force }));
+ipcMain.handle('official:pick', () => {
+  const d = store.get();
+  return official.pickInstance(instances.list(), d.selectedInstance);
+});
 ipcMain.handle('instances:update', (e, id, patch) => instances.update(id, patch));
 ipcMain.handle('instances:remove', (e, id, deleteFiles) => instances.remove(id, deleteFiles));
 ipcMain.handle('instances:select', (e, id) => store.update(d => { d.selectedInstance = id; }) && true);
@@ -640,6 +661,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
     let inst = instances.get(instanceId);
     if (!inst) throw new Error('Nie znaleziono instancji.');
     if (opts.joinServer) inst = { ...inst, joinServer: opts.joinServer };
+    if (inst.noreClient) await official.ensureServersDat(instances.gameDir(inst)).catch(() => {});
     const account = await readyAccount();
     const base = store.get().settings;
     const settings = { ...base, jvmArgs: [base.jvmArgs, inst.jvmArgs].filter(Boolean).join(' ') };

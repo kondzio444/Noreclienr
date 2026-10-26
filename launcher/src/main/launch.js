@@ -116,9 +116,21 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
     }
   }
   if (settings.fullscreen) game.push('--fullscreen');
-  if (instance.joinServer) game.push('--quickPlayMultiplayer', instance.joinServer);
+  if (instance.joinServer) game.push(...joinArgs(version, instance.joinServer));
 
   return { javaBin, args: [...jvm, version.mainClass, ...game], cwd: gameDir };
+}
+
+/**
+ * Arguments that join a server right after the start: quick play (1.20+) when the version supports it,
+ * else the old --server / --port pair.
+ */
+function joinArgs(version, address) {
+  const quickPlay = JSON.stringify((version.arguments && version.arguments.game) || []).includes('quickPlayMultiplayer');
+  if (quickPlay) return ['--quickPlayMultiplayer', address];
+  const m = /^(\[[^\]]+\]|[^:]+)(?::(\d+))?$/.exec(address.trim());
+  if (!m) return ['--server', address.trim()];
+  return ['--server', m[1].replace(/^\[|\]$/g, ''), '--port', m[2] || '25565'];
 }
 
 /** Starts the game; onLog(line, stream) receives output; resolves with the child process. */
@@ -143,4 +155,4 @@ async function launch(opts, { onLog, onExit } = {}) {
   return child;
 }
 
-module.exports = { sessionTicket, buildCommand, launch, expandArgs, substitute };
+module.exports = { sessionTicket, buildCommand, launch, expandArgs, substitute, joinArgs };
