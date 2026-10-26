@@ -85,7 +85,7 @@ node .                      # albo: npm start
 | `NORE_API` | nie | domyślnie `https://noroclient.pl` |
 | `NORE_BOT_SECRET` | dla panelu | wspólny sekret z Workerem (API v2, nagłówek `Authorization: Bot …`); pusty = tryb offline |
 | `DEPLOY_GUILD_ID` | nie | rejestracja komend tylko na jednym serwerze (natychmiast, do testów); pusty = globalnie |
-| `SHARDS` | nie | `auto` (domyślnie) albo liczba shardów |
+| `BOT_SHARDS` | nie | `auto` (domyślnie) albo liczba shardów |
 | `DATA_DIR` | nie | katalog danych (domyślnie `./data`) |
 | `LOG_LEVEL`, `LOG_FORMAT` | nie | `debug/info/warn/error`, `pretty/json` |
 | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | nie | feedy Twitcha (bez nich wyłączone) |
@@ -182,7 +182,7 @@ zapisywany atomowo w tle. Kopię zapasową bota robi się, kopiując katalog `da
 
 ## 7. Sharding
 
-`SHARDS=auto` pyta Discorda o zalecaną liczbę shardów: przy 1 bot działa w jednym procesie, przy
+`BOT_SHARDS=auto` pyta Discorda o zalecaną liczbę shardów: przy 1 bot działa w jednym procesie, przy
 większej liczbie `node .` uruchamia `ShardingManager` (proces na shard, automatyczny restart).
 Dane są per serwer, więc shardy się nie kłócą.
 

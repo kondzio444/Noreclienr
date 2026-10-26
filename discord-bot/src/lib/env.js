@@ -28,7 +28,8 @@ export function env() {
     noreApi: str('NORE_API', 'https://noroclient.pl').replace(/\/+$/, ''),
     botSecret: str('NORE_BOT_SECRET'),
     deployGuildId: str('DEPLOY_GUILD_ID'),
-    shards: str('SHARDS', 'auto'),
+    // BOT_SHARDS, not SHARDS: discord.js reads process.env.SHARDS itself and expects JSON there
+    shards: str('BOT_SHARDS', e.SHARDING_MANAGER === 'true' ? '' : (e.SHARDS ?? 'auto')),
     dataDir: path.resolve(ROOT, str('DATA_DIR', './data')),
     twitchClientId: str('TWITCH_CLIENT_ID'),
     twitchClientSecret: str('TWITCH_CLIENT_SECRET'),

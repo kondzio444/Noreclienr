@@ -6,7 +6,7 @@
  *   node . --dry-run    load every module, build every command definition, validate the schema,
  *                       locales and templates, print the command list and exit (no token needed)
  *
- * SHARDS=auto|<n> in .env controls sharding.
+ * BOT_SHARDS=auto|<n> in .env controls sharding.
  */
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -39,6 +39,8 @@ async function recommendedShards() {
 }
 
 const isShardChild = process.env.SHARDING_MANAGER === 'true';
+// discord.js parses process.env.SHARDS as JSON when it is set; an old .env with SHARDS=auto would break login
+if (!isShardChild) { delete process.env.SHARDS; delete process.env.SHARD_COUNT; }
 let shards = 1;
 if (!isShardChild) {
   shards = /^\d+$/.test(env.shards) ? Number(env.shards) : await recommendedShards();
