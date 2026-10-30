@@ -2,7 +2,9 @@ package dev.noreclient.gui.menu;
 
 import dev.noreclient.api.Gfx;
 import dev.noreclient.util.ColorUtil;
+import dev.noreclient.util.Motion;
 import dev.noreclient.util.Render2D;
+import dev.noreclient.util.ThemeTokens;
 
 /** Christmas event decorations for the Nore menus: drifting snow and a twinkling garland. Forced on from 10 December 2026. */
 final class ChristmasDecor {
@@ -16,7 +18,7 @@ final class ChristmasDecor {
         START = c.getTimeInMillis();
     }
 
-    static boolean active() { return System.currentTimeMillis() >= START; }
+    static boolean active() { return dev.noreclient.util.Events.winter(); }
 
     private static final int FLAKES = 90;
     private static final float[][] SNOW = new float[FLAKES][4];
@@ -27,6 +29,51 @@ final class ChristmasDecor {
     }
 
     private ChristmasDecor() {}
+
+    /**
+     * Album winter snow: hole-punch confetti (paper circles from the album's own puncher) falling slowly,
+     * at most 60 flakes, scaled by the event intensity.
+     */
+    static void snow(Gfx g, float w, float h, float intensity) {
+        double t = System.currentTimeMillis() / 1000.0;
+        int count = Math.max(12, (int) (60 * intensity));
+        for (int i = 0; i < count; i++) {
+            float[] f = SNOW[i];
+            float depth = f[2];
+            float y = (float) ((f[1] + t * 0.03 * depth) % 1.0) * (h + 10) - 5;
+            float x = (float) ((f[0] + Math.sin(t * 0.5 + f[3]) * 0.01 + t * 0.003 * depth) % 1.0) * w;
+            float r = 0.9f + depth * 1.4f;
+            int a = (int) (110 + 130 * depth);
+            Render2D.circle(g, x, y + 0.6f, r, ColorUtil.withAlpha(0xFF000000, a / 4));
+            Render2D.circle(g, x, y, r, ColorUtil.withAlpha(ThemeTokens.WINTER_FROST, a));
+        }
+    }
+
+    /** Frost creeping from the four page corners (static). */
+    static void frost(Gfx g, float w, float h, float intensity) {
+        int c = ColorUtil.withAlpha(ThemeTokens.WINTER_FROST, (int) (70 * intensity));
+        float r = Math.min(w, h) * 0.32f;
+        Render2D.radial(g, 0, 0, r, c, 0x00E9F4FF);
+        Render2D.radial(g, w, 0, r, c, 0x00E9F4FF);
+        Render2D.radial(g, 0, h, r * 0.8f, c, 0x00E9F4FF);
+        Render2D.radial(g, w, h, r * 0.8f, c, 0x00E9F4FF);
+    }
+
+    private static final int[] LIGHTS = {ThemeTokens.WINTER_LIGHT_RED, ThemeTokens.WINTER_LIGHT_GREEN, ThemeTokens.WINTER_LIGHT_GOLD, ThemeTokens.WINTER_LIGHT_BLUE};
+
+    /** A string of light dot stickers from x0 to x1 that twinkle in steps. */
+    static void lights(Gfx g, float x0, float x1, float y) {
+        long step = Motion.ambient() ? System.currentTimeMillis() / 600 : 0;
+        int n = Math.max(2, (int) ((x1 - x0) / 12));
+        Render2D.line(g, x0, y, x1, y, 0.8f, 0xFF2A3A2C);
+        for (int i = 0; i < n; i++) {
+            float x = x0 + (x1 - x0) * i / (n - 1f);
+            boolean on = ((i + step) % 3) != 0;
+            int c = LIGHTS[i % LIGHTS.length];
+            Render2D.circle(g, x, y + 2, 2.2f, ThemeTokens.VINYL);
+            Render2D.circle(g, x, y + 2, 1.4f, on ? c : ColorUtil.lerp(c, 0xFF141216, 0.6f));
+        }
+    }
 
     /** Snow in three depth layers: near flakes are bigger, brighter and faster; all sway in the wind. */
     static void snow(Gfx g, float w, float h) {
