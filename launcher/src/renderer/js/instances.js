@@ -32,9 +32,9 @@ function instBanner(inst) {
   return img ? `url("${esc(img)}") center/cover no-repeat, ${flat}` : flat;
 }
 
+/** Loader label sticker (Album label colours: Fabric, Quilt, Forge/NeoForge, Vanilla). */
 function loaderTag(l) {
-  const c = LOADER_COLORS[l] || LOADER_COLORS.vanilla;
-  return `<span class="ltag" style="--lc:${c}"><i></i>${loaderName(l)}</span>`;
+  return `<span class="ltag l-${esc(LOADER_COLORS[l] ? l : 'vanilla')}"><i></i>${loaderName(l)}</span>`;
 }
 
 /** True when the background check found a new modpack version or mod / pack / shader updates. */

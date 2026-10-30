@@ -13,7 +13,7 @@ const ACCENTS = {
   ice: { name: 'Ice', a: '#7fe3ff', b: '#c4f3ff', d: '#3cb8e0' },
 };
 
-const TRANSITIONS = [['rise', 'Kierunkowe'], ['fade', 'Zanikanie'], ['slide', 'Przesuwanie'], ['zoom', 'Przybliżenie'], ['blur', 'Rozmycie']];
+const TRANSITIONS = [['slide', 'Strona albumu'], ['rise', 'Pionowo'], ['fade', 'Zanikanie'], ['zoom', 'Przybliżenie']];
 
 const SCENE_PREVIEW = {
   photo: 'url(assets/background.jpg) center/cover',
@@ -22,7 +22,7 @@ const SCENE_PREVIEW = {
   cubes: 'linear-gradient(135deg,#7cbd4b 0 18%,transparent 18% 40%,#8a8a8a 40% 52%,transparent 52% 72%,rgba(var(--accent-rgb),.8) 72% 84%,transparent 84%),#120d0a',
   grid: 'linear-gradient(180deg,#09060f 0 45%,rgba(var(--accent-rgb),.7) 50%,#07050a 52%),repeating-linear-gradient(90deg,rgba(var(--accent-rgb),.5) 0 1px,transparent 1px 14px)',
   waves: 'radial-gradient(120% 60% at 50% 100%,rgba(var(--accent-rgb),.6),transparent 60%),linear-gradient(135deg,#0d0907,#1d120b)',
-  minimal: 'linear-gradient(160deg,#1a130f,#0b0908)',
+  minimal: 'var(--grain) #141216',
   custom: 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 8px,transparent 8px 16px),#141010',
 };
 
@@ -49,15 +49,18 @@ async function applyAppearance(s, { reloadCustom = false } = {}) {
   const ac = ACCENTS[s.accentPreset] || ACCENTS.nore;
   const root = document.documentElement.style;
   root.setProperty('--logo-hue', Math.round(hexHue(ac.a) - LOGO_HUE) + 'deg');
-  root.setProperty('--accent', ac.a);
-  root.setProperty('--accent-2', ac.b);
-  root.setProperty('--accent-deep', ac.d);
+  // only the accent is set at runtime; cover, tabs, rims and the logo hue derive from it (tokens.css)
+  root.setProperty('--nore-accent', ac.a);
+  root.setProperty('--nore-accent-light', ac.b);
+  root.setProperty('--nore-accent-deep', ac.d);
   root.setProperty('--accent-rgb', hexRgb(ac.a).join(', '));
-  document.body.dataset.trans = s.pageTransition || 'rise';
+  document.body.dataset.trans = s.pageTransition || 'slide';
+  document.body.classList.toggle('has-scene', !!s.bgScene && s.bgScene !== 'minimal');
   if (s.bgScene === 'custom' && (reloadCustom || !customBgData)) customBgData = await nore.background.custom().catch(() => null);
   Background.apply({
     scene: s.bgScene === 'custom' && !customBgData ? 'photo' : (s.bgScene || 'photo'),
-    custom: customBgData, particles: s.bgParticles || 'embers', motion: s.bgMotion || 'kenburns',
+    // the Album page covers the background completely: nothing is drawn under it unless a scene is chosen
+    custom: customBgData, particles: !s.bgScene || s.bgScene === 'minimal' ? 'none' : s.bgParticles || 'embers', motion: s.bgMotion || 'kenburns',
     density: s.bgDensity == null ? 1 : s.bgDensity, dim: s.bgDim == null ? 55 : s.bgDim, blur: s.bgBlur || 0, speed: s.bgSpeed || 1,
   });
 }
@@ -67,7 +70,7 @@ function appearanceCard(root) {
   const s = App.state.settings;
   const card = el(`<div class="card panel look-card">
     <div class="section-title">${icon('sparkles')} Wygląd launchera</div>
-    <div class="look-label">Tło</div>
+    <div class="look-label">Tło pod stroną albumu</div>
     <div class="scene-grid">${Background.SCENES.map(sc => `<button class="scene-tile ${sc.id === s.bgScene ? 'on' : ''}" data-scene="${sc.id}">
       <span class="prev" style="background:${SCENE_PREVIEW[sc.id]}"></span><b>${esc(sc.name)}</b><small>${esc(sc.desc)}</small>
       ${sc.id === 'custom' ? `<span class="pick">${icon('upload')}</span>` : ''}</button>`).join('')}</div>
@@ -84,7 +87,7 @@ function appearanceCard(root) {
     </div>
     <div class="look-row">
       <div class="look-col"><div class="look-label">Kolor akcentu</div><div class="swatches" id="lk-acc">${Object.entries(ACCENTS).map(([k, a]) => `<button class="swatch ${k === (s.accentPreset || 'nore') ? 'on' : ''}" data-v="${k}" title="${esc(a.name)}" style="--c1:${a.b};--c2:${a.d}"></button>`).join('')}</div></div>
-      <div class="look-col"><div class="look-label">Przejścia stron</div><div class="chips" id="lk-trans">${TRANSITIONS.map(([v, l]) => `<button class="lchip ${v === (s.pageTransition || 'rise') ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div></div>
+      <div class="look-col"><div class="look-label">Przejścia stron</div><div class="chips" id="lk-trans">${TRANSITIONS.map(([v, l]) => `<button class="lchip ${v === (s.pageTransition === 'blur' ? 'fade' : s.pageTransition || 'slide') ? 'on' : ''}" data-v="${v}">${l}</button>`).join('')}</div></div>
     </div>
   </div>`);
 

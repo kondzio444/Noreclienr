@@ -104,7 +104,7 @@ function send(channel, payload) {
 function createWindow() {
   win = new BrowserWindow({
     width: 1220, height: 760, minWidth: 980, minHeight: 640,
-    frame: false, show: false, backgroundColor: '#0d0913', title: 'Nore Launcher',
+    frame: false, show: false, backgroundColor: '#291c3d', title: 'Nore Launcher',
     icon: nativeImage.createFromPath(ICON),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
@@ -143,7 +143,7 @@ function runSplash() {
 
     const splash = new BrowserWindow({
       width: 400, height: 480, frame: false, resizable: false, maximizable: false, fullscreenable: false,
-      show: false, center: true, backgroundColor: '#0d0913', title: 'Nore Updater',
+      show: false, center: true, backgroundColor: '#291c3d', title: 'Nore Updater',
       icon: nativeImage.createFromPath(ICON),
       webPreferences: { preload: path.join(__dirname, '..', 'updater-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
@@ -162,11 +162,15 @@ function runSplash() {
       off();
       timers.forEach(clearTimeout);
       ipcMain.removeListener('splash:skip', onSkip);
+      ipcMain.removeListener('splash:retry', onRetry);
       resolve();
       setTimeout(() => { if (!splash.isDestroyed()) splash.destroy(); }, 350);
     };
     const onSkip = (e) => { if (!splash.isDestroyed() && e.sender === splash.webContents) finish(); };
     ipcMain.on('splash:skip', onSkip);
+    // "Spróbuj ponownie" after an error: one more check, the 20 s safety timer still applies
+    const onRetry = (e) => { if (!splash.isDestroyed() && e.sender === splash.webContents) { post({ state: 'checking' }); updater.check().catch(() => later(finish, 1500)); } };
+    ipcMain.on('splash:retry', onRetry);
     splash.on('closed', finish);
     // a stuck window must never keep the launcher closed
     later(() => { if (!['downloading', 'verifying', 'available'].includes(updater.current().state)) finish(); }, 20000);
@@ -176,7 +180,7 @@ function runSplash() {
       off = updater.onState((st) => {
         post(st);
         if (st.state === 'latest' || st.state === 'dev') later(finish, 1100);
-        else if (st.state === 'error') later(finish, 1800);
+        else if (st.state === 'error') later(() => { if (updater.current().state === 'error') finish(); }, 6000); // time to press "Spróbuj ponownie"
         else if (st.state === 'available' && store.get().settings.autoUpdate === false) later(finish, 2600);
         else if (st.state === 'ready') {
           const auto = store.get().settings.autoUpdate !== false;
@@ -285,6 +289,7 @@ ipcMain.handle('state:get', () => {
 });
 
 ipcMain.handle('settings:set', (e, patch) => {
+  if (patch && 'eventFx' in patch) patch.eventFx = Math.max(25, Math.min(100, Number(patch.eventFx) || 100)); // events cannot be turned off
   store.update(d => Object.assign(d.settings, patch));
   if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
   if ('autoUpdate' in patch) updater.configure(store.get().settings);

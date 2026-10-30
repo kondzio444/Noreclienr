@@ -52,13 +52,13 @@ function sortPeople(list) {
     || ((b.last && b.last.ts) || 0) - ((a.last && a.last.ts) || 0) || a.name.localeCompare(b.name, 'pl'));
 }
 
-/** The presence line in § codes: §a in game / online, §e waiting, §8 offline, §7 nick list only. */
+/** The presence line (plain text; the state itself is the dot on the head). */
 function personLine(p) {
-  if (p.status === 'game') return `§aW grze${p.detail ? '§8: §7' + p.detail : ''}`;
-  if (p.status === 'launcher') return '§aOnline w launcherze';
-  if (p.pending) return '§eCzeka, aż doda Twój Nore ID';
-  if (p.status === 'off') return `§8Offline${p.seen ? ' • ' + fmtAgo(p.seen) : ''}`;
-  return '§7Na liście w grze';
+  if (p.status === 'game') return `W grze${p.detail ? ': ' + p.detail : ''}`;
+  if (p.status === 'launcher') return 'Online w launcherze';
+  if (p.pending) return 'Czeka, aż doda Twój Nore ID';
+  if (p.status === 'off') return `Offline${p.seen ? ' · ' + fmtAgo(p.seen) : ''}`;
+  return 'Na liście w grze';
 }
 
 function personAvatar(p, size = 36, px = 48) {
@@ -169,7 +169,7 @@ Pages.friends = (root, opts = {}) => {
 
   // ---------------------------------------------------------------- the list
   const rowHtml = (p) => {
-    const line = p.unread && p.last ? `§f${(p.last.mine ? 'Ty: ' : '') + p.last.text}` : personLine(p);
+    const line = p.unread && p.last ? `${(p.last.mine ? 'Ty: ' : '') + p.last.text}` : personLine(p);
     return `<button class="fx-row ${p.key === sel ? 'on' : ''}" data-k="${esc(p.key)}" title="${esc(p.name)}">
       ${personAvatar(p)}
       <span class="fx-txt"><b>${esc(p.name)}</b><span class="motd">${Motd.html(line.replace(/[\r\n]+/g, ' '))}</span></span>

@@ -125,11 +125,11 @@ function avatarHtml(acc) {
 // ------------------------------------------------------------------ motion (reads the tokens in styles.css :root)
 
 const Motion = (() => {
-  const css = () => getComputedStyle(document.documentElement);
+  const css = () => getComputedStyle(document.body || document.documentElement);
   /** In-app animation switch off: no motion at all. */
   const off = () => document.body.classList.contains('no-anim');
   /** prefers-reduced-motion: fades stay, travel goes. */
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.body.classList.contains('motion-reduced');
   const ms = (name) => { const v = css().getPropertyValue(name).trim(); return v.endsWith('ms') ? parseFloat(v) : v.endsWith('s') ? parseFloat(v) * 1000 : (parseFloat(v) || 0); };
   const ease = (name) => css().getPropertyValue(name).trim() || 'ease';
   /** A travel distance, zero under reduced motion. */
@@ -314,7 +314,7 @@ function segmented(options, value, onChange) {
     pill.style.transform = `translateX(${x}px)`;
     if (animate && at && (at.x !== x || at.w !== w)) {
       Motion.animate(pill, [{ transform: `translateX(${at.x}px) scaleX(${at.w / w})` }, { transform: `translateX(${x}px) scaleX(1)` }],
-        { duration: Motion.ms('--dur-base') + 40, easing: Motion.ease('--ease-spring') });
+        { duration: Motion.ms('--nore-spring-tab-dur'), easing: Motion.ease('--nore-spring-tab') });
     }
     at = { x, w };
   };

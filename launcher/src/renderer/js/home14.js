@@ -1,166 +1,182 @@
 'use strict';
-/* Home 1.4 Beta: instance hero with its banner, recent instances, friends, screenshots, news – plus the sidebar mini player. */
+/* Start (DESIGN.md §8 "Launcher"): the current instance as a hero sticker with Graj, recent instances in
+   slots ending with a ghost "Nowa instancja", the collection, and on the right the event poster / Nore MC,
+   taped news clippings and friends as round head stickers. Plus the Graj block and the rail mini player. */
 
+/** News clippings (washi-taped paper). [title, text, signature] */
 const NEWS_14 = [
-  ['sparkles', 'Nore Client 1.4 Beta', 'Panorama Minecrafta w menu, poradnik powitalny i kafelki szybkiego dostępu w rogu.'],
-  ['globe', 'Nowy Multiplayer', 'Flagi krajów serwerów, ping, gracze online i podgląd serwera przy szybkim dołączaniu.'],
-  ['users', 'Znajomi i peleryny', 'Lista znajomych wspólna z grą, kolekcja peleryn „Historia Nore” i galeria zrzutów.'],
-  ['shield', 'Auto naprawa', 'Launcher sam wykrywa zduplikowane mody, złe wersje i błędne loadery, zanim gra się wysypie.'],
-  ['layers', 'Minecraft 1.20 – 26.3', 'Nore Client działa na wszystkich wersjach od 1.20 do najnowszej 26.3 – wybierz dowolną przy tworzeniu instancji.'],
+  ['Nowy wygląd: Album', 'Launcher, instalator i aktualizator w nowej odsłonie. Instancje, znajomi i nagrody to naklejki w Twoim albumie.', 'Launcher 1.4 · paź'],
+  ['Nore MC: dołącz jednym kliknięciem', 'Oficjalny serwer na Starcie i w Serwerach – launcher sam wybierze instancję z Nore Client.', 'Launcher 1.4 · paź'],
+  ['Serwer dla znajomych', 'Tunel playit.gg ustawia się sam, bez przekierowania portów.', 'Serwery 2.1'],
+  ['Auto naprawa', 'Launcher wykrywa zduplikowane mody, złe wersje i błędne loadery, zanim gra się wysypie.', 'Launcher 1.4'],
 ];
 
-const QUICK_14 = [
-  ['modpacks', 'box', 'Modpacki', 'Gotowe paczki'],
-  ['mods', 'puzzle', 'Mody', 'Modrinth'],
-  ['resourcepacks', 'image', 'Paczki zasobów', 'Tekstury'],
-  ['shaders', 'sun', 'Shadery', 'Iris'],
-  ['servers', 'server', 'Serwery', 'Własny serwer'],
-  ['gallery', 'monitor', 'Galeria', 'Zrzuty F2'],
-];
+const fmtHours = (ms) => {
+  const h = (ms || 0) / 3600000;
+  return h >= 10 ? `${Math.round(h)} h` : h >= 1 ? `${h.toFixed(1).replace('.', ',')} h` : `${Math.round(h * 60)} min`;
+};
+
+/** "wczoraj, 21:14", "dziś, 9:05", "12 paź" or "jeszcze nie" */
+function fmtWhen(ts) {
+  if (!ts) return 'jeszcze nie';
+  const d = new Date(ts), now = new Date();
+  const day = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((day(now) - day(d)) / 86400000);
+  const hm = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  if (diff === 0) return `dziś, ${hm}`;
+  if (diff === 1) return `wczoraj, ${hm}`;
+  if (diff < 7) return `${diff} dni temu`;
+  return d.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+}
+
+/** Artwork for an instance sticker: its banner / icon, or a real panorama when it has none. */
+function instArt(inst) {
+  const media = App.media && App.media[inst.id];
+  const img = (media && media.banner) || inst.bannerUrl || (media && media.icon) || inst.iconUrl;
+  return img ? `url("${esc(img)}")` : '';
+}
+
+function loaderLabel(inst) {
+  const l = inst.loader || 'vanilla';
+  return `<span class="label ${l}">${esc(loaderName(l))}${inst.loaderVersion ? ' ' + esc(String(inst.loaderVersion).split('.').slice(0, 2).join('.')) : ''}</span>`;
+}
 
 Pages.home = (root) => {
   root.innerHTML = `
-    <div class="h14 stagger">
-      <section class="card h14-hero" id="h-hero" style="--i:0">
-        <div class="h14-art" id="h-art"></div>
-        <div class="h14-shade"></div>
-        <img class="h14-logo" src="assets/logo.png" alt="">
-        <div class="h14-main">
-          <h1 id="h-name"></h1>
-          <p class="h14-sub" id="h-sub"></p>
-          <div class="h14-tags" id="h-tags"></div>
-          <div class="launch-row">
-            <button class="btn play big" id="play"></button>
-            <button class="btn ghost h14-switch" id="pick" title="Zmień instancję">${icon('layers')} <span>Zmień</span></button>
-            <button class="btn ghost icon" id="h-open" title="Strona instancji">${icon('settings')}</button>
+    <div class="home">
+      <div class="home-main">
+        <section class="h-hero" id="h-hero">
+          <div class="sticker lg h-inst" id="h-art"><span class="peel"></span><span class="label lab-b" id="h-ver"></span><span class="label nore lab-a" id="h-kind"></span></div>
+          <div class="h-info">
+            <h1 class="h-name" id="h-name"></h1>
+            <p class="h-meta" id="h-meta"></p>
+            <div class="h-labels" id="h-tags"></div>
+            <div class="h-actions">
+              <span class="play-wrap"><button class="btn play big" id="play"></button><i class="play-dot" id="play-dot" hidden></i></span>
+              <button class="btn ghost" id="pick" title="Zmień instancję">Zmień ${icon('arrowRight')}</button>
+              <button class="btn ghost icon" id="h-folder" title="Folder instancji" aria-label="Folder instancji">${icon('folder')}</button>
+            </div>
+            <p class="h-ready" id="h-ready"></p>
+            ${progressHtml()}
           </div>
-          ${progressHtml()}
-          <div class="eyebrow h14-meta"><span class="ver-chip">1.4 BETA</span> Nore Launcher ${esc(App.info.version)}</div>
-        </div>
-        <div class="h14-stats">
-          <div><b id="st-play">–</b><span>Czas gry</span></div>
-          <div><b id="st-last">–</b><span>Ostatnio</span></div>
-          <div><b id="st-inst">–</b><span>Instancje</span></div>
-        </div>
-      </section>
-
-      <section id="h-official" style="--i:1"></section>
-
-      <div class="h14-quick" style="--i:1">${QUICK_14.map(([p, ic, t, d]) => `<button class="card hover h14-q" data-go="${p}">${icon(ic)}<b>${t}</b><small>${d}</small></button>`).join('')}</div>
-
-      <div class="h14-cols">
-        <div class="col" style="gap:18px;min-width:0">
-          <section class="card h14-sec" style="--i:2;--tab:var(--c-b)">
-            <div class="row"><div class="section-title" style="flex:1">${icon('clock')} Ostatnio grane</div><button class="btn ghost sm" data-go="instances">Wszystkie ${icon('arrowRight')}</button></div>
-            <div class="h14-recent" id="h-recent"></div>
-          </section>
-          <section class="card h14-sec" style="--i:3;--tab:var(--c-7)">
-            <div class="row"><div class="section-title" style="flex:1">${icon('monitor')} Ostatnie zrzuty</div><button class="btn ghost sm" data-go="gallery">Galeria ${icon('arrowRight')}</button></div>
-            <div class="h14-shots" id="h-shots"><div class="muted">Wczytywanie…</div></div>
-          </section>
-        </div>
-        <div class="col" style="gap:18px;min-width:0">
-          <section class="card h14-sec h14-upd" id="h-upd" style="--i:2;--tab:var(--c-e)" hidden></section>
-          <section class="card h14-sec news" style="--i:2;--tab:var(--c-d)">
-            <div class="section-title">${icon('sparkles')} Nowe w 1.4 Beta</div>
-            ${NEWS_14.map(n => `<div class="news-item"><div class="ico">${icon(n[0])}</div><div><b>${n[1]}</b><p>${n[2]}</p></div></div>`).join('')}
-          </section>
-          <section class="card h14-sec" style="--i:3;--tab:var(--c-a)">
-            <div class="row"><div class="section-title" style="flex:1">${icon('users')} Znajomi</div><button class="btn ghost sm" data-go="friends">Zarządzaj ${icon('arrowRight')}</button></div>
-            <div class="h14-friends" id="h-friends"></div>
-          </section>
-          <section class="card home-servers h14-sec" id="hsrv" style="--i:4;--tab:var(--c-6)"></section>
-        </div>
+        </section>
+        <section class="card h-upd" id="h-upd" hidden></section>
+        <section class="h-sec">
+          <h3 class="section-title">Ostatnio grane<button class="more" data-go="instances">Wszystkie instancje</button></h3>
+          <div class="h-recent" id="h-recent"></div>
+        </section>
+        <section class="h-sec h-album" id="h-album" hidden></section>
       </div>
+      <aside class="h-side">
+        <div id="h-event" hidden></div>
+        <section id="h-official"></section>
+        <section><h3 class="section-title">Co nowego</h3>
+          <div class="h-clips">${NEWS_14.slice(0, 2).map((n, i) => `<article class="clip"><span class="tape ${i % 2 ? 'mint' : ''}"></span><h4>${esc(n[0])}</h4><p>${esc(n[1])}</p><time>${esc(n[2])}</time></article>`).join('')}</div>
+        </section>
+        <section><h3 class="section-title">Znajomi<button class="more" data-go="friends" id="h-fcount">Zarządzaj</button></h3>
+          <div class="h-friends" id="h-friends"></div></section>
+        <section id="hsrv" hidden></section>
+      </aside>
     </div>`;
-
-  // the stat strip counts up from zero when Start opens
-  for (const id of ['#st-play', '#st-inst']) { const n = $(id, root); n._num = 0; n._shown = 0; }
 
   $$('[data-go]', root).forEach(c => c.onclick = () => go(c.dataset.go));
   Official.card($('#h-official', root));
+  if (typeof Events === 'object') Events.homeSlots(root);
   $('#pick', root).onclick = () => instancePickerModal();
-  $('#h-open', root).onclick = () => { const i = App.instance(); if (i) go('instance', { id: i.id }); };
-  $('#play', root).onclick = () => {
+  // the hero sticker opens the instance page (mods, worlds, settings)
+  $('#h-art', root).onclick = (e) => { if (e.target.closest('.label')) return; const i = App.instance(); if (i) go('instance', { id: i.id }); };
+  $('#h-art', root).title = 'Szczegóły instancji';
+  $('#h-folder', root).onclick = () => { const i = App.instance(); if (i) nore.instances.folder(i.id); };
+  $('#play', root).onclick = (e) => {
     const inst = App.instance();
+    playRub(e.currentTarget);
     if (App.running && inst && App.running === inst.id) return nore.game.kill();
-    if (inst) Motd.reveal($('#h-name', root), inst.name, 720);
     launchSelected();
   };
 
-  // friends and screenshots load in the background
-  // friends: nick list + chat contacts as one row of heads, online first, with their status squares
+  // friends: nick list + chat contacts, online first, as round head stickers with their dots
   let nicks = null;
   const drawFriends = () => {
     const box = $('#h-friends', root);
     if (!box || nicks == null) return;
     const people = sortPeople(friendPeople(nicks));
     const on = people.filter(p => p.status === 'game' || p.status === 'launcher').length;
-    const unread = people.reduce((n, p) => n + p.unread, 0);
-    const sig = JSON.stringify(people.slice(0, 9).map(p => [p.key, p.status, p.unread]).concat([people.length]));
+    const sig = JSON.stringify(people.slice(0, 4).map(p => [p.key, p.status, p.unread, p.detail]).concat([people.length]));
     if (box.dataset.sig === sig) return;
     const first = box.dataset.sig == null;
     box.dataset.sig = sig;
-    if (first) Motion.ghost(box);
+    $('#h-fcount', root).textContent = people.length ? (on ? `${on} online` : `${people.length} ${plural(people.length, 'osoba', 'osoby', 'osób')}`) : 'Dodaj';
     box.innerHTML = people.length
-      ? `<div class="h14-heads">${people.slice(0, 9).map(p => `<button class="h14-head" data-k="${esc(p.key)}" title="${esc(p.name)}">${personAvatar(p, 34, 48)}</button>`).join('')}
-          ${people.length > 9 ? `<button class="h14-head more" data-k="">+${people.length - 9}</button>` : ''}</div>
-        <small class="muted motd">${Motd.html(`${on ? `§a${on} online` : '§7nikt online'}§8 • §7${people.length} ${plural(people.length, 'znajomy', 'znajomych', 'znajomych')}${unread ? `§8 • §e${unread} ${plural(unread, 'nowa wiadomość', 'nowe wiadomości', 'nowych wiadomości')}` : ''}`)}</small>`
-      : `<div class="muted" style="font-size:12.5px">Dodaj znajomych – Nore Client podświetli ich nicki, a w launcherze możecie pisać i rozmawiać.</div>`;
-    if (first) stagger($('.h14-heads', box) || box);
-    $$('.h14-head', box).forEach(b => b.onclick = () => go('friends', b.dataset.k ? { key: b.dataset.k } : {}));
+      ? people.slice(0, 4).map(p => `<button class="h-friend" data-k="${esc(p.key)}"><span class="h">${personAvatar(p, 34, 48)}</span>
+          <div><b>${esc(p.name)}</b><small>${esc(p.unread ? `${p.unread} ${plural(p.unread, 'nowa wiadomość', 'nowe wiadomości', 'nowych wiadomości')}` : personLine(p))}</small></div></button>`).join('')
+      : '<p class="muted" style="font-size:13px;line-height:1.5">Dodaj znajomych – Nore Client podświetli ich nicki, a w launcherze możecie pisać i rozmawiać.</p>';
+    if (first) stagger(box);
+    $$('.h-friend', box).forEach(b => b.onclick = () => go('friends', { key: b.dataset.k }));
   };
   nore.friends.list().then(list => { nicks = list; drawFriends(); }).catch(() => { nicks = []; drawFriends(); });
   const offChat = typeof Chat !== 'undefined' ? Chat.on((w) => { if (w === 'presence' || w === 'contacts') drawFriends(); }) : () => {};
-  nore.gallery.list().then(list => {
-    const box = $('#h-shots', root);
-    if (!box) return;
-    Motion.ghost(box);
-    box.innerHTML = list.length
-      ? list.slice(0, 4).map(s => `<button class="h14-shot" title="${esc(s.instance)}">${s.thumb ? `<img src="${s.thumb}" alt="">` : icon('image')}</button>`).join('')
-      : `<div class="muted" style="font-size:12.5px;grid-column:1/-1">Naciśnij F2 w grze, aby zrobić pierwszy zrzut.</div>`;
-    $$('.h14-shot', box).forEach(b => b.onclick = () => go('gallery'));
-  }).catch(() => {});
+
   nore.servers.list().then(list => {
     const box = $('#hsrv', root);
-    if (!box) return;
-    box.innerHTML = `<div class="row"><div class="section-title" style="flex:1">${icon('server')} Twoje serwery</div><button class="btn ghost sm" data-go2="servers">${list.length ? 'Zarządzaj' : 'Utwórz'} ${icon('arrowRight')}</button></div>
-      ${list.length ? list.slice(0, 3).map(x => `<div class="hs-row" data-id="${esc(x.id)}"><i class="dot ${x.state}"></i><b>${esc(x.name)}</b><span>${esc(x.mcVersion)} • ${x.state === 'running' ? x.players.length + ' graczy' : 'wyłączony'}</span></div>`).join('')
-        : '<div class="muted" style="font-size:12.5px;margin-top:8px">Postaw własny serwer Paper, Fabric albo NeoForge z pluginami i domeną.</div>'}`;
+    if (!box || !list.length) return;
+    box.hidden = false;
+    const st = (x) => (x.state === 'running' ? 'ready' : x.state === 'starting' || x.state === 'stopping' ? 'wait' : x.state === 'crashed' ? 'error' : 'off');
+    box.innerHTML = `<h3 class="section-title">Twoje serwery<button class="more" data-go2="servers">Zarządzaj</button></h3>
+      ${list.slice(0, 3).map(x => `<button class="h-srv" data-id="${esc(x.id)}"><i class="sdot sm ${st(x)}"></i><b>${esc(x.name)}</b><span>${esc(x.mcVersion)} · ${x.state === 'running' ? x.players.length + ' ' + plural(x.players.length, 'gracz', 'graczy', 'graczy') : 'wyłączony'}</span></button>`).join('')}`;
     $$('[data-go2]', box).forEach(b => b.onclick = () => go(b.dataset.go2));
-    $$('.hs-row', box).forEach(r => r.onclick = () => go('server', { id: r.dataset.id }));
+    $$('.h-srv', box).forEach(r => r.onclick = () => go('server', { id: r.dataset.id }));
   }).catch(() => {});
 
   let lastInst = null;
   const render = () => {
     const s = App.state;
     const inst = App.instance();
-    if (inst !== lastInst || !inst) {
-      lastInst = inst;
-      $('#h-art', root).style.background = inst ? instBanner(inst) : 'var(--surface)';
-      if (inst) Motd.reveal($('#h-name', root), inst.name);
-      else $('#h-name', root).innerHTML = 'Brak <span>instancji</span>';
-      const sub = $('#h-sub', root);
-      sub.classList.toggle('motd', !!inst);
-      sub.innerHTML = inst ? instMotd(inst) : 'Utwórz instancję, aby zagrać.';
-      $('#h-tags', root).innerHTML = inst ? instanceTags(inst) : '';
+    const art = $('#h-art', root);
+    const key = inst ? [inst.id, inst.name, inst.mcVersion, inst.loader, inst.loaderVersion, instArt(inst)].join('|') : '';
+    if (key !== lastInst) {
+      lastInst = key;
+      const bg = inst ? instArt(inst) : '';
+      art.style.backgroundImage = bg;
+      art.classList.toggle('empty-art', !bg);
+      $('#h-ver', root).textContent = inst ? inst.mcVersion : '';
+      $('#h-ver', root).hidden = !inst;
+      const kind = $('#h-kind', root);
+      kind.textContent = inst ? (inst.noreClient ? 'Nore Client' : inst.modpack === 'pack' ? 'Modpack' : loaderName(inst.loader)) : '';
+      kind.className = `label lab-a ${inst ? (inst.noreClient ? 'nore' : inst.modpack === 'pack' ? 'modpack' : inst.loader || 'vanilla') : ''}`;
+      kind.hidden = !inst;
+      const name = $('#h-name', root);
+      name.textContent = inst ? inst.name : 'Pusty album';
+      name.classList.toggle('long', !!inst && inst.name.length > 16);
+      const mem = inst && inst.memoryMb ? inst.memoryMb : s.settings.memoryMb;
+      $('#h-tags', root).innerHTML = inst ? `${loaderLabel(inst)}<span class="label">${(mem / 1024).toFixed(mem % 1024 ? 1 : 0).replace('.', ',')} GB RAM</span>${inst.modpack === 'pack' && inst.pack ? `<span class="label dark">${esc(inst.pack.title || 'Modpack')}</span>` : inst.perfPack ? '<span class="label dark">Pakiet Nore</span>' : ''}` : '';
     }
+    const st = App.stats[inst && inst.id] || {};
+    $('#h-meta', root).innerHTML = inst
+      ? `<span><b>${fmtHours(inst.playTime)}</b> w grze</span><span>ostatnio <b>${esc(fmtWhen(inst.lastPlayed))}</b></span>${st.mods != null ? `<span><b>${st.mods}</b> ${plural(st.mods, 'mod', 'mody', 'modów')}</span>` : ''}`
+      : '<span>Utwórz instancję, aby zagrać.</span>';
+    $('#h-folder', root).disabled = !inst;
     renderPlayBlock($('#play', root), inst);
-    const stPlay = $('#st-play', root);
-    if (inst) Motion.count(stPlay, (inst.playTime || 0) / 60000, (m) => fmtDuration(m * 60000)); else { stPlay._num = null; stPlay.textContent = '–'; }
-    Motion.swap($('#st-last', root), inst ? esc(fmtAgo(inst.lastPlayed)) : '–');
-    Motion.count($('#st-inst', root), s.instances.length);
-    const recent = [...s.instances].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0)).slice(0, 4);
+    renderReady($('#h-ready', root), inst);
+
+    const recent = [...s.instances].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0) || (b.created || 0) - (a.created || 0)).slice(0, 4);
     const box = $('#h-recent', root);
-    const sig = recent.map(i => i.id + (i.id === s.selectedInstance ? '*' : '') + (App.running === i.id ? 'r' : '')).join();
+    const sig = recent.map(i => [i.id, i.name, i.mcVersion, i.id === s.selectedInstance, App.running === i.id, hasContentUpdates(App.contentUpdates[i.id]), instArt(i)].join(':')).join();
     if (box.dataset.sig !== sig) {
+      const first = box.dataset.sig == null;
       box.dataset.sig = sig;
-      box.innerHTML = recent.length ? recent.map(i => `<div class="h14-ri ${i.id === s.selectedInstance ? 'on' : ''}" data-id="${esc(i.id)}">
-          <div class="h14-ri-art" style="background:${instBanner(i)}"></div>${instIcon(i, 36)}
-          <div class="meta"><b>${esc(i.name)}</b><span>${esc(i.mcVersion)} • ${i.lastPlayed ? fmtAgo(i.lastPlayed) : 'nie grano'}</span></div>
-          <button class="btn sm icon" data-play title="Graj">${icon(App.running === i.id ? 'stop' : 'play')}</button></div>`).join('')
-        : `<div class="muted" style="font-size:12.5px">Nie masz jeszcze instancji.</div>`;
-      $$('.h14-ri', box).forEach(r => {
+      const tilts = ['1.5deg', '0deg', '-1.5deg', '1deg'];
+      box.innerHTML = recent.map((i, k) => {
+        const dot = App.running === i.id ? 'ready' : hasContentUpdates(App.contentUpdates[i.id]) ? 'wait' : i.noreClient ? 'nore' : 'off';
+        const sub = App.running === i.id ? 'W grze' : hasContentUpdates(App.contentUpdates[i.id]) ? 'Aktualizacja' : `${i.mcVersion} · ${i.lastPlayed ? fmtAgo(i.lastPlayed) : 'nowa'}`;
+        const bg = instArt(i);
+        return `<figure class="${i.id === s.selectedInstance ? 'on' : ''}" data-id="${esc(i.id)}">
+          <div class="sticker" style="--tilt:${tilts[k]};${bg ? `background-image:${bg}` : `background-color:color-mix(in oklab, ${(INSTANCE_COLORS[i.color % INSTANCE_COLORS.length] || INSTANCE_COLORS[0])[0]} 40%, var(--nore-page-raised))`}">
+            ${bg ? '' : `<span class="inst-mono">${i.noreClient ? '<img src="assets/logo.png" alt="">' : esc((i.name || '?').charAt(0).toUpperCase())}</span>`}
+            <button class="rp" data-play title="${App.running === i.id ? 'Zatrzymaj' : 'Graj'}" aria-label="${App.running === i.id ? 'Zatrzymaj' : 'Graj'}">${icon(App.running === i.id ? 'stop' : 'play')}</button></div>
+          <figcaption>${esc(i.name)}<small><i class="sdot sm ${dot}"></i>${esc(sub)}</small></figcaption></figure>`;
+      }).join('') + `<figure class="add" data-new><div class="slot add">${icon('plus')}</div><figcaption class="muted">Nowa instancja<small>pusty slot</small></figcaption></figure>`;
+      if (first) stagger(box);
+      $$('figure[data-id]', box).forEach(r => {
         const inst2 = s.instances.find(i => i.id === r.dataset.id);
         r.onclick = async (e) => {
           if (e.target.closest('[data-play]')) {
@@ -170,6 +186,7 @@ Pages.home = (root) => {
           await nore.instances.select(inst2.id); await App.refresh();
         };
       });
+      $('[data-new]', box).onclick = () => createInstanceModal();
     }
     renderUpdates();
     updateProgress(root);
@@ -186,13 +203,13 @@ Pages.home = (root) => {
     box.dataset.sig = sig;
     box.hidden = !list.length;
     if (!list.length) { box.innerHTML = ''; return; }
-    box.innerHTML = `<div class="row"><div class="section-title" style="flex:1">${icon('download')} Dostępne aktualizacje</div>
-        <button class="btn ghost sm icon" id="upd-re" title="Sprawdź ponownie">${icon('refresh')}</button></div>
+    box.innerHTML = `<h3 class="section-title"><i class="sdot wait"></i>Dostępne aktualizacje
+        <button class="btn ghost sm icon" id="upd-re" title="Sprawdź ponownie" style="margin-left:auto">${icon('refresh')}</button></h3>
       ${list.map(i => {
         const u = App.contentUpdates[i.id];
         const other = contentUpdatesText(u);
         return `<div class="h14-ui" data-id="${esc(i.id)}">${instIcon(i, 34)}
-          <div class="meta"><b>${esc(i.name)}</b><span>${u.pack ? `Modpack ${esc(u.pack.version)} ${versionTypeTag(u.pack.type)}${u.pack.mcChanged ? ` • MC ${esc(u.pack.mcVersion)}` : ''}` : ''}${u.pack && other ? '<br>' : ''}${esc(other)}</span></div>
+          <div class="meta"><b>${esc(i.name)}</b><span>${u.pack ? `Modpack ${esc(u.pack.version)} ${versionTypeTag(u.pack.type)}${u.pack.mcChanged ? ` · MC ${esc(u.pack.mcVersion)}` : ''}` : ''}${u.pack && other ? '<br>' : ''}${esc(other)}</span></div>
           <div class="acts">${u.pack ? `<button class="btn sm" data-pack>${icon('box')} Aktualizuj</button>` : ''}
           ${other ? `<button class="btn ${u.pack ? 'ghost ' : ''}sm" data-mods ${busyUpd.has(i.id) ? 'disabled' : ''}>${busyUpd.has(i.id) ? '<span class="spinner"></span>' : icon('puzzle')} Aktualizuj mody</button>` : ''}</div></div>`;
       }).join('')}`;
@@ -214,64 +231,89 @@ Pages.home = (root) => {
   };
   render();
   const offApp = App.onChange(render);
-  const offAmbient = heroAmbient($('#h-hero', root), $('#h-name', root));
-  return () => { offApp(); offChat(); offAmbient(); };
+  loadInstanceStats().then(() => { if (root.isConnected) render(); });
+  return () => { offApp(); offChat(); };
 };
 
-// ------------------------------------------------------------------ Start hero: quiet ambient life
-
-/** The hero art drifts slowly (CSS) and leans a few pixels toward the pointer; every 7–12 s one letter
-    of the instance name flickers through a §k glyph. Nothing runs while the window is hidden or unfocused,
-    and none of it runs with reduced motion or the animation switch off. */
-function heroAmbient(hero, name) {
-  if (!hero) return () => {};
-  const art = $('.h14-art', hero), logo = $('.h14-logo', hero);
-  let raf = 0, tx = 0, ty = 0, timer = 0;
-  const move = (e) => {
-    if (Motion.off() || Motion.reduced()) return;
-    const r = hero.getBoundingClientRect();
-    tx = (e.clientX - r.left) / r.width - 0.5; ty = (e.clientY - r.top) / r.height - 0.5;
-    if (!raf) raf = requestAnimationFrame(() => {
-      raf = 0;
-      if (art) art.style.translate = `${(-tx * 10).toFixed(1)}px ${(-ty * 4).toFixed(1)}px`;
-      if (logo) logo.style.translate = `${(tx * 4).toFixed(1)}px ${(ty * 3).toFixed(1)}px`;
-    });
-  };
-  const leave = () => { if (art) art.style.translate = ''; if (logo) logo.style.translate = ''; };
-  hero.addEventListener('pointermove', move);
-  hero.addEventListener('pointerleave', leave);
-  const schedule = () => { timer = setTimeout(() => { if (!document.hidden && document.hasFocus() && !App.progress) Motd.tick(name); schedule(); }, 7000 + Math.random() * 5000); };
-  schedule();
-  return () => { clearTimeout(timer); cancelAnimationFrame(raf); hero.removeEventListener('pointermove', move); hero.removeEventListener('pointerleave', leave); };
+/** The line under Graj: one dot, one sentence. */
+function renderReady(box, inst) {
+  if (!box) return;
+  const p = App.progress;
+  const frac = progressFrac(p);
+  let html;
+  if (!inst) html = '<i class="sdot sm off"></i>Brak instancji';
+  else if (p) html = `<i class="sdot sm wait"></i>${esc(p.stage || 'Przygotowanie')}${frac != null ? ` · <b class="tnum">${Math.round(frac * 100)}%</b>` : ''}${p.totalBytes ? ` · ${fmtBytes(p.bytes)} / ${fmtBytes(p.totalBytes)}` : ''}`;
+  else if (App.running && App.running === inst.id) html = '<i class="sdot sm ready"></i>W grze · launcher czeka w tle';
+  else if (App.running) html = '<i class="sdot sm wait"></i>Gra działa na innej instancji';
+  else if (hasContentUpdates(App.contentUpdates[inst.id])) html = `<i class="sdot sm wait"></i>Gotowe do gry · dostępne aktualizacje: ${esc(contentUpdatesText(App.contentUpdates[inst.id]) || 'modpack')}`;
+  else if (!App.account()) html = '<i class="sdot sm info"></i>Gotowe do gry · przed startem podasz swój nick';
+  else html = `<i class="sdot sm ready"></i>Gotowe do gry · ${esc(App.account().name)}${App.account().type === 'microsoft' ? ' (premium)' : ' (bez premium)'}`;
+  if (box._html !== html) { box._html = html; box.innerHTML = html; }
 }
 
-// ------------------------------------------------------------------ the Graj block: press → progress → playing
+// ------------------------------------------------------------------ the Graj block: press → progress → playing (design/README.md)
 
 const progressFrac = (p) => (p && p.total ? Math.min(1, p.totalBytes ? p.bytes / p.totalBytes : p.done / p.total) : null);
 
+/** Release after a press: a pale band sweeps once across the sticker. */
+function playRub(btn) {
+  if (!btn || Motion.off()) return;
+  btn.classList.remove('rub'); void btn.offsetWidth; btn.classList.add('rub');
+  clearTimeout(btn._rub); btn._rub = setTimeout(() => btn.classList.remove('rub'), Motion.ms('--nore-dur-base') + 40);
+}
+
+/** A dot sticker slaps onto the Graj sticker's corner: wait while preparing, ready in game, error after a failed start. */
+function playDot(btn, state) {
+  const dot = btn && btn.parentElement && btn.parentElement.querySelector('.play-dot');
+  if (!dot) return;
+  const c = { wait: 'var(--nore-dot-wait)', ready: 'var(--nore-dot-ready)', error: 'var(--nore-dot-error)' }[state];
+  if (dot.dataset.s === (state || '')) return;
+  dot.dataset.s = state || '';
+  dot.hidden = !c;
+  if (!c) return;
+  dot.style.setProperty('--c', c);
+  dot.style.animation = 'none'; void dot.offsetWidth; dot.style.animation = '';
+}
+
 /** Builds the Graj block once, then updates it in place so its fill and label can move:
-    idle "GRAJ" → busy (the block fills with the download, percent in tabular figures) → running (green, live mark). */
+    idle "GRAJ" → busy (the accent-deep layer fills with the exact download fraction) → launching → running "W GRZE" / "ZATRZYMAJ". */
 function renderPlayBlock(btn, inst) {
   if (!btn) return;
-  if (!btn._built) { btn.innerHTML = '<span class="pl-fill"></span><span class="pl-label"></span>'; btn._built = true; }
+  if (!btn._built) {
+    btn.innerHTML = '<span class="pl-fill"></span><span class="pl-label"></span>';
+    btn._built = true;
+    btn.addEventListener('pointerenter', () => { if (btn.dataset.state === 'run') Motion.swap($('.pl-label', btn), `${icon('stop')} ZATRZYMAJ`); });
+    btn.addEventListener('pointerleave', () => { if (btn.dataset.state === 'run') Motion.swap($('.pl-label', btn), '<i class="pl-live"></i> W GRZE', -1); });
+  }
   const running = !!(App.running && inst && App.running === inst.id);
   const p = App.progress;
   const frac = progressFrac(p);
+  const launching = !!p && (frac == null || frac >= 1) && /urucham|start|launch/i.test(p.stage || '');
   btn.classList.toggle('running', running);
   btn.classList.toggle('busy', !!p);
-  btn.classList.toggle('indeterminate', !!p && frac == null);
-  btn.disabled = !!p || (!!App.running && !running);
+  btn.classList.toggle('indeterminate', !!p && frac == null && !launching);
+  btn.classList.toggle('waiting', launching && !Motion.off());
+  btn.disabled = !inst || !!p || (!!App.running && !running);
   btn.style.setProperty('--p', frac == null ? 0 : frac.toFixed(3));
-  const state = p ? 'busy' : running ? 'run' : 'idle';
+  const state = p ? (launching ? 'launch' : 'busy') : running ? 'run' : 'idle';
   const label = $('.pl-label', btn);
   const pctText = frac == null ? '' : Math.round(frac * 100) + '%';
   if (btn.dataset.state !== state) {
+    const prev = btn.dataset.state;
     btn.dataset.state = state;
-    btn.setAttribute('aria-label', state === 'busy' ? 'Przygotowanie gry' : state === 'run' ? 'Zatrzymaj grę' : 'Graj');
-    Motion.swap(label, state === 'busy' ? `PRZYGOTOWANIE <span class="pl-pct">${pctText}</span>` : state === 'run' ? '<i class="pl-live"></i> ZATRZYMAJ' : `${icon('play')} GRAJ`, state === 'idle' ? -1 : 1);
+    btn.setAttribute('aria-label', state === 'busy' ? 'Przygotowanie gry' : state === 'launch' ? 'Uruchamianie' : state === 'run' ? 'Zatrzymaj grę' : 'Graj');
+    Motion.swap(label, state === 'busy' ? `<span class="pl-pct">${pctText || '…'}</span>` : state === 'launch' ? 'URUCHAMIANIE' : state === 'run' ? '<i class="pl-live"></i> W GRZE' : `${icon('play')} GRAJ`, state === 'idle' ? -1 : 1);
+    playDot(btn, state === 'busy' || state === 'launch' ? 'wait' : state === 'run' ? 'ready' : null);
+    // a start that ended without the game running is an error: red dot, three small shakes
+    if (state === 'idle' && (prev === 'busy' || prev === 'launch') && !App.running && App.lastLaunchError) {
+      playDot(btn, 'error');
+      if (!Motion.off() && !Motion.reduced()) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); }
+      Motion.swap(label, 'SPRÓBUJ PONOWNIE');
+      setTimeout(() => { if (btn.dataset.state === 'idle') { Motion.swap(label, `${icon('play')} GRAJ`, -1); playDot(btn, null); } }, 4000);
+    }
   }
   const pct = $('.pl-pct', label);
-  if (pct) pct.textContent = pctText;
+  if (pct && pctText) pct.textContent = pctText;
 }
 
 // ------------------------------------------------------------------ sidebar mini player
@@ -305,7 +347,7 @@ function renderMiniPlay() {
     const first = box._state == null;
     box._state = state;
     btn.innerHTML = busy ? '<span class="spinner"></span>' : icon(running ? 'stop' : 'play');
-    if (!first) Motion.animate(btn, [{ transform: 'scale(.7)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: Motion.ms('--dur-base'), easing: Motion.ease('--ease-spring') });
+    if (!first) Motion.animate(btn, [{ transform: 'scale(.7)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: Motion.ms('--nore-spring-stick-dur'), easing: Motion.ease('--nore-spring-stick') });
   }
   const sub = busy ? (frac == null ? 'Przygotowanie…' : `Przygotowanie ${Math.round(frac * 100)}%`) : running ? 'W grze' : esc(inst.mcVersion);
   const span = $('.meta span', box);
