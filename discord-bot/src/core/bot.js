@@ -21,6 +21,7 @@ import { buildCommand, leaves } from './commands.js';
 import { missingPermissions, permKey } from '../lib/permissions.js';
 import { EPHEMERAL, errEmbed, embed, COLORS } from './ui.js';
 import { loadModules } from '../modules/index.js';
+import { AdminLink } from './admin-link.js';
 
 const log = logger.child('bot');
 
@@ -45,6 +46,7 @@ export class Bot {
     this.api = new NoreApi({ base: env.noreApi, secret: dryRun ? '' : env.botSecret });
     this.config = new ConfigManager({ store: this.store, api: this.api });
     this.scheduler = new Scheduler(this.store);
+    this.admin = new AdminLink(this);
     this.modules = [];
     this.commands = new Map();
     this.components = new Map();
@@ -173,7 +175,9 @@ export class Bot {
 
     c.once(Events.ClientReady, this.wrap('ready', () => this.onReady()));
     c.on(Events.InteractionCreate, this.wrap('interaction', (i) => this.onInteraction(i)));
-    c.on(Events.GuildCreate, this.wrap('guildCreate', async (g) => { await this.config.load(g.id); this.scheduler.arm([g.id]); this.reportMeta(g, 1000); for (const m of this.modules) await m.guildReady?.(this, g); }));
+    c.on(Events.GuildCreate, this.wrap('guildCreate', async (g) => {
+      if (this.admin.isBlocked(g.id)) { log.warn('invited to a blacklisted guild – leaving', { guildId: g.id }); await g.leave().catch(() => {}); return; }
+      await this.config.load(g.id); this.scheduler.arm([g.id]); this.reportMeta(g, 1000); for (const m of this.modules) await m.guildReady?.(this, g); }));
     c.on(Events.GuildDelete, this.wrap('guildDelete', async (g) => { if (!g.available) return; this.api.deleteGuild(g.id); this.config.forget(g.id); }));
     for (const ev of [Events.ChannelCreate, Events.ChannelDelete, Events.ChannelUpdate]) c.on(ev, (ch) => ch.guild && this.reportMeta(ch.guild));
     for (const ev of [Events.GuildRoleCreate, Events.GuildRoleDelete, Events.GuildRoleUpdate]) c.on(ev, (r) => this.reportMeta(r.guild));
@@ -194,6 +198,7 @@ export class Bot {
     this.scheduler.arm(ids);
     this.scheduler.start();
     this.config.startPolling((id) => c.guilds.cache.has(id));
+    this.admin.start();
     for (const g of c.guilds.cache.values()) this.reportMeta(g, 2000 + Math.random() * 30_000);
     this.every(10 * 60_000, () => { for (const g of c.guilds.cache.values()) this.reportMeta(g, Math.random() * 60_000); }, 'meta');
     this.config.on('change', (guildId, cfg, before) => {
@@ -240,6 +245,12 @@ export class Bot {
       return;
     }
     const ctx = new Ctx(this, i);
+    // the Nore blacklist (admin API): blocked users cannot use the bot at all
+    if (this.admin.isBlocked(i.user?.id)) {
+      if (i.isAutocomplete()) return i.respond([]).catch(() => {});
+      if (i.isRepliable()) return i.reply({ embeds: [errEmbed(ctx.t('errors.blacklisted'))], flags: EPHEMERAL }).catch(() => {});
+      return;
+    }
     try {
       if (i.isChatInputCommand()) return await this.runCommand(ctx);
       if (i.isAutocomplete()) return await this.runAutocomplete(ctx);

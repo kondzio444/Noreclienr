@@ -36,6 +36,8 @@ Bot → API (header `Authorization: Bot <NORE_BOT_SECRET>`):
 | DELETE | `/bot/guilds/:guildId` | bot left the guild |
 | GET | `/bot/changes?since=<ms>` | `{ now, guilds:[guildId…] }` – guilds whose config changed after `since` (bot polls every 15 s and reloads those) |
 | POST | `/bot/guilds/:guildId/events` | `{ type, data }` – optional audit/stat events shown in the panel (`member_join`, `mod_action`, `ticket_open` …), max 100/min per guild |
+| GET | `/bot/admin` | `{ blacklist: { discord }, actions, announcements }` – the Nore administration (`docs/admin-api.md`), polled every 30 s |
+| POST | `/bot/actions/:id` | `{ ok, result }` – an admin action was executed (or failed) |
 
 Panel → API (cookie session after OAuth2):
 

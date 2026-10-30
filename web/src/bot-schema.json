@@ -236,6 +236,45 @@
             }
           },
           "x-i18n": "panel.nore.events._label"
+        },
+        "announcements": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "x-ui": "toggle",
+              "x-i18n": "panel.common.enabled"
+            },
+            "channel": {
+              "type": "string",
+              "default": "",
+              "pattern": "^(\\d{17,20})?$",
+              "x-ui": "channel",
+              "x-channel-types": [
+                "text",
+                "announcement"
+              ],
+              "x-i18n": "panel.common.channel"
+            },
+            "role": {
+              "type": "string",
+              "default": "",
+              "pattern": "^(\\d{17,20})?$",
+              "x-ui": "role",
+              "x-i18n": "panel.common.pingRole"
+            },
+            "template": {
+              "type": "string",
+              "default": "",
+              "maxLength": 1500,
+              "x-ui": "textarea",
+              "x-i18n": "panel.common.template",
+              "x-i18n-help": "panel.common.template_help"
+            }
+          },
+          "x-i18n": "panel.nore.announcements._label"
         }
       },
       "x-module": true,
