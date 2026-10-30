@@ -340,7 +340,7 @@ function onboarding() {
       (pane) => {
         const s = App.state.settings;
         const scenes = Background.SCENES.filter(sc => sc.id !== 'custom');
-        const cur = scenes.some(sc => sc.id === s.bgScene) ? s.bgScene : 'photo';
+        const cur = scenes.some(sc => sc.id === s.bgScene) ? s.bgScene : 'minimal';
         pane.innerHTML = `<div class="wz-body">
           ${head('', 'Kolor <span>okładki</span>', 'Akcent barwi okładkę albumu, naklejkę Graj i logo. Zmiany widzisz od razu.')}
           <div class="wz-look wz-in">
@@ -646,6 +646,12 @@ function launchStoryboard(ready) {
 
   launchStoryboard(() => go('home'));
   window.addEventListener('resize', moveIndicator);
+  // a rail longer than the window scrolls; a soft fade at its foot says there is more
+  const sb = $('.sb-scroll');
+  const railFade = () => sb.classList.toggle('more', sb.scrollHeight - sb.scrollTop - sb.clientHeight > 4);
+  sb.addEventListener('scroll', railFade, { passive: true });
+  window.addEventListener('resize', railFade);
+  setTimeout(railFade, 600);
   if (App.state.firstRun) {
     setTimeout(async () => { await onboarding(); await App.refresh(); go('home'); }, 1100);
   }

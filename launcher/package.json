@@ -10,10 +10,12 @@
     "start": "electron .",
     "test": "node --test",
     "dist": "node scripts/keys.js && electron-builder",
-    "dist:win": "node scripts/keys.js && node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
-    "dist:linux": "node scripts/keys.js && node scripts/copy-mod.js && electron-builder --linux AppImage",
-    "dist:mac": "node scripts/keys.js && node scripts/copy-mod.js && electron-builder --mac dmg zip",
-    "predist": "node scripts/copy-mod.js"
+    "dist:win": "node scripts/keys.js && node scripts/sync-tokens.js && node scripts/copy-mod.js && node scripts/prepare-win.js && electron-builder --win nsis --x64",
+    "dist:linux": "node scripts/keys.js && node scripts/sync-tokens.js && node scripts/copy-mod.js && electron-builder --linux AppImage",
+    "dist:mac": "node scripts/keys.js && node scripts/sync-tokens.js && node scripts/copy-mod.js && electron-builder --mac dmg zip",
+    "predist": "node scripts/sync-tokens.js && node scripts/copy-mod.js",
+    "tokens": "node scripts/sync-tokens.js",
+    "art": "python3 scripts/build-logo-sticker.py && python3 scripts/installer-art.py"
   },
   "dependencies": {
     "adm-zip": "0.5.16",

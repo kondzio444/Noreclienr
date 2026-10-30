@@ -59,7 +59,8 @@ async function applyAppearance(s, { reloadCustom = false } = {}) {
   if (s.bgScene === 'custom' && (reloadCustom || !customBgData)) customBgData = await nore.background.custom().catch(() => null);
   Background.apply({
     scene: s.bgScene === 'custom' && !customBgData ? 'photo' : (s.bgScene || 'photo'),
-    custom: customBgData, particles: s.bgParticles || 'embers', motion: s.bgMotion || 'kenburns',
+    // the Album page covers the background completely: nothing is drawn under it unless a scene is chosen
+    custom: customBgData, particles: !s.bgScene || s.bgScene === 'minimal' ? 'none' : s.bgParticles || 'embers', motion: s.bgMotion || 'kenburns',
     density: s.bgDensity == null ? 1 : s.bgDensity, dim: s.bgDim == null ? 55 : s.bgDim, blur: s.bgBlur || 0, speed: s.bgSpeed || 1,
   });
 }
@@ -69,7 +70,7 @@ function appearanceCard(root) {
   const s = App.state.settings;
   const card = el(`<div class="card panel look-card">
     <div class="section-title">${icon('sparkles')} Wygląd launchera</div>
-    <div class="look-label">Tło</div>
+    <div class="look-label">Tło pod stroną albumu</div>
     <div class="scene-grid">${Background.SCENES.map(sc => `<button class="scene-tile ${sc.id === s.bgScene ? 'on' : ''}" data-scene="${sc.id}">
       <span class="prev" style="background:${SCENE_PREVIEW[sc.id]}"></span><b>${esc(sc.name)}</b><small>${esc(sc.desc)}</small>
       ${sc.id === 'custom' ? `<span class="pick">${icon('upload')}</span>` : ''}</button>`).join('')}</div>

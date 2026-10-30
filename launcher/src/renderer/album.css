@@ -112,7 +112,7 @@ hr.sep { background: var(--line); }
 #view { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 6px var(--nore-launcher-page-x) var(--nore-launcher-page-top); position: relative; z-index: 1; }
 #bg { z-index: 0; }
 #bg ~ #app #main { background-color: color-mix(in oklab, var(--nore-page) var(--page-veil, 100%), transparent); }
-body.has-scene #main { --page-veil: 82%; }
+body.has-scene #main { --page-veil: 78%; }
 #bg .shade { background: none; }
 
 #titlebar {
@@ -881,3 +881,7 @@ input[type=range].slider::-webkit-slider-thumb:hover { scale: 1.1; transform: no
 .srv2-add b { font: 600 14px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); }
 .srv2-add .muted { font-size: 13px; }
 .srv2-add:hover b { color: var(--nore-ink); }
+
+/* short windows: the rail tightens and its list scrolls under a soft fade (the mini player stays) */
+.sb-scroll.more { -webkit-mask-image: linear-gradient(#000 calc(100% - 26px), transparent); }
+@media (max-height: 860px) { .nav a, .rail-ind { height: 31px; } .nav-label { margin: 11px 0 4px 12px; } .logo-block { padding-bottom: 12px; } }

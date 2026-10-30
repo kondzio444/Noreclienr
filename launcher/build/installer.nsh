@@ -5,22 +5,13 @@
 !define MUI_BGCOLOR "141216"
 !define MUI_TEXTCOLOR "F3EFE9"
 
-; progress bar: the theme is removed so the bar can take the accent fill on a slot track
-!ifndef PBM_SETBARCOLOR
-  !define PBM_SETBARCOLOR 0x0409
-!endif
-!ifndef PBM_SETBKCOLOR
-  !define PBM_SETBKCOLOR 0x2001
-!endif
-!ifndef LVM_SETBKCOLOR
-  !define LVM_SETBKCOLOR 0x1001
-!endif
-!ifndef LVM_SETTEXTCOLOR
-  !define LVM_SETTEXTCOLOR 0x1024
-!endif
-!ifndef LVM_SETTEXTBKCOLOR
-  !define LVM_SETTEXTBKCOLOR 0x1026
-!endif
+; progress bar: the theme is removed so the bar can take the accent fill on a slot track.
+; Own names: this file is included before WinMessages.nsh, which defines the PBM_/LVM_ ones itself.
+!define NORE_PBM_SETBARCOLOR 0x0409
+!define NORE_PBM_SETBKCOLOR 0x2001
+!define NORE_LVM_SETBKCOLOR 0x1001
+!define NORE_LVM_SETTEXTCOLOR 0x1024
+!define NORE_LVM_SETTEXTBKCOLOR 0x1026
 ; COLORREF is 0x00BBGGRR: accent #9d5cff, slot #0c0b0e, ink-soft #b3abb0
 !define NORE_BAR 0x00FF5C9D
 !define NORE_SLOT 0x000E0B0C
@@ -35,12 +26,12 @@
   FindWindow $R0 "#32770" "" $HWNDPARENT
   GetDlgItem $R1 $R0 1004
   System::Call 'UxTheme::SetWindowTheme(p R1, w "", w "")'
-  SendMessage $R1 ${PBM_SETBARCOLOR} 0 ${NORE_BAR}
-  SendMessage $R1 ${PBM_SETBKCOLOR} 0 ${NORE_SLOT}
+  SendMessage $R1 ${NORE_PBM_SETBARCOLOR} 0 ${NORE_BAR}
+  SendMessage $R1 ${NORE_PBM_SETBKCOLOR} 0 ${NORE_SLOT}
   GetDlgItem $R2 $R0 1016
-  SendMessage $R2 ${LVM_SETBKCOLOR} 0 ${NORE_SLOT}
-  SendMessage $R2 ${LVM_SETTEXTBKCOLOR} 0 ${NORE_SLOT}
-  SendMessage $R2 ${LVM_SETTEXTCOLOR} 0 ${NORE_LOG_INK}
+  SendMessage $R2 ${NORE_LVM_SETBKCOLOR} 0 ${NORE_SLOT}
+  SendMessage $R2 ${NORE_LVM_SETTEXTBKCOLOR} 0 ${NORE_SLOT}
+  SendMessage $R2 ${NORE_LVM_SETTEXTCOLOR} 0 ${NORE_LOG_INK}
   Pop $R2
   Pop $R1
   Pop $R0
