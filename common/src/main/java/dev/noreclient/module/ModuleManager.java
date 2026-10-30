@@ -197,7 +197,12 @@ public class ModuleManager {
     }
 
     public void onTick() {
-        for (Module m : modules) if (m.isEnabled()) m.onTick();
+        for (Module m : modules) {
+            if (!m.isEnabled()) continue;
+            // kill-switch from the Nore team (NoreRemote): switched off and kept off
+            if (dev.noreclient.util.NoreRemote.killed(m.getName())) { m.setEnabled(false); continue; }
+            m.onTick();
+        }
     }
 
     public void renderOverlays(dev.noreclient.api.Gfx g, float tickDelta) {

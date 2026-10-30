@@ -46,12 +46,18 @@ public abstract class Module {
 
     public void setEnabled(boolean enabled) {
         if (this.enabled == enabled) return;
+        // the Nore team can switch a module off remotely (kill-switch, docs/admin-api.md)
+        if (enabled && dev.noreclient.util.NoreRemote.killed(name)) return;
         this.enabled = enabled;
         if (enabled) onEnable(); else onDisable();
     }
 
     /** Toggle triggered by the user (keybind / GUI): also shows a notification. */
     public void toggleWithFeedback() {
+        if (!enabled && dev.noreclient.util.NoreRemote.killed(name)) {
+            NotificationManager.push(name, "Tymczasowo wyłączony przez zespół Nore", NotificationManager.Type.ERROR);
+            return;
+        }
         toggle();
         if (showsToggleNotification()) {
             NotificationManager.push(name, enabled ? "Włączono" : "Wyłączono",

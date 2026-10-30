@@ -224,16 +224,35 @@ public class NoreMainMenu extends NoreScreen {
         float cy = 64 + (1 - rp) * 10;
         if (cardW > 120) {
             // what's new
-            float nh = 22 + NEWS.length * 11 + 6;
+            // announcements of the Nore team first (NoreRemote, docs/admin-api.md), then the built-in news
+            List<dev.noreclient.util.NoreRemote.Notice> remote = dev.noreclient.util.NoreRemote.notices();
+            String maint = dev.noreclient.util.NoreRemote.maintenance();
+            int extra = (maint != null ? 1 : 0) + remote.size();
+            int rows = Math.min(NEWS.length + extra, 9);
+            float nh = 22 + rows * 11 + 6;
             if (cy + nh < height - 60) {
                 card(ctx, cardX, cy, cardW, nh);
                 Icons.sparkle(ctx, cardX + 10, cy + 10, 4, Theme.accent2());
                 Render2D.text(ctx, "Nowe w " + NoreClient.VERSION, cardX + 18, cy + 6.5f, Theme.TEXT, false);
                 Render2D.roundedRect(ctx, cardX + cardW - 34, cy + 5, 28, 10, 5, ColorUtil.withAlpha(Theme.accent(), 60));
                 Render2D.scaledText(ctx, "BETA", cardX + cardW - 29, cy + 7.8f, 0.62f, ColorUtil.brighten(Theme.accent(), 0.4f), false);
-                for (int i = 0; i < NEWS.length; i++) {
-                    Render2D.circle(ctx, cardX + 10, cy + 25 + i * 11, 1.3f, Theme.accent());
-                    Render2D.scaledText(ctx, Render2D.trim(NEWS[i], (int) ((cardW - 22) / 0.72f)), cardX + 15, cy + 22.5f + i * 11, 0.72f, Theme.TEXT_DIM, false);
+                for (int i = 0; i < rows; i++) {
+                    String line;
+                    int dot = Theme.accent(), color = Theme.TEXT_DIM;
+                    if (maint != null && i == 0) {
+                        line = "Przerwa techniczna: " + maint;
+                        dot = 0xFFFFB020;
+                        color = Theme.TEXT;
+                    } else if (i < extra) {
+                        dev.noreclient.util.NoreRemote.Notice n = remote.get(i - (maint != null ? 1 : 0));
+                        line = n.title;
+                        dot = "warning".equals(n.level) ? 0xFFFFB020 : "event".equals(n.level) ? 0xFFFF8A1F : Theme.accent2();
+                        color = Theme.TEXT;
+                    } else {
+                        line = NEWS[i - extra];
+                    }
+                    Render2D.circle(ctx, cardX + 10, cy + 25 + i * 11, 1.3f, dot);
+                    Render2D.scaledText(ctx, Render2D.trim(line, (int) ((cardW - 22) / 0.72f)), cardX + 15, cy + 22.5f + i * 11, 0.72f, color, false);
                 }
                 cy += nh + 8;
             }
