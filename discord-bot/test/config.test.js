@@ -6,6 +6,7 @@ import { validate, defaultsOf, sanitize, deepMerge, parseValue, schemaAt, leafPa
 import { ConfigManager } from '../src/config/index.js';
 import { Store } from '../src/lib/store.js';
 import { has } from '../src/i18n/index.js';
+import { FakeApi } from './helpers/fake-api.js';
 
 const schema = buildSchema();
 
@@ -92,4 +93,103 @@ test('ConfigManager: remote versions, local overrides, panel wins when newer', (
   assert.equal(cm.get(g).welcome.enabled, false);
   cm.reset(g, 'welcome.enabled');
   assert.equal(cm.get(g).welcome.enabled, false);
+});
+
+// ------------------------------------------------------------------ sync of local changes to the API
+
+test('ConfigManager: local changes are pushed to the API (PATCH), become the remote copy, overrides cleared', async () => {
+  const api = new FakeApi(defaultsOf(schema));
+  const cm = new ConfigManager({ store: new Store(null), api, schema });
+  cm.pushDelay = 5;
+  const g = '222222222222222222';
+  cm.set(g, 'tickets.enabled', true, { by: '333333333333333333', reason: 'command' });
+  cm.set(g, 'tickets.category', '444444444444444444');
+  assert.equal(cm.get(g).tickets.enabled, true, 'works at once, before the push');
+  assert.equal(api.patches().length, 0, 'debounced');
+  const r = await cm.flush(g);
+  assert.equal(r.ok, true); assert.equal(r.version, 1);
+  const [p] = api.patches(g);
+  assert.deepEqual(p.body.config, { tickets: { enabled: true, category: '444444444444444444' } }, 'only what changed, as a partial config');
+  assert.equal(p.body.by, '333333333333333333'); assert.equal(p.body.reason, 'command');
+  const rec = cm.record(g);
+  assert.deepEqual(rec.overrides, {}); assert.equal(rec.remote.version, 1); assert.equal(rec.remote.config.tickets.category, '444444444444444444');
+  assert.equal(cm.get(g).tickets.category, '444444444444444444');
+  assert.equal((await cm.flush(g)).nothing, true, 'nothing left to send');
+  // the debounced push fires on its own
+  cm.set(g, 'welcome.enabled', true);
+  await new Promise(res => setTimeout(res, 40));
+  assert.equal(api.patches(g).length, 2); assert.equal(api.doc(g).version, 2); assert.equal(api.doc(g).config.welcome.enabled, true);
+  assert.equal(api.doc(g).config.tickets.enabled, true, 'the API merged, earlier fields kept');
+  // a panel save of a newer version reaches the bot through load()
+  api.panelSave(g, { tickets: { maxOpen: 3 } });
+  await cm.load(g);
+  assert.equal(cm.get(g).tickets.maxOpen, 3); assert.equal(cm.get(g).tickets.enabled, true);
+  cm.stop();
+});
+
+test('ConfigManager: offline changes are kept (store = queue) and sent when the API is back', async () => {
+  const api = new FakeApi(defaultsOf(schema));
+  const store = new Store(null);
+  const cm = new ConfigManager({ store, api, schema });
+  const g = '555555555555555555';
+  api.offline = true;
+  cm.set(g, 'suggestions.enabled', true);
+  const r = await cm.flush(g);
+  assert.equal(r.ok, false); assert.equal(r.offline, true);
+  assert.ok(cm.dirty.has(g)); assert.ok(cm.record(g).overrides['suggestions.enabled'], 'kept locally');
+  assert.equal(cm.get(g).suggestions.enabled, true, 'still applies');
+  // a panel save happened meanwhile; on reconnect the local change goes first and is merged into it
+  api.offline = false;
+  api.panelSave(g, { suggestions: { requireReview: true } });
+  await cm.flushDirty();
+  assert.ok(!cm.dirty.has(g));
+  assert.equal(api.doc(g).config.suggestions.enabled, true); assert.equal(api.doc(g).config.suggestions.requireReview, true, 'merged with the panel save');
+  assert.equal(cm.get(g).suggestions.requireReview, true);
+  // after a restart (new manager, same store) unsent overrides are pushed before the config loads
+  api.offline = true;
+  cm.set(g, 'leveling.enabled', true);
+  await cm.flush(g);
+  cm.stop();
+  const cm2 = new ConfigManager({ store, api, schema });
+  api.offline = false;
+  await cm2.load(g);
+  assert.equal(api.doc(g).config.leveling.enabled, true);
+  assert.deepEqual(cm2.record(g).overrides, {});
+  assert.equal(cm2.get(g).leveling.enabled, true);
+  cm2.stop();
+});
+
+test('ConfigManager: polling pushes queued changes and applies panel saves', async () => {
+  const api = new FakeApi(defaultsOf(schema));
+  const cm = new ConfigManager({ store: new Store(null), api, schema });
+  const g = '666666666666666666';
+  api.offline = true;
+  cm.set(g, 'logging.enabled', true);
+  await cm.flush(g);
+  api.offline = false;
+  cm.startPolling(() => true, 5);
+  cm.since = 0;
+  await new Promise(res => setTimeout(res, 80));
+  assert.equal(api.doc(g).config.logging.enabled, true, 'pushed on the next successful poll');
+  api.panelSave(g, { logging: { members: '777777777777777777' } });
+  await new Promise(res => setTimeout(res, 80));
+  cm.stop();
+  assert.equal(cm.get(g).logging.members, '777777777777777777', 'panel change reached the bot');
+  assert.equal(cm.get(g).logging.enabled, true);
+});
+
+test('ConfigManager: a change the API refuses stays local and is not retried until it changes', async () => {
+  const api = new FakeApi(defaultsOf(schema));
+  api.patchConfig = async (guildId, body) => { api.calls.push({ method: 'PATCH', guildId, body }); return { ok: false, status: 400, data: { code: 'invalid_config', errors: [{ path: '/welcome/enabled' }] } }; };
+  const cm = new ConfigManager({ store: new Store(null), api, schema });
+  const g = '888888888888888888';
+  cm.set(g, 'welcome.enabled', true);
+  const r = await cm.flush(g);
+  assert.equal(r.rejected, true);
+  assert.equal(cm.get(g).welcome.enabled, true);
+  assert.equal((await cm.flush(g)).nothing, true, 'not sent again');
+  cm.set(g, 'welcome.enabled', false);
+  await cm.flush(g);
+  assert.equal(api.patches(g).length, 2, 'a new change is sent');
+  cm.stop();
 });
