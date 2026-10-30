@@ -4,6 +4,8 @@
  *   POST /api/v1/hub/hello            signed hello / heartbeat from the launcher
  *   GET  /api/v1/hub/players?names=   Nore users among up to 100 names (the game)
  *   GET  /api/v1/hub/stats            { online, known }
+ *   POST /api/v2/presence             anonymous heartbeat of a running Nore Client (the mod), so players
+ *                                     who start the game without Nore Launcher are counted too
  *
  * The worker checks the hello (fields, Nore ID key, ECDSA P-256 signature, clock) without state;
  * one SQLite-backed Durable Object (NoreHub, idFromName('global')) keeps the players and does the
@@ -16,6 +18,7 @@ const CLOCK_MS = 5 * 60 * 1000;           // |now - ts| allowed for a hello
 const GAP_MS = 15 * 1000;                 // at most one hello per Nore ID per 15 s
 const MAX_NAMES = 100;
 const MAX_BODY = 8192;
+const PRESENCE_GAP_MS = 20 * 1000;        // at most one presence heartbeat per game session per 20 s
 const MOJANG = 'https://sessionserver.mojang.com';
 
 export class HubError extends Error {
@@ -143,7 +146,9 @@ export class NoreHub {
         seen INTEGER NOT NULL, created INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS players_seen ON players (seen);
       CREATE INDEX IF NOT EXISTS players_uuid ON players (uuid);
-      CREATE TABLE IF NOT EXISTS hellos (hex TEXT PRIMARY KEY, at INTEGER NOT NULL, ts INTEGER NOT NULL);`);
+      CREATE TABLE IF NOT EXISTS hellos (hex TEXT PRIMARY KEY, at INTEGER NOT NULL, ts INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, name_lower TEXT, mc TEXT, version TEXT, at INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS sessions_at ON sessions (at);`);
   }
 
   async fetch(request) {
@@ -153,6 +158,7 @@ export class NoreHub {
       if (op === 'hello') return Response.json(await this.hello(data));
       if (op === 'players') return Response.json(this.players(data.names));
       if (op === 'stats') return Response.json(this.stats());
+      if (op === 'presence') return Response.json(this.presence(data));
       return Response.json({ error: 'op' }, { status: 404 });
     } catch (e) {
       return Response.json({ error: String(e.message || e) }, { status: e.status || 500 });
@@ -234,9 +240,37 @@ export class NoreHub {
     return { players };
   }
 
+  /** A running game says it is still there (or gone); one row per game session, no account data. */
+  presence(p) {
+    const now = Date.now();
+    const last = this.sql.exec('SELECT at FROM sessions WHERE sid = ?', p.sid).toArray()[0];
+    if (p.online && last && now - last.at < PRESENCE_GAP_MS) throw new HubError(429, 'Za często – najwyżej raz na 20 s');
+    if (!p.online) this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid);
+    else this.sql.exec('INSERT OR REPLACE INTO sessions (sid, name_lower, mc, version, at) VALUES (?, ?, ?, ?, ?)',
+      p.sid, p.name ? p.name.toLowerCase() : null, p.mc, p.version, now);
+    if (++this.writes % 200 === 1) this.sql.exec('DELETE FROM sessions WHERE at < ?', now - ONLINE_MS);
+    return { ok: true };
+  }
+
   stats() {
     const now = Date.now();
-    const [r] = this.sql.exec('SELECT SUM(online = 1 AND seen > ?) AS online, COUNT(*) AS known FROM players WHERE seen > ?', now - ONLINE_MS, now - CLAIM_MS).toArray();
-    return { online: r.online || 0, known: r.known || 0 };
+    const [r] = this.sql.exec('SELECT COUNT(*) AS known FROM players WHERE seen > ?', now - CLAIM_MS).toArray();
+    // a player is online when the launcher said hello or the game sent a heartbeat (counted once per nick)
+    const [o] = this.sql.exec(`SELECT COUNT(*) AS online FROM (
+        SELECT name_lower AS k FROM players WHERE online = 1 AND seen > ?
+        UNION SELECT COALESCE(name_lower, 'sid:' || sid) FROM sessions WHERE at > ?)`, now - ONLINE_MS, now - ONLINE_MS).toArray();
+    return { online: o.online || 0, known: r.known || 0 };
   }
+}
+
+/** Checks a presence heartbeat (POST /api/v2/presence) and records it. */
+export async function presence(env, b) {
+  if (!isObj(b)) throw new HubError(400, 'Oczekiwano obiektu JSON');
+  const sid = String(b.sid || '');
+  if (!/^[0-9a-f]{16,64}$/.test(sid)) throw new HubError(400, 'sid: 16–64 znaków hex');
+  if (typeof b.online !== 'boolean') throw new HubError(400, 'online: true albo false');
+  const name = b.name == null || b.name === '' ? null : String(b.name);
+  if (name !== null && !NAME.test(name)) throw new HubError(400, 'name: 2–16 znaków A-Z, 0-9, _');
+  const short = (v) => (typeof v === 'string' && /^[\w.+-]{1,32}$/.test(v) ? v : null);
+  return hubCall(env, 'presence', { sid, name, online: b.online, mc: short(b.mc), version: short(b.version) });
 }

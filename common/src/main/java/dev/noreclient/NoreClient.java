@@ -33,7 +33,8 @@ import java.util.logging.Logger;
  */
 public final class NoreClient {
     public static final String NAME = "Nore Client";
-    public static final String VERSION = "1.4 Beta";
+    public static final String VERSION = "1.4.5";
+    public static final int BUILD = 1432;
     public static final Logger LOGGER = Logger.getLogger(NAME);
 
     private static NoreClient instance;
@@ -53,6 +54,7 @@ public final class NoreClient {
     public static void start(Game game, String platformName, String... features) {
         Platform.init(game, platformName, features);
         instance = new NoreClient();
+        dev.noreclient.util.Presence.start();
         LOGGER.info(NAME + " " + VERSION + " (" + platformName + ", Minecraft " + game.minecraftVersion() + ") "
                 + instance.moduleManager.getModules().size() + " modules, " + instance.moduleManager.optionCount() + " options");
     }

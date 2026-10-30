@@ -251,8 +251,16 @@ app.on('window-all-closed', () => {
 
 // ------------------------------------------------------------------ IPC: app & window
 
+/** "1.4.5 · Build 1432": the release name from package.json and the build number (the patch CI sets). */
+function displayVersion() {
+  const raw = app.getVersion();
+  const patch = Number(raw.split('.')[2]);
+  const release = require('../../package.json').noreRelease;
+  return release && patch >= 1000 ? `${release} · Build ${patch}` : raw;
+}
+
 ipcMain.handle('app:info', () => ({
-  version: app.getVersion(), platform: process.platform, root: paths.root,
+  version: displayVersion(), rawVersion: app.getVersion(), platform: process.platform, root: paths.root,
   totalMemMb: Math.round(require('os').totalmem() / 1048576),
 }));
 ipcMain.on('window:minimize', () => win.minimize());

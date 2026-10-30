@@ -1,7 +1,8 @@
 {
   "name": "nore-launcher",
   "productName": "Nore Launcher",
-  "version": "1.4.0",
+  "version": "1.4.5",
+  "noreRelease": "1.4.5",
   "description": "Launcher Nore Client – wersje Minecraft, Fabric, mody, paczki zasobów, datapacki i shadery z Modrinth, konta premium i non-premium.",
   "main": "src/main/main.js",
   "author": "kondzio444",
