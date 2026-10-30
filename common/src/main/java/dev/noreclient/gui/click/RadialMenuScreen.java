@@ -221,7 +221,7 @@ public class RadialMenuScreen extends NoreScreen {
         pointerAlpha.target(dist > hubR() && dist < out1() + 30 ? 1 : 0).update();
 
         // backdrop
-        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.8f, ColorUtil.withAlpha(0xFF241047, (int) (170 * fade)), ColorUtil.withAlpha(0xFF04020A, (int) (215 * fade)));
+        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.8f, ColorUtil.withAlpha(0xFF241047, (int) (170 * fade)), ColorUtil.withAlpha(0xFF0A090C, (int) (215 * fade)));
         Render2D.radial(g, cx(), cy(), out1() * 1.5f, ColorUtil.withAlpha(Theme.accent(), (int) (46 * fade)), 0x00000000);
 
         g.setAlpha(fade);
@@ -261,8 +261,8 @@ public class RadialMenuScreen extends NoreScreen {
             float half = (span - gap) / 2f * e;
             float r0 = in0(), r1 = in1() + lift * size() * 0.012f;
             float z = -lift * 12;
-            int cIn = act ? ColorUtil.withAlpha(ColorUtil.lerp(Theme.accent(), 0xFF1A0E36, 0.35f), 240) : ColorUtil.lerp(0xE8140C26, 0xF02A1A52, lift);
-            int cOut = act ? ColorUtil.withAlpha(Theme.accent(), 250) : ColorUtil.lerp(0xE81E1438, ColorUtil.withAlpha(Theme.accent(), 235), lift * 0.75f);
+            int cIn = act ? ColorUtil.withAlpha(ColorUtil.lerp(Theme.accent(), 0xFF1E1B21, 0.35f), 240) : ColorUtil.lerp(0xE8141216, 0xF02A1A52, lift);
+            int cOut = act ? ColorUtil.withAlpha(Theme.accent(), 250) : ColorUtil.lerp(0xE81E1B21, ColorUtil.withAlpha(Theme.accent(), 235), lift * 0.75f);
             arc(g, mid - half, mid + half, r0, r1, z, cIn, cOut);
             arc(g, mid - half, mid + half, r1 - 1.2f, r1, z, ColorUtil.withAlpha(0xFFE9DEFF, (int) (70 + 150 * lift)), ColorUtil.withAlpha(0xFFE9DEFF, (int) (70 + 150 * lift)));
             // icon + name
@@ -351,7 +351,7 @@ public class RadialMenuScreen extends NoreScreen {
         float[] c = project(0, 0, -4);
         float r = hubR() * Math.max(0.01f, e) * c[2] * (hubHover ? 1.04f : 1f);
         Render2D.circle(g, c[0], c[1], r + 3, ColorUtil.withAlpha(Theme.accent(), hubHover ? 110 : 55));
-        Render2D.radial(g, c[0], c[1], r, 0xF6241444, 0xF60C0718);
+        Render2D.radial(g, c[0], c[1], r, 0xF628242C, 0xF60C0B0E);
         Render2D.ring(g, c[0], c[1], r, 1.1f, 0, 360, ColorUtil.withAlpha(Theme.accent2(), 150));
         if (e < 0.6f) return;
         float w = r * 1.75f;

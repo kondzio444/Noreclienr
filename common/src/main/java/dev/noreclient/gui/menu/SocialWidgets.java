@@ -39,7 +39,7 @@ public final class SocialWidgets {
         if (!known) return;
         float r = Math.max(1.6f, size * 0.22f);
         float cx = x + size - r * 0.6f, cy = y + size - r * 0.6f;
-        Render2D.circle(g, cx, cy, r + 0.8f, 0xFF120C1E);
+        Render2D.circle(g, cx, cy, r + 0.8f, 0xFF141216);
         Render2D.circle(g, cx, cy, r, verified ? VERIFIED : UNVERIFIED);
     }
 
@@ -72,6 +72,6 @@ public final class SocialWidgets {
 
     /** Colour of a state: 2 on this server, 1 online in Nore, 0 offline. */
     public static int stateColor(int state) {
-        return state == 2 ? Theme.SUCCESS : state == 1 ? Theme.accent() : 0xFF6A6280;
+        return state == 2 ? Theme.SUCCESS : state == 1 ? Theme.accent() : 0xFF6C656D;
     }
 }

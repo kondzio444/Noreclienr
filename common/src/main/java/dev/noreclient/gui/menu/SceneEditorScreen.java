@@ -83,7 +83,7 @@ public class SceneEditorScreen extends NoreScreen {
         Render2D.scaledText(g, clock, x + w - Render2D.textWidth(clock) * 0.9f, y - 1, 0.9f, Theme.TEXT, false);
         y += 12;
         sliderX = x; sliderW = w;
-        int[] stops = {0xFF120A2A, 0xFFFF9A5A, 0xFF8FD8FF, 0xFFFF8A6A, 0xFF120A2A};
+        int[] stops = {0xFF141216, 0xFFFF9A5A, 0xFF8FD8FF, 0xFFFF8A6A, 0xFF141216};
         for (int i = 0; i < 4; i++) Render2D.quadGradient(g, x + w * i / 4f, y, w / 4f, 6, stops[i], stops[i + 1], stops[i + 1], stops[i]);
         float kx = x + w * minutes / 1440f;
         Render2D.roundedRect(g, kx - 5, y - 4, 10, 14, 3, 0xFFFFFFFF);

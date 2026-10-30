@@ -166,7 +166,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         float w = Render2D.textWidth(label) + (compact ? 9 : 18), h = 18;
         if (!active && reason != null && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h)) tooltip = reason;
         boolean hov = active && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h);
-        int col = style == 2 ? 0xFFFF5C5C : Theme.accent();
+        int col = style == 2 ? 0xFFFF5A4F : Theme.accent();
         Widgets.glowBox(g, x, y, w, h, Theme.radius(), col, anim("b" + label).target(hov ? 1 : 0).update(), active ? (style == 1 ? 1f : 0.55f) : 0.25f);
         Render2D.centeredText(g, label, x + w / 2f, y + 5, active ? Widgets.glowText(col, 0.3f) : Theme.TEXT_MUTED, false);
         if (active) hit(x, y, w, h, action);
@@ -180,7 +180,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         hitActions.clear();
         tooltip = null;
         MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x700A0614);
+        Render2D.rect(g, 0, 0, width, height, 0x700A090C);
         float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 450f);
         boolean inputOk = dialog == 0;
 
@@ -414,7 +414,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         w += 10;
         float h = lines.size() * 8 + 7;
         float x = Math.min(width - w - 4, mx + 8), y = Math.max(4, my - h - 4);
-        Render2D.roundedRect(g, x, y, w, h, 4, 0xF0120E0B);
+        Render2D.roundedRect(g, x, y, w, h, 4, 0xF0141216);
         Render2D.roundedOutline(g, x, y, w, h, 4, 1, ColorUtil.withAlpha(Theme.accent(), 160));
         for (int i = 0; i < lines.size(); i++) Render2D.scaledText(g, lines.get(i), x + 5, y + 4 + i * 8, 0.7f, Theme.TEXT, false);
     }
@@ -422,7 +422,7 @@ public class MultiplayerScreen2 extends NoreScreen {
     private void panel(Gfx g, float x, float y, float w, float h, String title) {
         float r = Theme.radius();
         Render2D.shadow(g, x, y, w, h, r, 6, 0x70000000);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8120E0B);
+        Render2D.roundedRect(g, x, y, w, h, r, 0xC8141216);
         Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x26FFFFFF);
         Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
         Render2D.text(g, title, x + 7, y + 5, Theme.TEXT, false);

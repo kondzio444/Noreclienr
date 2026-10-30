@@ -114,7 +114,7 @@ public class PlayerMenuScreen extends NoreScreen {
         float in = Animation.easeOutCubic(t / 0.28f) * (1 - out);
         float pa = profile.target(profileOpen ? 1 : 0).update();
 
-        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.55f, ColorUtil.withAlpha(0xFF120826, (int) (150 * in)), ColorUtil.withAlpha(0xFF04020A, (int) (120 * in)));
+        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.55f, ColorUtil.withAlpha(0xFF120826, (int) (150 * in)), ColorUtil.withAlpha(0xFF0A090C, (int) (120 * in)));
 
         float dx = mx - cx(), dy = my - cy();
         float dist = (float) Math.hypot(dx, dy), ang = (float) Math.toDegrees(Math.atan2(dy, dx));
@@ -162,8 +162,8 @@ public class PlayerMenuScreen extends NoreScreen {
             float rr0 = r0() + lift * 1.5f, rr1 = r1() + lift * 5;
             boolean danger = "mute".equals(a.key) && Friends.isMuted(name) || "friend".equals(a.key) && Friends.isFriend(name);
             int base = danger ? 0xFFFF6B6B : Theme.accent();
-            int cIn = ColorUtil.lerp(0xE8140C26, ColorUtil.withAlpha(ColorUtil.lerp(base, 0xFF1A0E36, 0.4f), 240), lift);
-            int cOut = ColorUtil.lerp(0xE81E1438, ColorUtil.withAlpha(base, 240), lift * 0.85f);
+            int cIn = ColorUtil.lerp(0xE8141216, ColorUtil.withAlpha(ColorUtil.lerp(base, 0xFF1E1B21, 0.4f), 240), lift);
+            int cOut = ColorUtil.lerp(0xE81E1B21, ColorUtil.withAlpha(base, 240), lift * 0.85f);
             arc(g, mid - half, mid + half, rr0, rr1, cIn, cOut);
             int edge = ColorUtil.withAlpha(0xFFE9DEFF, (int) (60 + 160 * lift));
             arc(g, mid - half, mid + half, rr1 - 1.1f, rr1, edge, edge);
@@ -188,7 +188,7 @@ public class PlayerMenuScreen extends NoreScreen {
     private void hub(Gfx g) {
         float r = hubR();
         Render2D.circle(g, cx(), cy(), r + 2.5f, ColorUtil.withAlpha(Theme.accent(), 70));
-        Render2D.radial(g, cx(), cy(), r, 0xF6241444, 0xF60C0718);
+        Render2D.radial(g, cx(), cy(), r, 0xF628242C, 0xF60C0B0E);
         Render2D.ring(g, cx(), cy(), r, 1.1f, 0, 360, ColorUtil.withAlpha(Theme.accent2(), 150));
         float s = 22;
         SocialWidgets.head(g, name, cx() - s / 2f, cy() - s / 2f, s);

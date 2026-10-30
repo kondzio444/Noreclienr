@@ -42,7 +42,7 @@ public final class ServerCard {
     public static void row(Gfx g, ServerInfo.Info info, String name, String badge, float x, float y, float w, float h, float hover, boolean selected) {
         float r = Theme.radius();
         if (hover > 0.01f || selected) Render2D.shadow(g, x, y, w, h, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) (40 + 40 * Math.max(hover, selected ? 1 : 0))));
-        Render2D.roundedRect(g, x, y, w, h, r, ColorUtil.lerp(0xB0160F26, 0xD0201634, hover));
+        Render2D.roundedRect(g, x, y, w, h, r, ColorUtil.lerp(0xB01E1B21, 0xD028242C, hover));
         Render2D.roundedOutline(g, x, y, w, h, r, 1, selected ? ColorUtil.withAlpha(Theme.accent(), 200) : ColorUtil.lerp(0x22FFFFFF, ColorUtil.withAlpha(Theme.accent(), 140), hover));
         float is = h - 8;
         icon(g, info, x + 4, y + 4, is);

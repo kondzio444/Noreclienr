@@ -61,7 +61,7 @@ public abstract class PanelScreen extends NoreScreen {
         hitRects.clear();
         hitActions.clear();
         if (!game().inWorld()) MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x800A0614);
+        Render2D.rect(g, 0, 0, width, height, 0x800A090C);
         float in = intro(0);
         g.setAlpha(in);
         float pad = 14;
@@ -84,7 +84,7 @@ public abstract class PanelScreen extends NoreScreen {
     protected float button(Gfx g, int mx, int my, float x, float y, String label, int style, boolean active, Runnable action) {
         float w = Render2D.textWidth(label) + 18, h = 18;
         boolean hov = active && Render2D.hovered(mx, my, x, y, w, h);
-        int col = style == 2 ? 0xFFFF5C5C : style == 3 ? Theme.SUCCESS : Theme.accent();
+        int col = style == 2 ? 0xFFFF5A4F : style == 3 ? Theme.SUCCESS : Theme.accent();
         Widgets.glowBox(g, x, y, w, h, Theme.radius(), col, anim("b" + label + x).target(hov ? 1 : 0).update(), active ? (style == 1 ? 1f : 0.55f) : 0.25f);
         Render2D.centeredText(g, label, x + w / 2f, y + 5, active ? Widgets.glowText(col, 0.3f) : Theme.TEXT_MUTED, false);
         if (active) hit(x, y, w, h, () -> { Sounds.click(); action.run(); });
@@ -96,7 +96,7 @@ public abstract class PanelScreen extends NoreScreen {
     protected void panel(Gfx g, float x, float y, float w, float h, String title) {
         float r = Theme.radius();
         Render2D.shadow(g, x, y, w, h, r, 6, 0x70000000);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8120E0B);
+        Render2D.roundedRect(g, x, y, w, h, r, 0xC8141216);
         Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x26FFFFFF);
         Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
         if (title != null) Render2D.text(g, title, x + 7, y + 5, Theme.TEXT, false);

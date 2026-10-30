@@ -235,7 +235,7 @@ public class WardrobeScreen extends PanelScreen {
             g.translate(shakeX, -a * 2);
             float r = Theme.radius();
             if (sel || a > 0.01f) Render2D.shadow(g, tx, ty, cw, ch, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) ((sel ? 70 : 0) + 50 * a)));
-            int bg = locked ? ColorUtil.lerp(0xB00C0A12, 0xC8141020, a) : ColorUtil.lerp(0xB0160F26, 0xD0201634, a);
+            int bg = locked ? ColorUtil.lerp(0xB00C0A12, 0xC8141020, a) : ColorUtil.lerp(0xB01E1B21, 0xD028242C, a);
             Render2D.roundedRect(g, tx, ty, cw, ch, r, bg);
             Render2D.roundedOutline(g, tx, ty, cw, ch, r, 1, sel ? ColorUtil.withAlpha(Theme.accent(), 230) : ColorUtil.lerp(0x20FFFFFF, ColorUtil.withAlpha(Theme.accent(), 140), a));
             float px = tx + 3, py = ty + 3, pw = cw - 6, ph = cw - 8;
@@ -258,13 +258,13 @@ public class WardrobeScreen extends PanelScreen {
                     Icons.sparkle(g, tx + cw * 0.8f, ty + ch * 0.6f - p * 6, 4 * flash, 0xFFFFE08A);
                 }
                 if (item.secret) {
-                    Render2D.roundedRect(g, tx + 4, ty + 4, 30, 9, 3, 0xE63A1458);
+                    Render2D.roundedRect(g, tx + 4, ty + 4, 30, 9, 3, 0xE628242C);
                     Render2D.scaledText(g, "SEKRET", tx + 7.5f, ty + 6.5f, 0.55f, 0xFFFFC2E0, false);
                 } else if (item instanceof Items.CapeItem && Capes.collection(item.name) != null) {
                     String badge = Capes.collection(item.name);
                     boolean halloween = Capes.isHalloween(item.name);
                     float bw = Render2D.textWidth(badge) * 0.55f + 7;
-                    Render2D.roundedRect(g, tx + 4, ty + 4, bw, 9, 3, halloween ? 0xE63A1458 : ColorUtil.withAlpha(0xFFFFC23D, 210));
+                    Render2D.roundedRect(g, tx + 4, ty + 4, bw, 9, 3, halloween ? 0xE628242C : ColorUtil.withAlpha(0xFFFFC23D, 210));
                     Render2D.scaledText(g, badge, tx + 7.5f, ty + 6.5f, 0.55f, halloween ? 0xFFFFB547 : 0xFF2A1A08, false);
                 }
             }
@@ -317,7 +317,7 @@ public class WardrobeScreen extends PanelScreen {
                 float na = Math.min(1, Math.min(age / 200f, (3500 - age) / 400f));
                 float nw = Render2D.textWidth(notice) * 0.75f + 14, nx = x + (w - nw) / 2f, ny = y + h - 18 + (1 - na) * 6;
                 g.setAlpha(na);
-                Render2D.roundedRect(g, nx, ny, nw, 14, 5, 0xF0201634);
+                Render2D.roundedRect(g, nx, ny, nw, 14, 5, 0xF028242C);
                 Render2D.roundedOutline(g, nx, ny, nw, 14, 5, 1, ColorUtil.withAlpha(Theme.accent2(), 150));
                 Render2D.scaledText(g, notice, nx + 7, ny + 4, 0.75f, Theme.TEXT, false);
                 g.setAlpha(1);
@@ -676,7 +676,7 @@ public class WardrobeScreen extends PanelScreen {
         float tw = Render2D.textWidth(text) * 0.75f + 10;
         float tx = Math.min(width - tw - 4, x + 8), ty = y + 12;
         if (ty + 14 > height) ty = y - 18;
-        Render2D.roundedRect(g, tx, ty, tw, 13, 4, 0xF0120E0B);
+        Render2D.roundedRect(g, tx, ty, tw, 13, 4, 0xF0141216);
         Render2D.roundedOutline(g, tx, ty, tw, 13, 4, 1, ColorUtil.withAlpha(Theme.accent(), 120));
         Render2D.scaledText(g, text, tx + 5, ty + 3.5f, 0.75f, Theme.TEXT, false);
     }
