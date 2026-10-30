@@ -12,7 +12,9 @@ import dev.noreclient.cosmetic.Slot;
 import dev.noreclient.cosmetic.Wardrobe;
 import dev.noreclient.cosmetic.Worn;
 import dev.noreclient.gui.widget.Icons;
+import dev.noreclient.gui.widget.Album;
 import dev.noreclient.gui.widget.Widgets;
+import dev.noreclient.util.ThemeTokens;
 import dev.noreclient.module.social.Cosmetics;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.Capes;
@@ -131,16 +133,20 @@ public class WardrobeScreen extends PanelScreen {
         for (int i = 0; i < CATS.length; i++) {
             final Slot s = CATS[i];
             float st = intro(60L * i);
-            float rh = 22, rx = x + 4 - (1 - st) * 10;
+            float rh = 20, rx = x + 5 - (1 - st) * 8 * dev.noreclient.util.Motion.travel();
             boolean sel = s == cat;
             boolean hov = Render2D.hovered(mx, my, x + 4, ry, w - 8, rh);
             float a = anim("cat" + i).target(sel ? 1 : hov ? 0.5f : 0).update();
-            if (a > 0.01f) Widgets.glowBox(g, rx, ry, w - 8, rh, Theme.radius(), Theme.accent(), a, 0.4f + 0.6f * a);
-            int col = ColorUtil.lerp(Theme.TEXT_DIM, 0xFFFFFFFF, a);
-            catIcon(g, s, rx + 11, ry + rh / 2f, col);
-            Render2D.text(g, s.title, rx + 21, ry + 7, col, false);
+            // the chosen category is a white sticker with a peel corner, hover is a tone step
+            if (sel) {
+                Album.white(g, rx, ry, w - 10, rh, hov ? 1 : 0);
+                Album.peel(g, rx + w - 10, ry - (hov ? 1 : 0), 6, Theme.page());
+            } else if (a > 0.01f) Render2D.roundedRect(g, rx, ry, w - 10, rh, Album.R, ColorUtil.withAlpha(Theme.RAISED_2, (int) (255 * a * 2)));
+            int col = sel ? Theme.VINYL_INK : ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, a);
+            catIcon(g, s, rx + 11, ry + rh / 2f, sel ? Theme.accent() : col);
+            Render2D.text(g, s.title, rx + 21, ry + 6, col, false);
             Worn worn = look().get(s);
-            if (worn != null) Render2D.circle(g, rx + 16, ry + 5, 1.8f, Theme.SUCCESS);
+            if (worn != null) Album.dot(g, rx + w - 18, ry + rh / 2f, 2, ThemeTokens.DOT_READY);
             hit(x + 4, ry, w - 8, rh, () -> {
                 if (cat != s) {
                     Sounds.click();
@@ -155,7 +161,7 @@ public class WardrobeScreen extends PanelScreen {
         // footer: how many things are worn
         int count = look().slots().size();
         String f = count == 0 ? "Nic nie nosisz" : "Założone: " + count;
-        Render2D.scaledText(g, f, x + 7, y + h - 12, 0.7f, Theme.TEXT_MUTED, false);
+        Render2D.text(g, Render2D.trim(f, (int) w - 12), x + 7, y + h - 13, Theme.TEXT_MUTED, false);
     }
 
     private static void catIcon(Gfx g, Slot s, float cx, float cy, int col) {
@@ -232,12 +238,15 @@ public class WardrobeScreen extends PanelScreen {
             }
             g.setAlpha(st);
             g.push();
-            g.translate(shakeX, -a * 2);
-            float r = Theme.radius();
-            if (sel || a > 0.01f) Render2D.shadow(g, tx, ty, cw, ch, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) ((sel ? 70 : 0) + 50 * a)));
-            int bg = locked ? ColorUtil.lerp(0xB00C0A12, 0xC8141020, a) : ColorUtil.lerp(0xB01E1B21, 0xD028242C, a);
-            Render2D.roundedRect(g, tx, ty, cw, ch, r, bg);
-            Render2D.roundedOutline(g, tx, ty, cw, ch, r, 1, sel ? ColorUtil.withAlpha(Theme.accent(), 230) : ColorUtil.lerp(0x20FFFFFF, ColorUtil.withAlpha(Theme.accent(), 140), a));
+            g.translate(shakeX, -a * dev.noreclient.util.Motion.travel());
+            float r = Album.R;
+            // Album: worn = a die-cut sticker (vinyl rim) on its slot; others sit on the sheet; locked = ghost slot
+            if (locked) Album.slot(g, tx, ty, cw, ch);
+            else if (sel) Album.sticker(g, tx, ty, cw, ch, Theme.RAISED_2, a);
+            else {
+                if (a > 0.01f) Render2D.shadow(g, tx, ty + 2, cw, ch, r, 4, ColorUtil.withAlpha(0xFF000000, (int) (120 * a)));
+                Render2D.roundedRect(g, tx, ty, cw, ch, r, ColorUtil.lerp(Theme.raised(), Theme.RAISED_2, a));
+            }
             float px = tx + 3, py = ty + 3, pw = cw - 6, ph = cw - 8;
             String name;
             if (item == null) {
@@ -258,22 +267,15 @@ public class WardrobeScreen extends PanelScreen {
                     Icons.sparkle(g, tx + cw * 0.8f, ty + ch * 0.6f - p * 6, 4 * flash, 0xFFFFE08A);
                 }
                 if (item.secret) {
-                    Render2D.roundedRect(g, tx + 4, ty + 4, 30, 9, 3, 0xE628242C);
-                    Render2D.scaledText(g, "SEKRET", tx + 7.5f, ty + 6.5f, 0.55f, 0xFFFFC2E0, false);
+                    Album.label(g, "sekret", tx + 4, ty + 4, 0xFFFFC2E0, Theme.VINYL_INK);
                 } else if (item instanceof Items.CapeItem && Capes.collection(item.name) != null) {
                     String badge = Capes.collection(item.name);
                     boolean halloween = Capes.isHalloween(item.name);
-                    float bw = Render2D.textWidth(badge) * 0.55f + 7;
-                    Render2D.roundedRect(g, tx + 4, ty + 4, bw, 9, 3, halloween ? 0xE628242C : ColorUtil.withAlpha(0xFFFFC23D, 210));
-                    Render2D.scaledText(g, badge, tx + 7.5f, ty + 6.5f, 0.55f, halloween ? 0xFFFFB547 : 0xFF2A1A08, false);
+                    if (Render2D.textWidth(badge) + 9 < cw - 14) Album.label(g, badge, tx + 4, ty + 4, halloween ? ThemeTokens.DOT_EVENT : ThemeTokens.DOT_WAIT, 0xFF1A0D04);
                 }
             }
-            tileName(g, name, tx + cw / 2f, ty + ch - 17, cw - 6, sel ? Theme.accent2() : locked ? Theme.TEXT_MUTED : Theme.TEXT);
-            if (sel) {
-                Render2D.circle(g, tx + cw - 8, ty + 8, 4, Theme.SUCCESS);
-                Render2D.line(g, tx + cw - 10, ty + 8, tx + cw - 8.5f, ty + 9.5f, 1.1f, 0xFF0E2A1E);
-                Render2D.line(g, tx + cw - 8.5f, ty + 9.5f, tx + cw - 5.8f, ty + 6.5f, 1.1f, 0xFF0E2A1E);
-            }
+            tileName(g, name, tx + cw / 2f, ty + ch - 17, cw - 6, sel ? Theme.TEXT : locked ? Theme.TEXT_MUTED : Theme.TEXT_DIM);
+            if (sel) Album.dot(g, tx + cw - 7, ty + 7, 2.5f, ThemeTokens.DOT_READY);
             g.pop();
             g.setAlpha(1);
             if (hov && item != null) {
@@ -325,7 +327,7 @@ public class WardrobeScreen extends PanelScreen {
         }
         if (contentH > viewH) {
             float barH = Math.max(16, h * h / contentH), barY = y + (h - barH) * (sc / Math.max(1, contentH - viewH));
-            Render2D.roundedRect(g, x + w + 2, barY, 2, barH, 1, 0x50FFFFFF);
+            Render2D.roundedRect(g, x + w + 2, barY, 2, barH, 1, Theme.TEXT_MUTED);
         }
     }
 
@@ -673,11 +675,11 @@ public class WardrobeScreen extends PanelScreen {
     }
 
     private void drawTooltip(Gfx g, String text, float x, float y) {
-        float tw = Render2D.textWidth(text) * 0.75f + 10;
-        float tx = Math.min(width - tw - 4, x + 8), ty = y + 12;
-        if (ty + 14 > height) ty = y - 18;
-        Render2D.roundedRect(g, tx, ty, tw, 13, 4, 0xF0141216);
-        Render2D.roundedOutline(g, tx, ty, tw, 13, 4, 1, ColorUtil.withAlpha(Theme.accent(), 120));
-        Render2D.scaledText(g, text, tx + 5, ty + 3.5f, 0.75f, Theme.TEXT, false);
+        float tw = Render2D.textWidth(text) + 12;
+        float tx = Math.max(4, Math.min(width - tw - 4, x + 8)), ty = y + 12;
+        if (ty + 16 > height) ty = y - 20;
+        Album.floating(g, tx, ty, tw, 14, ColorUtil.withAlpha(Theme.SLOT, 0xF2));
+        Render2D.roundedOutline(g, tx, ty, tw, 14, Album.R, 1, Theme.GHOST);
+        Render2D.text(g, text, tx + 6, ty + 3, Theme.TEXT, false);
     }
 }

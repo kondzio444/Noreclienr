@@ -3,7 +3,9 @@ package dev.noreclient.gui.menu;
 import dev.noreclient.api.Gfx;
 import dev.noreclient.gui.NoreScreen;
 import dev.noreclient.gui.widget.TextBox;
-import dev.noreclient.gui.widget.Widgets;
+import dev.noreclient.gui.widget.Album;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.ThemeTokens;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.CurrentGfx;
@@ -45,8 +47,9 @@ public abstract class PanelScreen extends NoreScreen {
         hitActions.add(r);
     }
 
+    /** Entrance progress (dur.page, ease.out) after {@code delay} ms; respects the "Animacje" setting. */
     protected float intro(long delay) {
-        return Animation.easeOutCubic((System.currentTimeMillis() - opened - delay) / 400f);
+        return Motion.progress(opened, delay, ThemeTokens.DUR_PAGE, ThemeTokens.EASE_OUT);
     }
 
     protected abstract String title();
@@ -61,20 +64,25 @@ public abstract class PanelScreen extends NoreScreen {
         hitRects.clear();
         hitActions.clear();
         if (!game().inWorld()) MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x800A090C);
+        Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(Theme.page(), 0x9C));
         float in = intro(0);
         g.setAlpha(in);
         float pad = 14;
         boolean bh = Render2D.hovered(mx, my, pad, 12, 20, 20);
         float ba = anim("back").target(bh ? 1 : 0).update();
-        Render2D.circle(g, pad + 10, 22, 10, ColorUtil.withAlpha(Theme.accent(), (int) (40 + 60 * ba)));
-        Render2D.line(g, pad + 12, 17, pad + 7, 22, 1.6f, 0xFFFFFFFF);
-        Render2D.line(g, pad + 7, 22, pad + 12, 27, 1.6f, 0xFFFFFFFF);
+        // back: a white sticker pill when hovered, a raised pill otherwise
+        if (ba > 0.02f) Album.sticker(g, pad, 12, 20, 20, 10, Theme.VINYL, ba);
+        else Render2D.roundedRect(g, pad, 12, 20, 20, 10, Theme.RAISED_2);
+        int bc = ColorUtil.lerp(Theme.TEXT, Theme.VINYL_INK, ba);
+        float by = 12 - ba * Motion.travel();
+        Render2D.line(g, pad + 12, by + 5, pad + 7, by + 10, 1.6f, bc);
+        Render2D.line(g, pad + 7, by + 10, pad + 12, by + 15, 1.6f, bc);
         hit(pad, 12, 20, 20, this::close);
-        Render2D.gradientText(g, title(), pad + 28, 13, 1.5f, Theme.accent2(), Theme.accent(), true);
-        Render2D.scaledText(g, subtitle(), pad + 28, 28, 0.7f, Theme.TEXT_MUTED, false);
+        Album.titleShadow(g, title(), pad + 28, 11, Theme.TEXT);
+        Render2D.text(g, Render2D.trim(subtitle(), width - 220), pad + 28, 30, Theme.TEXT_DIM, true);
+        if (dev.noreclient.util.Events.any()) Album.eventDot(g, pad + 32 + Render2D.textWidth(title()) * 2 + 2, 15);
         headerButtons(g, mx, my, width - pad, 14);
-        content(g, mx, my, pad, 44 + (1 - in) * 8, width - pad * 2, height - 54);
+        content(g, mx, my, pad, 44 + (1 - in) * 6 * Motion.travel(), width - pad * 2, height - 54);
         g.setAlpha(1);
     }
 
@@ -84,9 +92,9 @@ public abstract class PanelScreen extends NoreScreen {
     protected float button(Gfx g, int mx, int my, float x, float y, String label, int style, boolean active, Runnable action) {
         float w = Render2D.textWidth(label) + 18, h = 18;
         boolean hov = active && Render2D.hovered(mx, my, x, y, w, h);
-        int col = style == 2 ? 0xFFFF5A4F : style == 3 ? Theme.SUCCESS : Theme.accent();
-        Widgets.glowBox(g, x, y, w, h, Theme.radius(), col, anim("b" + label + x).target(hov ? 1 : 0).update(), active ? (style == 1 ? 1f : 0.55f) : 0.25f);
-        Render2D.centeredText(g, label, x + w / 2f, y + 5, active ? Widgets.glowText(col, 0.3f) : Theme.TEXT_MUTED, false);
+        // 0 secondary, 1 primary (the violet hero), 2 danger, 3 confirm (white sticker)
+        int st = style == 1 ? Album.PRIMARY : style == 2 ? Album.DANGER : style == 3 ? Album.WHITE : Album.SECONDARY;
+        Album.button(g, x, y, w, h, label, st, anim("b" + label + x).target(hov ? 1 : 0).update(), active);
         if (active) hit(x, y, w, h, () -> { Sounds.click(); action.run(); });
         return w;
     }
@@ -94,11 +102,7 @@ public abstract class PanelScreen extends NoreScreen {
     protected static float buttonWidth(String label) { return Render2D.textWidth(label) + 18; }
 
     protected void panel(Gfx g, float x, float y, float w, float h, String title) {
-        float r = Theme.radius();
-        Render2D.shadow(g, x, y, w, h, r, 6, 0x70000000);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8141216);
-        Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x26FFFFFF);
-        Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
+        Album.sheet(g, x, y, w, h);
         if (title != null) Render2D.text(g, title, x + 7, y + 5, Theme.TEXT, false);
     }
 

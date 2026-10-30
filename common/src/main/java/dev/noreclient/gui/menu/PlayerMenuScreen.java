@@ -6,7 +6,10 @@ import dev.noreclient.api.Gfx;
 import dev.noreclient.api.Keys;
 import dev.noreclient.api.TargetInfo;
 import dev.noreclient.gui.NoreScreen;
+import dev.noreclient.gui.widget.Album;
 import dev.noreclient.gui.widget.Icons;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.ThemeTokens;
 import dev.noreclient.module.social.Social;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
@@ -114,7 +117,7 @@ public class PlayerMenuScreen extends NoreScreen {
         float in = Animation.easeOutCubic(t / 0.28f) * (1 - out);
         float pa = profile.target(profileOpen ? 1 : 0).update();
 
-        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.55f, ColorUtil.withAlpha(0xFF120826, (int) (150 * in)), ColorUtil.withAlpha(0xFF0A090C, (int) (120 * in)));
+        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.55f, ColorUtil.withAlpha(Theme.page(), (int) (150 * in)), ColorUtil.withAlpha(0xFF0A090C, (int) (110 * in)));
 
         float dx = mx - cx(), dy = my - cy();
         float dist = (float) Math.hypot(dx, dy), ang = (float) Math.toDegrees(Math.atan2(dy, dx));
@@ -129,7 +132,8 @@ public class PlayerMenuScreen extends NoreScreen {
         float ringA = in * (1 - pa);
         if (ringA > 0.01f) {
             g.setAlpha(ringA);
-            float scale = 0.85f + 0.15f * Animation.easeOutBack(Math.min(1, t / 0.32f)) - pa * 0.15f;
+            // the ring sticks in (spring.stick sampled) and peels away into the profile card
+            float scale = (Motion.level() == Motion.FULL ? Motion.stickScale(opened) : 1f) - pa * 0.15f * Motion.travel();
             g.push();
             g.translate(cx(), cy());
             g.scale(scale, scale);
@@ -150,8 +154,6 @@ public class PlayerMenuScreen extends NoreScreen {
     private void ring(Gfx g, float t) {
         int n = actions.size();
         float span = 360f / n, gap = 3.2f;
-        // soft glow and track
-        Render2D.radial(g, cx(), cy(), r1() * 1.45f, ColorUtil.withAlpha(Theme.accent(), 40), 0);
         for (int i = 0; i < n; i++) {
             Action a = actions.get(i);
             float e = Animation.easeOutCubic((t - 0.03f * i) / 0.26f);
@@ -161,19 +163,18 @@ public class PlayerMenuScreen extends NoreScreen {
             float mid = angle(i), half = (span - gap) / 2f * e;
             float rr0 = r0() + lift * 1.5f, rr1 = r1() + lift * 5;
             boolean danger = "mute".equals(a.key) && Friends.isMuted(name) || "friend".equals(a.key) && Friends.isFriend(name);
-            int base = danger ? 0xFFFF6B6B : Theme.accent();
-            int cIn = ColorUtil.lerp(0xE8141216, ColorUtil.withAlpha(ColorUtil.lerp(base, 0xFF1E1B21, 0.4f), 240), lift);
-            int cOut = ColorUtil.lerp(0xE81E1B21, ColorUtil.withAlpha(base, 240), lift * 0.85f);
-            arc(g, mid - half, mid + half, rr0, rr1, cIn, cOut);
-            int edge = ColorUtil.withAlpha(0xFFE9DEFF, (int) (60 + 160 * lift));
-            arc(g, mid - half, mid + half, rr1 - 1.1f, rr1, edge, edge);
+            // Album: segments are sheets on the page; the pointed one becomes a white sticker with a vinyl rim
+            int face = ColorUtil.lerp(ColorUtil.withAlpha(Theme.raised(), 0xF0), danger ? 0xFFFFE9E6 : Theme.VINYL, lift);
+            if (lift > 0.02f) arc(g, mid - half - 0.8f, mid + half + 0.8f, rr0 - 1, rr1 + 1, ColorUtil.withAlpha(Theme.VINYL, (int) (255 * lift)), ColorUtil.withAlpha(Theme.VINYL, (int) (255 * lift)));
+            arc(g, mid - half, mid + half, rr0, rr1, face, face);
             double rad = Math.toRadians(mid);
             float px = cx() + (float) Math.cos(rad) * (rr0 + rr1) / 2f, py = cy() + (float) Math.sin(rad) * (rr0 + rr1) / 2f;
-            int col = ColorUtil.withAlpha(ColorUtil.lerp(Theme.TEXT_DIM, 0xFFFFFFFF, lift), (int) (255 * e));
+            int col = ColorUtil.withAlpha(ColorUtil.lerp(Theme.TEXT_DIM, danger ? 0xFFB3261E : Theme.accent(), lift), (int) (255 * e));
             a.icon.draw(g, px, py - 4, 5.5f, col);
             String l = a.label();
             float ts = 0.5f;
-            Render2D.scaledText(g, l, px - Render2D.textWidth(l) * ts / 2f, py + 5, ts, col, false);
+            int lc = ColorUtil.withAlpha(ColorUtil.lerp(Theme.TEXT_DIM, Theme.VINYL_INK, lift), (int) (255 * e));
+            Render2D.scaledText(g, l, px - Render2D.textWidth(l) * ts / 2f, py + 5, ts, lc, false);
             String num = String.valueOf(i + 1);
             float nx = cx() + (float) Math.cos(rad) * (rr1 + 6), ny = cy() + (float) Math.sin(rad) * (rr1 + 6);
             Render2D.scaledText(g, num, nx - Render2D.textWidth(num) * 0.45f / 2f, ny - 2, 0.45f, ColorUtil.withAlpha(Theme.TEXT_MUTED, (int) (200 * e)), false);
@@ -181,20 +182,19 @@ public class PlayerMenuScreen extends NoreScreen {
         float pa = pointerAlpha.get();
         if (pa > 0.02f) {
             float c = pointer.get();
-            arc(g, c - 14, c + 14, r0() - 4, r0() - 2.6f, ColorUtil.withAlpha(Theme.accent2(), (int) (90 * pa)), ColorUtil.withAlpha(Theme.accent2(), (int) (230 * pa)));
+            arc(g, c - 12, c + 12, r0() - 4, r0() - 2.6f, ColorUtil.withAlpha(Theme.accent(), (int) (230 * pa)), ColorUtil.withAlpha(Theme.accent(), (int) (230 * pa)));
         }
     }
 
     private void hub(Gfx g) {
         float r = hubR();
-        Render2D.circle(g, cx(), cy(), r + 2.5f, ColorUtil.withAlpha(Theme.accent(), 70));
-        Render2D.radial(g, cx(), cy(), r, 0xF628242C, 0xF60C0B0E);
-        Render2D.ring(g, cx(), cy(), r, 1.1f, 0, 360, ColorUtil.withAlpha(Theme.accent2(), 150));
+        Render2D.circle(g, cx(), cy(), r + 1, Theme.VINYL);
+        Render2D.circle(g, cx(), cy(), r, Theme.page());
         float s = 22;
         SocialWidgets.head(g, name, cx() - s / 2f, cy() - s / 2f, s);
         NoreHub.Entry e = NoreHub.get(name);
         if (nore()) SocialWidgets.mark(g, cx() + 6, cy() + 6, 10, e != null && e.verified, e != null);
-        if (Friends.isFriend(name)) Icons.star(g, cx() - 11, cy() + 11, 3.4f, 0xFF5BE37D, true);
+        if (Friends.isFriend(name)) Album.dot(g, cx() - 11, cy() + 11, 2.5f, ThemeTokens.DOT_READY);
     }
 
     /** Name plate under the ring: nick, Nore badge, friend state and what the pointed action does. */
@@ -205,78 +205,77 @@ public class PlayerMenuScreen extends NoreScreen {
         float nameW = Render2D.textWidth(name);
         float badges = 0;
         if (nore()) badges += widthOfBadge(e) + 4;
-        if (friend) badges += Render2D.textWidth("★ Znajomy") * 0.62f + 14;
-        if (muted) badges += Render2D.textWidth("Wyciszony") * 0.62f + 14;
+        if (friend) badges += Album.labelWidth("Znajomy") + 4;
+        if (muted) badges += Album.labelWidth("Wyciszony") + 4;
         float w = Math.max(150, Math.max(nameW + 16, badges + 12));
         Action act = hover >= 0 ? actions.get(hover) : focus >= 0 ? actions.get(focus) : null;
         String hint = act != null ? act.hint() : Social.onServer(name) ? "Na tym serwerze" : "W pobliżu";
-        w = Math.max(w, Render2D.textWidth(hint) * 0.62f + 16);
-        float h = 44, x = cx() - w / 2f;
-        Render2D.shadow(g, x, y, w, h, Theme.radius(), 6, 0x70000000);
-        Render2D.roundedRect(g, x, y, w, h, Theme.radius(), 0xE0120E1E);
-        Render2D.roundedOutline(g, x, y, w, h, Theme.radius(), 1, 0x26FFFFFF);
-        Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
-        Render2D.centeredText(g, name, cx(), y + 5, Theme.TEXT, true);
+        w = Math.max(w, Render2D.textWidth(hint) + 16);
+        float h = 46, x = cx() - w / 2f;
+        Album.floating(g, x, y, w, h, ColorUtil.withAlpha(Theme.page(), 0xF0));
+        Render2D.centeredText(g, name, cx(), y + 5, Theme.TEXT, false);
         float bx = cx() - badges / 2f + 2;
         if (nore()) bx += SocialWidgets.badge(g, bx, y + 16, e != null && e.verified, e != null, false) + 4;
-        if (friend) bx += SocialWidgets.pill(g, bx, y + 16, "★ Znajomy", 0xFF5BE37D) + 4;
-        if (muted) SocialWidgets.pill(g, bx, y + 16, "Wyciszony", Theme.TEXT_MUTED);
+        if (friend) bx += SocialWidgets.pill(g, bx, y + 16, "Znajomy", ThemeTokens.DOT_READY) + 4;
+        if (muted) SocialWidgets.pill(g, bx, y + 16, "Wyciszony", ThemeTokens.DOT_OFF);
         if (badges == 0) {
             String s = NoreHub.known(name) ? "Nie używa Nore" : "Sprawdzanie Nore…";
-            Render2D.scaledText(g, s, cx() - Render2D.textWidth(s) * 0.62f / 2f, y + 18, 0.62f, Theme.TEXT_MUTED, false);
+            Render2D.centeredText(g, s, cx(), y + 17, Theme.TEXT_MUTED, false);
         }
-        Render2D.scaledText(g, hint, cx() - Render2D.textWidth(hint) * 0.62f / 2f, y + 32, 0.62f, act != null ? Theme.accent2() : Theme.TEXT_DIM, false);
-        String keys = "1–5 / strzałki + Enter • Esc – zamknij";
-        Render2D.scaledText(g, keys, cx() - Render2D.textWidth(keys) * 0.55f / 2f, y + h + 6, 0.55f, ColorUtil.withAlpha(Theme.TEXT_MUTED, (int) (200 * a)), false);
+        Render2D.centeredText(g, hint, cx(), y + 32, act != null ? Theme.accentLight() : Theme.TEXT_DIM, false);
+        // keycaps: 1–5, Enter, Esc
+        float kw = Album.keycapWidth("1–5") + Album.keycapWidth("Enter") + Album.keycapWidth("Esc") + Render2D.textWidth("wybierz") + Render2D.textWidth("zamknij") + 24;
+        float kx = cx() - kw / 2f, ky = y + h + 6;
+        kx += Album.keycap(g, "1–5", kx, ky) + 3;
+        kx += Album.keycap(g, "Enter", kx, ky) + 4;
+        Render2D.text(g, "wybierz", kx, ky + 1, Theme.TEXT_DIM, true);
+        kx += Render2D.textWidth("wybierz") + 10;
+        kx += Album.keycap(g, "Esc", kx, ky) + 4;
+        Render2D.text(g, "zamknij", kx, ky + 1, Theme.TEXT_DIM, true);
     }
 
     private static float widthOfBadge(NoreHub.Entry e) {
         String label = e == null ? "Nore" : e.verified ? "Nore ✓" : "Nore";
-        return 13 + Render2D.textWidth(label) * 0.62f + 5;
+        return Album.labelWidth(label) + (e != null ? 3 : 0);
     }
 
     /** Profile card: head, Nore status, friend state and the wardrobe from Nore Hub. */
     private void card(Gfx g, int mx, int my, float pa) {
         NoreHub.Entry e = NoreHub.get(name);
         List<String[]> wear = wardrobe(e);
-        float w = 230, h = 102 + Math.max(1, wear.size()) * 11;
-        float x = cx() - w / 2f, y = cy() - h / 2f + (1 - Animation.easeOutCubic(pa)) * 14;
-        Render2D.shadow(g, x, y, w, h, Theme.radius(), 8, 0x80000000);
-        Render2D.roundedRect(g, x, y, w, h, Theme.radius(), 0xF0120E1E);
-        Render2D.roundedOutline(g, x, y, w, h, Theme.radius(), 1, 0x30FFFFFF);
-        Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 170), ColorUtil.withAlpha(Theme.accent(), 170), 0);
+        float w = 240, h = 104 + Math.max(1, wear.size()) * 11;
+        float x = cx() - w / 2f, y = cy() - h / 2f + (1 - Animation.easeOutCubic(pa)) * 6 * Motion.travel();
+        Album.floating(g, x, y, w, h, Theme.raised());
+        Render2D.roundedRect(g, x + 9, y + 9, 38, 38, 3, Theme.VINYL);
         SocialWidgets.head(g, name, x + 10, y + 10, 36);
-        Render2D.scaledText(g, name, x + 54, y + 11, 1.15f, Theme.TEXT, true);
+        Album.title(g, Render2D.trim(name, (int) (w - 64) / 2), x + 54, y + 9, Theme.TEXT);
         float by = y + 25;
         float bx = x + 54;
         if (nore()) bx += SocialWidgets.badge(g, bx, by, e != null && e.verified, e != null, true) + 4;
         else {
             String s = NoreHub.known(name) ? "Nie używa Nore" : "Sprawdzanie Nore…";
-            Render2D.scaledText(g, s, bx, by + 2, 0.62f, Theme.TEXT_MUTED, false);
-            bx += Render2D.textWidth(s) * 0.62f + 6;
+            Render2D.text(g, s, bx, by + 1, Theme.TEXT_MUTED, false);
+            bx += Render2D.textWidth(s) + 6;
         }
-        if (Friends.isFriend(name)) SocialWidgets.pill(g, bx, by, "★ Znajomy", 0xFF5BE37D);
+        if (Friends.isFriend(name)) SocialWidgets.pill(g, bx, by, "Znajomy", ThemeTokens.DOT_READY);
         Social.Person p = Social.person(name);
         int st = p.state();
-        Render2D.circle(g, x + 57, y + 42, 2.2f, SocialWidgets.stateColor(st));
-        Render2D.scaledText(g, Social.status(p) + (e != null && !e.verified ? " • konto bez weryfikacji premium" : ""), x + 62, y + 39.5f, 0.62f, Theme.TEXT_DIM, false);
+        Album.dot(g, x + 57, y + 42, 2, SocialWidgets.stateColor(st));
+        Render2D.text(g, Render2D.trim(Social.status(p) + (e != null && !e.verified ? " · bez weryfikacji premium" : ""), (int) w - 72), x + 62, y + 38, Theme.TEXT_DIM, false);
 
         float ly = y + 56;
-        Render2D.rect(g, x + 10, ly - 4, w - 20, 1, 0x18FFFFFF);
-        Render2D.scaledText(g, "SZATNIA", x + 10, ly, 0.6f, Theme.accent2(), false);
-        ly += 10;
+        Render2D.text(g, "Szatnia", x + 10, ly, Theme.TEXT, false);
+        ly += 12;
         if (wear.isEmpty()) {
-            Render2D.scaledText(g, e == null ? "Szatnię widać tylko u graczy Nore" : "Nic nie nosi", x + 10, ly, 0.68f, Theme.TEXT_MUTED, false);
+            Render2D.text(g, e == null ? "Szatnię widać tylko u graczy Nore" : "Nic nie nosi", x + 10, ly, Theme.TEXT_MUTED, false);
             ly += 11;
         }
         for (String[] s : wear) {
             int col = s[2] == null ? 0 : (int) Long.parseLong(s[2]);
-            if (s[2] != null) {
-                Render2D.roundedRect(g, x + 10, ly, 7, 7, 2, 0xFF000000 | col);
-                Render2D.roundedOutline(g, x + 10, ly, 7, 7, 2, 1, 0x40FFFFFF);
-            } else Icons.sparkle(g, x + 13.5f, ly + 3.5f, 3, Theme.accent2());
-            Render2D.scaledText(g, s[0], x + 21, ly + 0.5f, 0.68f, Theme.TEXT_DIM, false);
-            Render2D.scaledText(g, s[1], x + 21 + 74, ly + 0.5f, 0.68f, Theme.TEXT, false);
+            if (s[2] != null) Album.dot(g, x + 13.5f, ly + 4, 2.5f, 0xFF000000 | col);
+            else Icons.sparkle(g, x + 13.5f, ly + 4, 3, Theme.accentLight());
+            Render2D.text(g, Render2D.trim(s[0], 70), x + 21, ly, Theme.TEXT_DIM, false);
+            Render2D.text(g, Render2D.trim(s[1], (int) w - 110), x + 21 + 76, ly, Theme.TEXT, false);
             ly += 11;
         }
         // buttons
@@ -291,8 +290,7 @@ public class PlayerMenuScreen extends NoreScreen {
     private void cardButton(Gfx g, int mx, int my, float x, float y, float w, float h, String label, int i) {
         boolean hov = Render2D.hovered(mx, my, x, y, w, h);
         float a = cardHover[i].target(hov ? 1 : 0).update();
-        dev.noreclient.gui.widget.Widgets.glowBox(g, x, y, w, h, Theme.radius(), Theme.accent(), a, i == 1 ? 1f : 0.55f);
-        Render2D.centeredText(g, label, x + w / 2f, y + 4, dev.noreclient.gui.widget.Widgets.glowText(Theme.accent(), 0.3f), false);
+        Album.button(g, x, y, w, h, label, i == 1 ? Album.PRIMARY : Album.SECONDARY, a);
         cardRects[i] = new float[]{x, y, w, h};
     }
 

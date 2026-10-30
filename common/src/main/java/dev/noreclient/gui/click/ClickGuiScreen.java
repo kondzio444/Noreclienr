@@ -78,7 +78,7 @@ public class ClickGuiScreen extends NoreScreen {
 
     private final List<Hit> hits = new ArrayList<>();
     private final Map<Object, Animation> anims = new HashMap<>();
-    private final TextBox search = new TextBox("Szukaj modułów...", 32);
+    private final TextBox search = new TextBox("Szukaj", 32);
     private final TextBox profileName = new TextBox("Nazwa profilu", 24);
     private final Map<StringSetting, TextBox> stringBoxes = new HashMap<>();
     private final TextBox dlSearch = new TextBox("Szukaj paczek zasobów...", 40);
@@ -665,14 +665,14 @@ public class ClickGuiScreen extends NoreScreen {
         }
 
         Icons.category(ctx, m.getCategory(), x + 10, yy + 10, 9, iconC);
+        boolean desc = guiModule().showDescriptions.isOn();
         String name = Render2D.trim(m.getName(), (int) (w - 12));
-        matchHighlight(ctx, name, x + 6, yy + h - 25);
-        Render2D.text(ctx, name, x + 6, yy + h - 25, ink, false);
+        float nameY = desc ? yy + 18 : yy + h - 25;
+        matchHighlight(ctx, name, x + 6, nameY);
+        Render2D.text(ctx, name, x + 6, nameY, ink, false);
         String cat = m.getCategory().displayName;
-        Render2D.text(ctx, Render2D.trim(cat, (int) (w - 30)), x + 6, yy + h - 14, soft, false);
-        if (guiModule().showDescriptions.isOn()) {
-            Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 12)), x + 6, yy + 18, soft, false);
-        }
+        if (desc) Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 12)), x + 6, yy + 29, soft, false);
+        Render2D.text(ctx, Render2D.trim(cat, (int) (w - 30)), x + 6, yy + h - 13, soft, false);
         if (m.getKeybind().isBound()) {
             String k = m.getKeybind().getKeyName();
             float kx = x + w - 5 - (sticker ? Render2D.textWidth(k) + 4 : Album.keycapWidth(k));
@@ -963,7 +963,7 @@ public class ClickGuiScreen extends NoreScreen {
         float top = y;
         y = row(ctx, x, y, w, 30, s.getName(), "Kliknij i naciśnij klawisz (ESC = anuluj, DEL = usuń)", mx, my);
         boolean isListening = listening == s;
-        String label = isListening ? "Naciśnij klawisz..." : s.getKeyName();
+        String label = isListening ? "Naciśnij klawisz..." : "None".equals(s.getKeyName()) ? "Brak" : s.getKeyName();
         float bw = Math.max(60, Render2D.textWidth(label) + 16), bx = x + w - bw - 10;
         float la = anim(s, 16).target(isListening ? 1 : 0).update();
         // keycap: page face with a dark lip; while listening it is an accent-deep sticker

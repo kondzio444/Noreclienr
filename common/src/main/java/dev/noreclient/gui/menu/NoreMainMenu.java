@@ -215,7 +215,7 @@ public class NoreMainMenu extends NoreScreen {
         int mid = ColorUtil.lerp(night, warm, torchIn);
         // darkness everywhere outside the cone, a warm soft cone around the cursor
         float far = (float) Math.sqrt(width * (double) width + height * (double) height) * 2;
-        Render2D.ring(ctx, torchX, torchY, far, far - r + 0.5f, 0, 360, night);
+        darkness(ctx, torchX, torchY, r, far, night);
         Render2D.radial(ctx, torchX, torchY, r, ColorUtil.lerp(night, warm, torchIn), night);
         if (torchIn < 1) Render2D.radial(ctx, torchX, torchY, r, ColorUtil.withAlpha(night, (int) (ColorUtil.alpha(night) * (1 - torchIn))), 0);
         Render2D.radial(ctx, torchX, torchY, r * 0.55f, ColorUtil.withAlpha(mid, (int) (40 * torchIn)), 0);
@@ -235,6 +235,21 @@ public class NoreMainMenu extends NoreScreen {
             pumpkin(ctx, midX0 + (midX1 - midX0) * 0.58f, base - 14, 18, 1.7f);
             ctx.setAlpha(1);
         }
+    }
+
+    /** Fills everything outside the circle (cx, cy, r) with {@code color}; same 48 segments as {@link Render2D#radial}. */
+    private static void darkness(Gfx ctx, float cx, float cy, float r, float far, int color) {
+        int seg = 48;
+        float[] xy = new float[(seg + 1) * 4];
+        int[] col = new int[(seg + 1) * 2];
+        for (int i = 0; i <= seg; i++) {
+            double a = Math.PI * 2 * i / seg;
+            float c = (float) Math.cos(a), s = (float) Math.sin(a);
+            xy[i * 4] = cx + c * r; xy[i * 4 + 1] = cy + s * r;
+            xy[i * 4 + 2] = cx + c * far; xy[i * 4 + 3] = cy + s * far;
+            col[i * 2] = color; col[i * 2 + 1] = color;
+        }
+        ctx.mesh(Gfx.TRIANGLE_STRIP, xy, col, (seg + 1) * 2);
     }
 
     /** Pumpkin sticker with a candle-flickering orange glow. */

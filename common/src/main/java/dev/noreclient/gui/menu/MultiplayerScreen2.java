@@ -6,7 +6,10 @@ import dev.noreclient.gui.NoreScreen;
 import dev.noreclient.gui.widget.Icons;
 import dev.noreclient.gui.widget.ServerCard;
 import dev.noreclient.gui.widget.TextBox;
+import dev.noreclient.gui.widget.Album;
 import dev.noreclient.gui.widget.Widgets;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.ThemeTokens;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.CurrentGfx;
@@ -166,9 +169,8 @@ public class MultiplayerScreen2 extends NoreScreen {
         float w = Render2D.textWidth(label) + (compact ? 9 : 18), h = 18;
         if (!active && reason != null && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h)) tooltip = reason;
         boolean hov = active && dialog == 0 && Render2D.hovered(mx, my, x, y, w, h);
-        int col = style == 2 ? 0xFFFF5A4F : Theme.accent();
-        Widgets.glowBox(g, x, y, w, h, Theme.radius(), col, anim("b" + label).target(hov ? 1 : 0).update(), active ? (style == 1 ? 1f : 0.55f) : 0.25f);
-        Render2D.centeredText(g, label, x + w / 2f, y + 5, active ? Widgets.glowText(col, 0.3f) : Theme.TEXT_MUTED, false);
+        int st = style == 1 ? Album.PRIMARY : style == 2 ? Album.DANGER : Album.SECONDARY;
+        Album.button(g, x, y, w, h, label, st, anim("b" + label).target(hov ? 1 : 0).update(), active);
         if (active) hit(x, y, w, h, action);
         return w;
     }
@@ -180,8 +182,8 @@ public class MultiplayerScreen2 extends NoreScreen {
         hitActions.clear();
         tooltip = null;
         MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x700A090C);
-        float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 450f);
+        Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(Theme.page(), 0x9C));
+        float in = Motion.screen(opened);
         boolean inputOk = dialog == 0;
 
         // ------------------------------------------------------------ header
@@ -189,19 +191,24 @@ public class MultiplayerScreen2 extends NoreScreen {
         g.setAlpha(in);
         boolean bh = inputOk && Render2D.hovered(mx, my, pad, 12, 20, 20);
         float ba = anim("back").target(bh ? 1 : 0).update();
-        Render2D.circle(g, pad + 10, 22, 10, ColorUtil.withAlpha(Theme.accent(), (int) (40 + 60 * ba)));
-        Render2D.line(g, pad + 12, 17, pad + 7, 22, 1.6f, 0xFFFFFFFF);
-        Render2D.line(g, pad + 7, 22, pad + 12, 27, 1.6f, 0xFFFFFFFF);
+        if (ba > 0.02f) Album.sticker(g, pad, 12, 20, 20, 10, Theme.VINYL, ba);
+        else Render2D.roundedRect(g, pad, 12, 20, 20, 10, Theme.RAISED_2);
+        int bc = ColorUtil.lerp(Theme.TEXT, Theme.VINYL_INK, ba);
+        float bby = 12 - ba * Motion.travel();
+        Render2D.line(g, pad + 12, bby + 5, pad + 7, bby + 10, 1.6f, bc);
+        Render2D.line(g, pad + 7, bby + 10, pad + 12, bby + 15, 1.6f, bc);
         if (inputOk) hit(pad, 12, 20, 20, this::close);
-        Render2D.gradientText(g, "MULTIPLAYER", pad + 28, 13, 1.5f, Theme.accent2(), Theme.accent(), true);
-        Render2D.scaledText(g, serversLabel(servers.size()), pad + 28, 28, 0.7f, Theme.TEXT_MUTED, false);
+        Album.titleShadow(g, "Multiplayer", pad + 28, 11, Theme.TEXT);
+        Render2D.text(g, serversLabel(servers.size()), pad + 28, 30, Theme.TEXT_DIM, true);
         if (flash != null) {
             float fa = 1 - Math.max(0, (System.currentTimeMillis() - flashAt - 1800) / 600f);
             if (fa <= 0) flash = null;
             else {
-                float fx = pad + 28 + Render2D.textWidth(serversLabel(servers.size())) * 0.7f + 8;
-                Render2D.circle(g, fx + 2, 31.5f, 2, ColorUtil.withAlpha(flashColor, (int) (255 * fa)));
-                Render2D.scaledText(g, flash, fx + 7, 28, 0.7f, ColorUtil.withAlpha(flashColor, (int) (255 * fa)), false);
+                float fx = pad + 28 + Render2D.textWidth(serversLabel(servers.size())) + 8;
+                g.setAlpha(in * fa);
+                Album.dot(g, fx + 2, 34, 2, flashColor);
+                Render2D.text(g, flash, fx + 7, 30, Theme.TEXT, true);
+                g.setAlpha(in);
             }
         }
         boolean wide = width > 520;
@@ -212,7 +219,7 @@ public class MultiplayerScreen2 extends NoreScreen {
         bx -= Render2D.textWidth(refL) + 18 + 5;
         button(g, mx, my, bx, 14, refL, 0, true, () -> { for (String[] s : servers) ServerInfo.invalidate(s[1]); Sounds.click(); });
         bx -= Render2D.textWidth(clsL) + 18 + 5;
-        if (bx > pad + 28 + Render2D.textWidth("MULTIPLAYER") * 1.5f + 6) button(g, mx, my, bx, 14, clsL, 0, true, () -> game().openVanillaMultiplayer(this));
+        if (bx > pad + 28 + Render2D.textWidth("Multiplayer") * 2 + 6) button(g, mx, my, bx, 14, clsL, 0, true, () -> game().openVanillaMultiplayer(this));
 
         // ------------------------------------------------------------ server list (left)
         float top = 44, lw = Math.max(200, width * 0.58f - pad), lx = pad;
@@ -220,13 +227,13 @@ public class MultiplayerScreen2 extends NoreScreen {
         if (inputOk) hit(lx, top, lw, 18, () -> focus(search));
         // official server: always on top, not affected by search or scrolling
         float oy = top + 24;
-        Render2D.scaledText(g, "OFICJALNY SERWER", lx + 2, oy, 0.62f, ColorUtil.brighten(Theme.accent(), 0.3f), false);
-        oy += 8;
+        Render2D.text(g, "Oficjalny serwer", lx + 2, oy - 1, Theme.accentLight(), true);
+        oy += 10;
         final String[] off = officialEntry();
         boolean ohov = inputOk && Render2D.hovered(mx, my, lx, oy, lw, ROW);
         float oh = anim("official").target(ohov ? 1 : 0).update();
         // always shown as "Nore MC", also when the player saved it under a name of their own
-        ServerCard.row(g, ServerInfo.get(off[1]), OfficialServer.NAME, "PARTNER", lx, oy, lw, ROW, oh, isOfficial(selected));
+        ServerCard.row(g, ServerInfo.get(off[1]), OfficialServer.NAME, "oficjalny", lx, oy, lw, ROW, oh, isOfficial(selected));
         if (oh > 0.05f) {
             Render2D.roundedRect(g, lx + 4, oy + 4, ROW - 8, ROW - 8, 4, ColorUtil.withAlpha(0xFF000000, (int) (140 * oh)));
             Icons.play(g, lx + ROW / 2f, oy + ROW / 2f, 14, ColorUtil.withAlpha(0xFFFFFFFF, (int) (255 * oh)));
@@ -243,7 +250,7 @@ public class MultiplayerScreen2 extends NoreScreen {
             hit(lx + 4, oy + 4, ROW - 8, ROW - 8, () -> join(off[0], off[1]));
         }
         oy += ROW + 6;
-        Render2D.scaledText(g, "TWOJE SERWERY", lx + 2, oy, 0.62f, Theme.TEXT_MUTED, false);
+        Render2D.text(g, "Twoje serwery", lx + 2, oy - 1, Theme.TEXT_DIM, true);
         listY = oy + 8;
         listH = height - listY - 10;
         List<Integer> vis = visible();
@@ -367,19 +374,19 @@ public class MultiplayerScreen2 extends NoreScreen {
         ServerInfo.Info info = ServerInfo.get(s[1]);
         float dh2 = Math.min(height - ry - 10, 176);
         panel(g, rx, ry, rw, dh2, "Oficjalny serwer");
-        ServerCard.badge(g, "PARTNER", rx + 12 + Render2D.textWidth("Oficjalny serwer"), ry + 4.5f);
-        // info card
-        float cy = ry + 17;
-        Render2D.roundedRect(g, rx + 6, cy, rw - 12, 20, Theme.radius() * 0.7f, ColorUtil.withAlpha(Theme.accent(), 38));
-        Icons.sparkle(g, rx + 14, cy + 10, 3.5f, Theme.accent2());
-        Render2D.scaledText(g, Render2D.trim(OfficialServer.TAGLINE, (int) ((rw - 34) / 0.7f)), rx + 22, cy + 3.5f, 0.7f, Theme.TEXT, false);
+        ServerCard.badge(g, "partner", rx + 12 + Render2D.textWidth("Oficjalny serwer"), ry + 4);
+        // info card: a paper clipping with the tagline and the live state
+        float cy = ry + 19;
+        Album.clipping(g, rx + 6, cy, rw - 12, 22, 0, 0);
+        Render2D.scaledText(g, Render2D.trim(OfficialServer.TAGLINE, (int) ((rw - 34) / 0.7f)), rx + 22, cy + 3.5f, 0.7f, Theme.VINYL_INK, false);
         boolean loading = info == null || info.state == ServerInfo.State.LOADING && info.online < 0;
         boolean down = !loading && info.state == ServerInfo.State.OFFLINE && info.online < 0;
         String state = loading ? "Sprawdzanie statusu..."
                 : down ? ("Nieznany adres".equals(info.error) ? "Status: nieznany (adres jeszcze nie działa)" : "Status: offline")
                 : "Status: online";
-        int stateCol = loading ? Theme.TEXT_MUTED : down ? 0xFFFF7A7A : Theme.SUCCESS;
-        Render2D.scaledText(g, Render2D.trim(state, (int) ((rw - 34) / 0.62f)), rx + 22, cy + 12, 0.62f, stateCol, false);
+        int stateCol = loading ? ThemeTokens.DOT_WAIT : down ? ThemeTokens.DOT_ERROR : ThemeTokens.DOT_READY;
+        Album.dot(g, rx + 14, cy + 11, 2.2f, stateCol);
+        Render2D.scaledText(g, Render2D.trim(state, (int) ((rw - 34) / 0.62f)), rx + 22, cy + 12.5f, 0.62f, Theme.VINYL_INK_SOFT, false);
         details(g, info, new String[]{OfficialServer.NAME, s[1]}, rx + 6, cy + 25, rw - 12, dh2 - 25 - 17 - 62);
         float by = ry + dh2 - 24;
         // resource packs sent by the server: stored with the saved entry and used when joining
@@ -391,9 +398,9 @@ public class MultiplayerScreen2 extends NoreScreen {
             String label = POLICY[pol];
             float pw = Render2D.textWidth(label) + 16, pxx = rx + rw - 8 - pw;
             boolean ph = dialog == 0 && Render2D.hovered(mx, my, pxx, py, pw, 14);
-            int pc = pol == 1 ? Theme.SUCCESS : pol == 2 ? Theme.ERROR : Theme.accent();
-            Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("opol").target(ph ? 1 : 0).update(), 0.6f);
-            Render2D.centeredText(g, label, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
+            int pc = pol == 1 ? ThemeTokens.DOT_READY : pol == 2 ? ThemeTokens.DOT_ERROR : ThemeTokens.DOT_WAIT;
+            Album.button(g, pxx, py, pw, 14, label, Album.SECONDARY, anim("opol").target(ph ? 1 : 0).update());
+            Album.dot(g, pxx + 1, py + 1, 1.8f, pc);
             if (dialog == 0) hit(pxx, py, pw, 14, () -> {
                 game().setServerPackPolicy(idx, (game().serverPackPolicy(idx) + 1) % 3);
                 Sounds.click();
@@ -414,17 +421,13 @@ public class MultiplayerScreen2 extends NoreScreen {
         w += 10;
         float h = lines.size() * 8 + 7;
         float x = Math.min(width - w - 4, mx + 8), y = Math.max(4, my - h - 4);
-        Render2D.roundedRect(g, x, y, w, h, 4, 0xF0141216);
-        Render2D.roundedOutline(g, x, y, w, h, 4, 1, ColorUtil.withAlpha(Theme.accent(), 160));
+        Album.floating(g, x, y, w, h, ColorUtil.withAlpha(Theme.SLOT, 0xF2));
+        Render2D.roundedOutline(g, x, y, w, h, Album.R, 1, Theme.GHOST);
         for (int i = 0; i < lines.size(); i++) Render2D.scaledText(g, lines.get(i), x + 5, y + 4 + i * 8, 0.7f, Theme.TEXT, false);
     }
 
     private void panel(Gfx g, float x, float y, float w, float h, String title) {
-        float r = Theme.radius();
-        Render2D.shadow(g, x, y, w, h, r, 6, 0x70000000);
-        Render2D.roundedRect(g, x, y, w, h, r, 0xC8141216);
-        Render2D.roundedOutline(g, x, y, w, h, r, 1, 0x26FFFFFF);
-        Render2D.quadGradient(g, x + 8, y, w - 16, 1, 0, ColorUtil.withAlpha(Theme.accent(), 150), ColorUtil.withAlpha(Theme.accent(), 150), 0);
+        Album.sheet(g, x, y, w, h);
         Render2D.text(g, title, x + 7, y + 5, Theme.TEXT, false);
     }
 
@@ -528,7 +531,7 @@ public class MultiplayerScreen2 extends NoreScreen {
     }
 
     private void renderDialog(Gfx g, int mx, int my, float d) {
-        Render2D.rect(g, 0, 0, width, height, ColorUtil.withAlpha(0xFF000000, (int) (150 * d)));
+        Album.scrim(g, width, height, d);
         float w = Math.min(280, width - 30), h = 172, x = (width - w) / 2f, y = (height - h) / 2f + (1 - d) * 16;
         g.setAlpha(d);
         panel(g, x, y, w, h, dialog == 2 ? "Edytuj serwer" : "Dodaj serwer");
@@ -550,8 +553,8 @@ public class MultiplayerScreen2 extends NoreScreen {
         float pw = Render2D.textWidth(pol) + 16, pxx = x + w - 8 - pw;
         boolean ph = Render2D.hovered(mx, my, pxx, py, pw, 14);
         int pc = dlgPolicy == 1 ? Theme.SUCCESS : dlgPolicy == 2 ? Theme.ERROR : Theme.accent();
-        Widgets.glowBox(g, pxx, py, pw, 14, Theme.radius(), pc, anim("dpol").target(ph ? 1 : 0).update(), 0.6f);
-        Render2D.centeredText(g, pol, pxx + pw / 2f, py + 3, Widgets.glowText(pc, 0.3f), false);
+        Album.button(g, pxx, py, pw, 14, pol, Album.SECONDARY, anim("dpol").target(ph ? 1 : 0).update());
+        Album.dot(g, pxx + 1, py + 1, 1.8f, pc);
         String warn = dlgError != null ? dlgError : (addr.isEmpty() ? null : OfficialServer.matches(addr) ? "Oficjalny serwer jest już na liście"
                 : duplicate(addr) ? "Ten adres jest już na liście" : null);
         if (warn != null) Render2D.scaledText(g, warn, x + 8, y + h - 18, 0.7f, dlgError != null ? Theme.ERROR : Theme.WARNING, false);
@@ -571,8 +574,7 @@ public class MultiplayerScreen2 extends NoreScreen {
 
     private void dialogButton(Gfx g, int mx, int my, float x, float y, float w, String label, boolean primary, Runnable r) {
         boolean hov = Render2D.hovered(mx, my, x, y, w, 18);
-        Widgets.glowBox(g, x, y, w, 18, Theme.radius(), Theme.accent(), anim("d" + label).target(hov ? 1 : 0).update(), primary ? 1f : 0.5f);
-        Render2D.centeredText(g, label, x + w / 2f, y + 5, Widgets.glowText(Theme.accent(), 0.3f), false);
+        Album.button(g, x, y, w, 18, label, primary ? Album.PRIMARY : Album.SECONDARY, anim("d" + label).target(hov ? 1 : 0).update());
         hit(x, y, w, 18, r);
     }
 
