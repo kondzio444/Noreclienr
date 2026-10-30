@@ -104,7 +104,7 @@ function send(channel, payload) {
 function createWindow() {
   win = new BrowserWindow({
     width: 1220, height: 760, minWidth: 980, minHeight: 640,
-    frame: false, show: false, backgroundColor: '#0d0913', title: 'Nore Launcher',
+    frame: false, show: false, backgroundColor: '#291c3d', title: 'Nore Launcher',
     icon: nativeImage.createFromPath(ICON),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
@@ -143,7 +143,7 @@ function runSplash() {
 
     const splash = new BrowserWindow({
       width: 400, height: 480, frame: false, resizable: false, maximizable: false, fullscreenable: false,
-      show: false, center: true, backgroundColor: '#0d0913', title: 'Nore Updater',
+      show: false, center: true, backgroundColor: '#291c3d', title: 'Nore Updater',
       icon: nativeImage.createFromPath(ICON),
       webPreferences: { preload: path.join(__dirname, '..', 'updater-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
@@ -277,6 +277,7 @@ ipcMain.handle('state:get', () => {
 });
 
 ipcMain.handle('settings:set', (e, patch) => {
+  if (patch && 'eventFx' in patch) patch.eventFx = Math.max(25, Math.min(100, Number(patch.eventFx) || 100)); // events cannot be turned off
   store.update(d => Object.assign(d.settings, patch));
   if ('discordRpc' in patch || 'discordAppId' in patch) applyDiscord();
   if ('autoUpdate' in patch) updater.configure(store.get().settings);

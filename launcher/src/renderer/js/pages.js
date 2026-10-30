@@ -418,21 +418,21 @@ Pages.datapacks = contentPage('datapacks');
 Pages.accounts = (root) => {
   const render = () => {
     const s = App.state;
-    root.innerHTML = `<div class="page-head"><div><h2>Konta</h2><p>Logowanie premium (Microsoft) i non-premium (dowolny nick).</p></div></div>
+    root.innerHTML = `<div class="page-head"><div><h2>Konta</h2><p>Logowanie nie jest wymagane: grasz na samym nicku, a konto Microsoft dodajesz, kiedy chcesz.</p></div></div>
       <div class="login-options stagger" style="margin-bottom:26px">
-        <div class="card hover login-option ms" id="ms" style="--i:0"><div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
-          <h3>Dodaj konto Microsoft</h3><p>Konto premium z Minecraft: Java Edition — serwery online-mode, skin i peleryna.</p></div>
-        <div class="card hover login-option" id="off" style="--i:1"><div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
-          <h3>Dodaj konto non-premium</h3><p>Wpisz tylko nick — singleplayer, LAN i serwery z wyłączonym online-mode.</p></div>
+        <div class="card hover login-option primary" id="off" style="--i:0"><div class="ico">${icon('user')}</div>
+          <h3>Graj na nicku</h3><p>Bez logowania i bez premium: wpisz nick – singleplayer, LAN i serwery z wyłączonym online-mode.</p></div>
+        <div class="card hover login-option ms" id="ms" style="--i:1"><div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
+          <h3>Konto Microsoft</h3><p>Premium z Minecraft: Java Edition – serwery online-mode, Twój skin i peleryna.</p></div>
       </div>
-      <div class="section-title" style="margin-bottom:12px">${icon('users')} Twoje konta</div>
+      <div class="section-title" style="margin-bottom:12px">Twoje konta</div>
       <div class="col" id="list" style="gap:10px"></div>`;
     const list = $('#list', root);
     list.innerHTML = s.accounts.length ? s.accounts.map(a => `<div class="card acc-card ${a.id === s.selectedAccount ? 'selected' : ''}" data-id="${a.id}">
-        ${avatarHtml(a)}<div class="grow"><b>${esc(a.name)}</b><div class="row" style="margin-top:6px;gap:8px">${a.type === 'microsoft' ? `<span class="tag premium">${icon('shield')} PREMIUM</span>` : '<span class="tag offline">NON-PREMIUM</span>'}<span class="muted" style="font-size:11.5px">${esc(a.uuid)}</span></div></div>
-        ${a.id === s.selectedAccount ? `<span class="tag accent">${icon('check')} AKTYWNE</span>` : '<button class="btn sm" data-sel>Użyj</button>'}
+        ${avatarHtml(a)}<div class="grow"><b>${esc(a.name)}</b><div class="row" style="margin-top:6px;gap:8px">${a.type === 'microsoft' ? `<span class="tag premium">${icon('shield')} premium</span>` : '<span class="tag offline">bez premium</span>'}<span class="muted" style="font-size:11.5px">${esc(a.uuid)}</span></div></div>
+        ${a.id === s.selectedAccount ? `<span class="tag accent">${icon('check')} aktywne</span>` : '<button class="btn sm" data-sel>Użyj</button>'}
         <button class="btn danger sm icon" data-del title="Usuń">${icon('trash')}</button></div>`).join('')
-      : `<div class="card empty">${icon('user')}<div>Nie dodano jeszcze żadnego konta.</div></div>`;
+      : `<div class="empty">${icon('user')}<div>Pusty slot – dodaj nick albo konto Microsoft.</div></div>`;
     stagger(list);
     $('#ms', root).onclick = () => microsoftLoginModal();
     $('#off', root).onclick = () => offlineLoginModal();
@@ -452,10 +452,11 @@ Pages.accounts = (root) => {
 };
 
 function offlineLoginModal(done) {
-  const m = modal(`<h3>Konto non-premium</h3><p class="sub">Podaj nick (3–16 znaków: litery, cyfry, _).</p>
-    <div class="field"><input class="input" id="nick" maxlength="16" placeholder="Steve" autofocus></div>
-    <div class="field"><span class="hint">${icon('info')} Konto non-premium działa w singleplayer, LAN i na serwerach z wyłączonym online-mode.</span></div>
-    <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="ok">${icon('check')} Dodaj</button></div>`);
+  // the nameplate: a paper label "Ten album należy do" with the nick written on an ink rule (DESIGN.md §5)
+  const m = modal(`<h3>Graj bez premium</h3><p class="sub">Wystarczy nick: 3–16 znaków, litery, cyfry i _. Konto Microsoft dodasz, kiedy zechcesz.</p>
+    <label class="nameplate"><span class="np-k">Ten album należy do</span><input class="np-nick" id="nick" maxlength="16" placeholder="Twój nick" spellcheck="false" autocomplete="off" autofocus></label>
+    <div class="field" style="margin-top:14px"><span class="hint">${icon('info')} Bez premium grasz w singleplayer, LAN i na serwerach z wyłączonym online-mode.</span></div>
+    <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="ok">${icon('check')} Zapisz nick</button></div>`);
   const input = $('#nick', m.el);
   setTimeout(() => input.focus(), 50);
   const submit = async () => {
@@ -480,15 +481,16 @@ function microsoftLoginModal(done) {
 Pages.settings = (root) => {
   const s = App.state.settings;
   const maxMem = Math.max(4096, App.info.totalMemMb - 1024);
-  root.innerHTML = `<div class="page-head"><div><h2>Ustawienia</h2><p>Wydajność, Java, okno gry i zachowanie launchera.</p></div></div>
-    <div class="grid cols-2 stagger">
+  root.innerHTML = `<div class="page-head"><div><h2>Ustawienia</h2><p>Wydajność, Java, okno gry, wygląd i zachowanie launchera.</p></div></div>
+    <div class="grid cols-2 stagger settings-base">
       <div class="card panel">
         <div class="section-title">${icon('cpu')} Wydajność</div>
         <div class="setting"><div class="col"><b>Pamięć RAM</b><span>Twój komputer: ${(App.info.totalMemMb / 1024).toFixed(1)} GB</span></div></div>
         <div class="row" style="padding-bottom:12px"><input type="range" class="slider" id="mem" min="1024" max="${maxMem}" step="512" value="${s.memoryMb}" style="flex:1"><div class="value-pill" id="memv"></div></div>
         <div class="setting"><div class="col"><b>Równoległe pobieranie</b><span>Liczba plików pobieranych jednocześnie</span></div>
           <input type="range" class="slider" id="conc" min="4" max="32" step="1" value="${s.concurrency}" style="width:140px"><div class="value-pill" id="concv"></div></div>
-        <div class="setting"><div class="col"><b>Animacje i efekty</b><span>Cząsteczki, przejścia i poświaty</span></div><label class="switch"><input type="checkbox" id="anim" ${s.animations ? 'checked' : ''}><i></i></label></div>
+        <div class="setting"><div class="col"><b>Animacje</b><span>Pełne: naklejki przyklejają się sprężyście. Oszczędne: tylko przenikanie. Wyłączone: bez ruchu.</span></div></div>
+        <div class="row anim-row" style="padding-bottom:6px"><div id="anim"></div><span class="play-wrap"><button class="btn play sm" id="anim-pv" tabindex="-1">${icon('play')} GRAJ</button></span></div>
       </div>
       <div class="card panel">
         <div class="section-title">${icon('monitor')} Okno gry</div>
@@ -514,13 +516,13 @@ Pages.settings = (root) => {
       </div>
       <div class="card panel">
         <div class="section-title">${icon('globe')} Discord</div>
-        <div class="setting"><div class="col"><b>Status w Discordzie (Rich Presence)</b><span>Zawsze włączony – znajomi widzą, że grasz w Nore Client (launcher i gra)</span></div><span class="tag premium">AKTYWNY</span></div>
+        <div class="setting"><div class="col"><b>Status w Discordzie (Rich Presence)</b><span>Zawsze włączony – znajomi widzą, że grasz w Nore Client (launcher i gra)</span></div><span class="tag premium">aktywny</span></div>
         <div class="setting"><div class="col"><b>Aplikacja Discord</b><span>Nore Client • ID ${esc(s.discordAppId || '1559570563339526175')}</span></div></div>
         <div class="setting"><div class="col"><b>Pokazuj innym graczom Nore, że grasz w Nore</b><span>Znak Nore na liście graczy, Twoja garderoba u innych i zaproszenia do znajomych w grze</span></div><label class="switch"><input type="checkbox" id="hubp" ${s.hubPresence !== false ? 'checked' : ''}><i></i></label></div>
       </div>
       <div class="card panel">
         <div class="section-title">${icon('key')} Konta Microsoft</div>
-        <div class="setting"><div class="col"><b>Logowanie Microsoft</b><span>Wbudowane – tokeny szyfrowane systemowo, sesja sprawdzana w Mojang przy starcie</span></div><span class="tag premium">${icon('shield')} GOTOWE</span></div>
+        <div class="setting"><div class="col"><b>Logowanie Microsoft</b><span>Wbudowane – tokeny szyfrowane systemowo, sesja sprawdzana w Mojang przy starcie</span></div><span class="tag premium">${icon('shield')} gotowe</span></div>
         <div class="setting"><div class="col"><b>Folder danych launchera</b><span>${esc(App.info.root)}</span></div><button class="btn ghost sm" id="root">${icon('folder')} Otwórz</button></div>
         <div class="setting"><div class="col"><b>Wersja</b><span>Nore Launcher ${esc(App.info.version)}</span></div><button class="btn ghost sm" id="wizard">${icon('sparkles')} Kreator startowy</button></div>
       </div>
@@ -531,7 +533,14 @@ Pages.settings = (root) => {
   mem.oninput = conc.oninput = upd; upd();
   mem.onchange = () => save({ memoryMb: +mem.value });
   conc.onchange = () => save({ concurrency: +conc.value });
-  $('#anim', root).onchange = (e) => { save({ animations: e.target.checked }); document.body.classList.toggle('no-anim', !e.target.checked); Embers.setEnabled(e.target.checked); };
+  $('#anim', root).appendChild(segmented([{ value: 'full', label: 'Pełne' }, { value: 'reduced', label: 'Oszczędne' }, { value: 'off', label: 'Wyłączone' }], motionMode(s), async (v) => {
+    await save({ motion: v, animations: v !== 'off' });
+    applyMotionSetting(App.state.settings);
+    // a live preview: the Graj sticker sticks in again with the chosen motion
+    const pv = $('#anim-pv', root);
+    pv.style.animation = 'none'; void pv.offsetWidth; pv.style.animation = 'stick var(--nore-spring-stick-dur) var(--nore-spring-stick) both';
+  }));
+  $('#anim-pv', root).onclick = (e) => playRub(e.currentTarget);
   $('#fs', root).onchange = (e) => save({ fullscreen: e.target.checked });
   $('#w', root).onchange = (e) => save({ width: Math.max(320, parseInt(e.target.value, 10) || 1280) });
   $('#h', root).onchange = (e) => save({ height: Math.max(240, parseInt(e.target.value, 10) || 720) });

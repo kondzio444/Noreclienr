@@ -33,9 +33,11 @@ const DEFAULTS = {
     discordAppId: DISCORD_APP_ID,
     hubPresence: true, // Nore Hub: other Nore players see that you play with Nore (hub.js)
     animations: true,
+    motion: 'full', // Animacje: full | reduced (fades only) | off
+    eventFx: 100, // event effects intensity, 25–100 %: events are forced on and cannot be switched off
     accent: '#ff8a1f',
     // appearance (Settings → Wygląd)
-    bgScene: 'photo',
+    bgScene: 'minimal', // Album: the black album page; photo and canvas scenes stay selectable
     bgParticles: 'embers',
     bgMotion: 'kenburns',
     bgDensity: 1,
@@ -43,7 +45,7 @@ const DEFAULTS = {
     bgBlur: 0,
     bgSpeed: 1,
     bgCustom: '',
-    pageTransition: 'rise',
+    pageTransition: 'slide',
     accentPreset: 'nore',
   },
 };
@@ -59,6 +61,9 @@ function load() {
     data.settings.discordRpc = true;
     // the new Nore look is violet: move everyone off the old default orange once
     if (!data.settings.violetMigrated) { if (data.settings.accentPreset === 'orange') data.settings.accentPreset = 'nore'; data.settings.violetMigrated = true; }
+    // the Album look is a black album page: move the old default photo background off once (others stay)
+    if (!data.settings.albumMigrated) { if (data.settings.bgScene === 'photo') data.settings.bgScene = 'minimal'; if (data.settings.pageTransition === 'rise') data.settings.pageTransition = 'slide'; data.settings.albumMigrated = true; }
+    data.settings.eventFx = Math.max(25, Math.min(100, Number(data.settings.eventFx) || 100));
   } catch {
     data = structuredClone(DEFAULTS);
   }
