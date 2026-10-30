@@ -31,13 +31,14 @@ import PLATFORMS from '../../platforms/platforms.json';
 import NEWS from './news.json';
 import { HubError, readHello, readNames, hubCall } from './hub.js';
 import { launcherConfig, curseforge } from './launcher.js';
-import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView } from './data.js';
+import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView, v1Release, assetLocation } from './data.js';
 import { handleV2 } from './v2/index.js';
 import { siteOf, wwwRedirect, mcAsset, effectiveUrl, MC_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
 export { NoreBot } from './v2/store.js';
 export { NoreCounters } from './v2/counters.js';
+export { NoreAdmin } from './v2/admin-store.js';
 
 const API_VERSION = '1.3.0';
 
@@ -135,7 +136,7 @@ async function api(request, url, env, ctx) {
 
   if (p === '/api/v1/version') {
     const { data, state } = await releases(env, ctx);
-    return json(request, data[0], { cacheState: state });
+    return json(request, v1Release(data[0]), { cacheState: state });
   }
 
   if (p === '/api/v1/releases') {
@@ -190,7 +191,9 @@ async function api(request, url, env, ctx) {
     const { data } = await releases(env, ctx);
     const asset = data[0].assets[dl[1]];
     if (!asset) return fail(request, 404, 'Brak pliku dla tej platformy w najnowszym wydaniu');
-    return Response.redirect(asset.url, 302);
+    // private releases: a signed GitHub URL instead of the github.com link (src/data.js)
+    const file = (data[0].files || []).find(f => f.name === asset.name);
+    return Response.redirect(file ? await assetLocation(env, file) : asset.url, 302);
   }
   return fail(request, 404, 'Nie ma takiego endpointu – lista: /api/v1');
 }

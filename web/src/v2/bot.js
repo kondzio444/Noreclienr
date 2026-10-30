@@ -39,7 +39,7 @@ export function guildIdOf(raw) {
   return raw;
 }
 
-async function requireBot(request, env) {
+export async function requireBot(request, env) {
   const secret = String(env.NORE_BOT_SECRET || '');
   if (secret.length < 16) throw new ApiError(503, 'bot_api_disabled', 'API bota nie jest skonfigurowane na serwerze (NORE_BOT_SECRET)');
   const m = /^Bot\s+(\S+)$/.exec(request.headers.get('Authorization') || '');

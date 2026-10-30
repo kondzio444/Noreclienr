@@ -10,6 +10,11 @@ import { cachedPing, cacheKeyFor } from './slp.js';
 import { botRoute, SCHEMA } from './bot.js';
 import * as auth from './auth.js';
 import { openapi } from './openapi.js';
+import * as admin from './admin.js';
+import { fileRedirect, updateFeed } from './files.js';
+
+/** Admin handlers answer a body, or { status, body } for 201. */
+const adminOut = (r) => (r && typeof r === 'object' && 'status' in r && 'body' in r ? { status: r.status, body: r.body, priv: true } : { body: r, priv: true });
 
 const PLATFORM = '(win|linux|mac|mac-zip)';
 
@@ -31,7 +36,15 @@ const ROUTES = [
   ['GET', /^\/servers\/([^/]{1,300})$/, 'public', server],
   ['GET', /^\/stats$/, 'public', ({ env, ctx }) => pub.stats(env, ctx).then(body => ({ body, maxAge: 60 }))],
 
+  ['GET', /^\/announcements$/, 'public', ({ env, q }) => admin.announcementsPublic(env, q).then(body => ({ body, maxAge: 60 }))],
+  ['GET', /^\/client\/config$/, 'public', ({ env, ctx, q }) => admin.clientConfig(env, ctx, q).then(body => ({ body, maxAge: 60 }))],
+  ['GET', /^\/blacklist\/check$/, 'public', ({ env, q }) => admin.blacklistCheck(env, q).then(body => ({ body, maxAge: 60 }))],
+  ['GET', /^\/files\/(v?\d+\.\d+\.\d+[\w.-]{0,40})\/([^/]{1,200})$/, 'public', ({ env, ctx, m }) => fileRedirect(env, ctx, m[1], m[2])],
+  ['GET', /^\/updates\/feed\/([^/]{1,200})$/, 'public', ({ env, ctx, m }) => updateFeed(env, ctx, m[1])],
+
   ['GET', /^\/bot\/config\.schema\.json$/, 'public', () => ({ body: SCHEMA, raw: true, maxAge: 300 })],
+  ['GET', /^\/bot\/admin$/, 'bot', ({ request, env }) => admin.botAdmin(request, env).then(body => ({ body }))],
+  ['POST', /^\/bot\/actions\/(\d{1,12})$/, 'bot', ({ request, env, m }) => admin.botActionDone(request, env, m[1]).then(body => ({ body }))],
   ['GET,PUT,POST,DELETE', /^\/bot\/(.+)$/, 'bot', ({ request, url, env, m }) => botRoute(request, url, env, m[1])],
 
   ['GET', /^\/auth\/discord\/login$/, 'session', ({ request, url, env }) => auth.login(request, url, env)],
@@ -40,6 +53,8 @@ const ROUTES = [
   ['GET', /^\/me$/, 'session', ({ request, env }) => auth.me(request, env).then(body => ({ body, priv: true }))],
   ['GET', /^\/panel\/guilds\/([^/]+)$/, 'session', ({ request, env, m }) => auth.panelGet(request, env, m[1]).then(body => ({ body, priv: true }))],
   ['PUT', /^\/panel\/guilds\/([^/]+)(?:\/config)?$/, 'session', ({ request, env, m }) => auth.panelPut(request, env, m[1]).then(body => ({ body, priv: true }))],
+
+  ['GET,POST,PUT,DELETE', /^\/admin\/(.+)$/, 'admin', ({ request, url, env, ctx, m }) => admin.adminRoute(request, url, env, ctx, m[1]).then(adminOut)],
 ];
 
 export const ENDPOINTS_V2 = [
@@ -58,6 +73,11 @@ export const ENDPOINTS_V2 = [
   ['GET', '/api/v2/stats', 'Statystyki: pobrania, gracze Nore online/znani, serwery z Nore Botem'],
   ['GET', '/api/v2/openapi.json', 'Opis OpenAPI 3.1'],
   ['GET', '/api/v2/bot/config.schema.json', 'Schemat konfiguracji Nore Bota (JSON Schema)'],
+  ['GET', '/api/v2/announcements?target=launcher', 'Aktywne ogłoszenia (launcher, mod, web, discord)'],
+  ['GET', '/api/v2/client/config?target=launcher', 'Ustawienia z serwera dla launchera i moda: przerwa techniczna, minimalna wersja, wyłączone moduły, ogłoszenia'],
+  ['GET', '/api/v2/blacklist/check?name=Steve', 'Czy gracz / Nore ID / konto Discord jest na czarnej liście'],
+  ['GET', '/api/v2/files/{version}/{name}', 'Plik wydania (przekierowanie, działa też przy prywatnym repozytorium)'],
+  ['GET', '/api/v2/updates/feed/latest.yml', 'Kanał aktualizacji launchera dla electron-updater (generic)'],
 ];
 
 function index() {
@@ -124,6 +144,7 @@ export async function handleV2(request, url, env, ctx) {
     if (e.status === 405 && e.extra && e.extra.allow) headers.Allow = methods;
     if (e.status === 429 && e.extra && e.extra.retryAfter) headers['Retry-After'] = String(e.extra.retryAfter);
     if (e.status === 401 && kind === 'bot') headers['WWW-Authenticate'] = 'Bot realm="nore-api"';
+    if (e.status === 401 && kind === 'admin') headers['WWW-Authenticate'] = 'Admin realm="nore-admin"';
     return sendError(request, e, { cors, headers });
   }
 }
