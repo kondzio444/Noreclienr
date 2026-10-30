@@ -40,6 +40,13 @@ final class DevScreens {
         else if (s.equals("hud")) screen = new HudEditorScreen(null);
         else if (s.equals("downloads")) screen = ClickGuiScreen.forDownloads(null);
         else if (s.equals("menu")) screen = new NoreMainMenu();
+        else if (s.equals("multiplayer")) screen = new dev.noreclient.gui.menu.MultiplayerScreen2(null);
+        else if (s.equals("radial")) screen = new dev.noreclient.gui.click.RadialMenuScreen(null);
+        else if (s.equals("friends")) screen = new dev.noreclient.gui.menu.FriendsScreen(null);
+        else if (s.equals("toast")) {
+            dev.noreclient.notification.NotificationManager.push("Zoom", "Moduł włączony", dev.noreclient.notification.NotificationManager.Type.SUCCESS);
+            screen = new ClickGuiScreen(null);
+        }
         else return;
         Platform.game().openScreen(screen);
     }
