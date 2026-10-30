@@ -78,12 +78,18 @@ public abstract class PanelScreen extends NoreScreen {
         Render2D.line(g, pad + 12, by + 5, pad + 7, by + 10, 1.6f, bc);
         Render2D.line(g, pad + 7, by + 10, pad + 12, by + 15, 1.6f, bc);
         hit(pad, 12, 20, 20, this::close);
-        Album.titleShadow(g, title(), pad + 28, 11, Theme.TEXT);
+        Album.titleShadow(g, sentence(title()), pad + 28, 11, Theme.TEXT);
         Render2D.text(g, Render2D.trim(subtitle(), width - 220), pad + 28, 30, Theme.TEXT_DIM, true);
-        if (dev.noreclient.util.Events.any()) Album.eventDot(g, pad + 32 + Render2D.textWidth(title()) * 2 + 2, 15);
+        if (dev.noreclient.util.Events.any()) Album.eventDot(g, pad + 32 + Render2D.textWidth(sentence(title())) * 2 + 2, 15);
         headerButtons(g, mx, my, width - pad, 14);
         content(g, mx, my, pad, 44 + (1 - in) * 6 * Motion.travel(), width - pad * 2, height - 54);
         g.setAlpha(1);
+    }
+
+    /** Album titles are sentence case: "SZATNIA" becomes "Szatnia". */
+    protected static String sentence(String t) {
+        if (t == null || t.length() < 2 || !t.equals(t.toUpperCase(java.util.Locale.ROOT))) return t;
+        return t.charAt(0) + t.substring(1).toLowerCase(new java.util.Locale("pl", "PL"));
     }
 
     /** Buttons right-aligned in the header, drawn right to left from x. */

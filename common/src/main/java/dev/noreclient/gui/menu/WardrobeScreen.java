@@ -146,7 +146,7 @@ public class WardrobeScreen extends PanelScreen {
             catIcon(g, s, rx + 11, ry + rh / 2f, sel ? Theme.accent() : col);
             Render2D.text(g, s.title, rx + 21, ry + 6, col, false);
             Worn worn = look().get(s);
-            if (worn != null) Album.dot(g, rx + w - 18, ry + rh / 2f, 2, ThemeTokens.DOT_READY);
+            if (worn != null) Album.dot(g, Math.min(rx + w - 16, rx + 26 + Render2D.textWidth(s.title)), ry + rh / 2f, 2, ThemeTokens.DOT_READY);
             hit(x + 4, ry, w - 8, rh, () -> {
                 if (cat != s) {
                     Sounds.click();
