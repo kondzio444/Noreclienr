@@ -162,11 +162,15 @@ function runSplash() {
       off();
       timers.forEach(clearTimeout);
       ipcMain.removeListener('splash:skip', onSkip);
+      ipcMain.removeListener('splash:retry', onRetry);
       resolve();
       setTimeout(() => { if (!splash.isDestroyed()) splash.destroy(); }, 350);
     };
     const onSkip = (e) => { if (!splash.isDestroyed() && e.sender === splash.webContents) finish(); };
     ipcMain.on('splash:skip', onSkip);
+    // "Spróbuj ponownie" after an error: one more check, the 20 s safety timer still applies
+    const onRetry = (e) => { if (!splash.isDestroyed() && e.sender === splash.webContents) { post({ state: 'checking' }); updater.check().catch(() => later(finish, 1500)); } };
+    ipcMain.on('splash:retry', onRetry);
     splash.on('closed', finish);
     // a stuck window must never keep the launcher closed
     later(() => { if (!['downloading', 'verifying', 'available'].includes(updater.current().state)) finish(); }, 20000);
@@ -176,7 +180,7 @@ function runSplash() {
       off = updater.onState((st) => {
         post(st);
         if (st.state === 'latest' || st.state === 'dev') later(finish, 1100);
-        else if (st.state === 'error') later(finish, 1800);
+        else if (st.state === 'error') later(() => { if (updater.current().state === 'error') finish(); }, 6000); // time to press "Spróbuj ponownie"
         else if (st.state === 'available' && store.get().settings.autoUpdate === false) later(finish, 2600);
         else if (st.state === 'ready') {
           const auto = store.get().settings.autoUpdate !== false;
