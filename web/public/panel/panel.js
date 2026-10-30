@@ -24,7 +24,7 @@
       vars: 'Wstaw zmienną kliknięciem.', newAction: 'Nowa akcja', queueHint: 'Akcja wykona się raz, po zapisaniu. Wynik pojawi się poniżej i w zdarzeniach.', aUnsaved: 'czeka na zapis', aQueued: 'w kolejce, bot jeszcze nie odpowiedział', aOk: 'wykonano', aFail: 'błąd',
       err401: 'Sesja wygasła. Zaloguj się ponownie.', err403: 'Nie masz uprawnienia „Zarządzanie serwerem” na tym serwerze.', err404bot: 'Nore Bota nie ma na tym serwerze.', errNet: 'Nie udało się połączyć z API. Spróbuj za chwilę.', retry: 'Spróbuj ponownie', back: 'Wróć do listy serwerów',
       loginErr: { cancelled: 'Logowanie zostało anulowane.', expired: 'Logowanie wygasło. Zacznij od nowa.', state: 'Coś poszło nie tak przy logowaniu. Zacznij od nowa.', token: 'Discord nie przyjął logowania. Spróbuj jeszcze raz.', scope: 'Potrzebujemy zgody na listę serwerów.', user: 'Nie udało się pobrać konta Discord.', code: 'Brak kodu logowania od Discorda.' },
-      ev: { action_result: 'Akcja', panel_config_saved: 'Zapis w panelu', member_join: 'Nowa osoba', member_leave: 'Ktoś wyszedł', ticket_open: 'Ticket otwarty', mod_action: 'Moderacja', builder_finished: 'Kreator skończył', builder_start: 'Kreator ruszył', backup_create: 'Kopia zapasowa', suggestion_new: 'Nowa propozycja', application_new: 'Nowe podanie' },
+      ev: { action_result: 'Akcja', panel_config_saved: 'Zapis w panelu', bot_config_saved: 'Zmiana z bota', member_join: 'Nowa osoba', member_leave: 'Ktoś wyszedł', ticket_open: 'Ticket otwarty', mod_action: 'Moderacja', builder_finished: 'Kreator skończył', builder_start: 'Kreator ruszył', backup_create: 'Kopia zapasowa', suggestion_new: 'Nowa propozycja', application_new: 'Nowe podanie' },
       ago: (s) => N.ago(s),
     },
     en: {
@@ -38,7 +38,7 @@
       vars: 'Click to insert a variable.', newAction: 'New action', queueHint: 'An action runs once, after saving. Its result appears below and in the events.', aUnsaved: 'waiting for save', aQueued: 'queued, no answer from the bot yet', aOk: 'done', aFail: 'error',
       err401: 'Your session expired. Please sign in again.', err403: 'You do not have the “Manage Server” permission on this server.', err404bot: 'Nore Bot is not on this server.', errNet: 'Could not reach the API. Try again in a moment.', retry: 'Try again', back: 'Back to the server list',
       loginErr: { cancelled: 'Sign-in was cancelled.', expired: 'Sign-in expired. Start again.', state: 'Something went wrong while signing in. Start again.', token: 'Discord did not accept the sign-in. Try again.', scope: 'We need permission to see your server list.', user: 'Could not load your Discord account.', code: 'Discord sent no sign-in code.' },
-      ev: { action_result: 'Action', panel_config_saved: 'Saved in the panel', member_join: 'New member', member_leave: 'Member left', ticket_open: 'Ticket opened', mod_action: 'Moderation', builder_finished: 'Builder finished', builder_start: 'Builder started', backup_create: 'Backup', suggestion_new: 'New suggestion', application_new: 'New application' },
+      ev: { action_result: 'Action', panel_config_saved: 'Saved in the panel', bot_config_saved: 'Changed by the bot', member_join: 'New member', member_leave: 'Member left', ticket_open: 'Ticket opened', mod_action: 'Moderation', builder_finished: 'Builder finished', builder_start: 'Builder started', backup_create: 'Backup', suggestion_new: 'New suggestion', application_new: 'New application' },
       ago: (iso) => { const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; },
     },
   };
@@ -577,12 +577,12 @@
       const t = deref((schemaAt('/actions/queue').items || {}), schema);
       const typeS = deref((t.properties || {}).type, schema);
       text = `${name}: ${typeS && typeS.enum ? optLabel(typeS, d.type) : d.type || ''}${d.ok ? '' : ` – ${d.error || ''}`}`;
-    } else if (e.type === 'panel_config_saved') { dot = 'nore'; text = `${name} · v${d.version}${d.by && d.by.name ? ` · ${d.by.name}` : ''}`; }
+    } else if (e.type === 'panel_config_saved' || e.type === 'bot_config_saved') { dot = 'nore'; text = `${name} · v${d.version}${d.by && d.by.name ? ` · ${d.by.name}` : ''}${d.by && d.by.reason ? ` · ${d.by.reason}` : ''}`; }
     else if (/join|verified|new|open|start/.test(e.type)) dot = 'ready';
     else if (/mod|warn|raid|ban|kick|automod/.test(e.type)) dot = 'wait';
     else if (/error|fail/.test(e.type)) dot = 'error';
     const extra = d.user || d.name || d.title || '';
-    return `<li><i class="dot sm ${dot}"></i><span>${esc(text)}${extra && e.type !== 'panel_config_saved' ? ` · ${esc(String(extra))}` : ''}</span><time datetime="${esc(e.at)}">${esc(u('ago', e.at))}</time></li>`;
+    return `<li><i class="dot sm ${dot}"></i><span>${esc(text)}${extra && !/_config_saved$/.test(e.type) ? ` · ${esc(String(extra))}` : ''}</span><time datetime="${esc(e.at)}">${esc(u('ago', e.at))}</time></li>`;
   }
   function paintEvents() {
     const box = $('#events'); if (!box) return;
@@ -593,6 +593,13 @@
     try {
       const g = await call('GET', `panel/guilds/${guild.guild.id}`);
       guild.events = g.events; guild.metaAt = g.metaAt; guild.meta = g.meta;
+      // the bot saved a newer version (builder, /config, an action) and nothing is edited here: show it
+      if (g.version > version && !saving && !conflict && !changes(original, config).length) {
+        guild.config = g.config; guild.version = g.version; guild.updatedAt = g.updatedAt; guild.updatedBy = g.updatedBy;
+        original = clone(g.config); config = clone(g.config); version = g.version; errors = new Map();
+        const y = scrollY; paintEditor(); scrollTo(0, y);
+        return;
+      }
       paintEvents();
       if (current === 'actions') { const y = scrollY; paintModule(); scrollTo(0, y); }
     } catch { /* keep the old list */ }
@@ -600,7 +607,7 @@
   function schedulePoll() {
     clearTimeout(pollTimer);
     const pending = ((original && original.actions && original.actions.queue) || []).some((a) => a.id && !(guild.events || []).some((e) => e.type === 'action_result' && e.data && e.data.id === a.id));
-    pollTimer = setTimeout(async () => { if (document.visibilityState === 'visible' && route()) await refreshEvents(); schedulePoll(); }, pending ? 8000 : 45000);
+    pollTimer = setTimeout(async () => { if (document.visibilityState === 'visible' && route()) await refreshEvents(); schedulePoll(); }, pending ? 8000 : 20000);
   }
 
   // ------------------------------------------------------------------ Discord preview of the focused message field

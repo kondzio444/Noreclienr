@@ -34,7 +34,7 @@ const ROUTES = [
   ['GET', /^\/stats$/, 'public', ({ env, ctx }) => pub.stats(env, ctx).then(body => ({ body, maxAge: 60 }))],
 
   ['GET', /^\/bot\/config\.schema\.json$/, 'public', () => ({ body: SCHEMA, raw: true, maxAge: 300 })],
-  ['GET,PUT,POST,DELETE', /^\/bot\/(.+)$/, 'bot', ({ request, url, env, m }) => botRoute(request, url, env, m[1])],
+  ['GET,PUT,PATCH,POST,DELETE', /^\/bot\/(.+)$/, 'bot', ({ request, url, env, m }) => botRoute(request, url, env, m[1])],
 
   ['GET', /^\/auth\/discord\/login$/, 'session', ({ request, url, env }) => auth.login(request, url, env)],
   ['GET', /^\/auth\/discord\/callback$/, 'session', ({ request, url, env }) => auth.callback(request, url, env)],

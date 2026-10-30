@@ -32,6 +32,7 @@ Bot → API (header `Authorization: Bot <NORE_BOT_SECRET>`):
 | method | path | body / result |
 |---|---|---|
 | GET | `/bot/guilds/:guildId/config` | `{ guildId, version, updatedAt, config }` (defaults when never saved) |
+| PATCH | `/bot/guilds/:guildId/config` | `{ config (partial), baseVersion?, by?: { id }, reason? }` → `{ guildId, version, updatedAt, updatedBy, config }` – the bot saves what it changed itself (builder, `/config`, panel actions) so the panel shows it |
 | PUT | `/bot/guilds/:guildId/meta` | `{ name, icon, channels:[{id,name,type,parentId}], roles:[{id,name,color,position,managed}] }` – the bot reports what the panel may offer; sent on join, on channel/role changes (debounced) and every 10 min |
 | DELETE | `/bot/guilds/:guildId` | bot left the guild |
 | GET | `/bot/changes?since=<ms>` | `{ now, guilds:[guildId…] }` – guilds whose config changed after `since` (bot polls every 15 s and reloads those) |
@@ -47,8 +48,21 @@ Panel → API (cookie session after OAuth2):
 | GET | `/panel/guilds/:guildId` | `{ meta, config, version, updatedAt, events:[…last 50] }` – 403 unless the user can manage it |
 | PUT | `/panel/guilds/:guildId/config` | `{ config, version }` → `{ version }`; 409 on version conflict; 400 with JSON-pointer errors when the schema rejects it |
 
-Config writes bump `version`; the bot applies a config only when its `version` is newer than the one
-it has.
+Config writes (panel `PUT`, bot `PATCH`) bump `version`; the bot applies a config only when its
+`version` is newer than the one it has.
+
+### Who owns which change
+
+* The panel saves whole configs (`PUT`, optimistic locking with `version`).
+* The bot never keeps its own changes only locally: whatever the builder wires (channels, roles,
+  enabled modules, ticket panels …), what `/config set|reset|import` changes and what panel actions
+  produce is first kept as a local override (so it works at once, also offline) and then sent with
+  `PATCH /bot/guilds/:id/config` (debounced ~1.5 s, and awaited at the end of a builder run). The
+  answer becomes the bot's remote copy and the sent overrides are dropped. When the API is down the
+  overrides stay in the bot's store and are sent on the next successful poll, on reconnect and after
+  a restart (before the guild's config is loaded).
+* A panel saved on an older version after the bot's `PATCH` gets `409` and reloads; an open panel with
+  no unsaved edits picks up a newer version by itself (event poll, 20 s; 8 s while actions wait).
 
 ## Public API v2 (also used by the bot's commands)
 
@@ -77,5 +91,15 @@ least: `status`, `releases`, `releases/latest`, `downloads`, `events` (with coun
   `GET /servers/:address` → `{ server: { online, players, version, motd, favicon, latencyMs, … } }`
   (offline is 200 with `online: false`, private addresses 403, 429 over 20/min per IP),
   `GET /releases/latest` → `{ release }`, `GET /stats` has `online` / `known` at the top level.
+* `PATCH /bot/guilds/:id/config`: `config` is merged into the stored config like RFC 7386 – objects key
+  by key, arrays and scalars replace, `null` removes the key so its schema default applies. The result
+  (defaults filled in) must pass the schema: otherwise `400 { code: "invalid_config", errors }` (JSON
+  pointers) and nothing is saved. `updatedBy` is `{ id: "bot", name: "Nore Bot", bot: true, userId?,
+  reason? }` (`by.id` = the Discord user who triggered it, `reason` matches `^[a-z][a-z0-9_.:-]{0,39}$`,
+  e.g. `builder`, `command`, `action`). Without `baseVersion` a concurrent save is retried on the new
+  version (field-level last write wins); with `baseVersion` a different current version is `409
+  version_conflict` with the current `version`. Every save adds a `bot_config_saved` event
+  `{ version, by }`, and the guild shows up in `/bot/changes`. Works for guilds without a saved
+  config (version 0 → 1).
 * Panel `PUT` errors: 400 `{ code: "invalid_config", errors: [{ path, pointer, message, keyword }] }`
   (JSON pointers), 409 `{ code: "version_conflict", version, updatedAt, updatedBy }`.

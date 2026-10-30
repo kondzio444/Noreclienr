@@ -2,6 +2,8 @@
  * Nore Bot → API v2 (docs/bot-api.md), header `Authorization: Bot <NORE_BOT_SECRET>`.
  *
  *   GET    /api/v2/bot/guilds/:guildId/config   { guildId, version, updatedAt, config }
+ *   PATCH  /api/v2/bot/guilds/:guildId/config   { config (partial, merged), baseVersion?, by?, reason? }
+ *                                               → { guildId, version, updatedAt, config }
  *   PUT    /api/v2/bot/guilds/:guildId/meta     { name, icon, channels, roles }
  *   DELETE /api/v2/bot/guilds/:guildId          the bot left the guild
  *   GET    /api/v2/bot/changes?since=<ms>       { now, guilds }
@@ -10,7 +12,7 @@
  */
 import SCHEMA from '../bot-schema.json';
 import { ApiError, readJson, safeEqual } from './http.js';
-import { effectiveConfig } from './schema.js';
+import { effectiveConfig, applyDefaults, validate } from './schema.js';
 import { botStore } from './store.js';
 
 export { SCHEMA };
@@ -66,6 +68,54 @@ export function cleanMeta(b) {
   return { name: b.name.slice(0, 100), icon: str(b.icon, 200), channels, roles, ...(Number.isInteger(b.memberCount) ? { memberCount: b.memberCount } : {}) };
 }
 
+/**
+ * Merges a partial config into the current one (RFC 7386 style): objects are merged key by key,
+ * arrays and scalars replace, null removes the key (its schema default applies again).
+ */
+export function mergePatch(base, patch) {
+  if (!isObj(patch)) return structuredClone(patch);
+  const out = isObj(base) ? { ...base } : {};
+  for (const [k, v] of Object.entries(patch)) {
+    if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+    if (v === null) delete out[k];
+    else out[k] = isObj(v) ? mergePatch(out[k], v) : structuredClone(v);
+  }
+  return out;
+}
+
+const REASON = /^[a-z][a-z0-9_.:-]{0,39}$/;
+const PATCH_TRIES = 4;
+
+/**
+ * The bot writes what it changed itself (builder, /config, panel actions): the partial config is
+ * merged into the stored one, validated against the schema, saved as a new version (updatedBy is
+ * the bot) and the merged config is returned. Without baseVersion a concurrent save is retried on
+ * the new version (field-level merge); with baseVersion a different current version is a 409.
+ */
+async function patchConfig(request, env, guildId) {
+  const b = await readJson(request, 256 * 1024);
+  if (!isObj(b.config)) throw new ApiError(400, 'bad_config', 'config musi być obiektem (część konfiguracji do scalenia)');
+  if (b.baseVersion !== undefined && b.baseVersion !== null && (!Number.isInteger(b.baseVersion) || b.baseVersion < 0)) throw new ApiError(400, 'bad_version', 'baseVersion: liczba całkowita ≥ 0 – wersja, na której bot oparł zmianę');
+  const base = Number.isInteger(b.baseVersion) ? b.baseVersion : null;
+  const reason = typeof b.reason === 'string' && REASON.test(b.reason) ? b.reason : null;
+  const actor = isObj(b.by) && SNOWFLAKE.test(b.by.id) ? { userId: b.by.id } : {};
+  const by = { id: 'bot', name: 'Nore Bot', bot: true, ...actor, ...(reason ? { reason } : {}) };
+  const s = store(env);
+  for (let attempt = 0; attempt < PATCH_TRIES; attempt++) {
+    const cur = await s.getConfig(guildId);
+    if (base !== null && base !== cur.version) {
+      throw new ApiError(409, 'version_conflict', 'Konfiguracja zmieniła się w międzyczasie – pobierz ją jeszcze raz', { version: cur.version, updatedAt: iso(cur.updatedAt) });
+    }
+    const config = applyDefaults(mergePatch(effectiveConfig(cur.config, SCHEMA), b.config), SCHEMA);
+    const errors = validate(config, SCHEMA);
+    if (errors.length) throw new ApiError(400, 'invalid_config', `Konfiguracja ma błędy (${errors.length})`, { errors: errors.map(({ path, message, keyword }) => ({ path, pointer: path, message, keyword })) });
+    const saved = await s.saveConfig(guildId, config, cur.version, by, 'bot_config_saved');
+    if (!saved.error) return { guildId, version: saved.version, updatedAt: iso(saved.updatedAt), updatedBy: by, config };
+    if (saved.error.code !== 'version_conflict' || base !== null) unwrap({ error: { ...saved.error, updatedAt: iso(saved.error.updatedAt) } });
+  }
+  throw new ApiError(409, 'version_conflict', 'Konfiguracja zmienia się zbyt często – spróbuj za chwilę');
+}
+
 export async function botRoute(request, url, env, parts) {
   // parts: path after /api/v2/bot/
   if (parts === 'config.schema.json') return { body: { schema: SCHEMA }, raw: SCHEMA };
@@ -85,7 +135,8 @@ export async function botRoute(request, url, env, parts) {
   const sub = g[2] || '';
 
   if (sub === '/config') {
-    if (m !== 'GET') throw new ApiError(405, 'method_not_allowed', 'Tylko GET');
+    if (m === 'PATCH') return { body: await patchConfig(request, env, guildId) };
+    if (m !== 'GET') throw new ApiError(405, 'method_not_allowed', 'Tylko GET lub PATCH');
     const r = await store(env).getConfig(guildId);
     return { body: { guildId, version: r.version, updatedAt: iso(r.updatedAt), config: effectiveConfig(r.config, SCHEMA) } };
   }

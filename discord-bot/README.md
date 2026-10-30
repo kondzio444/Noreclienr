@@ -121,8 +121,12 @@ Konfiguracja każdego serwera = **wartości domyślne** ze schematu ⊕ **konfig
   co 10 minut (i po zmianach kanałów/ról) wysyła listę kanałów i ról do panelu (`PUT …/meta`).
 * Kopia konfiguracji jest zapisywana na dysku – **bot działa w pełni bez API** (zapisuje w logu jeden
   komunikat i ponawia z rosnącym odstępem, maks. 5 min).
-* `/config set klucz wartość` działa zawsze; zmiany są zgłaszane panelowi jako zdarzenie
-  `config_local_change`. Zapis w panelu, który jest nowszy od lokalnej zmiany, ma pierwszeństwo.
+* `/config set klucz wartość` działa zawsze. Wszystko, co bot zmienia sam – `/config`, **kreator**
+  (kanały, role, włączone moduły, panele ticketów…) i akcje z panelu – działa od razu, a potem jest
+  zapisywane w panelu przez `PATCH /api/v2/bot/guilds/:id/config` (po ~1,5 s, a kreator czeka na zapis
+  przed podsumowaniem). Gdy API nie odpowiada, zmiany czekają w `data/` i są wysyłane po powrocie API
+  (także po restarcie). Zapis w panelu, który jest nowszy od lokalnej zmiany, ma pierwszeństwo.
+  `/config show` najpierw dociąga z API ostatni zapis z panelu, więc pokazuje te same wartości.
 * `config.schema.json` (JSON Schema 2020-12) opisuje każde ustawienie: typ, domyślną wartość, `x-ui`
   (rodzaj pola) i `x-i18n` (klucz etykiety `panel.*` w plikach językowych). Panel buduje formularze tylko
   z niego. Po zmianie schematu: `npm run schema`.

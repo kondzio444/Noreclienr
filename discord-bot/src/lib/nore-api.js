@@ -57,6 +57,14 @@ export class NoreApi {
   }
 
   getConfig(guildId) { return this.bot('GET', `/bot/guilds/${guildId}/config`); }
+  /** Saves what the bot changed itself: `config` is partial and merged server-side (docs/bot-api.md). */
+  patchConfig(guildId, { config, baseVersion, by, reason } = {}) {
+    const body = { config };
+    if (Number.isInteger(baseVersion)) body.baseVersion = baseVersion;
+    if (by && /^\d{17,20}$/.test(String(by))) body.by = { id: String(by) };
+    if (reason) body.reason = reason;
+    return this.bot('PATCH', `/bot/guilds/${guildId}/config`, body);
+  }
   putMeta(guildId, meta) { return this.bot('PUT', `/bot/guilds/${guildId}/meta`, meta); }
   deleteGuild(guildId) { return this.bot('DELETE', `/bot/guilds/${guildId}`); }
   changes(since) { return this.bot('GET', `/bot/changes?since=${Math.max(0, Math.floor(since))}`); }
