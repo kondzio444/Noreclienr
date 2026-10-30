@@ -1,6 +1,7 @@
 'use strict';
 const { app, BrowserWindow, ipcMain, shell, dialog, safeStorage, nativeImage, session } = require('electron');
 const fs = require('fs');
+const crypto = require('crypto');
 const fsp = require('fs/promises');
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -56,20 +57,45 @@ const msLogins = new Map();
 
 // ------------------------------------------------------------------ secrets
 
-/** Tokens kept only in memory when the system has no secure storage (never written in plain text). */
-const volatileSecrets = new Map();
-
-function seal(obj, id) {
-  if (safeStorage.isEncryptionAvailable()) return { enc: safeStorage.encryptString(JSON.stringify(obj)).toString('base64') };
-  if (id) volatileSecrets.set(id, obj);
-  return { volatile: true };
+/**
+ * Tokens are encrypted with the system key store (DPAPI, Keychain, libsecret). Where there is none
+ * (Linux without a keyring) they are encrypted with AES-256-GCM and a random key in the launcher's
+ * own folder (file mode 600), so a premium session survives a restart instead of living only in
+ * memory. Never written in plain text.
+ */
+let localKey = null;
+function fallbackKey() {
+  if (localKey) return localKey;
+  const file = require('path').join(app.getPath('userData'), 'session.key');
+  try {
+    const k = fs.readFileSync(file);
+    if (k.length === 32) return (localKey = k);
+  } catch { /* first run */ }
+  localKey = crypto.randomBytes(32);
+  fs.writeFileSync(file, localKey, { mode: 0o600 });
+  return localKey;
 }
 
-function unseal(box, id) {
-  if (box && box.enc) {
-    try { return JSON.parse(safeStorage.decryptString(Buffer.from(box.enc, 'base64'))); } catch { /* another machine / user */ }
-  }
-  return (id && volatileSecrets.get(id)) || {};
+function seal(obj) {
+  const text = JSON.stringify(obj);
+  if (safeStorage.isEncryptionAvailable()) return { enc: safeStorage.encryptString(text).toString('base64') };
+  const iv = crypto.randomBytes(12);
+  const c = crypto.createCipheriv('aes-256-gcm', fallbackKey(), iv);
+  const data = Buffer.concat([c.update(text, 'utf8'), c.final()]);
+  return { gcm: Buffer.concat([iv, c.getAuthTag(), data]).toString('base64') };
+}
+
+function unseal(box) {
+  try {
+    if (box && box.enc) return JSON.parse(safeStorage.decryptString(Buffer.from(box.enc, 'base64')));
+    if (box && box.gcm) {
+      const b = Buffer.from(box.gcm, 'base64');
+      const d = crypto.createDecipheriv('aes-256-gcm', fallbackKey(), b.subarray(0, 12));
+      d.setAuthTag(b.subarray(12, 28));
+      return JSON.parse(Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'));
+    }
+  } catch { /* another machine / user, or a damaged entry */ }
+  return {};
 }
 
 /**
@@ -366,10 +392,12 @@ ipcMain.handle('accounts:msPoll', async (e, deviceCode, userCode, expiresIn, int
   const controller = msLogins.get(deviceCode);
   if (!controller) throw new Error('Sesja logowania wygasła – zacznij od nowa');
   try {
-    const token = await auth.pollDeviceCode(await msClientId(), { device_code: deviceCode, expires_in: expiresIn, interval }, { signal: controller.signal });
+    const cid = await msClientId();
+    const token = await auth.pollDeviceCode(cid, { device_code: deviceCode, expires_in: expiresIn, interval }, { signal: controller.signal });
     const mc = await auth.minecraftFromMs(token.access_token);
     const acc = { id: 'ms-' + mc.uuid, type: 'microsoft', name: mc.name, uuid: mc.uuid, skin: mc.skin, verifiedAt: Date.now() };
-    const secret = seal({ accessToken: mc.accessToken, refreshToken: token.refresh_token, expiresAt: mc.expiresAt }, acc.id);
+    // the refresh token only works with the application ID it was issued to – keep that ID with it
+    const secret = seal({ accessToken: mc.accessToken, refreshToken: token.refresh_token, expiresAt: mc.expiresAt, cid });
     store.update(d => {
       d.accounts = d.accounts.filter(a => a.id !== acc.id);
       d.accounts.push({ ...acc, secret });
@@ -393,7 +421,6 @@ ipcMain.handle('accounts:select', (e, id) => {
 });
 
 ipcMain.handle('accounts:remove', (e, id) => {
-  volatileSecrets.delete(id);
   store.update(d => {
     d.accounts = d.accounts.filter(a => a.id !== id);
     if (d.selectedAccount === id) d.selectedAccount = d.accounts[0] ? d.accounts[0].id : null;
@@ -402,7 +429,6 @@ ipcMain.handle('accounts:remove', (e, id) => {
 });
 
 ipcMain.handle('auth:logout', () => {
-  volatileSecrets.clear();
   store.update(d => { d.accounts = []; d.selectedAccount = null; });
   session.defaultSession.clearStorageData({ storages: ['cookies'] }).catch(() => {});
   return true;
@@ -433,25 +459,37 @@ ipcMain.handle('auth:status', async () => {
 });
 
 /** Returns a launch-ready account (refreshing Microsoft tokens when needed). */
+let refreshing = null; // one refresh at a time: the start-up check and Graj must not both spend the refresh token
 async function readyAccount({ force = false } = {}) {
   const d = store.get();
   const acc = d.accounts.find(a => a.id === d.selectedAccount);
   if (!acc) throw new Error('Wybierz albo dodaj konto, zanim uruchomisz grę.');
   if (acc.type === 'offline') return { ...acc, accessToken: '0' };
-  let secret = unseal(acc.secret, acc.id);
+  const secret = unseal(acc.secret);
   if (!secret.refreshToken && !secret.accessToken) {
     throw Object.assign(new Error('Sesja premium wygasła – zaloguj się ponownie.'), { auth: true });
   }
-  if (force || !secret.accessToken || !secret.expiresAt || secret.expiresAt - Date.now() < 10 * 60 * 1000) {
-    send('progress', { stage: 'Odświeżanie sesji Microsoft' });
-    const refreshed = await auth.refreshMicrosoft({ ...acc, ...secret }, await msClientId());
-    secret = { accessToken: refreshed.accessToken, refreshToken: refreshed.refreshToken, expiresAt: refreshed.expiresAt };
-    store.update(s => {
-      const a = s.accounts.find(x => x.id === acc.id);
-      if (a) { a.secret = seal(secret, acc.id); a.name = refreshed.name; a.skin = refreshed.skin; a.verifiedAt = Date.now(); }
-    });
+  if (!force && secret.accessToken && secret.expiresAt && secret.expiresAt - Date.now() >= 10 * 60 * 1000) {
+    return { ...acc, accessToken: secret.accessToken };
   }
-  return { ...acc, accessToken: secret.accessToken };
+  if (!refreshing) refreshing = refreshSession(acc, secret).finally(() => { refreshing = null; });
+  const fresh = await refreshing;
+  return { ...acc, ...fresh };
+}
+
+async function refreshSession(acc, secret) {
+  send('progress', { stage: 'Odświeżanie sesji Microsoft' });
+  const save = (patch, extra) => store.update(s => {
+    const a = s.accounts.find(x => x.id === acc.id);
+    if (a) { a.secret = seal({ ...unseal(a.secret), ...patch }); Object.assign(a, extra || {}); }
+  });
+  const cid = secret.cid || await msClientId();
+  // the Microsoft refresh token rotates: store the new one before anything else can fail
+  const ms = await auth.refreshMsToken(secret.refreshToken, cid);
+  save({ refreshToken: ms.refreshToken, cid });
+  const mc = await auth.minecraftFromMs(ms.accessToken);
+  save({ accessToken: mc.accessToken, expiresAt: mc.expiresAt }, { name: mc.name, skin: mc.skin, verifiedAt: Date.now() });
+  return { accessToken: mc.accessToken, name: mc.name, skin: mc.skin };
 }
 
 // ------------------------------------------------------------------ IPC: versions & instances
