@@ -13,7 +13,8 @@ const read = (f) => fs.readFileSync(path.join(R, f), 'utf8');
 test('renderer tokens.css is the generated design/tokens.css', () => {
   const sync = require('../scripts/sync-tokens');
   if (!fs.existsSync(sync.SRC)) return; // packaged outside the monorepo
-  assert.strictEqual(fs.readFileSync(sync.DST, 'utf8'), sync.expected(), 'run node scripts/sync-tokens.js');
+  const lf = (t) => t.replace(/\r\n/g, '\n'); // Windows checkouts may use CRLF
+  assert.strictEqual(lf(fs.readFileSync(sync.DST, 'utf8')), lf(sync.expected()), 'run node scripts/sync-tokens.js');
 });
 
 test('fonts are self-hosted woff2 with their OFL licences, nothing remote', () => {
