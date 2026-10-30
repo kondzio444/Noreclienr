@@ -106,6 +106,12 @@ export function openapi() {
         responses: { 200: ok('Wynik', { server: ref('Server') }), ...NOT_MODIFIED, ...pick(400, 403, 429) },
       } },
       '/api/v2/servers/{address}/favicon': { get: { tags: ['public'], summary: 'Ikona serwera', parameters: [p('address', s)], responses: { 200: { description: 'PNG', content: { 'image/png': {} } }, ...pick(400, 403, 404, 429) } } },
+      '/api/v2/presence': { post: {
+        tags: ['public'], summary: 'Nore Client w grze (licznik online)',
+        description: 'Gra z Nore Client wysyła co 60 s { sid, online: true, name?, mc?, version? } i { sid, online: false } przy wyjściu. sid to losowy identyfikator sesji gry (16–64 hex). Najwyżej raz na 20 s na sesję.',
+        requestBody: { required: true, content: { 'application/json': { schema: obj({ sid: s, online: b, name: s, mc: s, version: s }) } } },
+        responses: { 200: ok('Przyjęto', {}), ...pick(400, 429) },
+      } },
       '/api/v2/stats': { get: {
         tags: ['public'], summary: 'Statystyki',
         responses: { 200: ok('Statystyki', {

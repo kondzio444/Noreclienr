@@ -31,9 +31,10 @@ public class TextBox {
     public void render(Gfx ctx, float x, float y, float w, float h, String icon) {
         focusAnim.target(focused ? 1 : 0);
         float f = focusAnim.update();
-        float r = Theme.radius();
-        Render2D.roundedRect(ctx, x, y, w, h, r, Theme.CARD);
-        Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.lerp(Theme.OUTLINE, Theme.accent(), f));
+        // Album input: a recessed slot well, focus = accent ring
+        float r = Math.min(3, h / 2f);
+        Render2D.roundedRect(ctx, x, y, w, h, r, Theme.SLOT);
+        if (f > 0.01f) Render2D.roundedOutline(ctx, x - 1, y - 1, w + 2, h + 2, r + 1, 1, ColorUtil.withAlpha(Theme.accent(), (int) (255 * f)));
         float tx = x + 7;
         if (SEARCH_ICON.equals(icon)) {
             int ic = ColorUtil.lerp(Theme.TEXT_MUTED, Theme.accent(), f);
@@ -54,7 +55,7 @@ public class TextBox {
             Render2D.text(ctx, shown, tx, y + (h - 8) / 2f, Theme.TEXT, false);
         }
         if (focused && (System.currentTimeMillis() / 500) % 2 == 0) {
-            Render2D.rect(ctx, tx + Render2D.textWidth(shown) + 1, y + (h - 10) / 2f, 1, 10, Theme.accent());
+            Render2D.rect(ctx, tx + Render2D.textWidth(shown) + 1, y + (h - 10) / 2f, 1, 10, Theme.accentLight());
         }
     }
 

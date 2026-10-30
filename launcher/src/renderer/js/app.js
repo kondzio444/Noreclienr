@@ -36,8 +36,8 @@ const NAV = {
   'nav-main': [
     { id: 'home', label: 'Start', icon: 'home' },
     { id: 'instances', label: 'Instancje', icon: 'layers' },
-    { id: 'servers', label: 'Serwery', icon: 'server', badge: 'BETA' },
-    { id: 'halloween', label: 'Halloween', icon: 'sparkles', badge: 'EVENT' },
+    { id: 'servers', label: 'Serwery', icon: 'server' },
+    { id: 'halloween', label: 'Halloween', icon: 'sparkles' },
   ],
   'nav-content': [
     { id: 'modpacks', label: 'Modpacki', icon: 'box' },
@@ -48,8 +48,8 @@ const NAV = {
   ],
   'nav-social': [
     { id: 'friends', label: 'Znajomi', icon: 'users' },
-    { id: 'gallery', label: 'Galeria', icon: 'monitor' },
-    { id: 'shop', label: 'Sklep', icon: 'crown', badge: 'WKRÓTCE' },
+    { id: 'gallery', label: 'Galeria', icon: 'image' },
+    { id: 'shop', label: 'Sklep', icon: 'crown', badge: 'wkrótce' },
   ],
   'nav-launcher': [
     { id: 'accounts', label: 'Konta', icon: 'user' },
@@ -88,9 +88,8 @@ function moveIndicator() {
   ind.getAnimations().forEach(a => a.cancel());
   ind.style.transform = `translateY(${y}px)`;
   if (from != null && Math.abs(from - y) > 0.5) {
-    const dist = Math.abs(y - from);
     Motion.animate(ind, [{ transform: `translateY(${from}px)` }, { transform: `translateY(${y}px)` }],
-      { duration: Math.min(Motion.ms('--dur-page') + dist * 0.25, 460), easing: Motion.ease('--ease-spring') });
+      { duration: Motion.ms('--nore-spring-tab-dur'), easing: Motion.ease('--nore-spring-tab') });
   }
   indY = y;
 }
@@ -105,8 +104,11 @@ function setBadge(b, text) {
 function renderBadges() {
   const b = $('[data-badge="instances"]');
   if (b && App.state) { setBadge(b, App.state.instances.length); b.hidden = false; }
+  // state is a dot sticker, a count is a plain number (DESIGN.md §5 index tabs)
   const c = $('[data-badge="console"]');
-  if (c) { c.hidden = !App.running; c.textContent = 'LIVE'; }
+  if (c) { c.hidden = !App.running; if (!c.firstElementChild) c.innerHTML = '<i class="dot sm ready"></i>'; }
+  const ev = $('[data-badge="halloween"]');
+  if (ev && typeof Events === 'object') Events.railBadge(ev);
 }
 
 // ------------------------------------------------------------------ navigation: short, directional, interruptible
@@ -139,10 +141,11 @@ function ghostPage(page, dir) {
   page.inert = true;
   ghost.appendChild(page);
   main.appendChild(ghost);
-  const d = Motion.px(6);
-  const shift = { down: `0 ${-d}px`, up: `0 ${d}px`, in: `${-d * 1.5}px 0`, out: `${d * 1.5}px 0` }[dir] || '0 0';
+  const d = Motion.ms('--nore-shift-page-out');
+  const vertical = document.body.dataset.trans === 'rise';
+  const shift = { down: vertical ? `0 ${-d}px` : `${-d}px 0`, in: `${-d}px 0`, up: vertical ? `0 ${d}px` : `${d}px 0`, out: `${d}px 0` }[dir] || '0 0';
   const a = Motion.animate(ghost, [{ opacity: 1, translate: '0 0' }, { opacity: 0, translate: shift }],
-    { duration: Motion.ms('--dur-exit'), easing: Motion.ease('--ease-out'), fill: 'forwards' }); // drops fast: it is under the new page
+    { duration: Motion.ms('--nore-dur-exit'), easing: Motion.ease('--nore-ease-in'), fill: 'forwards' }); // leaves faster than the new page arrives
   if (a) a.onfinish = () => ghost.remove(); else ghost.remove();
 }
 
@@ -172,8 +175,8 @@ function renderAccountChip() {
   const chip = $('#account-chip');
   const acc = App.account();
   chip.innerHTML = acc
-    ? `${avatarHtml(acc)}<div class="meta"><b>${esc(acc.name)}</b><span>${acc.type === 'microsoft' ? '<span class="tag premium">PREMIUM</span>' : '<span class="tag offline">NON-PREMIUM</span>'}</span></div>`
-    : `${avatarHtml(null)}<div class="meta"><b>Zaloguj się</b><span>Dodaj konto, aby grać</span></div>`;
+    ? `${avatarHtml(acc)}<div class="meta"><b>${esc(acc.name)}</b><span><i class="dot sm ${acc.type === 'microsoft' ? 'ready' : 'off'}"></i>${acc.type === 'microsoft' ? 'premium' : 'bez premium'}</span></div>`
+    : `${avatarHtml(null)}<div class="meta"><b>Bez konta</b><span><i class="dot sm off"></i>nick podasz przy grze</span></div>`;
 }
 
 // ------------------------------------------------------------------ launching (shared by pages)
@@ -181,17 +184,19 @@ function renderAccountChip() {
 async function launchSelected(instance, opts) {
   const inst = instance || App.instance();
   if (!inst) return toast('Brak instancji', 'Utwórz instancję, aby zagrać.', 'error');
+  // login is never forced: without an account the player just types a nick (non-premium) and plays
   if (!App.account()) {
-    toast('Brak konta', 'Dodaj konto premium albo non-premium.', 'error');
-    return go('accounts');
+    return offlineLoginModal(() => { if (App.account()) launchSelected(inst, opts); });
   }
   App.logs = [];
+  App.lastLaunchError = null;
   try {
     App.progress = { stage: 'Przygotowywanie…' };
     App.emit();
     await nore.game.launch(inst.id, opts || {});
     toast('Uruchamianie', `${inst.name} • ${inst.mcVersion}${opts && opts.joinServer ? ` → ${opts.joinServer}` : ''}`, 'success');
   } catch (e) {
+    App.lastLaunchError = e;
     App.progress = null;
     App.emit();
     errorToast(e, 'Nie udało się uruchomić gry');
@@ -201,9 +206,9 @@ async function launchSelected(instance, opts) {
 // ------------------------------------------------------------------ onboarding wizard 1.4 Beta (first-run experience)
 
 const WIZ_STEPS = [
-  { id: 'welcome', name: 'Witaj', desc: 'Nore Launcher 1.4 Beta', icon: 'sparkles' },
-  { id: 'account', name: 'Konto', desc: 'Premium lub non-premium', icon: 'user' },
-  { id: 'look', name: 'Wygląd', desc: 'Kolor akcentu i tło', icon: 'image' },
+  { id: 'welcome', name: 'Witaj', desc: 'Twój album Nore', icon: 'sparkles' },
+  { id: 'account', name: 'Nick', desc: 'Bez logowania lub premium', icon: 'user' },
+  { id: 'look', name: 'Wygląd', desc: 'Kolor okładki i tło', icon: 'image' },
   { id: 'memory', name: 'Pamięć RAM', desc: 'Ile pamięci dla gry', icon: 'cpu' },
   { id: 'install', name: 'Instalacja', desc: 'Minecraft + Nore Client', icon: 'download' },
   { id: 'done', name: 'Gotowe', desc: 'Czas na grę', icon: 'check' },
@@ -215,8 +220,8 @@ function onboarding() {
     const wiz = el(`<div class="wizard wz14">
       <div class="wz-aura"><i></i><i></i><i></i></div>
       <aside class="wz-rail">
-        <div class="wz-brand"><img src="assets/logo.png" alt=""><div><b>NORE</b><small>LAUNCHER</small></div><span class="ver-chip">1.4 BETA</span></div>
-        <div class="wz-label">KREATOR KONFIGURACJI</div>
+        <div class="wz-brand"><span class="logo-sticker"><img src="assets/album/logo-art.png" alt=""></span><div><b>Nore</b><small>Launcher ${esc(String(App.info.version || '').split('.').slice(0, 2).join('.'))}</small></div></div>
+        <div class="wz-label">Pierwsze kroki</div>
         <nav class="wz-steps">
           <div class="wz-line"><i></i></div>
           ${WIZ_STEPS.map((s, i) => `<button class="wz-st" data-i="${i}" tabindex="-1"><span class="dot">${icon(s.icon)}<span class="num">${i + 1}</span></span><span class="txt"><b>${esc(s.name)}</b><small>${esc(s.desc)}</small></span></button>`).join('')}
@@ -279,7 +284,7 @@ function onboarding() {
       $$('.wz-in', pane).forEach((c, i) => c.style.setProperty('--d', (120 + i * 70) + 'ms'));
     };
 
-    const head = (eyebrow, title, lead) => `<div class="wz-eyebrow wz-in">${eyebrow}</div><h2 class="wz-in">${title}</h2>${lead ? `<p class="lead wz-in">${lead}</p>` : ''}`;
+    const head = (eyebrow, title, lead) => `${eyebrow ? `<div class="wz-eyebrow wz-in">${eyebrow}</div>` : ''}<h2 class="wz-in">${title}</h2>${lead ? `<p class="lead wz-in">${lead}</p>` : ''}`;
     const navRow = (left, right) => `<div class="wz-nav wz-in">${left || '<span></span>'}${right || ''}</div>`;
     const backBtn = `<button class="btn ghost" data-back>${icon('arrowLeft')} Wstecz</button>`;
     const bind = (pane) => { $$('[data-back]', pane).forEach(b => b.addEventListener('click', back)); };
@@ -295,17 +300,16 @@ function onboarding() {
       // 1 — welcome
       (pane) => {
         pane.innerHTML = `<div class="wz-body wz-welcome">
-          <div class="wz-logo wz-in"><span class="halo"></span><span class="ring"></span><img src="assets/logo.png" alt=""></div>
-          <div class="wz-eyebrow wz-in">${icon('sparkles')} NOWA WERSJA</div>
-          <h2 class="wz-in">Nore Launcher <span>1.4 Beta</span></h2>
-          <p class="lead wz-in">Nowy ekran główny, znajomi, galeria, auto-naprawa instancji i własny klient PvP.
-          Skonfigurujmy wszystko — zajmie to mniej niż minutę.</p>
+          <div class="wz-logo wz-in"><img src="assets/album/logo-art.png" alt=""></div>
+          <h2 class="wz-in">Twój album <span>Nore</span></h2>
+          <p class="lead wz-in">Instancje, mody, znajomi i nagrody z wydarzeń – wszystko to naklejki w Twoim albumie.
+          Ustawmy go – zajmie to mniej niż minutę. Logowanie nie jest wymagane.</p>
           <div class="wz-chips wz-in">
             <div class="wz-chip"><span class="ic">${icon('zap')}</span><div><b>Nore Client</b><small>Klient PvP z HUD-em i FPS boostem</small></div></div>
             <div class="wz-chip"><span class="ic">${icon('box')}</span><div><b>Modpacki</b><small>Tysiące paczek z Modrinth</small></div></div>
             <div class="wz-chip"><span class="ic">${icon('users')}</span><div><b>Znajomi</b><small>Zobacz, w co grają inni</small></div></div>
           </div>
-          <div class="wz-cta wz-in"><button class="btn play" data-enter id="w-next">ZACZYNAMY ${icon('arrowRight')}</button></div>
+          <div class="wz-cta wz-in"><button class="btn play big" data-enter id="w-next">${icon('play')} ZACZYNAMY</button></div>
         </div>`;
         $('#w-next', pane).addEventListener('click', next);
       },
@@ -314,15 +318,15 @@ function onboarding() {
       (pane) => {
         const acc = App.account();
         pane.innerHTML = `<div class="wz-body">
-          ${head(`${icon('user')} KROK 2 · KONTO`, 'Twoje <span>konto</span>', 'Zaloguj się kontem Microsoft (premium) albo graj bez premium, podając tylko nick. Konto możesz zmienić później w zakładce Konta.')}
-          ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'Premium (Microsoft)' : 'Non-premium'} · zalogowano</small></div>${icon('check', 'ok')}</div>` : ''}
+          ${head('', 'Czyj to <span>album?</span>', 'Wystarczy nick – grasz od razu, bez logowania. Konto Microsoft (premium) możesz dodać teraz albo kiedyś w zakładce Konta.')}
+          ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'premium (Microsoft)' : 'bez premium'} · gotowe</small></div>${icon('check', 'ok')}</div>` : ''}
           <div class="login-options wz-in">
+            <div class="card hover login-option primary" id="w-off">
+              <div class="ico">${icon('user')}</div>
+              <h3>Graj na nicku</h3><p>Bez premium: singleplayer, LAN i serwery z wyłączonym online-mode.</p><span class="go">${icon('arrowRight')}</span></div>
             <div class="card hover login-option ms" id="w-ms">
               <div class="ico"><div class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></div></div>
-              <h3>Microsoft (premium)</h3><p>Pełny dostęp do serwerów online-mode, Twój skin i peleryna.</p><span class="go">${icon('arrowRight')}</span></div>
-            <div class="card hover login-option" id="w-off">
-              <div class="ico" style="background:rgba(var(--accent-rgb),.15);color:var(--accent)">${icon('user')}</div>
-              <h3>Non-premium</h3><p>Gra z dowolnym nickiem — singleplayer, LAN i serwery offline-mode.</p><span class="go">${icon('arrowRight')}</span></div>
+              <h3>Konto Microsoft</h3><p>Premium: serwery online-mode, Twój skin i peleryna.</p><span class="go">${icon('arrowRight')}</span></div>
           </div>
           ${navRow(backBtn, acc ? `<button class="btn" data-enter id="w-skip">Dalej ${icon('arrowRight')}</button>` : `<button class="btn ghost" data-enter id="w-skip">Pomiń ${icon('arrowRight')}</button>`)}
         </div>`;
@@ -336,9 +340,9 @@ function onboarding() {
       (pane) => {
         const s = App.state.settings;
         const scenes = Background.SCENES.filter(sc => sc.id !== 'custom');
-        const cur = scenes.some(sc => sc.id === s.bgScene) ? s.bgScene : 'photo';
+        const cur = scenes.some(sc => sc.id === s.bgScene) ? s.bgScene : 'minimal';
         pane.innerHTML = `<div class="wz-body">
-          ${head(`${icon('image')} KROK 3 · WYGLĄD`, 'Twój <span>styl</span>', 'Wybierz kolor akcentu i tło launchera. Zmiany widzisz od razu — także w tle za kreatorem.')}
+          ${head('', 'Kolor <span>okładki</span>', 'Akcent barwi okładkę albumu, naklejkę Graj i logo. Zmiany widzisz od razu.')}
           <div class="wz-look wz-in">
             <div class="wz-look-opts">
               <div class="look-label">Kolor akcentu</div>
@@ -387,7 +391,7 @@ function onboarding() {
         const recMb = Math.min(rec, maxMem);
         const presets = [2048, 4096, 6144, 8192];
         pane.innerHTML = `<div class="wz-body">
-          ${head(`${icon('cpu')} KROK 4 · PAMIĘĆ`, 'Pamięć <span>RAM</span>', `Ile pamięci przydzielić grze? Twój komputer ma <b>${(total / 1024).toFixed(1)} GB</b>. Dla Nore Client z modami polecamy 4–6 GB.`)}
+          ${head('', 'Pamięć <span>RAM</span>', `Ile pamięci przydzielić grze? Twój komputer ma <b>${(total / 1024).toFixed(1)} GB</b>. Dla Nore Client z modami polecamy 4–6 GB.`)}
           <div class="wz-mem wz-in">
             <div class="wz-mem-top"><div class="big" id="w-memv"></div><div class="state" id="w-mems"></div></div>
             <input type="range" class="slider" id="w-mem" min="1024" max="${maxMem}" step="512" value="${memory}">
@@ -442,15 +446,15 @@ function onboarding() {
         const inst = App.instance();
         pane.innerHTML = `<div class="wz-body wz-done">
           <div class="wz-confetti"></div>
-          <div class="wz-logo small wz-in"><span class="halo"></span><span class="ring"></span><img src="assets/logo.png" alt=""></div>
-          <h2 class="wz-in">Wszystko <span>gotowe!</span></h2>
+          <div class="wz-logo small wz-in"><img src="assets/album/logo-art.png" alt=""></div>
+          <h2 class="wz-in">Album <span>gotowy</span></h2>
           <p class="lead wz-in">${installed ? `Instancja <b>${esc(inst ? inst.name : 'Nore Client')}</b> jest zainstalowana.` : 'Brakujące pliki pobiorą się przy pierwszym uruchomieniu.'} Kliknij GRAJ na stronie głównej, aby zacząć.</p>
           <div class="wz-summary wz-in">
             <div class="sum"><span class="ic">${icon('user')}</span><div><small>Konto</small><b>${acc ? esc(acc.name) : 'Dodasz później'}</b><em>${acc ? (acc.type === 'microsoft' ? 'Premium' : 'Non-premium') : 'Zakładka Konta'}</em></div></div>
             <div class="sum"><span class="ic sw" style="--c1:${ac.b};--c2:${ac.d}"></span><div><small>Wygląd</small><b>${esc(ac.name)}</b><em>Tło: ${esc(sc.name)}</em></div></div>
             <div class="sum"><span class="ic">${icon('cpu')}</span><div><small>Pamięć RAM</small><b>${(memory / 1024).toFixed(memory % 1024 ? 1 : 0)} GB</b><em>z ${(total / 1024).toFixed(1)} GB</em></div></div>
           </div>
-          <div class="wz-cta wz-in"><button class="btn play" data-enter id="w-done">${icon('play')} DO GRY</button></div>
+          <div class="wz-cta wz-in"><button class="btn play big" data-enter id="w-done">${icon('play')} DO GRY</button></div>
         </div>`;
         if (!document.body.classList.contains('no-anim')) {
           const box = $('.wz-confetti', pane);
@@ -567,6 +571,42 @@ function renderInstallStep(content, next) {
   };
 }
 
+// ------------------------------------------------------------------ motion setting + app launch storyboard
+
+/** "Animacje": full | reduced (fades only, like prefers-reduced-motion) | off. Older configs only had the boolean. */
+function motionMode(s) {
+  if (s && ['full', 'reduced', 'off'].includes(s.motion)) return s.motion;
+  return s && s.animations === false ? 'off' : 'full';
+}
+function applyMotionSetting(s) {
+  const m = motionMode(s);
+  document.body.classList.toggle('no-anim', m === 'off');
+  document.body.classList.toggle('motion-reduced', m === 'reduced');
+  if (typeof Embers === 'object') Embers.setEnabled(m !== 'off');
+}
+
+/** design/README.md "App launch" (dur.launch 900 ms): the accent-dyed cover fills the window, the logo
+    sticker sticks at its centre, the cover narrows into the 224 px rail and the page sticks in.
+    Reduced motion / animations off: a 200 ms crossfade. `ready` renders Start under the cover. */
+function launchStoryboard(ready) {
+  const sp = $('#splash');
+  const done = () => { sp.classList.add('hide'); sp.remove(); window.dispatchEvent(new Event('nore:launched')); };
+  if (Motion.off() || Motion.reduced()) {
+    ready();
+    const a = Motion.animate(sp, [{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'linear', fill: 'forwards' });
+    if (a) a.onfinish = done; else done();
+    return;
+  }
+  sp.style.setProperty('--rail-scale', (($('#sidebar').offsetWidth || 224) / Math.max(1, window.innerWidth)).toFixed(4));
+  sp.classList.add('go');
+  setTimeout(ready, 380);                                   // the page sticks in from ~420 ms
+  setTimeout(() => sp.classList.add('leave'), 560);          // the logo sticker settles into the rail brand
+  setTimeout(() => {
+    const a = Motion.animate(sp, [{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: 'linear', fill: 'forwards' });
+    if (a) a.onfinish = done; else done();
+  }, Math.max(740, Motion.ms('--nore-dur-launch') - 160));
+}
+
 // ------------------------------------------------------------------ boot
 
 (async function boot() {
@@ -597,15 +637,21 @@ function renderInstallStep(content, next) {
   nore.update.state().then(renderUpdate).catch(() => {});
   await applyAppearance(App.state.settings);
   loadInstanceMedia().then(() => App.emit());
-  document.body.classList.toggle('no-anim', !App.state.settings.animations);
-  Embers.setEnabled(App.state.settings.animations);
+  applyMotionSetting(App.state.settings);
+  Events.init();
+  $('#lb-ver').textContent = 'Launcher ' + String(App.info.version || '').split('.').slice(0, 2).join('.');
 
   const online = navigator.onLine;
   $('#net-status').innerHTML = online ? '<span class="dot"></span><span>Online</span>' : '<span class="dot off"></span><span>Offline</span>';
 
-  go('home');
-  setTimeout(() => $('#splash').classList.add('hide'), 900);
+  launchStoryboard(() => go('home'));
   window.addEventListener('resize', moveIndicator);
+  // a rail longer than the window scrolls; a soft fade at its foot says there is more
+  const sb = $('.sb-scroll');
+  const railFade = () => sb.classList.toggle('more', sb.scrollHeight - sb.scrollTop - sb.clientHeight > 4);
+  sb.addEventListener('scroll', railFade, { passive: true });
+  window.addEventListener('resize', railFade);
+  setTimeout(railFade, 600);
   if (App.state.firstRun) {
     setTimeout(async () => { await onboarding(); await App.refresh(); go('home'); }, 1100);
   }

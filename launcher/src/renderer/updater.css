@@ -1,80 +1,110 @@
-/* Nore Updater – the same server list world as the launcher: tooltip violet-black,
-   flat panels, § colour codes for state, condensed caps for the title. */
-@font-face { font-family: 'Inter'; font-weight: 400 800; src: url(assets/fonts/Inter-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Inter'; font-weight: 400 800; src: url(assets/fonts/Inter-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA; }
-@font-face { font-family: 'Archivo'; font-weight: 500 900; font-stretch: 62% 125%; src: url(assets/fonts/Archivo-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: 'Archivo'; font-weight: 500 900; font-stretch: 62% 125%; src: url(assets/fonts/Archivo-latin-ext.woff2) format('woff2'); unicode-range: U+0100-02BA; }
-@font-face { font-family: 'Silkscreen'; font-weight: 400; src: url(assets/fonts/Silkscreen-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+2000-206F; }
-
-:root {
-  --bg: #0d0913;
-  --panel: #150f1e;
-  --rail: #170c26;
-  --line: rgba(190, 160, 255, .14);
-  --text: #f3eefa;
-  --dim: #b8adc9;
-  --muted: #8f84a3;
-  --accent: #9d5cff;
-  --accent2: #c8a8ff;
-  --ok: #55ff55;
-  --warn: #ffff55;
-  --bad: #ff5555;
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; }
+/* Nore Updater – the album cover with a sticker pack (design/mocks/updater.html, 400×480 frameless).
+   Tokens from tokens.css; the updater runs before the settings load, so it uses the default accent. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
 body {
-  background: var(--bg); color: var(--text);
-  font: 13px/1.45 'Inter', 'Segoe UI', system-ui, sans-serif;
-  user-select: none; display: flex; flex-direction: column;
-  border: 1px solid rgba(157, 92, 255, .45);
+  display: flex; flex-direction: column; align-items: center;
+  font: 400 14px/1.45 var(--nore-font-text); color: var(--nore-cover-ink); user-select: none; -webkit-font-smoothing: antialiased;
+  background-color: var(--nore-cover);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .06' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.6 -.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.10'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.06 .9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.22'/%3E%3C/svg%3E");
 }
-::selection { background: rgba(157, 92, 255, .45); }
-.drag { position: fixed; inset: 0 0 auto; height: 34px; -webkit-app-region: drag; z-index: 5; }
-#stars { display: none; }
+.drag { position: fixed; inset: 0 0 auto 0; height: 44px; -webkit-app-region: drag; }
+button { -webkit-app-region: no-drag; font: inherit; color: inherit; }
+.close { position: fixed; right: 8px; top: 8px; z-index: 2; width: 30px; height: 26px; border: 0; border-radius: 8px; background: none; color: var(--nore-cover-ink-soft); display: grid; place-items: center; cursor: pointer; }
+.close:hover { background: var(--nore-cover-tab); color: var(--nore-cover-ink); }
+.close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 
-.card { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: stretch; padding: 40px 32px 0; text-align: left; animation: rise .4s cubic-bezier(.16, 1, .3, 1) both; }
-@keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+.stage { display: flex; flex-direction: column; align-items: center; width: 100%; }
 
-/* the logo sits where a server icon sits in the server list */
-.orb { position: relative; width: 84px; height: 84px; margin: 0 0 22px; }
-.ring, .glow, .pct { display: none; }
-.logo { position: absolute; inset: 0; width: 84px; height: 84px; image-rendering: auto; filter: hue-rotate(238deg); transition: opacity .25s, transform .25s; }
-.check { position: absolute; inset: 0; width: 84px; height: 84px; opacity: 0; background: rgba(85, 255, 85, .1); border: 1px solid rgba(85, 255, 85, .45); }
-.check path { fill: none; stroke: var(--ok); stroke-width: 4; stroke-linecap: square; stroke-linejoin: miter; stroke-dasharray: 48; stroke-dashoffset: 48; }
-body.done .logo { opacity: 0; transform: scale(.9); }
-body.done .check { opacity: 1; }
-body.done .check path { animation: draw .45s .1s ease forwards; }
-@keyframes draw { to { stroke-dashoffset: 0; } }
+/* ------------------------------------------------------------------ the sticker pack */
+.pack { --p: 0%; position: relative; width: 210px; height: 252px; margin-top: 30px; rotate: -3deg; transform-origin: 50% 0; transition: scale var(--nore-dur-page) var(--nore-ease-out); }
+body.opened .pack { scale: .86; }
+body.opened .status { margin-top: -22px; }
+.pack .flap { position: absolute; left: 0; top: 0; width: 210px; height: 34px; transform-origin: 100% 100%; }
+.pack .flap svg, .pack svg.body { position: absolute; width: 100%; display: block; overflow: visible; }
+.pack .flap svg { inset: 0; height: 34px; }
+.pack svg.body { left: 0; top: 34px; height: 218px; }
+.pack .foil { fill: var(--nore-page); stroke: var(--nore-vinyl); stroke-width: 3; stroke-linejoin: round; }
+.pack .seam { fill: var(--nore-page-raised); }
+.pack .sheen { fill: var(--nore-vinyl); opacity: .05; }
+/* the tear strip is the progress bar: the torn part (accent) curls up and follows the download */
+.tear { position: absolute; left: 0; right: 0; top: 30px; height: 14px; z-index: 2; }
+.tear .torn { position: absolute; left: -2px; top: 0; height: 12px; width: var(--p); max-width: 100%; background: var(--nore-accent); border-radius: 2px 6px 6px 2px; transform-origin: right bottom; rotate: -4deg; translate: 0 -5px;
+  box-shadow: 0 6px 10px -4px rgba(0, 0, 0, .6); transition: width var(--nore-dur-base) var(--nore-ease-out); }
+.tear .torn::after { content: ''; position: absolute; right: -4px; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--nore-vinyl); }
+.tear .rest { position: absolute; left: var(--p); right: 6px; top: 5px; height: 0; border-top: 2px dashed color-mix(in oklab, var(--nore-ink) 35%, transparent); transition: left var(--nore-dur-base) var(--nore-ease-out); }
+body:not(.is-progress):not(.is-done) .tear .torn { opacity: 0; }
+.front { position: absolute; inset: 52px 0 26px; display: flex; flex-direction: column; align-items: center; z-index: 1; }
+.logo-sticker { display: inline-block; background: url(assets/album/logo-rim.png) center / contain no-repeat; }
+.logo-sticker img { display: block; width: 88px; height: 88px; filter: hue-rotate(238deg); }
+.front h1 { margin: 12px 0 9px; max-width: 190px; text-align: center; font: 400 21px/1.05 var(--nore-font-display); letter-spacing: -.01em; color: var(--nore-ink); text-wrap: balance; }
+.label { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 7px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); box-shadow: 0 0 0 2px var(--nore-vinyl); font: 600 12.5px/1 var(--nore-font-text); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.label.nore { background: var(--nore-accent-deep); color: #fff; }
+.label.dark { background: var(--nore-page); color: var(--nore-ink); height: 20px; font-size: 11.5px; }
+.front .label { rotate: 3deg; }
+.label[hidden] { display: none; }
+/* opened: the new version sticker sticks out of the pack (spring.soft) */
+.out { position: absolute; left: 50%; top: -6px; z-index: 3; translate: -50% 0; opacity: 0; pointer-events: none; }
+.out .label.big { height: 40px; padding: 0 18px; border-radius: 11px; font: 400 18px/1 var(--nore-font-display); box-shadow: 0 0 0 4px var(--nore-vinyl); rotate: -4deg; }
 
-h1 { margin: 0 0 6px; font: 900 34px/1 'Archivo', 'Segoe UI', sans-serif; font-stretch: 72%; letter-spacing: .01em; text-transform: uppercase; text-wrap: balance; color: var(--text); }
-.status { margin: 0; color: var(--accent2); min-height: 19px; font-size: 13.5px; }
-body.done .status { color: var(--ok); }
-body.error .status { color: var(--bad); }
-.status.swap { animation: swap .25s ease; }
-@keyframes swap { from { opacity: 0; transform: translateY(3px); } }
-
-.bar { width: 100%; height: 12px; margin: 22px 0 8px; background: #0a0710; border: 1px solid var(--line); overflow: hidden; opacity: 0; transition: opacity .2s; }
-.bar i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s ease; }
-body.installing .bar i { background: var(--warn); }
-body.progress .bar { opacity: 1; }
-.meta { margin: 0; min-height: 17px; color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
-.notes { margin: 14px 0 0; padding: 10px 12px; max-height: 92px; overflow: hidden; color: var(--dim); font-size: 12px; white-space: pre-line; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; }
+/* ------------------------------------------------------------------ status under the pack */
+.status { margin-top: 26px; width: 320px; }
+.status small { margin-top: 6px; }
+body.opened .front .label { visibility: hidden; }
+body.opened .pack { margin-top: 46px; }
+.status b { display: flex; align-items: center; gap: 9px; font: 600 15px/1.3 var(--nore-font-text); color: var(--nore-cover-ink); }
+.dot { --c: var(--nore-dot-off); flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--nore-vinyl); }
+.dot.wait { --c: var(--nore-dot-wait); } .dot.ready { --c: var(--nore-dot-ready); } .dot.error { --c: var(--nore-dot-error); }
+.dot.slap { animation: dot-slap var(--nore-dur-base) var(--nore-ease-out); }
+.progress { margin: 0; height: 0; border-radius: 999px; overflow: hidden; background: color-mix(in oklab, var(--nore-cover) 50%, #000); opacity: 0; transition: opacity var(--nore-dur-quick); }
+body.is-progress:not(.is-done) .progress { margin: 12px 0 9px; height: 8px; }
+.progress i { display: block; height: 100%; width: 100%; border-radius: 999px; background: var(--nore-accent); transform-origin: left; transform: scaleX(var(--v, 0)); transition: transform var(--nore-dur-base) var(--nore-ease-out); }
+body.is-progress:not(.is-done) .progress { opacity: 1; }
+.status small { display: flex; justify-content: space-between; min-height: 17px; font: 500 12.5px/1.3 var(--nore-font-text); color: var(--nore-cover-ink-soft); font-variant-numeric: tabular-nums; }
+.notes { list-style: none; margin-top: 10px; display: grid; gap: 6px; }
+.notes li { display: flex; gap: 9px; font: 500 13px/1.4 var(--nore-font-text); color: var(--nore-cover-ink); }
+.notes li::before { content: ''; flex: none; width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--nore-accent); box-shadow: 0 0 0 1.5px var(--nore-vinyl); }
 .notes:empty { display: none; }
+.actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; white-space: nowrap; }
+.btn { height: 36px; padding: 0 16px; border: 0; border-radius: 999px; cursor: pointer; font: 600 13.5px/1 var(--nore-font-text); background: var(--nore-cover-tab); color: var(--nore-cover-ink); transition: scale var(--nore-dur-tap) var(--nore-ease-out), background-color var(--nore-dur-quick); }
+.btn:hover { background: color-mix(in oklab, var(--nore-cover-tab) 80%, #fff); }
+.btn:active { scale: .97; }
+.btn.quiet { background: none; color: var(--nore-cover-ink-soft); }
+.btn.quiet:hover { color: var(--nore-cover-ink); background: var(--nore-cover-tab); }
+.btn.primary { background: var(--nore-accent-deep); color: #fff; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.btn[hidden] { display: none; }
+:focus-visible { outline: 2px solid var(--nore-accent-light); outline-offset: 3px; }
+footer { margin-top: auto; width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; font: 500 12px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+footer .label:empty { display: none; }
 
-.actions { margin-top: auto; padding-bottom: 16px; display: flex; gap: 8px; justify-content: flex-end; }
-button { font: 600 12.5px 'Inter', sans-serif; border-radius: 4px; padding: 0 14px; height: 34px; cursor: pointer; transition: background .15s, border-color .15s; -webkit-app-region: no-drag; }
-button:active { transform: translateY(1px); }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.ghost { background: rgba(255, 255, 255, .03); color: var(--dim); border: 1px solid var(--line); }
-.ghost:hover { background: rgba(255, 255, 255, .07); color: var(--text); }
-.primary { background: #7a3cf0; color: #fff; border: 0; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .28); font-family: 'Archivo', sans-serif; font-stretch: 80%; font-weight: 900; font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
-.primary:hover { background: #8a52f4; }
-
-footer { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: 9px 16px 10px; color: var(--muted); font-size: 11px; background: var(--rail); border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-footer #ver { font-family: 'Silkscreen', monospace; font-size: 11px; color: #ffff55; -webkit-font-smoothing: none; }
-footer #ver:not(:empty)::before { content: '['; color: #8f84a3; }
-footer #ver:not(:empty)::after { content: ']'; color: #8f84a3; }
-
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+/* ------------------------------------------------------------------ motion (design/README.md storyboards)
+   launch (dur.launch 900 ms): the pack sticks in (spring.stick), the status line rises after it;
+   reveal (dur.reveal 1400 ms): the flap peels off, the pack settles, the version sticker sticks out (spring.soft), notes stick in. */
+@keyframes stick { from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(-3deg + var(--nore-stick-tilt)); } 40% { opacity: 1; } to { opacity: 1; scale: 1; rotate: -3deg; } }
+@keyframes rise { from { opacity: 0; translate: 0 var(--nore-shift-drop); } }
+@keyframes dot-slap { 0% { scale: 1.6; opacity: 0; } 60% { scale: .92; opacity: 1; } 100% { scale: 1; } }
+@keyframes flap-off { 35% { translate: 0 -4px; rotate: -3deg; } to { opacity: 0; translate: 60px -70px; rotate: 24deg; } }
+@keyframes pop-out { from { opacity: 0; translate: -50% 40px; scale: .7; } to { opacity: 1; translate: -50% -34px; scale: 1; } }
+@keyframes settle { 50% { translate: 0 6px; } }
+@keyframes shake { 25% { translate: -2px 0; } 75% { translate: 2px 0; } }
+body.launch .pack { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) 60ms backwards; }
+body.launch .status { animation: rise var(--nore-dur-page) var(--nore-ease-out) 420ms backwards; }
+body.launch footer { animation: rise var(--nore-dur-page) var(--nore-ease-out) 560ms backwards; }
+body.opened .flap { animation: flap-off var(--nore-dur-peel) var(--nore-ease-peel) forwards; }
+body.opened .tear { opacity: 0; transition: opacity var(--nore-dur-exit) var(--nore-ease-in); }
+body.opened .pack svg.body, body.opened .front { animation: settle 420ms var(--nore-ease-in-out) 200ms; }
+body.opened .out { animation: pop-out var(--nore-spring-soft-dur) var(--nore-spring-soft) 360ms forwards; }
+body.opened .notes li { animation: rise var(--nore-dur-page) var(--nore-ease-out) backwards; }
+body.opened .notes li:nth-child(1) { animation-delay: 900ms; } body.opened .notes li:nth-child(2) { animation-delay: 945ms; } body.opened .notes li:nth-child(3) { animation-delay: 990ms; }
+body.is-error .pack { animation: shake 60ms linear 3; }
+@media (prefers-reduced-motion: reduce) {
+  /* a static pack with a plain bar; the opening is a 200 ms crossfade */
+  body.launch .pack, body.launch .status, body.launch footer, body.is-error .pack { animation: none; }
+  body.opened .flap { animation: none; opacity: 0; transition: opacity 200ms linear; }
+  body.opened .out { animation: none; opacity: 1; translate: -50% -34px; transition: opacity 200ms linear; }
+  body.opened .notes li, body.opened .pack svg.body, body.opened .front { animation: none; }
+  .tear .torn { display: none; }
+  .tear .rest { left: 0; }
+}

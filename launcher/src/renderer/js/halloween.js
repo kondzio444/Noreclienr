@@ -1,7 +1,8 @@
 'use strict';
 /*
- * Halloween edition: a seasonal theme (15.10 – 3.11, or forced in Settings) and the
- * "Cukierek albo psikus" mini-game. Everything is drawn procedurally (pixel art on canvases),
+ * Halloween 2026: the "Cukierek albo psikus" mini-game and its reward road (accents, scenes, badges,
+ * capes). The season look itself – lights out, the torch, the poster – lives in js/events.js and is
+ * forced on by date (15.10 – 3.11). Everything is drawn procedurally (pixel art on canvases),
  * state lives in localStorage (and in memory when storage is unavailable).
  */
 (function () {
@@ -62,10 +63,10 @@
     const m = d.getMonth(), day = d.getDate();
     return (m === 9 && day >= 15) || (m === 10 && day <= 3);
   }
-  // the event is always on – it cannot be switched off
+  // forced on by date – it cannot be switched off (events.js owns the date and the preview override)
   const getMode = () => 'on';
-  const themeOn = () => { const m = getMode(); return m === 'on' || (m === 'auto' && inSeason()); };
-  const eventOpen = () => inSeason() || getMode() === 'on';
+  const themeOn = () => (typeof Events === 'object' ? Events.current() === 'halloween' : inSeason());
+  const eventOpen = themeOn;
 
   // ================================================================== pixel primitives
 
@@ -813,27 +814,7 @@
     }
   }
 
-  function decorate(on) {
-    const main = document.getElementById('main');
-    const logo = document.querySelector('.logo-block');
-    if (!on) {
-      ['hw-web', 'hw-bats'].forEach(id => { const e = document.getElementById(id); if (e) e.remove(); });
-      const p = document.getElementById('hw-logo-pk'); if (p) p.remove();
-      return;
-    }
-    ensureSprites();
-    if (main && !document.getElementById('hw-web')) {
-      main.insertAdjacentHTML('beforeend', `<div id="hw-web" aria-hidden="true"><i class="thread"></i><i class="spider"></i></div>`);
-      const bats = [[12, 26, 0, 1], [24, 34, 9, 0.8], [8, 30, 17, 1.2], [36, 40, 23, 0.7]];
-      main.insertAdjacentHTML('beforeend', `<div id="hw-bats" aria-hidden="true">${bats.map(([top, dur, delay, sc]) => `<i style="--top:${top}%;--dur:${dur}s;--delay:${delay}s;--sc:${sc}"></i>`).join('')}</div>`);
-    }
-    if (logo && !document.getElementById('hw-logo-pk')) logo.insertAdjacentHTML('beforeend', '<span id="hw-logo-pk" title="Halloween w Nore!"></span>');
-  }
-
-  function syncTint() {
-    const s = (typeof App === 'object' && App.state && App.state.settings) || {};
-    document.body.classList.toggle('hw-tint', themeOn() && (s.accentPreset || 'orange') === 'orange');
-  }
+  function syncTint() { /* the Album keeps the user's accent during events */ }
 
   function syncNav() {
     const a = document.querySelector('a[data-page="halloween"]');
@@ -850,7 +831,6 @@
     if (on === themeActive) return;
     themeActive = on;
     document.body.classList.toggle('halloween', on);
-    decorate(on);
   }
 
   // ------------------------------------------------------------------ account badge + cursor glow
@@ -895,74 +875,26 @@
     } catch (e) { errorToast(e, 'Wygląd'); }
   }
 
-  // ------------------------------------------------------------------ home hero banner
-
-  function heroSky(hero) {
-    const c = document.createElement('canvas');
-    c.className = 'hw-hero-sky';
-    const w = 240, h = clamp(Math.round(w * (hero.clientHeight || 300) / Math.max(280, (hero.clientWidth || 900) * 0.7)), 60, 260);
-    c.width = w; c.height = h;
-    const g = c.getContext('2d');
-    const gy = h - 8;
-    drawNight(g, w, h, gy, 0, true, { stars: starField(21, w, gy - 20, Math.round(w * h / 160)), moonX: 0.6, moonY: 0.17, moonR: Math.max(8, Math.round(h * 0.11)) });
-    R(g, 0, gy, w, h - gy, '#120b1c');
-    drawTree(g, Math.round(w * 0.56), gy, Math.round(h * 0.5), 8, '#0a0612');
-    drawTree(g, Math.round(w * 0.97), gy, Math.round(h * 0.62), 13, '#0a0612');
-    for (let i = 0; i < 4; i++) { const x = Math.round(w * 0.62 + i * 12); R(g, x, gy - 6 + (i % 2), 4, 6 + (i % 2), '#0b0712'); R(g, x + 1, gy - 7 + (i % 2), 2, 1, '#0b0712'); }
-    return c;
-  }
-
-  function injectHero(root) {
-    const hero = root.querySelector('.h14-hero');
-    if (!hero || hero.querySelector('.hw-hero-event')) return;
-    const u = ensureSprites();
+  /** Reward-road extras for the event sheet in Settings (badge next to the nick, pumpkin cursor glow). */
+  function rewardsSettings() {
     const st = load();
-    regen(st);
-    hero.classList.add('hw-hero');
-    const shade2 = hero.querySelector('.h14-shade');
-    hero.insertBefore(heroSky(hero), shade2 || hero.firstChild);
-    const eb = hero.querySelector('.eyebrow');
-    if (eb) eb.insertAdjacentHTML('beforeend', `<span class="hw-chip">${pxImg(u.small)} HALLOWEEN</span>`);
-    const daily = st.daily.last !== dayKey();
-    hero.insertAdjacentHTML('beforeend', `<button class="hw-hero-event" title="Otwórz wydarzenie Halloween">
-        <span class="hw-bubble"><b>Wydarzenie Halloween</b> – Cukierek albo psikus!
-          <small>${daily ? 'Nagroda dnia czeka · ' : ''}${st.mana}/${MANA_MAX} many – czas pukać do sąsiadów</small>
-          <em>Zagraj ${icon('arrowRight')}</em></span>
-        <span class="hw-hero-pk">${pxImg(u.pumpkin)}</span>
-      </button>`);
-    hero.querySelector('.hw-hero-event').addEventListener('click', () => go('halloween'));
-  }
-
-  // ------------------------------------------------------------------ settings card
-
-  function settingsCard(root) {
-    const st = load();
-    const u = ensureSprites();
     const badges = Object.keys(BADGES).filter(id => owns(st, 'badge', id));
     const hasCursor = owns(st, 'cursor', 'pumpkin');
-    const card = el(`<div class="card panel hw-set-card">
-      <div class="section-title">${pxImg(u.small, 'hw-ic')} Motyw Halloween</div>
-      <div class="setting"><div class="col"><b>Motyw Halloween</b><span id="hw-set-state"></span></div><div id="hw-mode"></div></div>
-      ${badges.length ? `<div class="setting"><div class="col"><b>Odznaka przy nicku</b><span>Nagrody z drogi nagród „Cukierek albo psikus”</span></div>
-        <div class="chips" id="hw-badges"><button class="lchip ${!st.equip.badge ? 'on' : ''}" data-b="">Brak</button>${badges.map(id => `<button class="lchip ${st.equip.badge === id ? 'on' : ''}" data-b="${id}">${pxImg(u.badge[id], 'hw-ic')} ${esc(BADGES[id])}</button>`).join('')}</div></div>` : ''}
+    if (!badges.length && !hasCursor) return null;
+    const u = ensureSprites();
+    const box = el(`<div class="hw-rewards">
+      ${badges.length ? `<div class="setting"><div class="col"><b>Odznaka przy nicku</b><span>Nagrody z drogi nagród „Cukierek albo psikus”</span></div></div>
+        <div class="chips" id="hw-badges" style="padding-bottom:8px"><button class="lchip ${!st.equip.badge ? 'on' : ''}" data-b="">Brak</button>${badges.map(id => `<button class="lchip ${st.equip.badge === id ? 'on' : ''}" data-b="${id}">${pxImg(u.badge[id], 'hw-ic')} ${esc(BADGES[id])}</button>`).join('')}</div>` : ''}
       ${hasCursor ? `<div class="setting"><div class="col"><b>Dyniowa poświata kursora</b><span>Ciepłe światło podąża za myszką</span></div><label class="switch"><input type="checkbox" id="hw-cur" ${st.equip.cursor ? 'checked' : ''}><i></i></label></div>` : ''}
-      <div class="setting"><div class="col"><b>Cukierek albo psikus</b><span>Mini-gra z nagrodami: tła, akcenty, odznaki i peleryny do gry</span></div>
-        <button class="btn ghost sm" id="hw-open">${icon('sparkles')} Otwórz wydarzenie</button></div>
     </div>`);
-    const stateText = () => {
-      $('#hw-set-state', card).textContent = 'Wydarzenie Nore – zawsze włączone: dekoracje, nietoperze i nagrody przez cały rok';
-    };
-    $('#hw-mode', card).innerHTML = '<span class="tag premium">ZAWSZE WŁĄCZONY</span>';
-    stateText();
-    $$('#hw-badges .lchip', card).forEach(b => b.addEventListener('click', () => {
+    $$('#hw-badges .lchip', box).forEach(b => b.addEventListener('click', () => {
       const s2 = load(); s2.equip.badge = b.dataset.b; save(s2);
-      $$('#hw-badges .lchip', card).forEach(x => x.classList.toggle('on', x === b));
+      $$('#hw-badges .lchip', box).forEach(x => x.classList.toggle('on', x === b));
       refreshChip();
     }));
-    const cur = $('#hw-cur', card);
+    const cur = $('#hw-cur', box);
     if (cur) cur.addEventListener('change', () => { const s2 = load(); s2.equip.cursor = cur.checked; save(s2); syncCursor(); });
-    $('#hw-open', card).addEventListener('click', () => go('halloween'));
-    return card;
+    return box;
   }
 
   // ================================================================== mini-game page
@@ -1441,6 +1373,7 @@
         const t = ROAD.find(x => x.lvl === +cl.dataset.claim);
         if (!t || st.claimed.includes(t.lvl) || levelInfo(st.xp).lvl < t.lvl) return;
         st.claimed.push(t.lvl);
+        st.claimedAt = { ...(st.claimedAt || {}), [t.lvl]: Date.now() };
         st.pumpkins += t.pk;
         for (const it of t.items) if (it.type === 'badge' && !st.equip.badge) st.equip.badge = it.id;
         commit();
@@ -1526,21 +1459,12 @@
 
   // ================================================================== wiring (wrappers around existing pages/functions)
 
-  const _home = Pages.home;
-  Pages.home = (root, opts) => {
-    const c = _home(root, opts);
-    try { if (themeOn()) injectHero(root); } catch (e) { console.error('[halloween]', e); }
-    return c;
-  };
-
+  // Start: events.js renders the poster and the collection (Events.homeSlots); Settings: the event sheet
+  // (Events.decorateSettings) carries the reward-road extras built here.
   const _settings = Pages.settings;
   Pages.settings = (root, opts) => {
     const c = _settings(root, opts);
-    try {
-      const card = settingsCard(root);
-      const look = $('.look-card', root);
-      if (look) { card.style.marginTop = '16px'; look.after(card); } else root.appendChild(card);
-    } catch (e) { console.error('[halloween]', e); }
+    try { if (typeof Events === 'object') Events.decorateSettings(root, rewardsSettings()); } catch (e) { console.error('[halloween]', e); }
     return c;
   };
 
@@ -1585,9 +1509,24 @@
       decorateChip();
       const s = App.state.settings || {};
       if (HW_ACCENTS[s.accentPreset] && typeof applyAppearance === 'function') applyAppearance(s);
-      if (App.page === 'home' && themeOn()) { const page = document.querySelector('#view .page'); if (page) injectHero(page); }
     }
   } catch (e) { console.error('[halloween]', e); }
 
-  window.Halloween = { inSeason, themeOn, eventOpen, applyTheme, mode: getMode };
+  /** The Halloween series for the Start collection and the poster: capes (glow stickers) with claim dates. */
+  function collection() {
+    const st = load();
+    const at = st.claimedAt || {};
+    return Object.keys(CAPE_NAMES).map(id => {
+      const tier = ROAD.find(t => t.items.some(i => i.type === 'cape' && i.id === id));
+      const owned = owns(st, 'cape', id);
+      return { id, name: CAPE_NAMES[id], owned, lvl: tier.lvl, at: owned ? at[tier.lvl] || null : null, img: `assets/album/cape-${id}.png`, ghost: { dynia: 'pumpkin', nietoperz: 'bat', pajeczyna: 'spider' }[id] };
+    });
+  }
+  function summary() {
+    const st = load();
+    regen(st);
+    return { level: levelInfo(st.xp).lvl, pumpkins: st.pumpkins, mana: st.mana, manaMax: MANA_MAX, daily: st.daily.last !== dayKey() };
+  }
+
+  window.Halloween = { inSeason, themeOn, eventOpen, applyTheme, mode: getMode, collection, summary };
 })();

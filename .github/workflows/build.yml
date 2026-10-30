@@ -25,14 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: v
-        # every build gets its own launcher version (major.minor from package.json, patch = run number)
+        # every build gets its own launcher version (major.minor from package.json, patch = build number)
         # so an installed launcher always sees the next build as an update
         run: |
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             V="${GITHUB_REF_NAME#v}"
           else
             BASE=$(node -p "require('./launcher/package.json').version.split('.').slice(0,2).join('.')")
-            V="$BASE.$GITHUB_RUN_NUMBER"
+            # build number = run number + 1237 (Nore 1.4.5 started at build 1432); the patch must keep growing for auto-update
+            V="$BASE.$((GITHUB_RUN_NUMBER + 1237))"
           fi
           PUBLISH=false
           if [[ "$GITHUB_EVENT_NAME" != "pull_request" && ( "$GITHUB_REF" == refs/tags/v* || "$GITHUB_REF_NAME" == "${{ github.event.repository.default_branch }}" ) ]]; then

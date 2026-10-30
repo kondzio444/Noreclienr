@@ -14,7 +14,7 @@ final class HalloweenDecor {
     private HalloweenDecor() {}
 
     /** The Halloween event is forced on and cannot be switched off. */
-    static boolean active() { return true; }
+    static boolean active() { return dev.noreclient.util.Events.halloween(); }
 
     private static final String[] PUMPKIN = {
             ".....gl....",

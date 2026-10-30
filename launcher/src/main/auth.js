@@ -135,17 +135,24 @@ async function minecraftFromMs(msAccessToken) {
   };
 }
 
-async function refreshMicrosoft(account, clientId) {
+/** Microsoft refresh token → { accessToken, refreshToken } (the refresh token may rotate). */
+async function refreshMsToken(refreshToken, clientId) {
+  if (!clientId) throw new Error('Nie udało się pobrać identyfikatora aplikacji Microsoft – sprawdź połączenie z internetem i spróbuj ponownie.');
   const { json } = await postForm(MS_TOKEN, {
-    grant_type: 'refresh_token', client_id: clientId, refresh_token: account.refreshToken, scope: SCOPE,
+    grant_type: 'refresh_token', client_id: clientId, refresh_token: refreshToken, scope: SCOPE,
   });
   if (!json.access_token) {
     const err = new Error(msError(json, 'Sesja Microsoft wygasła – zaloguj się ponownie.'));
     if (json.error) err.auth = true; // refresh token revoked or expired: the user has to log in again
     throw err;
   }
-  const mc = await minecraftFromMs(json.access_token);
-  return { ...account, ...mc, refreshToken: json.refresh_token || account.refreshToken };
+  return { accessToken: json.access_token, refreshToken: json.refresh_token || refreshToken };
+}
+
+async function refreshMicrosoft(account, clientId) {
+  const ms = await refreshMsToken(account.refreshToken, clientId);
+  const mc = await minecraftFromMs(ms.accessToken);
+  return { ...account, ...mc, refreshToken: ms.refreshToken };
 }
 
 /** True when the Minecraft token still opens the profile (false on 401, throws on network errors). */
@@ -158,5 +165,5 @@ async function checkProfile(accessToken) {
 
 module.exports = {
   offlineUuid, validOfflineName, createOffline,
-  startDeviceCode, pollDeviceCode, minecraftFromMs, refreshMicrosoft, checkProfile,
+  startDeviceCode, pollDeviceCode, minecraftFromMs, refreshMsToken, refreshMicrosoft, checkProfile,
 };

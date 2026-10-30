@@ -410,6 +410,19 @@ try {
   r = await get('/api/v2/me', { cookie: alice }); assert.equal(r.status, 401);
   step('logout revokes the session server-side');
 
+  // ------------------------------------------------------------ presence (games without the launcher)
+  const before = (await get('/api/v2/stats')).json.online;
+  const sid = 'ab'.repeat(16);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: true, name: 'Presence_T', mc: '1.21.1', version: '1.4.5' } });
+  assert.equal(r.status, 200, r.text);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: true } }); assert.equal(r.status, 429);
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'xyz', online: true } }); assert.equal(r.status, 400);
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'cd'.repeat(16), online: true, name: 'bad name!' } }); assert.equal(r.status, 400);
+  assert.equal((await get('/api/v2/stats')).json.online, before + 1);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: false } }); assert.equal(r.status, 200);
+  assert.equal((await get('/api/v2/stats')).json.online, before);
+  step('POST /api/v2/presence: game heartbeat counts as online (once per nick), validation, 20 s limit, online:false leaves');
+
   // ------------------------------------------------------------ hosts + site
   let h = await hostGet('www.noreclient.pl', '/api/v1/version?x=1');
   assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noreclient\.pl|127\.0\.0\.1:\d+)\/api\/v1\/version\?x=1$/); // wrangler dev rewrites its own host

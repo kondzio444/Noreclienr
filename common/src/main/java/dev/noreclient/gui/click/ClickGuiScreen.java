@@ -22,6 +22,11 @@ import dev.noreclient.setting.NumberSetting;
 import dev.noreclient.setting.Setting;
 import dev.noreclient.setting.StringSetting;
 import dev.noreclient.util.Animation;
+import dev.noreclient.util.Events;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.Spring;
+import dev.noreclient.util.ThemeTokens;
+import dev.noreclient.gui.widget.Album;
 import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.MenuBackground;
 import dev.noreclient.util.Modrinth;
@@ -42,7 +47,7 @@ import java.util.Map;
  * are recorded; mouse events are matched against the regions recorded in the last frame.
  */
 public class ClickGuiScreen extends NoreScreen {
-    private static final float W = 540, H = 330, SIDEBAR = 132;
+    private static final float W = 540, H = 330, SIDEBAR = 118;
 
     private enum Page { MODULES, SETTINGS, PROFILES, DOWNLOADS }
 
@@ -73,7 +78,7 @@ public class ClickGuiScreen extends NoreScreen {
 
     private final List<Hit> hits = new ArrayList<>();
     private final Map<Object, Animation> anims = new HashMap<>();
-    private final TextBox search = new TextBox("Szukaj modułów...", 32);
+    private final TextBox search = new TextBox("Szukaj", 32);
     private final TextBox profileName = new TextBox("Nazwa profilu", 24);
     private final Map<StringSetting, TextBox> stringBoxes = new HashMap<>();
     private final TextBox dlSearch = new TextBox("Szukaj paczek zasobów...", 40);
@@ -104,7 +109,13 @@ public class ClickGuiScreen extends NoreScreen {
     private float alpha = 1;
     private long pageSwitch = System.currentTimeMillis();
     private String lastSearch = "";
-    private final Animation navY = new Animation(61, 16);
+    /** The active index tab travels on spring.tab. */
+    private final Spring navY = Spring.tab(-1);
+    private final long openedAt = System.currentTimeMillis();
+    private String tipText;
+    private float tipX, tipY;
+    private long tipSince;
+    private Module tipModule;
     private final Animation navAlpha = new Animation(0, 12);
     /** When each module was last switched from this screen (ripple on its toggle). */
     private final Map<Module, Long> toggledAt = new HashMap<>();
@@ -155,7 +166,7 @@ public class ClickGuiScreen extends NoreScreen {
         pageAnim.set(0);
         pageAnim.target(1);
         pageSwitch = System.currentTimeMillis();
-        Sounds.click();
+        Sounds.page();
     }
 
     @Override
@@ -208,34 +219,31 @@ public class ClickGuiScreen extends NoreScreen {
         renderBackground(ctx, mouseX, mouseY, delta);
 
         float base = Math.min(guiModule().guiScale.floatValue(), Math.min((width - 16) / W, (height - 16) / H));
-        // opening pops slightly past full size, closing just shrinks away (no bounce on the way out)
-        float eased = closing ? Animation.easeOutCubic(o) : Animation.easeOutBack(o);
-        scale = base * (0.9f + 0.1f * eased);
+        if (Motion.level() == Motion.OFF) open.set(closing ? 0 : 1);
+        // Album: the sheet arrives 6 GUI px from below and fades in; leaving it drops and fades faster
+        float eased = Animation.easeOutCubic(o);
+        scale = base;
         ox = (width / scale - W) / 2f;
-        oy = (height / scale - H) / 2f + (1 - Animation.easeOutCubic(o)) * 12;
+        oy = (height / scale - H) / 2f + (1 - eased) * (closing ? 4 : 6) * Motion.travel();
         double mx = mapX(mouseX), my = mapY(mouseY);
 
         hits.clear();
-        alpha = Animation.easeOutCubic(o);
+        tipText = null;
+        alpha = eased;
         ctx.setAlpha(alpha);
         ctx.push();
         ctx.scale(scale, scale);
         ctx.translate(ox, oy);
 
-        float r = Theme.radius() * 1.4f;
-        Render2D.shadow(ctx, 0, 0, W, H, r, 10, ColorUtil.fade(0xB0000000, o));
-        Render2D.roundedRect(ctx, 0, 0, W, H, r, Theme.BG);
-        // soft accent light across the top of the content area
-        Render2D.quadGradient(ctx, SIDEBAR + 1, 0, W - SIDEBAR - r, 70, ColorUtil.withAlpha(Theme.accent(), 26), ColorUtil.withAlpha(Theme.accent2(), 14), 0, 0);
-        float lineW = (W - SIDEBAR - 40) / 2f * Animation.easeOutCubic(o), lineC = SIDEBAR + 20 + (W - SIDEBAR - 40) / 2f;
-        Render2D.quadGradient(ctx, lineC - lineW, 0, lineW, 1, 0, Theme.accent(), Theme.accent(), 0);
-        Render2D.quadGradient(ctx, lineC, 0, lineW, 1, Theme.accent2(), 0, 0, Theme.accent2());
+        float r = 6;
+        Render2D.shadow(ctx, 0, 2, W, H, r, 8, ColorUtil.fade(0xB0000000, o));
+        Render2D.roundedRect(ctx, 0, 0, W, H, r, ColorUtil.withAlpha(Theme.page(), 0xF2));
         renderSidebar(ctx, mx, my);
         renderHeader(ctx, mx, my);
 
-        clipX = SIDEBAR + 10;
-        clipY = 46;
-        clipW = W - SIDEBAR - 20;
+        clipX = SIDEBAR + 12;
+        clipY = 48;
+        clipW = W - SIDEBAR - 24;
         clipH = H - 56;
         scroll.update();
         float pa = Animation.easeOutCubic(pageAnim.update());
@@ -254,7 +262,7 @@ public class ClickGuiScreen extends NoreScreen {
         ctx.endScissor();
         ctx.setAlpha(alpha);
         renderScrollbar(ctx);
-        Render2D.roundedOutline(ctx, 0, 0, W, H, r, 1, Theme.OUTLINE);
+        renderTooltip(ctx);
         ctx.pop();
         ctx.setAlpha(1);
 
@@ -278,77 +286,103 @@ public class ClickGuiScreen extends NoreScreen {
         float barH = Math.max(20, trackH * clipH / contentHeight);
         float maxScroll = contentHeight - clipH;
         float y = clipY + 4 + (trackH - barH) * (scroll.get() / maxScroll);
-        Render2D.roundedRect(ctx, W - 7, y, 3, barH, 1.5f, ColorUtil.withAlpha(Theme.accent(), 150));
+        Render2D.roundedRect(ctx, W - 7, clipY + 4, 3, trackH, 1.5f, Theme.SLOT);
+        Render2D.roundedRect(ctx, W - 7, y, 3, barH, 1.5f, Theme.TEXT_MUTED);
+    }
+
+    /** "LPM włącz · PPM ustawienia" after resting on a module for a moment. */
+    private void renderTooltip(Gfx ctx) {
+        if (tipText == null) { tipModule = null; return; }
+        if (System.currentTimeMillis() - tipSince < 450) return;
+        float w = Render2D.textWidth(tipText) + 12, h = 14;
+        float x = Math.min(W - w - 4, tipX + 8), y = tipY + 12;
+        if (y + h > H - 4) y = tipY - h - 6;
+        Album.floating(ctx, x, y, w, h, ColorUtil.withAlpha(Theme.SLOT, 0xF2));
+        Render2D.roundedOutline(ctx, x, y, w, h, Album.R, 1, Theme.GHOST);
+        Render2D.text(ctx, tipText, x + 6, y + 3, Theme.TEXT, false);
     }
 
     private void renderSidebar(Gfx ctx, double mx, double my) {
-        float r = Theme.radius() * 1.4f;
-        Render2D.roundedRect(ctx, 0, 0, SIDEBAR, H, r, Theme.SIDEBAR);
-        Render2D.rect(ctx, SIDEBAR - r, 0, r, H, Theme.SIDEBAR);
-        Render2D.rect(ctx, SIDEBAR, 0, 1, H, Theme.OUTLINE);
+        // the album cover: accent-dyed bookcloth column with index tabs
+        int cover = Theme.cover();
+        Render2D.roundedRect(ctx, 0, 0, SIDEBAR, H, 6, cover);
+        Render2D.rect(ctx, SIDEBAR - 6, 0, 6, H, cover);
 
-        // logo with a soft accent glow
-        Render2D.radial(ctx, 25, 22, 34, ColorUtil.withAlpha(Theme.accent(), 60), ColorUtil.withAlpha(Theme.accent(), 0));
-        Render2D.logo(ctx, 9, 7, 30, 1f);
-        Render2D.gradientText(ctx, "Nore", 43, 11, 1.35f, Theme.accent2(), Theme.accent(), false);
-        Render2D.scaledText(ctx, "CLIENT " + NoreClient.VERSION, 43, 25, 0.7f, Theme.TEXT_MUTED, false);
+        Album.logo(ctx, 10, 9, 16, 1f);
+        Render2D.text(ctx, "Nore", 31, 13, Theme.COVER_INK, false);
+        if (Events.any()) {
+            Album.eventDot(ctx, 33 + Render2D.textWidth("Nore") + 3, 17);
+            if (Events.halloween()) Render2D.text(ctx, Events.halloweenLeft(), 41 + Render2D.textWidth("Nore") + 3, 13, Theme.COVER_INK_SOFT, false);
+        }
 
-        // sliding highlight under the active entry (position from the last frame)
-        float na = navAlpha.target(activeNavY >= 0 ? 1 : 0).update();
+        // the active tab: a piece of the page pulled out over the cover, travelling on spring.tab
         if (activeNavY >= 0) {
-            if (navAlpha.get() < 0.05f) navY.set(activeNavY);
+            if (navY.get() < 0) navY.set(activeNavY);
             navY.target(activeNavY);
         }
         float ny = navY.update();
-        if (na > 0.01f) {
-            Widgets.glowBox(ctx, 8, ny, SIDEBAR - 16, 19, Theme.radius(), Theme.accent(), 0.15f, na);
-            Render2D.roundedRect(ctx, 8, ny + 4.5f, 2.5f, 10, 1.25f, ColorUtil.fade(Theme.accent(), na));
+        float na = navAlpha.target(activeNavY >= 0 ? 1 : 0).update();
+        if (na > 0.01f && ny >= 0) {
+            int page = ColorUtil.withAlpha(Theme.page(), (int) (0xF2 * na));
+            float th = 15;
+            Render2D.roundedRect(ctx, 7, ny, SIDEBAR - 7 + 2, th, 4, page);
+            // concave joins into the page
+            Render2D.rect(ctx, SIDEBAR - 4, ny - 4, 4, 4, page);
+            Render2D.circle(ctx, SIDEBAR - 4, ny - 4, 4, cover);
+            Render2D.rect(ctx, SIDEBAR - 4, ny + th, 4, 4, page);
+            Render2D.circle(ctx, SIDEBAR - 4, ny + th + 4, 4, cover);
         }
         activeNavY = -1;
 
-        float y = 46;
-        y = section(ctx, "MODUŁY", y);
+        float y = 32;
         List<Module> all = NoreClient.get().modules().getModules();
         y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 0 && category == null, "Wszystkie",
-                (cx, cy, c) -> Icons.grid(ctx, cx, cy, 9, c), countOn(all), () -> openCollection(0, null));
+                (cx, cy, c) -> Icons.grid(ctx, cx, cy, 8, c), String.valueOf(all.size()), () -> openCollection(0, null));
         for (Category c : Category.values()) {
             List<Module> mods = NoreClient.get().modules().getModules(c);
             boolean active = (page == Page.MODULES && collection == 0 || page == Page.SETTINGS && selected != null) && category == c;
-            y = navEntry(ctx, mx, my, y, active, c.displayName, (cx, cy, col) -> Icons.category(ctx, c, cx, cy, 9, active ? c.color : col),
-                    countOn(mods), () -> openCollection(0, c));
+            y = navEntry(ctx, mx, my, y, active, c.displayName, (cx, cy, col) -> Icons.category(ctx, c, cx, cy, 8, col),
+                    String.valueOf(mods.size()), () -> openCollection(0, c));
         }
-        y = section(ctx, "KOLEKCJE", y + 3);
+        y = section(ctx, "Kolekcje", y + 4);
         int favs = 0, news = 0;
         for (Module m : all) {
             if (m.isFavorite()) favs++;
             if (ExtraModules.isNew(m)) news++;
         }
         y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 1, "Ulubione",
-                (cx, cy, c) -> Icons.star(ctx, cx, cy, 4.8f, collection == 1 ? Theme.WARNING : c, true), favs > 0 ? String.valueOf(favs) : "", () -> openCollection(1, null));
+                (cx, cy, c) -> Icons.star(ctx, cx, cy, 4.4f, c, false), favs > 0 ? String.valueOf(favs) : "", () -> openCollection(1, null));
         y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 2, "Nowe",
-                (cx, cy, c) -> Icons.sparkle(ctx, cx, cy, 5, collection == 2 ? Theme.accent2() : c), String.valueOf(news), () -> openCollection(2, null));
-        y = section(ctx, "ZASOBY", y + 3);
+                (cx, cy, c) -> Icons.sparkle(ctx, cx, cy, 4.6f, c), String.valueOf(news), () -> openCollection(2, null));
+        y = section(ctx, "Zasoby", y + 4);
         navEntry(ctx, mx, my, y, page == Page.DOWNLOADS, "Paczki zasobów",
-                (cx, cy, c) -> Icons.download(ctx, cx, cy, 9, c), "", () -> switchPage(Page.DOWNLOADS, null));
+                (cx, cy, c) -> Icons.download(ctx, cx, cy, 8, c), "", () -> switchPage(Page.DOWNLOADS, null));
 
-        // bottom buttons
-        float bw = SIDEBAR - 24;
-        float by = H - 52;
-        boolean hp = Render2D.hovered(mx, my, 12, by, bw, 20);
-        Widgets.button(ctx, 12, by, bw, 20, "✎ Edytuj HUD", anim("btn_hud", 14).target(hp ? 1 : 0).update(), true);
-        hit(12, by, bw, 20, false, (x, yy, b) -> {
-            Sounds.click();
+        // foot: white "Edytuj HUD" pill and the profile pill
+        float bw = SIDEBAR - 16, bx = 8;
+        float by = H - 40;
+        boolean hp = Render2D.hovered(mx, my, bx, by, bw, 15);
+        float ha = anim("btn_hud", 16).target(hp ? 1 : 0).update();
+        Album.sticker(ctx, bx, by, bw, 15, 7.5f, Theme.VINYL, ha);
+        float ly = by - ha * Motion.travel();
+        Icons.hud(ctx, bx + 11, ly + 7.5f, 7.5f, Theme.accent());
+        Render2D.text(ctx, "Edytuj HUD", bx + 20, ly + 4, Theme.VINYL_INK, false);
+        hit(bx, by, bw, 15, false, (x, yy, b) -> {
+            Sounds.page();
             game().openScreen(new HudEditorScreen(this));
         });
-        by += 24;
-        boolean pp = Render2D.hovered(mx, my, 12, by, bw, 20) || page == Page.PROFILES;
-        Widgets.button(ctx, 12, by, bw, 20, "☰ Profile", anim("btn_prof", 14).target(pp ? 1 : 0).update(), false);
-        hit(12, by, bw, 20, false, (x, yy, b) -> switchPage(Page.PROFILES, null));
+        by += 19;
+        boolean pp = Render2D.hovered(mx, my, bx, by, bw, 15) || page == Page.PROFILES;
+        float pa = anim("btn_prof", 16).target(pp ? 1 : 0).update();
+        Render2D.roundedRect(ctx, bx, by, bw, 15, 7.5f, ColorUtil.withAlpha(0xFF000000, (int) (70 + 40 * pa)));
+        Icons.sliders(ctx, bx + 11, by + 7.5f, 7, Theme.COVER_INK);
+        Render2D.text(ctx, Render2D.trim("Profil: " + NoreClient.get().config().getActiveProfile(), (int) bw - 26), bx + 20, by + 4, Theme.COVER_INK, false);
+        hit(bx, by, bw, 15, false, (x, yy, b) -> switchPage(Page.PROFILES, null));
     }
 
     private float section(Gfx ctx, String label, float y) {
-        Render2D.scaledText(ctx, label, 14, y, 0.65f, Theme.TEXT_MUTED, false);
-        return y + 8;
+        Render2D.text(ctx, label, 13, y + 1, Theme.COVER_INK_SOFT, false);
+        return y + 12;
     }
 
     private static String countOn(List<Module> mods) {
@@ -367,46 +401,37 @@ public class ClickGuiScreen extends NoreScreen {
     }
 
     private float navEntry(Gfx ctx, double mx, double my, float y, boolean active, String label, IconDraw icon, String count, Runnable action) {
-        boolean hov = Render2D.hovered(mx, my, 8, y, SIDEBAR - 16, 19);
-        float a = anim("nav_" + label, 14).target(active ? 1 : hov ? 0.6f : 0).update();
+        boolean hov = Render2D.hovered(mx, my, 7, y, SIDEBAR - 7, 15);
+        float a = anim("nav_" + label, 16).target(active ? 1 : hov ? 0.6f : 0).update();
         if (active) activeNavY = y;
-        if (hov && !active) Render2D.roundedRect(ctx, 8, y, SIDEBAR - 16, 19, Theme.radius(), 0x10FFFFFF);
-        float shift = a * 2.5f;
-        int ic = ColorUtil.lerp(Theme.TEXT_MUTED, active ? Theme.accent() : Theme.TEXT, Math.max(a, active ? 1 : 0));
-        icon.draw(20 + shift, y + 9.5f, ic);
-        Render2D.text(ctx, label, 31 + shift, y + 5.5f, ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, Math.max(a, active ? 1 : 0)));
-        if (!count.isEmpty()) {
-            boolean numeric = Character.isDigit(count.charAt(0));
-            boolean lit = numeric && !count.equals("0");
-            float sc = numeric ? 1f : 0.65f;
-            float cw = Render2D.textWidth(count) * sc;
-            if (lit) Render2D.roundedRect(ctx, SIDEBAR - 17 - cw, y + 4, cw + 6, 11, 5.5f, ColorUtil.withAlpha(Theme.accent(), 40));
-            Render2D.scaledText(ctx, count, SIDEBAR - 14 - cw, y + (numeric ? 5.5f : 7f), sc, lit ? Theme.accent() : Theme.TEXT_MUTED, false);
-        }
-        hit(8, y, SIDEBAR - 16, 19, false, (x, yy, b) -> action.run());
-        return y + 20;
+        if (hov && !active) Render2D.roundedRect(ctx, 7, y, SIDEBAR - 14, 15, 4, ColorUtil.lerp(Theme.cover(), Theme.accent(), 0.12f));
+        int ink = active ? Theme.TEXT : ColorUtil.withAlpha(Theme.COVER_INK, hov ? 0xFF : 0xD9);
+        int ic = active ? Theme.accentLight() : ink;
+        icon.draw(19, y + 7.5f, ic);
+        Render2D.text(ctx, Render2D.trim(label, (int) SIDEBAR - 52), 29, y + 4, ink, false);
+        if (!count.isEmpty()) Album.right(ctx, count, SIDEBAR - 9, y + 4, active ? Theme.TEXT_MUTED : Theme.COVER_INK_SOFT);
+        hit(7, y, SIDEBAR - 7, 15, false, (x, yy, b) -> { if (!active) Sounds.page(); action.run(); });
+        return y + 16;
     }
 
     private void renderHeader(Gfx ctx, double mx, double my) {
         float x = SIDEBAR + 12;
         String title, sub;
         if (page == Page.SETTINGS && selected != null) {
-            boolean hb = Render2D.hovered(mx, my, x, 12, 20, 20);
-            float ha = anim("back", 14).target(hb ? 1 : 0).update();
-            Render2D.roundedRect(ctx, x, 12, 20, 20, Theme.radius(), ColorUtil.lerp(Theme.CARD, Theme.CARD_HOVER, ha));
-            Render2D.centeredText(ctx, "←", x + 10, 18, ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
-            hit(x, 12, 20, 20, false, (a, b, c) -> switchPage(Page.MODULES, null));
-            x += 26;
-            Icons.tile(ctx, selected.getCategory(), x, 11, 22, selected.isEnabled() ? 1 : 0);
-            x += 28;
+            boolean hb = Render2D.hovered(mx, my, x, 12, 18, 18);
+            float ha = anim("back", 16).target(hb ? 1 : 0).update();
+            Render2D.roundedRect(ctx, x, 12, 18, 18, 9, ColorUtil.lerp(Theme.RAISED_2, Theme.CARD_HOVER, ha));
+            Render2D.centeredText(ctx, "‹", x + 9, 17, ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
+            hit(x, 12, 18, 18, false, (a, b, c) -> switchPage(Page.MODULES, null));
+            x += 24;
             title = selected.getName();
             sub = selected.getDescription();
             // favourite star in the header
             float sx = W - 24, sy = 22;
             boolean hs = Render2D.hovered(mx, my, sx - 9, sy - 9, 18, 18);
             float sa = anim("hstar", 14).target(hs ? 1 : 0).update();
-            if (selected.isFavorite()) Icons.star(ctx, sx, sy, 6 + sa, Theme.WARNING, true);
-            else Icons.star(ctx, sx, sy, 6 + sa, ColorUtil.lerp(Theme.TEXT_MUTED, Theme.WARNING, sa), false);
+            if (selected.isFavorite()) Icons.star(ctx, sx, sy, 6 + sa * 0.5f, ThemeTokens.DOT_WAIT, true);
+            else Icons.star(ctx, sx, sy, 6 + sa * 0.5f, ColorUtil.lerp(Theme.TEXT_MUTED, ThemeTokens.DOT_WAIT, sa), false);
             Module m = selected;
             hit(sx - 9, sy - 9, 18, 18, false, (a, b, c) -> toggleFavorite(m));
         } else if (page == Page.DOWNLOADS) {
@@ -425,75 +450,80 @@ public class ClickGuiScreen extends NoreScreen {
             title = "Nowe w " + NoreClient.VERSION;
             sub = "Waypointy, znacznik trafień, prędkościomierz, licznik totemów, AFK Alert i więcej";
         } else {
-            title = category == null ? "Wszystkie moduły" : category.displayName;
-            sub = category == null ? NoreClient.get().modules().getModules().size() + " modułów \u2022 " + NoreClient.get().modules().optionCount() + " opcji" : category.subtitle;
+            List<Module> list = currentList();
+            int on = 0, tog = 0;
+            for (Module mm : list) if (mm.isToggleable()) { tog++; if (mm.isEnabled()) on++; }
+            title = category == null ? "Moduły" : category.displayName;
+            sub = on + " z " + tog + " włączonych" + (category == null ? "" : " · " + category.subtitle);
         }
-        Render2D.scaledText(ctx, Render2D.trim(title, (int) ((W - x - 190) / 1.3f)), x, 12, 1.3f, Theme.TEXT, false);
-        Render2D.text(ctx, Render2D.trim(sub, (int) (W - x - (page == Page.SETTINGS ? 40 : 190))), x, 26, Theme.TEXT_MUTED);
-        if (page == Page.SETTINGS && selected != null && ExtraModules.isNew(selected)) {
-            float tw = Render2D.textWidth(title) * 1.3f;
-            newBadge(ctx, x + tw + 6, 13);
+        float tmax = W - x - (page == Page.SETTINGS ? 40 : 190);
+        Album.title(ctx, Render2D.trim(title, (int) (tmax / 2f)), x, 10, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(sub, (int) tmax), x, 30, Theme.TEXT_DIM, false);
+        if (page == Page.SETTINGS && selected != null) {
+            float tw = Math.min(Render2D.textWidth(title) * 2, tmax);
+            float bx = x + tw + 6;
+            if (ExtraModules.isNew(selected)) bx += newBadge(ctx, bx, 15) + 4;
+            if (selected.isToggleable()) Album.dot(ctx, bx + 3, 19, 2.5f, selected.isEnabled() ? ThemeTokens.DOT_READY : ThemeTokens.DOT_OFF);
         }
 
         if (page == Page.DOWNLOADS) {
             float sw = 150, sx = W - sw - 12;
-            dlSearch.render(ctx, sx, 12, sw, 22, TextBox.SEARCH_ICON);
-            hit(sx, 12, sw, 22, false, (a, b, c) -> {
+            dlSearch.render(ctx, sx, 12, sw, 18, TextBox.SEARCH_ICON);
+            hit(sx, 12, sw, 18, false, (a, b, c) -> {
                 dlSearch.setFocused(true);
                 search.setFocused(false);
                 profileName.setFocused(false);
             });
         }
         if (page == Page.MODULES) {
-            float sw = 140, sx = W - sw - 40;
-            search.render(ctx, sx, 12, sw, 22, TextBox.SEARCH_ICON);
+            float sw = 130, sx = W - sw - 34;
+            search.render(ctx, sx, 12, sw, 18, TextBox.SEARCH_ICON);
+            if (search.getText().isEmpty() && !search.isFocused()) {
+                Album.keycap(ctx, "Ctrl F", sx + sw - 4 - Album.keycapWidth("Ctrl F"), 16);
+            }
             if (!search.getText().isEmpty()) {
                 // result count and a clear button inside the field
                 String n = String.valueOf(currentList().size());
-                float cw = Render2D.textWidth(n) * 0.7f + 8, cx = sx + sw - 18 - cw;
-                Render2D.roundedRect(ctx, cx, 17.5f, cw, 11, 5.5f, ColorUtil.withAlpha(Theme.accent(), currentList().isEmpty() ? 40 : 90));
-                Render2D.scaledText(ctx, n, cx + 4, 20, 0.7f, Theme.TEXT, false);
-                boolean hc = Render2D.hovered(mx, my, sx + sw - 16, 15, 14, 16);
+                float cw = Render2D.textWidth(n) + 6, cx = sx + sw - 18 - cw;
+                Album.label(ctx, n, cx, 16, currentList().isEmpty() ? ThemeTokens.DOT_ERROR : Theme.VINYL, Theme.VINYL_INK);
+                boolean hc = Render2D.hovered(mx, my, sx + sw - 16, 13, 14, 16);
                 float ca = anim("clearSearch", 16).target(hc ? 1 : 0).update();
                 int xc = ColorUtil.lerp(Theme.TEXT_MUTED, Theme.TEXT, ca);
-                Render2D.line(ctx, sx + sw - 12, 19.5f, sx + sw - 6, 25.5f, 1.2f, xc);
-                Render2D.line(ctx, sx + sw - 6, 19.5f, sx + sw - 12, 25.5f, 1.2f, xc);
-                hit(sx + sw - 16, 15, 14, 16, false, (a, b, c) -> {
+                Render2D.line(ctx, sx + sw - 12, 18, sx + sw - 6, 24, 1.2f, xc);
+                Render2D.line(ctx, sx + sw - 6, 18, sx + sw - 12, 24, 1.2f, xc);
+                hit(sx + sw - 16, 13, 14, 16, false, (a, b, c) -> {
                     search.setText("");
                     scroll.set(0);
                     Sounds.click();
                 });
             }
-            hit(sx, 12, sw, 22, false, (a, b, c) -> {
+            hit(sx, 12, sw, 18, false, (a, b, c) -> {
                 search.setFocused(true);
                 profileName.setFocused(false);
             });
             // grid / list toggle
-            float vx = W - 34;
-            boolean hv = Render2D.hovered(mx, my, vx, 12, 22, 22);
-            float va = anim("view", 14).target(hv ? 1 : 0).update();
-            Render2D.roundedRect(ctx, vx, 12, 22, 22, Theme.radius(), ColorUtil.lerp(Theme.CARD, Theme.CARD_HOVER, va));
-            Render2D.roundedOutline(ctx, vx, 12, 22, 22, Theme.radius(), 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 180), va));
-            int vc = ColorUtil.lerp(Theme.TEXT_DIM, Theme.accent(), va);
-            if (listView) Icons.grid(ctx, vx + 11, 23, 10, vc);
+            float vx = W - 30;
+            boolean hv = Render2D.hovered(mx, my, vx, 12, 18, 18);
+            float va = anim("view", 16).target(hv ? 1 : 0).update();
+            Render2D.roundedRect(ctx, vx, 12, 18, 18, Album.R, ColorUtil.lerp(Theme.SLOT, Theme.RAISED_2, va));
+            int vc = ColorUtil.lerp(Theme.TEXT_DIM, Theme.accentLight(), va);
+            if (listView) Icons.grid(ctx, vx + 9, 21, 9, vc);
             else for (int k = 0; k < 3; k++) {
-                Render2D.rect(ctx, vx + 6, 18.5f + k * 4, 2, 2, vc);
-                Render2D.rect(ctx, vx + 9.5f, 18.8f + k * 4, 7, 1.4f, vc);
+                Render2D.rect(ctx, vx + 4.5f, 16.5f + k * 4, 2, 2, vc);
+                Render2D.rect(ctx, vx + 8, 16.8f + k * 4, 6, 1.4f, vc);
             }
-            hit(vx, 12, 22, 22, false, (a, b, c) -> {
+            hit(vx, 12, 18, 18, false, (a, b, c) -> {
                 listView = !listView;
                 pageSwitch = System.currentTimeMillis();
                 scroll.set(0);
-                Sounds.click();
+                Sounds.page();
             });
         }
     }
 
-    private static void newBadge(Gfx ctx, float x, float y) {
-        float w = Render2D.textWidth("NOWY") * 0.65f + 12;
-        Widgets.glowBox(ctx, x, y, w, 10, 5, Theme.accent2(), 0, 0.8f);
-        Icons.sparkle(ctx, x + 5, y + 5, 2.6f, 0xFFFFFFFF);
-        Render2D.scaledText(ctx, "NOWY", x + 9, y + 2.8f, 0.65f, 0xFFFFFFFF, false);
+    /** The "nowy" label sticker (dot-event fill). Returns its width. */
+    private static float newBadge(Gfx ctx, float x, float y) {
+        return Album.label(ctx, "nowy", x, y, ThemeTokens.DOT_EVENT, 0xFF1A0D04);
     }
 
     private void toggleFavorite(Module m) {
@@ -516,31 +546,33 @@ public class ClickGuiScreen extends NoreScreen {
 
     private void renderModules(Gfx ctx, double mx, double my) {
         List<Module> list = currentList();
-        int cols = listView ? 1 : 3;
-        float gap = listView ? 5 : 8;
+        int cols = listView ? 1 : 4;
+        float gap = listView ? 4 : 6;
         float cw = (clipW - gap * (cols - 1)) / cols;
-        float ch = listView ? 30 : guiModule().showDescriptions.isOn() ? 64 : 46;
-        float startY = clipY + 2;
+        float ch = listView ? 24 : guiModule().showDescriptions.isOn() ? 52 : 43;
+        float startY = clipY + 3;
         if (list.isEmpty()) {
             String msg = !search.getText().trim().isEmpty() ? "Brak wyników dla \"" + search.getText() + "\""
-                    : collection == 1 ? "Brak ulubionych – kliknij \u2606 na karcie modułu" : "Brak modułów";
-            Render2D.centeredText(ctx, msg, clipX + clipW / 2f, clipY + 40, Theme.TEXT_MUTED, false);
+                    : collection == 1 ? "Brak ulubionych – kliknij gwiazdkę na module" : "Brak modułów";
+            Album.slot(ctx, clipX, clipY + 20, clipW, 50);
+            Render2D.centeredText(ctx, msg, clipX + clipW / 2f, clipY + 41, Theme.TEXT_MUTED, false);
         }
         if (!search.getText().equals(lastSearch)) {
             lastSearch = search.getText();
             pageSwitch = System.currentTimeMillis();
         }
-        long since = System.currentTimeMillis() - pageSwitch;
         for (int i = 0; i < list.size(); i++) {
             Module m = list.get(i);
             float x = clipX + (i % cols) * (cw + gap);
             float y = startY + (i / cols) * (ch + gap);
-            float p = Animation.easeOutCubic((since - Math.min(i, 15) * 28) / 320f);
+            // entrance: stickers stick in with a 45 ms stagger (max 8)
+            float p = Motion.enter(pageSwitch, i);
             if (p < 1) {
+                float dy = (1 - p) * 4 * Motion.travel();
                 ctx.setAlpha(alpha * Math.max(0, p));
                 ctx.push();
-                ctx.translate(0, (1 - p) * 14);
-                renderCard(ctx, mx, my - (1 - p) * 14, m, x, y, cw, ch);
+                ctx.translate(0, dy);
+                renderCard(ctx, mx, my - dy, m, x, y, cw, ch);
                 ctx.pop();
                 ctx.setAlpha(alpha);
             } else {
@@ -548,114 +580,120 @@ public class ClickGuiScreen extends NoreScreen {
             }
         }
         int rows = (list.size() + cols - 1) / cols;
-        contentHeight = rows * (ch + gap) + 4;
+        contentHeight = rows * (ch + gap) + 6;
+    }
+
+    /** Draws the sticker face (white) or nothing; content is drawn by the caller. */
+    private void stickerFace(Gfx ctx, float x, float y, float w, float h, float lift, float scaleK) {
+        if (scaleK != 1) {
+            float cx = x + w / 2f, cy = y + h / 2f;
+            ctx.push();
+            ctx.translate(cx, cy);
+            ctx.scale(scaleK, scaleK);
+            ctx.translate(-cx, -cy);
+            Album.white(ctx, x, y, w, h, Math.max(lift, (scaleK - 1) * 8));
+            ctx.pop();
+        } else {
+            Album.white(ctx, x, y, w, h, lift);
+        }
     }
 
     private void renderCard(Gfx ctx, double mx, double my, Module m, float x, float y, float w, float h) {
-        float sx = x + w - 11, sy = listView ? y + h / 2f : y + 11;
-        if (listView) sx = x + w - 48;
+        boolean toggleable = m.isToggleable();
+        float starX = x + w - 9, starY = y + 9;
+        float gearX = x + w - 21;
         if (y > clipY + scroll.get() + clipH + 10 || y + h < clipY + scroll.get() - 10) {
             hit(x, y, w, h, true, cardAction(m, x, y, w, h));
-            hit(sx - 7, sy - 7, 14, 14, true, (a, b, c) -> toggleFavorite(m));
             return;
         }
         boolean hov = hovered(mx, my, x, y, w, h, true);
-        float ha = anim(m.getName() + "_hover", 14).target(hov ? 1 : 0).update();
-        float ta = anim(m.getName() + "_on", 14).target(m.isEnabled() ? 1 : 0).update();
-        float r = Theme.radius();
-        float lift = listView ? 0 : ha;
-        float yy = y - lift;
-        boolean toggleable = m.isToggleable();
-
-        if (ta > 0.01f && toggleable) Render2D.shadow(ctx, x, yy, w, h, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) ((50 + 40 * ha) * ta)));
-        Render2D.roundedRect(ctx, x, yy, w, h, r, ColorUtil.lerp(Theme.CARD, Theme.CARD_HOVER, ha));
-        if (ta > 0.01f && toggleable) Render2D.roundedGradient(ctx, x, yy, w, h, r,
-                ColorUtil.withAlpha(Theme.accent(), (int) (30 * ta)), ColorUtil.withAlpha(Theme.accent(), (int) (6 * ta)), !listView);
-        int outline = toggleable ? ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 200), ta) : Theme.OUTLINE;
+        float ha = anim(m.getName() + "_hover", 16).target(hov ? 1 : 0).update();
+        boolean on = !toggleable || m.isEnabled();
         Long tAt = toggledAt.get(m);
-        float flash = tAt == null ? 0 : Math.max(0, 1 - (System.currentTimeMillis() - tAt) / 450f);
-        if (flash > 0) outline = ColorUtil.lerp(outline, 0xFFFFFFFF, flash * 0.6f);
-        Render2D.roundedOutline(ctx, x, yy, w, h, r, 1, outline);
-        // hover accent: a short bar that grows from the middle of the bottom edge
-        if (ha > 0.02f) {
-            float bw = (w - 2 * r) * 0.5f * Animation.easeOutCubic(ha);
-            Render2D.roundedRect(ctx, x + w / 2f - bw / 2f, yy + h - 1.6f, bw, 1.6f, 0.8f, ColorUtil.withAlpha(Theme.accent(), (int) (220 * ha)));
+        long now = System.currentTimeMillis();
+        float peel = !on && tAt != null ? Motion.peel(tAt) : 1;
+        float stick = on && tAt != null ? Motion.stickScale(tAt) : 1;
+        if (tAt != null && now - tAt > 600) toggledAt.remove(m);
+
+        // the ghost slot is always printed underneath what can be switched off
+        if (toggleable && (!on || stick != 1)) Album.slot(ctx, x, y, w, h);
+        boolean sticker = on;
+        float lift = listView ? 0 : ha;
+        if (on) stickerFace(ctx, x, y, w, h, lift, stick);
+        else if (peel < 1) {
+            // peel: the sticker flies up-right and fades, revealing the ghost
+            float dx = 6 * peel * Motion.travel(), dy = -6 * peel * Motion.travel();
+            ctx.setAlpha(alpha * (1 - peel));
+            Album.white(ctx, x + dx, y + dy, w, h, 1 - peel);
+            ctx.setAlpha(alpha);
+        } else if (ha > 0.02f) {
+            // hovering a ghost previews the sticker at 50%, lifted
+            float pl = ha * Motion.travel();
+            Render2D.shadow(ctx, x, y + 2 - pl, w, h, Album.R, 4, ColorUtil.withAlpha(0xFF000000, (int) (110 * ha)));
+            Render2D.roundedRect(ctx, x - 1, y - 1 - pl, w + 2, h + 2, Album.R + 1, ColorUtil.withAlpha(Theme.VINYL, (int) (200 * ha)));
+            Render2D.roundedRect(ctx, x, y - pl, w, h, Album.R, ColorUtil.withAlpha(Theme.VINYL, (int) (128 * ha)));
+            sticker = ha > 0.5f;
+        }
+        float yy = y - (on ? lift * Motion.travel() : ha * Motion.travel());
+        int ink = sticker ? Theme.VINYL_INK : Theme.TEXT_MUTED;
+        int soft = sticker ? Theme.VINYL_INK_SOFT : Theme.TEXT_MUTED;
+        int iconC = on ? Theme.accent() : sticker ? Theme.VINYL_INK : Theme.GHOST;
+        if (on && !sticker) iconC = Theme.accent();
+        if (on && ExtraModules.isNew(m) && !listView) { /* label drawn below */ }
+
+        if (hov) {
+            tipText = !toggleable ? "LPM otwórz" : on ? "LPM wyłącz · PPM ustawienia" : "LPM włącz · PPM ustawienia";
+            if (tipModule != m) { tipModule = m; tipSince = now; }
+            tipX = (float) mx;
+            tipY = (float) my - scroll.get();
         }
 
-        // favourite star
-        boolean hs = hovered(mx, my, sx - 7, sy - 7 - lift, 14, 14, true);
-        float sa = anim(m.getName() + "_star", 16).target(hs ? 1 : 0).update();
-        if (m.isFavorite()) Icons.star(ctx, sx, sy - lift, 4.6f + sa, Theme.WARNING, true);
-        else if (hov || sa > 0.01f) Icons.star(ctx, sx, sy - lift, 4.6f + sa, ColorUtil.lerp(Theme.TEXT_MUTED, Theme.WARNING, sa), false);
-
         if (listView) {
-            Icons.tile(ctx, m.getCategory(), x + 6, yy + 6, 18, ta);
+            Icons.category(ctx, m.getCategory(), x + 12, yy + h / 2f, 8, iconC);
             String name = m.getName();
-            matchHighlight(ctx, name, x + 30, yy + 6);
-            Render2D.text(ctx, name, x + 30, yy + 6, Theme.TEXT);
-            float nx = x + 30 + Render2D.textWidth(name) + 6;
-            if (ExtraModules.isNew(m)) { newBadge(ctx, nx, yy + 5); nx += 36; }
-            if (m.getKeybind().isBound()) keyChip(ctx, m, nx, yy + 4.5f);
-            Render2D.scaledText(ctx, Render2D.trim(m.getDescription(), (int) ((w - 120) / 0.75f)), x + 30, yy + 18, 0.75f, Theme.TEXT_DIM, false);
-            if (toggleable) {
-                Widgets.toggle(ctx, x + w - 34, yy + h / 2f - 6.5f, 26, 13, ta);
-                ripple(ctx, m, x + w - 21, yy + h / 2f);
-            } else Render2D.text(ctx, "›", x + w - 16, yy + h / 2f - 4, Theme.accent());
+            matchHighlight(ctx, name, x + 24, yy + 4);
+            Render2D.text(ctx, name, x + 24, yy + 4, ink, false);
+            float nx = x + 24 + Render2D.textWidth(name) + 6;
+            if (ExtraModules.isNew(m)) nx += newBadge(ctx, nx, yy + 3) + 4;
+            if (m.getKeybind().isBound()) keyChip(ctx, m, nx, yy + 3, sticker);
+            Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 90)), x + 24, yy + 13, soft, false);
+            if (toggleable) Album.toggle(ctx, x + w - 30, yy + h / 2f - 5, 22, 10, anim(m.getName() + "_on", 16).target(m.isEnabled() ? 1 : 0).update());
+            else Render2D.text(ctx, "›", x + w - 12, yy + h / 2f - 4, Theme.accentLight(), false);
+            if (m.isFavorite()) Icons.star(ctx, x + w - 42, yy + h / 2f, 3.6f, ThemeTokens.DOT_WAIT, true);
             hit(x, y, w, h, true, cardAction(m, x, y, w, h));
-            hit(sx - 7, sy - 7, 14, 14, true, (a, b, c) -> toggleFavorite(m));
             return;
         }
 
-        Icons.tile(ctx, m.getCategory(), x + 7, yy + 7, 18, ta);
-        matchHighlight(ctx, Render2D.trim(m.getName(), (int) (w - 48)), x + 30, yy + 7);
-        Render2D.text(ctx, Render2D.trim(m.getName(), (int) (w - 48)), x + 30, yy + 7, Theme.TEXT);
-        String cat = m.getCategory().displayName.toUpperCase();
-        Render2D.scaledText(ctx, cat, x + 30, yy + 17.5f, 0.6f, ColorUtil.withAlpha(m.getCategory().color, 200), false);
-        if (ExtraModules.isNew(m)) newBadge(ctx, x + 33 + Render2D.textWidth(cat) * 0.6f, yy + 15.5f);
-        if (guiModule().showDescriptions.isOn()) {
-            String d = m.getDescription();
-            int maxW = (int) ((w - 16) / 0.75f);
-            String l1 = d, l2 = "";
-            if (Render2D.textWidth(d) > maxW) {
-                int cut = d.length();
-                while (cut > 0 && Render2D.textWidth(d.substring(0, cut)) > maxW) cut = d.lastIndexOf(' ', cut - 1);
-                if (cut <= 0) cut = Math.min(d.length(), 20);
-                l1 = d.substring(0, cut);
-                l2 = Render2D.trim(d.substring(cut).trim(), maxW);
-            }
-            Render2D.scaledText(ctx, l1, x + 8, yy + 29, 0.75f, Theme.TEXT_DIM, false);
-            if (!l2.isEmpty()) Render2D.scaledText(ctx, l2, x + 8, yy + 37, 0.75f, Theme.TEXT_DIM, false);
-        }
-
-        float by = yy + h - 17;
-        if (toggleable) {
-            boolean gh = hovered(mx, my, x + 6, by, 50, 14, true);
-            float ga = anim(m.getName() + "_gear", 16).target(gh ? 1 : 0).update();
-            int gc = ColorUtil.lerp(Theme.TEXT_MUTED, Theme.accent(), ga);
-            Icons.sliders(ctx, x + 12.5f, by + 6.5f, 8, gc);
-            Render2D.text(ctx, "Opcje", x + 20 + ga * 1.5f, by + 3, gc);
-            Widgets.toggle(ctx, x + w - 32, by, 26, 13, ta);
-            ripple(ctx, m, x + w - 19, by + 6.5f);
-        } else {
-            Render2D.text(ctx, "Otwórz ›", x + w - 8 - Render2D.textWidth("Otwórz ›"), by + 3, Theme.accent());
-        }
+        Icons.category(ctx, m.getCategory(), x + 10, yy + 10, 9, iconC);
+        boolean desc = guiModule().showDescriptions.isOn();
+        String name = Render2D.trim(m.getName(), (int) (w - 12));
+        float nameY = desc ? yy + 18 : yy + h - 25;
+        matchHighlight(ctx, name, x + 6, nameY);
+        Render2D.text(ctx, name, x + 6, nameY, ink, false);
+        String cat = m.getCategory().displayName;
+        if (desc) Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 12)), x + 6, yy + 29, soft, false);
+        Render2D.text(ctx, Render2D.trim(cat, (int) (w - 30)), x + 6, yy + h - 13, soft, false);
         if (m.getKeybind().isBound()) {
-            float kw = Render2D.textWidth(m.getKeybind().getKeyName()) * 0.75f + 8;
-            keyChip(ctx, m, x + w - (toggleable ? 38 : 8 + Render2D.textWidth("Otwórz ›") + 6) - kw, by + 1);
+            String k = m.getKeybind().getKeyName();
+            float kx = x + w - 5 - (sticker ? Render2D.textWidth(k) + 4 : Album.keycapWidth(k));
+            if (sticker) Album.keycapLight(ctx, k, kx, yy + h - 15);
+            else Album.keycap(ctx, k, kx, yy + h - 15);
+        }
+        if (ExtraModules.isNew(m)) newBadge(ctx, x + w - Album.labelWidth("nowy") + 2, yy - 4);
+
+        // favourite star + settings shortcut (visible on hover; the star stays when favourite)
+        boolean hs = hovered(mx, my, starX - 6, starY - 6, 12, 12, true);
+        float sa = anim(m.getName() + "_star", 16).target(hs ? 1 : 0).update();
+        float sy = starY - (yy == y ? 0 : y - yy) + (ExtraModules.isNew(m) ? 6 : 0);
+        if (m.isFavorite()) Icons.star(ctx, starX, sy, 3.8f + sa * 0.6f, ThemeTokens.DOT_WAIT, true);
+        else if (hov) Icons.star(ctx, starX, sy, 3.8f + sa * 0.6f, ColorUtil.lerp(soft, ThemeTokens.DOT_WAIT, sa), false);
+        if (hov && toggleable) {
+            boolean hg = hovered(mx, my, gearX - 6, starY - 6, 12, 12, true);
+            Icons.sliders(ctx, gearX, sy, 7, hg ? Theme.accent() : soft);
+            hit(gearX - 6, starY - 6 + (ExtraModules.isNew(m) ? 6 : 0), 12, 12, true, (a, b, c) -> switchPage(Page.SETTINGS, m));
         }
         hit(x, y, w, h, true, cardAction(m, x, y, w, h));
-        hit(sx - 7, sy - 7, 14, 14, true, (a, b, c) -> toggleFavorite(m));
-    }
-
-    /** Expanding ring from a toggle that was just switched. */
-    private void ripple(Gfx ctx, Module m, float cx, float cy) {
-        Long t = toggledAt.get(m);
-        if (t == null) return;
-        float p = (System.currentTimeMillis() - t) / 420f;
-        if (p >= 1) { toggledAt.remove(m); return; }
-        float e = Animation.easeOutCubic(p);
-        int c = m.isEnabled() ? Theme.accent() : 0xFFB0A3CF;
-        Render2D.ring(ctx, cx, cy, 6 + 12 * e, 1.4f, 0, 360, ColorUtil.withAlpha(c, (int) (170 * (1 - p))));
+        hit(starX - 6, starY - 6 + (ExtraModules.isNew(m) ? 6 : 0), 12, 12, true, (a, b, c) -> toggleFavorite(m));
     }
 
     /** Soft accent mark behind the part of a module name that matches the search. */
@@ -666,22 +704,18 @@ public class ClickGuiScreen extends NoreScreen {
         if (i < 0) return;
         float sx = x + Render2D.textWidth(name.substring(0, i)) - 1;
         float sw = Render2D.textWidth(name.substring(i, Math.min(name.length(), i + q.length()))) + 2;
-        Render2D.roundedRect(ctx, sx, y - 1.5f, sw, 11, 2, ColorUtil.withAlpha(Theme.accent(), 70));
-        Render2D.rect(ctx, sx + 1, y + 9, sw - 2, 0.8f, ColorUtil.withAlpha(Theme.accent(), 220));
+        Render2D.rect(ctx, sx + 1, y + 9, sw - 2, 1, Theme.accent());
     }
 
-    private void keyChip(Gfx ctx, Module m, float kx, float ky) {
+    private void keyChip(Gfx ctx, Module m, float kx, float ky, boolean light) {
         String k = m.getKeybind().getKeyName();
-        float kw = Render2D.textWidth(k) * 0.75f + 8;
-        Render2D.roundedRect(ctx, kx, ky, kw, 11, 3, 0x26FFFFFF);
-        Render2D.roundedOutline(ctx, kx, ky, kw, 11, 3, 1, 0x18FFFFFF);
-        Render2D.scaledText(ctx, k, kx + 4, ky + 2.5f, 0.75f, Theme.TEXT_DIM, false);
+        if (light) Album.keycapLight(ctx, k, kx, ky);
+        else Album.keycap(ctx, k, kx, ky);
     }
 
     private ClickAction cardAction(Module m, float x, float y, float w, float h) {
         return (cx, cy, button) -> {
-            boolean onOptions = !listView && cx < x + 56 && cy > y + h - 20;
-            if (button == 1 || !m.isToggleable() || onOptions || (listView && cx < x + w - 60)) {
+            if (button == 1 || !m.isToggleable()) {
                 switchPage(Page.SETTINGS, m);
             } else if (button == 0) {
                 m.toggle();
@@ -701,8 +735,8 @@ public class ClickGuiScreen extends NoreScreen {
         // top row: enabled + keybind
         if (m.isToggleable()) {
             y = row(ctx, x, y, w, 30, "Włączony", "Włącz lub wyłącz moduł", mx, my);
-            float ta = anim(m.getName() + "_on", 14).target(m.isEnabled() ? 1 : 0).update();
-            Widgets.toggle(ctx, x + w - 40, y - 30 + 9, 30, 13, ta);
+            float ta = anim(m.getName() + "_on", 16).target(m.isEnabled() ? 1 : 0).update();
+            Album.toggle(ctx, x + w - 34, y - 30 + 8, 24, 11, ta);
             hit(x, y - 30, w, 30, true, (a, b, c) -> {
                 m.toggle();
                 Sounds.toggle(m.isEnabled());
@@ -736,17 +770,17 @@ public class ClickGuiScreen extends NoreScreen {
     private float row(Gfx ctx, float x, float y, float w, float h, String name, String desc, double mx, double my) {
         boolean hov = hovered(mx, my, x, y, w, h, true);
         float ha = anim("row_" + (selected == null ? "" : selected.getName()) + name, 16).target(hov ? 1 : 0).update();
-        Render2D.roundedRect(ctx, x, y, w, h - 4, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
-        Render2D.text(ctx, name, x + 9, y + 5, Theme.TEXT);
-        Render2D.scaledText(ctx, Render2D.trim(desc, 300), x + 9, y + 16, 0.75f, Theme.TEXT_MUTED, false);
+        Render2D.roundedRect(ctx, x, y, w, h - 4, Album.R, ColorUtil.lerp(Theme.raised(), Theme.RAISED_2, ha));
+        Render2D.text(ctx, name, x + 9, y + 4, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(desc, (int) (w * 0.62f)), x + 9, y + 14, Theme.TEXT_MUTED);
         return y + h;
     }
 
     private float boolRow(Gfx ctx, float x, float y, float w, BooleanSetting s, double mx, double my) {
         float top = y;
         y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
-        float ta = anim(s, 14).target(s.isOn() ? 1 : 0).update();
-        Widgets.toggle(ctx, x + w - 40, top + 9, 30, 13, ta);
+        float ta = anim(s, 16).target(s.isOn() ? 1 : 0).update();
+        Album.toggle(ctx, x + w - 34, top + 8, 24, 11, ta);
         hit(x, top, w, 26, true, (a, b, c) -> {
             s.toggle();
             Sounds.toggle(s.isOn());
@@ -757,17 +791,14 @@ public class ClickGuiScreen extends NoreScreen {
     private float numberRow(Gfx ctx, float x, float y, float w, NumberSetting s, double mx, double my) {
         float top = y;
         y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
-        float sw = 130, sx = x + w - sw - 12, sy = top + 12;
+        float sw = 120, sx = x + w - sw - 14, sy = top + 11;
         double range = s.getMax() - s.getMin();
         float target = (float) ((s.get() - s.getMin()) / range);
         float p = anim(s, 18).target(target).update();
-        Render2D.roundedRect(ctx, sx, sy, sw, 4, 2, 0xFF2E2621);
-        Render2D.roundedGradient(ctx, sx, sy, Math.max(4, sw * p), 4, 2, Theme.accent(), Theme.accent2(), false);
         boolean kh = drag != null && dragTarget == s || hovered(mx, my, sx - 4, top, sw + 8, 26, true);
-        float kr = kh ? 5 : 4;
-        Render2D.circle(ctx, sx + sw * p, sy + 2, kr, 0xFFFFFFFF);
+        Album.slider(ctx, sx, sy, sw, p, kh ? 1 : 0);
         String v = s.format();
-        Render2D.text(ctx, v, sx - 8 - Render2D.textWidth(v), top + 9, Theme.TEXT_DIM);
+        Album.label(ctx, v, sx - 10 - Album.labelWidth(v), top + 8, Theme.VINYL, Theme.VINYL_INK);
         hit(x, top, w, 26, true, (a, b, button) -> {
             if (button == 1) {
                 s.reset();
@@ -796,21 +827,23 @@ public class ClickGuiScreen extends NoreScreen {
             Render2D.circle(ctx, px - 8, py + 8, 5, swatch[1]);
             Render2D.ring(ctx, px - 18, py + 8, 5, 1, 0, 360, 0x40FFFFFF);
         }
-        Render2D.roundedRect(ctx, px, py, pw, 16, 8, hov ? Theme.CARD_HOVER : 0xFF2A231D);
-        Render2D.text(ctx, "‹", px + 6, py + 4, hov ? Theme.accent() : Theme.TEXT_MUTED);
-        Render2D.text(ctx, "›", px + pw - 10, py + 4, hov ? Theme.accent() : Theme.TEXT_MUTED);
+        // segmented look: slot track, the chosen value is a white sticker pill
+        Render2D.roundedRect(ctx, px, py, pw, 16, 8, Theme.SLOT);
+        Album.sticker(ctx, px + 13, py + 2, pw - 26, 12, 6, Theme.VINYL, 0);
+        Render2D.text(ctx, "‹", px + 4, py + 4, hov ? Theme.accentLight() : Theme.TEXT_MUTED);
+        Render2D.text(ctx, "›", px + pw - 9, py + 4, hov ? Theme.accentLight() : Theme.TEXT_MUTED);
         Animation slide = anim("mode_" + s.hashCode(), 16);
         slide.update();
         float sv = slide.get();
         ctx.scissor((int) ((px + 14 + ox) * scale), (int) ((py + oy - scroll.get()) * scale),
                 (int) ((px + pw - 14 + ox) * scale), (int) ((py + 16 + oy - scroll.get()) * scale));
-        Render2D.centeredText(ctx, Render2D.trim(s.get(), (int) pw - 26), px + pw / 2f + sv * 30, py + 4,
-                ColorUtil.fade(Theme.TEXT, 1 - Math.abs(sv)), false);
+        Render2D.centeredText(ctx, Render2D.trim(s.get(), (int) pw - 30), px + pw / 2f + sv * 30 * Motion.travel(), py + 4,
+                ColorUtil.fade(Theme.VINYL_INK, 1 - Math.abs(sv)), false);
         ctx.endScissor();
         int idx = s.getModes().indexOf(s.get());
         float dotW = s.getModes().size() * 5f;
         for (int i = 0; i < s.getModes().size(); i++) {
-            Render2D.circle(ctx, px + pw / 2f - dotW / 2f + i * 5 + 2.5f, py + 19.5f, 1.2f, i == idx ? Theme.accent() : 0x40FFFFFF);
+            Render2D.circle(ctx, px + pw / 2f - dotW / 2f + i * 5 + 2.5f, py + 20f, 1.2f, i == idx ? Theme.accent() : Theme.GHOST);
         }
         hit(x, top, w, 26, true, (a, b, button) -> {
             boolean forward = button == 0 && !(a >= px && a < px + pw / 2f && b >= py && b < py + 16);
@@ -830,15 +863,15 @@ public class ClickGuiScreen extends NoreScreen {
         float top = y;
         boolean hov = hovered(mx, my, x, y, w, 26, true);
         float ha = anim("row_c_" + s.hashCode(), 16).target(hov || expanded ? 1 : 0).update();
-        Render2D.roundedRect(ctx, x, y, w, 26 + extra, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
-        Render2D.text(ctx, s.getName(), x + 9, y + 5, Theme.TEXT);
-        Render2D.scaledText(ctx, s.getDescription(), x + 9, y + 16, 0.75f, Theme.TEXT_MUTED, false);
+        Render2D.roundedRect(ctx, x, y, w, 26 + extra, Album.R, ColorUtil.lerp(Theme.raised(), Theme.RAISED_2, ha));
+        Render2D.text(ctx, s.getName(), x + 9, y + 4, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(s.getDescription(), (int) (w * 0.55f)), x + 9, y + 14, Theme.TEXT_MUTED);
         float swx = x + w - 44;
         Widgets.checker(ctx, swx, top + 6, 32, 14, 4);
         Render2D.roundedRect(ctx, swx, top + 6, 32, 14, 3, s.getColor());
-        Render2D.roundedOutline(ctx, swx, top + 6, 32, 14, 3, 1, 0x40FFFFFF);
+        Render2D.roundedOutline(ctx, swx - 1, top + 5, 34, 16, 4, 1, Theme.VINYL);
         String hex = ColorUtil.toHex(s.get());
-        Render2D.scaledText(ctx, hex, swx - 6 - Render2D.textWidth(hex) * 0.8f, top + 10, 0.8f, Theme.TEXT_MUTED, false);
+        Render2D.text(ctx, hex, swx - 6 - Render2D.textWidth(hex), top + 9, Theme.TEXT_MUTED, false);
         hit(x, top, w, 26, true, (a, b, c) -> {
             expandedColor = expanded ? null : s;
             pickerHsb = ColorUtil.toHsb(s.get());
@@ -930,11 +963,13 @@ public class ClickGuiScreen extends NoreScreen {
         float top = y;
         y = row(ctx, x, y, w, 30, s.getName(), "Kliknij i naciśnij klawisz (ESC = anuluj, DEL = usuń)", mx, my);
         boolean isListening = listening == s;
-        String label = isListening ? "Naciśnij klawisz..." : s.getKeyName();
+        String label = isListening ? "Naciśnij klawisz..." : "None".equals(s.getKeyName()) ? "Brak" : s.getKeyName();
         float bw = Math.max(60, Render2D.textWidth(label) + 16), bx = x + w - bw - 10;
-        float la = anim(s, 14).target(isListening ? 1 : 0).update();
-        Render2D.roundedRect(ctx, bx, top + 5, bw, 16, Theme.radius(), ColorUtil.lerp(0xFF2A231D, ColorUtil.withAlpha(Theme.accent(), 120), la));
-        Render2D.centeredText(ctx, label, bx + bw / 2f, top + 9, isListening ? Theme.TEXT : Theme.TEXT_DIM, false);
+        float la = anim(s, 16).target(isListening ? 1 : 0).update();
+        // keycap: page face with a dark lip; while listening it is an accent-deep sticker
+        Render2D.roundedRect(ctx, bx, top + 6, bw, 15, 3, 0xFF000000);
+        Render2D.roundedRect(ctx, bx, top + 5, bw, 15, 3, ColorUtil.lerp(Theme.PAGE_SOLID, Theme.accentDeep(), la));
+        Render2D.centeredText(ctx, label, bx + bw / 2f, top + 9, isListening ? 0xFFFFFFFF : Theme.TEXT_DIM, false);
         hit(x, top, w, 26, true, (a, b, button) -> {
             if (button == 1) {
                 s.set(Keys.UNKNOWN);
@@ -1015,15 +1050,12 @@ public class ClickGuiScreen extends NoreScreen {
 
     /** Small pill used for tabs, sorts and categories; returns its width. */
     private float pill(Gfx ctx, double mx, double my, float x, float y, float h, String label, boolean on, Object key, Runnable action) {
-        float w = Render2D.textWidth(label) * 0.8f + 14;
+        float w = Render2D.textWidth(label) + 12;
         boolean hov = hovered(mx, my, x, y, w, h, true);
         float ha = anim(key, 16).target(hov || on ? 1 : 0).update();
-        if (on) Widgets.glowBox(ctx, x, y, w, h, h / 2f, Theme.accent(), 0.2f, 0.85f);
-        else {
-            Render2D.roundedRect(ctx, x, y, w, h, h / 2f, ColorUtil.lerp(Theme.PANEL, Theme.CARD_HOVER, ha));
-            Render2D.roundedOutline(ctx, x, y, w, h, h / 2f, 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 110), ha));
-        }
-        Render2D.scaledText(ctx, label, x + 7, y + h / 2f - 3, 0.8f, on ? 0xFFFFFFFF : ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
+        if (on) Album.sticker(ctx, x, y, w, h, h / 2f, Theme.VINYL, 0);
+        else Render2D.roundedRect(ctx, x, y, w, h, h / 2f, ColorUtil.lerp(Theme.RAISED_2, Theme.CARD_HOVER, ha));
+        Render2D.text(ctx, label, x + 6, y + (h - 8) / 2f, on ? Theme.VINYL_INK : ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
         hit(x, y, w, h, true, (a, b, c) -> { Sounds.click(); action.run(); });
         return w;
     }
@@ -1063,15 +1095,15 @@ public class ClickGuiScreen extends NoreScreen {
 
         // sort + category pills (wrapping)
         float sx = x;
-        Render2D.scaledText(ctx, "SORTUJ", sx, y + 4, 0.65f, Theme.TEXT_MUTED, false);
-        sx += 32;
+        Render2D.text(ctx, "Sortuj", sx, y + 3, Theme.TEXT_MUTED, false);
+        sx += Render2D.textWidth("Sortuj") + 6;
         for (String[] srt : DL_SORTS) {
             sx += pill(ctx, mx, my, sx, y, 13, srt[1], dlSort.equals(srt[0]), "dls_" + srt[0], () -> { dlSort = srt[0]; runSearch(false); }) + 4;
         }
         y += 18;
         sx = x;
         for (String[] cat : DL_CATS) {
-            float cw = Render2D.textWidth(cat[1]) * 0.8f + 14;
+            float cw = Render2D.textWidth(cat[1]) + 12;
             if (sx + cw > x + w) { sx = x; y += 17; }
             sx += pill(ctx, mx, my, sx, y, 13, cat[1], dlCategory.equals(cat[0]), "dlc_" + cat[0], () -> { dlCategory = cat[0]; runSearch(false); }) + 4;
         }
@@ -1408,7 +1440,7 @@ public class ClickGuiScreen extends NoreScreen {
             }
         }
         // clicking empty space keeps focus state consistent
-        if (wasSearch && Render2D.hovered(mx, my, W - 162, 12, 150, 22)) search.setFocused(true);
+        if (wasSearch && Render2D.hovered(mx, my, W - 164, 12, 130, 18)) search.setFocused(true);
         if (wasProfile) profileName.setFocused(false);
         return true;
     }
@@ -1480,6 +1512,14 @@ public class ClickGuiScreen extends NoreScreen {
                 if (search.isFocused()) scroll.set(0);
                 return true;
             }
+        }
+        if (keyCode == Keys.F && game().controlDown()) {
+            if (page == Page.DOWNLOADS) dlSearch.setFocused(true);
+            else {
+                if (page != Page.MODULES) switchPage(Page.MODULES, null);
+                search.setFocused(true);
+            }
+            return true;
         }
         if (keyCode == Keys.ESCAPE) {
             if (page != Page.MODULES) switchPage(Page.MODULES, null);

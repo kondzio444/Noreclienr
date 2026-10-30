@@ -4,7 +4,8 @@
  *
  * Route kinds decide CORS: public (any origin), session (Nore sites with credentials), bot (none).
  */
-import { ApiError, send, sendError, corsHeaders, clientIp, etagOf, etagMatches, API2_VERSION, SECURITY_HEADERS } from './http.js';
+import { ApiError, send, sendError, corsHeaders, clientIp, etagOf, etagMatches, API2_VERSION, SECURITY_HEADERS, readJson } from './http.js';
+import { presence } from '../hub.js';
 import * as pub from './public.js';
 import { cachedPing, cacheKeyFor } from './slp.js';
 import { botRoute, SCHEMA } from './bot.js';
@@ -29,6 +30,7 @@ const ROUTES = [
   ['GET', /^\/players\/([^/]{1,64})$/, 'public', ({ env, m }) => pub.player(env, m[1]).then(body => ({ body, maxAge: 20 }))],
   ['GET', /^\/servers\/([^/]{1,300})\/favicon(?:\.png)?$/, 'public', serverFavicon],
   ['GET', /^\/servers\/([^/]{1,300})$/, 'public', server],
+  ['POST', /^\/presence$/, 'public', ({ request, env }) => readJson(request, 2048).then(b => presence(env, b)).then(body => ({ body }))],
   ['GET', /^\/stats$/, 'public', ({ env, ctx }) => pub.stats(env, ctx).then(body => ({ body, maxAge: 60 }))],
 
   ['GET', /^\/bot\/config\.schema\.json$/, 'public', () => ({ body: SCHEMA, raw: true, maxAge: 300 })],
@@ -55,6 +57,7 @@ export const ENDPOINTS_V2 = [
   ['GET', '/api/v2/players/{name}', 'Nore Hub: czy gracz używa Nore, czy jest online, co nosi'],
   ['GET', '/api/v2/servers/{address}', 'Ping serwera Minecraft: online, gracze, wersja, MOTD, ikona, opóźnienie'],
   ['GET', '/api/v2/servers/{address}/favicon', 'Ikona serwera Minecraft (PNG)'],
+  ['POST', '/api/v2/presence', 'Nore Client w grze: anonimowy sygnał co 60 s (licznik graczy online)'],
   ['GET', '/api/v2/stats', 'Statystyki: pobrania, gracze Nore online/znani, serwery z Nore Botem'],
   ['GET', '/api/v2/openapi.json', 'Opis OpenAPI 3.1'],
   ['GET', '/api/v2/bot/config.schema.json', 'Schemat konfiguracji Nore Bota (JSON Schema)'],

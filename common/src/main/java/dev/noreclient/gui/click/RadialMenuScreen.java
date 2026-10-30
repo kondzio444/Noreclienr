@@ -15,6 +15,7 @@ import dev.noreclient.util.ColorUtil;
 import dev.noreclient.util.Render2D;
 import dev.noreclient.util.Sounds;
 import dev.noreclient.util.Theme;
+import dev.noreclient.util.ThemeTokens;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -221,8 +222,7 @@ public class RadialMenuScreen extends NoreScreen {
         pointerAlpha.target(dist > hubR() && dist < out1() + 30 ? 1 : 0).update();
 
         // backdrop
-        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.8f, ColorUtil.withAlpha(0xFF241047, (int) (170 * fade)), ColorUtil.withAlpha(0xFF04020A, (int) (215 * fade)));
-        Render2D.radial(g, cx(), cy(), out1() * 1.5f, ColorUtil.withAlpha(Theme.accent(), (int) (46 * fade)), 0x00000000);
+        Render2D.radial(g, cx(), cy(), Math.max(width, height) * 0.8f, ColorUtil.withAlpha(Theme.page(), (int) (170 * fade)), ColorUtil.withAlpha(0xFF0A090C, (int) (215 * fade)));
 
         g.setAlpha(fade);
         orbitTrack(g, t);
@@ -261,15 +261,16 @@ public class RadialMenuScreen extends NoreScreen {
             float half = (span - gap) / 2f * e;
             float r0 = in0(), r1 = in1() + lift * size() * 0.012f;
             float z = -lift * 12;
-            int cIn = act ? ColorUtil.withAlpha(ColorUtil.lerp(Theme.accent(), 0xFF1A0E36, 0.35f), 240) : ColorUtil.lerp(0xE8140C26, 0xF02A1A52, lift);
-            int cOut = act ? ColorUtil.withAlpha(Theme.accent(), 250) : ColorUtil.lerp(0xE81E1438, ColorUtil.withAlpha(Theme.accent(), 235), lift * 0.75f);
-            arc(g, mid - half, mid + half, r0, r1, z, cIn, cOut);
-            arc(g, mid - half, mid + half, r1 - 1.2f, r1, z, ColorUtil.withAlpha(0xFFE9DEFF, (int) (70 + 150 * lift)), ColorUtil.withAlpha(0xFFE9DEFF, (int) (70 + 150 * lift)));
+            // Album: sectors are sheets; the pointed one is a white sticker, the open one an accent-deep sticker
+            boolean white = !act && lift > 0.5f;
+            int face = act ? Theme.accentDeep() : ColorUtil.lerp(ColorUtil.withAlpha(Theme.raised(), 0xF0), Theme.VINYL, Math.min(1, lift * 1.4f));
+            if (act || lift > 0.05f) arc(g, mid - half - 0.6f, mid + half + 0.6f, r0 - 1, r1 + 1, z, Theme.VINYL, Theme.VINYL);
+            arc(g, mid - half, mid + half, r0, r1, z, face, face);
             // icon + name
             float[] p = polar(mid, (r0 + r1) / 2f, z);
             float k = p[2] * (0.9f + 0.1f * e);
-            int col = ColorUtil.withAlpha(ColorUtil.lerp(Theme.TEXT_DIM, 0xFFFFFFFF, Math.max(lift, act ? 1 : 0)), (int) (255 * e));
-            s.icon.draw(g, p[0], p[1] - 6 * k, 6.5f * k, col);
+            int col = ColorUtil.withAlpha(act ? 0xFFFFFFFF : white ? Theme.VINYL_INK : Theme.TEXT_DIM, (int) (255 * e));
+            s.icon.draw(g, p[0], p[1] - 6 * k, 6.5f * k, white ? ColorUtil.withAlpha(Theme.accent(), (int) (255 * e)) : col);
             float ts = 0.68f * k;
             String name = Render2D.trim(s.name, (int) ((r1 - r0) * 1.9f / ts));
             Render2D.scaledText(g, name, p[0] - Render2D.textWidth(name) * ts / 2f, p[1] + 4 * k, ts, col, false);
@@ -302,17 +303,17 @@ public class RadialMenuScreen extends NoreScreen {
             float r0 = out0() + (1 - e) * 10, r1 = out1() + lift * size() * 0.014f;
             float z = -lift * 10;
             boolean on = m.isEnabled(), ok = m.isSupported();
-            int cIn, cOut;
-            if (on) { cIn = ColorUtil.withAlpha(ColorUtil.lerp(Theme.accent(), 0xFF140A2C, 0.45f), 235); cOut = ColorUtil.withAlpha(ColorUtil.lerp(Theme.accent(), Theme.accent2(), lift * 0.5f), 245); }
-            else { cIn = ColorUtil.lerp(0xE2120B22, 0xEE221640, lift); cOut = ColorUtil.lerp(0xE21A1230, 0xF2342452, lift); }
-            if (!ok) { cIn = ColorUtil.fade(cIn, 0.55f); cOut = ColorUtil.fade(cOut, 0.55f); }
-            arc(g, mid - half, mid + half, r0, r1, z, cIn, cOut);
-            int edge = on ? ColorUtil.withAlpha(0xFFFFFFFF, (int) (120 + 120 * lift)) : ColorUtil.withAlpha(0xFFC7B2FF, (int) (40 + 140 * lift));
-            arc(g, mid - half, mid + half, r1 - 1.1f, r1, z, edge, edge);
+            // Album: an enabled module is a white sticker with a vinyl rim, a disabled one its ghost slot
+            int face = on ? Theme.VINYL : ColorUtil.lerp(Theme.SLOT, ColorUtil.withAlpha(Theme.VINYL, 0x80), lift * 0.6f);
+            if (!ok) face = ColorUtil.fade(face, 0.55f);
+            if (on) arc(g, mid - half - 0.6f, mid + half + 0.6f, r0 - 1, r1 + 1, z, Theme.VINYL, Theme.VINYL);
+            arc(g, mid - half, mid + half, r0, r1, z, face, face);
+            if (!on) arc(g, mid - half + 0.8f, mid + half - 0.8f, r1 - 3, r1 - 2.2f, z, Theme.GHOST, Theme.GHOST);
             // state dot near the outer edge
             float[] d = polar(mid, r1 - 4.5f, z);
-            Render2D.circle(g, d[0], d[1], 1.7f * d[2], on ? 0xFFFFFFFF : ColorUtil.withAlpha(Theme.TEXT_MUTED, 200));
-            if (m.isFavorite()) Icons.star(g, polar(mid + half - 4, r1 - 5, z)[0], polar(mid + half - 4, r1 - 5, z)[1], 2.4f, 0xFFFFD166, true);
+            Render2D.circle(g, d[0], d[1], 2.3f * d[2], Theme.VINYL);
+            Render2D.circle(g, d[0], d[1], 1.5f * d[2], on ? ThemeTokens.DOT_READY : ThemeTokens.DOT_OFF);
+            if (m.isFavorite()) Icons.star(g, polar(mid + half - 4, r1 - 5, z)[0], polar(mid + half - 4, r1 - 5, z)[1], 2.4f, ThemeTokens.DOT_WAIT, true);
             // label (one or two lines, fitted to the tile)
             float[] p = polar(mid, (r0 + r1) / 2f - 1, z);
             float arcLen = (float) Math.toRadians(a1 - a0) * (r0 + r1) / 2f;
@@ -320,7 +321,7 @@ public class RadialMenuScreen extends NoreScreen {
             int maxW = (int) (arcLen * 0.9f / ts);
             List<String> lines = wrap(m.getName(), maxW);
             if (lines.size() > 2) { lines = lines.subList(0, 2); lines.set(1, Render2D.trim(lines.get(1) + "…", maxW)); }
-            int tc = ColorUtil.withAlpha(on ? 0xFFFFFFFF : ColorUtil.lerp(Theme.TEXT_DIM, 0xFFFFFFFF, lift), (int) (255 * e));
+            int tc = ColorUtil.withAlpha(on ? Theme.VINYL_INK : lift > 0.5f ? Theme.VINYL_INK : Theme.TEXT_MUTED, (int) (255 * e));
             float lh = 9.5f * ts;
             float y0 = p[1] - lines.size() * lh / 2f;
             for (int l = 0; l < lines.size(); l++) {
@@ -343,16 +344,15 @@ public class RadialMenuScreen extends NoreScreen {
         if (a < 0.02f) return;
         float c = pointer.get();
         float r = in0() - 3;
-        arc(g, c - 14, c + 14, r - 1.6f, r, -2, ColorUtil.withAlpha(Theme.accent2(), (int) (90 * a)), ColorUtil.withAlpha(Theme.accent2(), (int) (230 * a)));
+        arc(g, c - 12, c + 12, r - 1.6f, r, -2, ColorUtil.withAlpha(Theme.accent(), (int) (230 * a)), ColorUtil.withAlpha(Theme.accent(), (int) (230 * a)));
     }
 
     private void hub(Gfx g, float t) {
         float e = Animation.easeOutBack(t / 0.42f);
         float[] c = project(0, 0, -4);
         float r = hubR() * Math.max(0.01f, e) * c[2] * (hubHover ? 1.04f : 1f);
-        Render2D.circle(g, c[0], c[1], r + 3, ColorUtil.withAlpha(Theme.accent(), hubHover ? 110 : 55));
-        Render2D.radial(g, c[0], c[1], r, 0xF6241444, 0xF60C0718);
-        Render2D.ring(g, c[0], c[1], r, 1.1f, 0, 360, ColorUtil.withAlpha(Theme.accent2(), 150));
+        Render2D.circle(g, c[0], c[1], r + 1, Theme.VINYL);
+        Render2D.circle(g, c[0], c[1], r, hubHover ? Theme.RAISED_2 : Theme.page());
         if (e < 0.6f) return;
         float w = r * 1.75f;
 
@@ -392,7 +392,7 @@ public class RadialMenuScreen extends NoreScreen {
         } else {
             title = "NORE"; sub = NoreClient.get().modules().getModules().size() + " modułów";
         }
-        Render2D.logo(g, c[0] - 8, c[1] - r * 0.62f, 16, 1f);
+        dev.noreclient.gui.widget.Album.logo(g, c[0] - 8, c[1] - r * 0.62f, 16, 1f);
         float ts = 1.0f;
         String tt = Render2D.trim(title, (int) (w / ts));
         Render2D.scaledText(g, tt, c[0] - Render2D.textWidth(tt) * ts / 2f, c[1] - 1, ts, 0xFFFFFFFF, false);
