@@ -85,6 +85,7 @@ public final class NoreClient {
             instance.nextTick.clear();
         }
         for (Runnable r : run) r.run();
+        DevScreens.tick();
         dev.noreclient.module.social.Social.tick();
         instance.moduleManager.onTick();
     }

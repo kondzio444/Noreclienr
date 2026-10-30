@@ -219,13 +219,13 @@ public class FriendsScreen extends PanelScreen {
             float a = anim("p" + p.key()).target(sel ? 1 : hov ? 0.5f : 0).update();
             float e = Animation.easeOutCubic((System.currentTimeMillis() - opened - i * 35L) / 320f);
             float rx = x + (1 - e) * 14;
-            Render2D.roundedRect(g, rx, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA0160F26, ColorUtil.withAlpha(Theme.accent(), 64), a));
+            Render2D.roundedRect(g, rx, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA01E1B21, ColorUtil.withAlpha(Theme.accent(), 64), a));
             if (sel) Render2D.roundedOutline(g, rx, ry, lw, row, Theme.radius(), 1, ColorUtil.withAlpha(Theme.accent(), 170));
             int st = p.state();
             if (st != lastState && i > 0) Render2D.rect(g, rx + 8, ry - 2, lw - 16, 1, 0x18FFFFFF);
             lastState = st;
             SocialWidgets.head(g, p.name, rx + 5, ry + 5, 20);
-            Render2D.circle(g, rx + 24, ry + 24, 3.2f, 0xFF120C1E);
+            Render2D.circle(g, rx + 24, ry + 24, 3.2f, 0xFF141216);
             Render2D.circle(g, rx + 24, ry + 24, 2.4f, SocialWidgets.stateColor(st));
             float nx = rx + 30;
             int unread = p.unread();

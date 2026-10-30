@@ -22,6 +22,28 @@ public final class MenuBackground {
         }
     }
 
+    /** The cherry pond at night (Halloween "lights out"); false when the panorama is not ready yet. */
+    public static boolean renderNight(Gfx g, int width, int height, int mouseX, int mouseY) {
+        if (!MenuPanorama.render(g, width, height, 22 * 60, mouseX)) return false;
+        Render2D.rect(g, 0, 0, width, height, 0x400B0A0C);
+        return true;
+    }
+
+    /** "Wiśniowy staw · dzień" for the credit line in the corner (null for other backgrounds). */
+    public static String sceneLabel(boolean night) {
+        String mode = mode();
+        if (mode.startsWith("Mgławica")) return "Mgławica · NASA/ESA/CSA/STScI";
+        if (!mode.startsWith("Wiśniowy") && !mode.startsWith("Scena")) return null;
+        float min;
+        try {
+            min = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class).sceneMinutes();
+        } catch (Exception e) {
+            min = 600;
+        }
+        String when = night ? "noc" : min >= 360 && min < 1020 ? "dzień" : min >= 1020 && min < 1200 ? "zachód" : "noc";
+        return (mode.startsWith("Scena") ? "Scena Nore" : "Wiśniowy staw") + " · " + when;
+    }
+
     public static void render(Gfx g, int width, int height, int mouseX, int mouseY) {
         double t = (System.currentTimeMillis() - START) / 1000.0;
         float tx = (mouseX - width / 2f) / Math.max(1, width), ty = (mouseY - height / 2f) / Math.max(1, height);
@@ -31,7 +53,7 @@ public final class MenuBackground {
         if (mode.startsWith("Wiśniowy")) {
             dev.noreclient.module.client.ClientSettings cs = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class);
             if (MenuPanorama.render(g, width, height, cs.sceneMinutes(), mouseX)) {
-                Render2D.quadGradient(g, 0, 0, width, height, 0x400A0614, 0x000A0614, 0x000A0614, 0x400A0614);
+                Render2D.quadGradient(g, 0, 0, width, height, 0x400A090C, 0x000A090C, 0x000A090C, 0x400A090C);
                 Render2D.quadGradient(g, 0, height * 0.7f, width, height * 0.3f, 0, 0, 0x60050308, 0x60050308);
                 return;
             }
@@ -40,7 +62,7 @@ public final class MenuBackground {
         if (mode.startsWith("Scena")) {
             dev.noreclient.module.client.ClientSettings cs = dev.noreclient.NoreClient.get().modules().get(dev.noreclient.module.client.ClientSettings.class);
             NoreScene.render(g, width, height, cs.sceneMinutes());
-            Render2D.quadGradient(g, 0, 0, width, height, 0x700A0614, 0x200A0614, 0x200A0614, 0x700A0614);
+            Render2D.quadGradient(g, 0, 0, width, height, 0x700A090C, 0x200A090C, 0x200A090C, 0x700A090C);
             Render2D.quadGradient(g, 0, height * 0.62f, width, height * 0.38f, 0, 0, 0x90050308, 0x90050308);
             return;
         }

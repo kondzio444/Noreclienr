@@ -21,7 +21,8 @@ public final class ConnectOverlay {
         ServerInfo.Info info = ServerInfo.get(address);
         float w = Math.min(300, width - 40), h = 48, x = (width - w) / 2f, y = height / 2f - 30 + (1 - p) * 10;
         g.setAlpha(p);
-        Render2D.scaledText(g, "ŁĄCZENIE Z", x + 2, y - 10, 0.7f, ColorUtil.brighten(Theme.accent(), 0.3f), true);
+        dev.noreclient.gui.widget.Album.dot(g, x + 4, y - 7, 2, dev.noreclient.util.ThemeTokens.DOT_WAIT);
+        Render2D.text(g, "Łączenie z", x + 10, y - 11, Theme.TEXT, true);
         ServerCard.row(g, info, name == null || name.isEmpty() ? address : name, x, y, w, h, 0.4f, true);
         if (name != null && !name.equals(address)) {
             Render2D.scaledText(g, address, x + w - 4 - Render2D.textWidth(address) * 0.6f, y + h + 3, 0.6f, Theme.TEXT_MUTED, true);
