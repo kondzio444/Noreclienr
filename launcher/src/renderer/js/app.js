@@ -319,7 +319,7 @@ function onboarding() {
         const acc = App.account();
         pane.innerHTML = `<div class="wz-body">
           ${head('', 'Czyj to <span>album?</span>', 'Wystarczy nick – grasz od razu, bez logowania. Konto Microsoft (premium) możesz dodać teraz albo kiedyś w zakładce Konta.')}
-          ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'Premium (Microsoft)' : 'Non-premium'} · zalogowano</small></div>${icon('check', 'ok')}</div>` : ''}
+          ${acc ? `<div class="wz-current wz-in">${avatarHtml(acc)}<div><b>${esc(acc.name)}</b><small>${acc.type === 'microsoft' ? 'premium (Microsoft)' : 'bez premium'} · gotowe</small></div>${icon('check', 'ok')}</div>` : ''}
           <div class="login-options wz-in">
             <div class="card hover login-option primary" id="w-off">
               <div class="ico">${icon('user')}</div>
