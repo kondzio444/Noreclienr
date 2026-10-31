@@ -8,7 +8,8 @@
     "missing_user_perms": "Potrzebujesz uprawnień: {perms}",
     "missing_bot_perms": "Brakuje mi uprawnień: {perms}",
     "cooldown": "Zwolnij! Spróbuj ponownie za {seconds} s.",
-    "cannot_send": "Nie mogę pisać na {channel} – sprawdź moje uprawnienia na tym kanale."
+    "cannot_send": "Nie mogę pisać na {channel} – sprawdź moje uprawnienia na tym kanale.",
+    "blacklisted": "Twoje konto jest zablokowane w Nore – nie możesz używać Nore Bota."
   },
   "common": {
     "confirm": "Potwierdź",
@@ -1477,7 +1478,8 @@
     "event_start_template": "🎉 **{event}** właśnie się zaczęło! {role}",
     "event_end_template": "{role}",
     "event_reminder_7d": "⏳ **{event}** startuje za tydzień – {when}! {role}",
-    "event_reminder_1d": "⏰ **{event}** startuje już jutro – {when}! {role}"
+    "event_reminder_1d": "⏰ **{event}** startuje już jutro – {when}! {role}",
+    "announcement_template": "📢 **{title}** {role}"
   },
   "player": {
     "nore": "Nore",
@@ -2473,6 +2475,10 @@
         "_label": "Wydarzenia (start / koniec)",
         "reminders": "Przypomnienia przed startem",
         "reminders_help": "Tydzień i dzień przed startem wydarzenia."
+      },
+      "announcements": {
+        "_label": "Ogłoszenia Nore",
+        "_help": "Ogłoszenia zespołu Nore dla Discorda (przerwy techniczne, wydarzenia, ważne zmiany)."
       }
     },
     "social": {

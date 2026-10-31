@@ -82,3 +82,11 @@ The mod (`dev.noreclient.cosmetic.Wardrobe`) writes and reads it and ignores wha
 
 Without the launcher (no `-Dnoreclient.chatBridge`) the game still reads `/api/v1/hub/players`
 (it sees other Nore users) but does not publish itself.
+
+## Blacklist and launcher version (admin API, docs/admin-api.md)
+
+* The admin blacklist (Minecraft names, UUIDs, Nore IDs) is pushed to the NoreHub object on every
+  change. A blacklisted player's online hello answers `403 { error }` and they are left out of
+  `/api/v1/hub/players` and `/api/v2/players/:name`.
+* The hello may carry an optional `client` (`^[\w.+-]{1,32}$`, the launcher version). It is not part
+  of the signature and only feeds the admin overview (versions in use).

@@ -36,11 +36,14 @@ and **mc.noreclient.pl** (`www.*` redirects to the apex host).
   30 s cache, 20 pings/min per IP (`SLP_LIMIT` rate-limit binding).
 * Nore Bot (`bot/*`, header `Authorization: Bot <NORE_BOT_SECRET>`) and the panel (`auth/*`, `me`,
   `panel/guilds/:id`) follow `docs/bot-api.md`.
+* Administration (`admin/*`, `Authorization: Admin <ADMIN_TOKEN>` or an admin's panel session) and its
+  public readers (`announcements`, `client/config`, `blacklist/check`), release files
+  (`files/:version/:name`, `updates/feed/:name`) follow `docs/admin-api.md`.
 
 ## Bindings and migrations (`wrangler.jsonc`)
 
 * Durable Objects (SQLite): `HUB` → `NoreHub` (migration `hub-v1`), `BOT` → `NoreBot` and
-  `COUNTERS` → `NoreCounters` (migration `bot-v1`).
+  `COUNTERS` → `NoreCounters` (migration `bot-v1`), `ADMIN` → `NoreAdmin` (migration `admin-v1`).
 * Rate limit: `SLP_LIMIT` (namespace 4201, 20 / 60 s).
 * `run_worker_first: true` (host routing needs the Worker in front of the static files).
 * Custom domains `noreclient.pl`, `www.noreclient.pl`, `mc.noreclient.pl` need the zone
@@ -54,6 +57,10 @@ npx wrangler secret put SESSION_KEY           # ≥ 32 random chars, signs the p
 npx wrangler secret put DISCORD_CLIENT_ID     # the Nore Bot application (OAuth2)
 npx wrangler secret put DISCORD_CLIENT_SECRET
 # already used by API v1: MS_CLIENT_ID, CF_API_KEY, optional GITHUB_TOKEN
+# admin API (docs/admin-api.md), used by the private AdmNoreclient app:
+npx wrangler secret put ADMIN_TOKEN           # ≥ 32 random chars: openssl rand -base64 48
+npx wrangler secret put ADMIN_DISCORD_IDS     # Discord user IDs allowed in with their panel login, comma separated
+# private repository: GITHUB_TOKEN (Contents: read) + RELEASES_PRIVATE=true → links go through /api/v2/files/…
 ```
 
 In the Discord developer portal add the OAuth2 redirects
@@ -82,6 +89,6 @@ npm run bundle    # minified bundle in dist/wr (wrangler deploy --dry-run), no d
 ```
 
 Test-only variables (never set in production): `GITHUB_API`, `DISCORD_API`, `DISCORD_AUTHORIZE`,
-`DOH_URL`, `SLP_ALLOW_IPS`, `TEST_HOST_HEADER`, `PANEL_ORIGINS`, `MOJANG_SESSION`.
+`DOH_URL`, `SLP_ALLOW_IPS`, `TEST_HOST_HEADER`, `PANEL_ORIGINS`, `MOJANG_SESSION`, `ADMIN_MC_SERVER`, `PUBLIC_ORIGIN`.
 `scripts/test/v1-golden.json` is the recorded API v1 output; `npm test` fails if v1 changes
 (`node scripts/test/v1-dump.mjs <file>` records a new one).

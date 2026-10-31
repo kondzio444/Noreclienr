@@ -14,6 +14,7 @@ import GOLDEN from './test/v1-golden.json' with { type: 'json' };
 const FAKE = 8790, DEV = 8788;
 const BOT_SECRET = 'test-bot-secret-0123456789';
 const SESSION_KEY = 'test-session-key-0123456789abcdef0123456789';
+const ADMIN_TOKEN = 'test-admin-token-0123456789abcdef0123456789';
 const G1 = '900000000000000001', G2 = '900000000000000002', G3 = '900000000000000003', G4 = '900000000000000004';
 
 const fakes = await startHttpFakes(FAKE);
@@ -31,9 +32,10 @@ const dev = await startDev({
   vars: {
     GITHUB_API: `http://127.0.0.1:${FAKE}/github`, DISCORD_API: `http://127.0.0.1:${FAKE}/discord`, DOH_URL: `http://127.0.0.1:${FAKE}/doh`,
     SLP_ALLOW_IPS: '127.0.0.1', NORE_BOT_SECRET: BOT_SECRET, SESSION_KEY, DISCORD_CLIENT_ID: 'test-client', DISCORD_CLIENT_SECRET: 'test-client-secret',
-    TEST_HOST_HEADER: 'X-Nore-Test-Host',
+    TEST_HOST_HEADER: 'X-Nore-Test-Host', ADMIN_TOKEN, ADMIN_DISCORD_IDS: '111111111111111111, 333333333333333333', ADMIN_MC_SERVER: '127.0.0.1:25599',
   },
 });
+let priv = null;
 const BASE = dev.base;
 let passed = 0;
 const step = (what) => { passed++; console.log('ok  ', what); };
@@ -405,6 +407,154 @@ try {
   r = await get('/api/v2/bot/config.schema.json'); assert.equal(r.json.type, 'object'); assert.equal(r.json.ok, undefined);
   step('schema served at /api/v2/bot/config.schema.json');
 
+  // ------------------------------------------------------------ admin API (docs/admin-api.md)
+  const adm = (method, p, body, token = ADMIN_TOKEN, extra = {}) => req(method, '/api/v2/admin' + p, { body, headers: token === null ? extra : { Authorization: `Admin ${token}`, ...extra } });
+  r = await adm('GET', '/me', undefined, null); assert.equal(r.status, 401); assert.equal(r.headers.get('www-authenticate'), 'Admin realm="nore-admin"');
+  r = await adm('GET', '/me', undefined, 'wrong-token-wrong-token-wrong-token-xx'); assert.equal(r.status, 401); assert.match(r.json.error, /Zły token/);
+  r = await req('GET', '/api/v2/admin/me', { headers: { Authorization: `Bearer ${ADMIN_TOKEN}` } }); assert.equal(r.status, 401);
+  r = await adm('GET', '/me'); assert.equal(r.status, 200, r.text); assert.equal(r.json.actor.via, 'token'); assert.equal(r.headers.get('cache-control'), 'private, no-store');
+  assert.equal(r.json.features.mcServer, '127.0.0.1:25599');
+  r = await get('/api/v2/admin/me', { cookie: alice }); assert.equal(r.status, 200, r.text); assert.deepEqual(r.json.actor, { via: 'discord', id: '111111111111111111', name: 'Alice' });
+  r = await get('/api/v2/admin/me', { cookie: bob }); assert.equal(r.status, 403); assert.equal(r.json.code, 'not_admin');
+  r = await req('POST', '/api/v2/admin/announcements', { cookie: alice, body: { title: 'x' }, headers: { Origin: 'https://evil.example' } }); assert.equal(r.status, 403); assert.equal(r.json.code, 'bad_origin');
+  r = await req('OPTIONS', '/api/v2/admin/me', { headers: { Origin: 'https://evil.example' } }); assert.equal(r.headers.get('access-control-allow-origin'), null);
+  r = await adm('GET', '/nope'); assert.equal(r.status, 404);
+  step('admin auth: token (constant-time) or Discord session in ADMIN_DISCORD_IDS; others 401/403, CSRF origin, no foreign CORS');
+
+  // blacklist → Nore Hub
+  r = await get('/api/v1/hub/players?names=nore_tester'); assert.ok(r.json.players.nore_tester);
+  r = await adm('POST', '/blacklist', { kind: 'auto', value: 'Nore_Tester', reason: 'cheaty' });
+  assert.equal(r.status, 201, r.text); assert.equal(r.json.entry.kind, 'mc_name'); assert.equal(r.json.entry.value, 'nore_tester'); assert.equal(r.json.hubSynced, true);
+  r = await get('/api/v1/hub/players?names=nore_tester'); assert.deepEqual(r.json.players, {});
+  r = await get('/api/v2/players/Nore_Tester'); assert.equal(r.json.player.nore, false);
+  r = await get('/api/v2/blacklist/check?name=NORE_TESTER'); assert.equal(r.json.blocked, true); assert.equal(r.json.matches[0].reason, 'cheaty');
+  r = await get('/api/v2/blacklist/check?name=Somebody'); assert.equal(r.json.blocked, false);
+  // the game's presence heartbeat with a blacklisted nick is refused and not counted
+  const statsBefore = (await get('/api/v1/hub/stats')).json.online;
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'ef'.repeat(16), online: true, name: 'NORE_tester', mc: '1.21.1' } }); assert.equal(r.status, 403, r.text); assert.match(r.json.error, /zablokowane/);
+  assert.equal((await get('/api/v1/hub/stats')).json.online, statsBefore);
+  r = await get('/api/v2/blacklist/check'); assert.equal(r.status, 400);
+  // a blacklisted Nore ID cannot say hello
+  const kp2 = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+  const pub2 = kp2.publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+  const hex2 = crypto.createHash('sha256').update(Buffer.from(pub2, 'base64')).digest('hex').slice(0, 20);
+  r = await adm('POST', '/blacklist', { kind: 'nore_id', value: hex2.toUpperCase(), expiresAt: new Date(Date.now() + 86400000).toISOString() }); assert.equal(r.status, 201); assert.equal(r.json.entry.value, hex2);
+  const hb2 = { name: 'Banned_One', uuid: crypto.randomBytes(16).toString('hex'), premium: false, hex: hex2, pub: pub2, ts: Date.now(), online: true, cosmetics: { v: 1, slots: {} }, client: '1.5.0' };
+  hb2.sig = crypto.sign('sha256', Buffer.from(`nore-hub/1|${hb2.name}|${hb2.uuid}|${hb2.hex}|${hb2.ts}|1|${crypto.createHash('sha256').update(JSON.stringify(hb2.cosmetics)).digest('hex')}`), kp2.privateKey).toString('base64');
+  r = await req('POST', '/api/v1/hub/hello', { body: hb2 }); assert.equal(r.status, 403, r.text); assert.match(r.json.error, /zablokowane/);
+  r = await adm('POST', '/blacklist', { kind: 'discord', value: '222222222222222222', reason: 'spam' }); assert.equal(r.status, 201); assert.equal(r.json.hubSynced, null);
+  r = await adm('POST', '/blacklist', { kind: 'discord', value: '222222222222222222', reason: 'spam 2' }); assert.equal(r.status, 200); assert.equal(r.json.updated, true);
+  for (const bad of [{ kind: 'mc_name', value: 'a b' }, { kind: 'nore_id', value: 'xyz' }, { kind: 'bogus', value: 'Steve' }, { kind: 'auto', value: '!!' }, { kind: 'mc_name', value: 'Steve', expiresAt: '2001-01-01' }]) {
+    r = await adm('POST', '/blacklist', bad); assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  r = await adm('GET', '/blacklist'); assert.equal(r.json.count, 3);
+  const nameEntry = r.json.entries.find(e => e.kind === 'mc_name');
+  r = await adm('DELETE', `/blacklist/${nameEntry.id}`); assert.equal(r.status, 200); assert.equal(r.json.hubSynced, true);
+  r = await get('/api/v1/hub/players?names=nore_tester'); assert.ok(r.json.players.nore_tester);
+  r = await adm('DELETE', `/blacklist/${nameEntry.id}`); assert.equal(r.status, 404);
+  step('blacklist: auto kind detection, Nore Hub hides the player and refuses the hello of a blocked Nore ID, public check, removal');
+
+  // announcements
+  r = await adm('POST', '/announcements', { title: 'Przerwa techniczna', body: 'Serwer wraca o 20:00', level: 'warning', targets: ['launcher', 'mod', 'discord'], link: 'https://noreclient.pl/status' });
+  assert.equal(r.status, 201, r.text); assert.equal(r.json.announcement.state, 'active');
+  const ann1 = r.json.announcement.id;
+  r = await adm('POST', '/announcements', { title: 'Święta w Nore', level: 'event', targets: ['web'], startsAt: new Date(Date.now() + 3600000).toISOString() });
+  assert.equal(r.status, 201); assert.equal(r.json.announcement.state, 'scheduled');
+  const ann2 = r.json.announcement.id;
+  for (const bad of [{ title: '' }, { title: 'x', level: 'loud' }, { title: 'x', targets: ['tv'] }, { title: 'x', targets: [] }, { title: 'x', link: 'http://x' }, { title: 'x', startsAt: '2026-01-02', endsAt: '2026-01-01' }]) {
+    r = await adm('POST', '/announcements', bad); assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  r = await get('/api/v2/announcements?target=launcher'); assert.equal(r.json.count, 1); assert.equal(r.json.announcements[0].title, 'Przerwa techniczna'); assert.equal(r.json.announcements[0].level, 'warning');
+  assert.equal(r.json.announcements[0].by, undefined);
+  r = await get('/api/v2/announcements?target=web'); assert.equal(r.json.count, 0);
+  r = await get('/api/v2/announcements'); assert.equal(r.json.count, 1);
+  r = await get('/api/v2/announcements?target=tv'); assert.equal(r.status, 400);
+  r = await adm('PUT', `/announcements/${ann2}`, { startsAt: new Date(Date.now() - 1000).toISOString() }); assert.equal(r.status, 200, r.text); assert.equal(r.json.announcement.state, 'active'); assert.equal(r.json.announcement.title, 'Święta w Nore');
+  r = await get('/api/v2/announcements?target=web'); assert.equal(r.json.count, 1);
+  r = await adm('GET', '/announcements'); assert.equal(r.json.count, 2);
+  r = await adm('DELETE', `/announcements/${ann2}`); assert.equal(r.status, 200);
+  r = await adm('PUT', `/announcements/${ann2}`, { title: 'x' }); assert.equal(r.status, 404);
+  step('announcements: create, schedule, validate, public read per target, update, delete');
+
+  // flags + client config
+  r = await get('/api/v2/client/config?target=mod');
+  assert.equal(r.status, 200); assert.equal(r.json.maintenance.enabled, false); assert.deepEqual(r.json.killSwitch, { modules: [] }); assert.equal(r.json.latestLauncherVersion, '1.5.0'); assert.equal(r.json.announcements.length, 1);
+  r = await adm('PUT', '/flags', { maintenance: { enabled: true, message: 'Aktualizujemy serwery' }, minLauncherVersion: 'v1.5.0', killSwitch: { modules: ['Freecam', 'Freecam'] }, features: { radialMenu: false } });
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.flags.minLauncherVersion, '1.5.0'); assert.deepEqual(r.json.flags.killSwitch.modules, ['Freecam']); assert.equal(r.json.meta.maintenance.by.via, 'token');
+  r = await get('/api/v2/client/config'); assert.equal(r.json.target, 'launcher'); assert.equal(r.json.maintenance.message, 'Aktualizujemy serwery'); assert.equal(r.json.minLauncherVersion, '1.5.0'); assert.deepEqual(r.json.features, { radialMenu: false });
+  for (const bad of [{}, { maintenance: { enabled: 'yes' } }, { minLauncherVersion: 'latest' }, { killSwitch: { modules: [1] } }, { features: { 'bad key': true } }]) {
+    r = await adm('PUT', '/flags', bad); assert.equal(r.status, 400, JSON.stringify(bad));
+  }
+  r = await get('/api/v2/client/config?target=web'); assert.equal(r.status, 400);
+  step('flags: maintenance, minimum launcher version, kill-switch and features in the public client config');
+
+  // warns and notes
+  r = await adm('POST', '/warns', { subject: 'Steve', text: 'Spam na czacie' }); assert.equal(r.status, 201, r.text); assert.equal(r.json.activeWarns, 1); assert.equal(r.json.warn.subjectKind, 'mc_name');
+  r = await adm('POST', '/warns', { subject: 'steve', text: 'Obraza' }); assert.equal(r.json.activeWarns, 2);
+  r = await adm('POST', '/warns', { subject: 'Steve', kind: 'note', text: 'Rozmawiałem z nim' }); assert.equal(r.status, 201);
+  const firstWarn = (await adm('GET', '/warns?subject=STEVE')).json.warns.at(-1).id;
+  r = await adm('DELETE', `/warns/${firstWarn}`); assert.equal(r.status, 200); assert.ok(r.json.warn.revoked); assert.equal(r.json.warn.revokedBy.via, 'token');
+  r = await adm('DELETE', `/warns/${firstWarn}`); assert.equal(r.status, 409);
+  r = await adm('GET', '/warns?subject=Steve'); assert.equal(r.json.count, 3); assert.equal(r.json.blacklisted, false);
+  r = await adm('GET', '/warns'); assert.deepEqual([r.json.subjects[0].subject, r.json.subjects[0].warns, r.json.subjects[0].notes], ['steve', 1, 1]);
+  r = await adm('POST', '/warns', { subject: 'Steve', text: '' }); assert.equal(r.status, 400);
+  r = await adm('POST', '/warns', { subject: 'Steve', kind: 'ban', text: 'x' }); assert.equal(r.status, 400);
+  step('warns: history per player (warns and notes), revoke keeps the entry, overview per subject');
+
+  // bot control
+  r = await adm('GET', '/bot/guilds'); assert.equal(r.status, 200); assert.ok(r.json.guilds.some(g => g.id === G1 && g.present && g.name === 'Nore Polska'));
+  r = await adm('GET', `/bot/guilds/${G1}`); assert.equal(r.status, 200); const gv = r.json.version; assert.ok(gv >= 3); assert.equal(r.json.meta.name, 'Nore Polska'); assert.ok(r.json.events.length);
+  r = await adm('GET', '/bot/guilds/900000000000000088'); assert.equal(r.status, 404);
+  r = await adm('PUT', `/bot/guilds/${G1}/config`, { config: { general: { language: 'en' } }, version: gv }); assert.equal(r.status, 200, r.text); assert.equal(r.json.version, gv + 1);
+  r = await adm('PUT', `/bot/guilds/${G1}/config`, { config: {}, version: gv }); assert.equal(r.status, 409);
+  r = await adm('PUT', `/bot/guilds/${G1}/config`, { config: { general: { language: 'xx' } }, version: gv + 1 }); assert.equal(r.status, 400); assert.equal(r.json.code, 'invalid_config');
+  r = await bot('GET', `/guilds/${G1}/config`); assert.equal(r.json.version, gv + 1); assert.equal(r.json.config.general.language, 'en');
+  r = await adm('GET', '/bot/events?limit=5'); assert.ok(r.json.events.length <= 5 && r.json.events.length > 0); assert.ok(r.json.events[0].guildId);
+  r = await adm('POST', '/bot/actions', { type: 'message', guildId: G1, channelId: '800000000000000001', content: 'Cześć od administracji' }); assert.equal(r.status, 201, r.text);
+  const act = r.json.action.id;
+  r = await adm('POST', '/bot/actions', { type: 'reload', guildId: G1 }); assert.equal(r.status, 201);
+  const act2 = r.json.action.id;
+  r = await adm('POST', '/bot/actions', { type: 'message', guildId: G1 }); assert.equal(r.status, 400);
+  r = await adm('POST', '/bot/actions', { type: 'nuke' }); assert.equal(r.status, 400);
+  r = await adm('POST', '/bot/actions', { type: 'announce', announcementId: 'nope-nope' }); assert.equal(r.status, 400);
+  r = await adm('DELETE', `/bot/actions/${act2}`); assert.equal(r.json.action.status, 'cancelled');
+  r = await bot('GET', '/admin');
+  assert.equal(r.status, 200, r.text); assert.deepEqual(r.json.blacklist.discord, ['222222222222222222']);
+  assert.deepEqual(r.json.actions.map(a => [a.id, a.type, a.data.content]), [[act, 'message', 'Cześć od administracji']]);
+  assert.deepEqual(r.json.announcements.map(a => a.id), [ann1]);
+  r = await bot('GET', '/admin', undefined, null); assert.equal(r.status, 401);
+  r = await bot('POST', `/actions/${act}`, { ok: true, result: { messageId: '1' } }); assert.equal(r.status, 200); assert.equal(r.json.action.status, 'done');
+  r = await bot('POST', `/actions/${act}`, { ok: true }); assert.equal(r.status, 409);
+  r = await adm('GET', '/bot/actions?status=done'); assert.equal(r.json.actions[0].result.messageId, '1');
+  step('bot control: guild list, config edit with version check (bot sees it), events, action queue (bot takes and reports), blacklist for the bot');
+
+  // overview, client, releases, server, source, audit
+  r = await adm('GET', '/overview'); assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.server.online, true, JSON.stringify(r.json.server)); assert.equal(r.json.hub.known >= 1, true); assert.ok(Array.isArray(r.json.hub.versions));
+  assert.ok(r.json.bot.guilds >= 1); assert.equal(r.json.counts.blacklist, 2); assert.equal(r.json.counts.announcementsActive, 1); assert.ok(r.json.downloads.downloads.total > 0); assert.ok(r.json.audit.length > 0);
+  r = await adm('GET', '/client?q=nore'); assert.equal(r.json.hub.players[0].name, 'Nore_Tester'); assert.equal(r.json.flags.maintenance.enabled, true);
+  r = await adm('GET', '/releases'); assert.equal(r.json.releases[0].version, '1.5.0'); assert.ok(r.json.downloads.platforms);
+  r = await adm('POST', '/releases/sync'); assert.equal(r.json.sync.ok, true);
+  r = await adm('GET', '/server'); assert.equal(r.json.server.online, true);
+  r = await adm('GET', '/source');
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.commits.length, 3); assert.equal(r.json.commits[0].message, 'Commit 1'); assert.equal(r.json.branches.length, 2); assert.equal(r.json.runs[0].conclusion, 'success'); assert.equal(r.json.pulls[0].number, 5); assert.equal(r.json.repo.stars, 42);
+  r = await adm('GET', '/source'); assert.equal(r.json.cached, true);
+  r = await adm('GET', '/audit?limit=200');
+  const actions = r.json.entries.map(e => e.action);
+  for (const a of ['blacklist.add', 'blacklist.update', 'blacklist.remove', 'announcement.create', 'announcement.update', 'announcement.delete', 'flags.update', 'warn.add', 'note.add', 'warn.revoke', 'bot.config', 'bot.action', 'bot.action.cancel', 'releases.sync']) assert.ok(actions.includes(a), a);
+  assert.ok(r.json.entries.every(e => e.actor.via === 'token' && e.at));
+  r = await adm('GET', '/audit?action=blacklist'); assert.ok(r.json.entries.every(e => e.action.startsWith('blacklist')));
+  step(`overview (server, hub, bot, downloads, counts), client, releases + sync, source (GitHub), audit log with ${actions.length} entries`);
+
+  // release files through the Worker (also for a private repository)
+  r = await get('/api/v2/updates/feed/latest.yml'); assert.equal(r.status, 200); assert.match(r.text, /^version: 1\.5\.0/); assert.match(r.headers.get('content-type'), /yaml/);
+  r = await get('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe'); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), 'https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe');
+  r = await get('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe.blockmap'); assert.equal(r.status, 302);
+  r = await get('/api/v2/files/v1.4.0/NoreLauncher-Setup-1.4.0.exe'); assert.equal(r.status, 302); assert.match(r.headers.get('location'), /v1\.4\.0\/NoreLauncher-Setup-1\.4\.0\.exe$/);
+  r = await get('/api/v2/files/v1.4.0/nope.exe'); assert.equal(r.status, 404);
+  r = await get('/api/v2/updates/feed/evil.yml'); assert.equal(r.status, 404);
+  step('updates feed for electron-updater (latest.yml as text, files as 302) and /files/:version/:name');
+
   r = await req('POST', '/api/v2/auth/logout', { cookie: alice });
   assert.equal(r.status, 200); assert.match(r.headers.get('set-cookie'), /__Host-nore_s=; .*Max-Age=0/);
   r = await get('/api/v2/me', { cookie: alice }); assert.equal(r.status, 401);
@@ -447,6 +597,23 @@ try {
   assert.ok(tooMany >= 5, `429s: ${tooMany}`); assert.equal(retry, '60');
   step(`server ping rate limit per IP: ${tooMany} × 429 with Retry-After`);
 
+
+  // ------------------------------------------------------------ private repository (second Worker: RELEASES_PRIVATE + GITHUB_TOKEN)
+  priv = await startDev({ port: DEV + 5, vars: { GITHUB_API: `http://127.0.0.1:${FAKE}/github`, GITHUB_TOKEN: 'gh-test-token', RELEASES_PRIVATE: 'true', TEST_HOST_HEADER: 'X-Nore-Test-Host' } });
+  const pget = (p) => fetch(priv.base + p, { redirect: 'manual' });
+  let pr = await (await pget('/api/v1/version')).json();
+  assert.equal(pr.assets.win.url, 'https://noreclient.pl/api/v2/files/v1.5.0/NoreLauncher-Setup-1.5.0.exe'); assert.equal(pr.files, undefined);
+  assert.equal(pr.mods[0].url, 'https://noreclient.pl/api/v2/files/v1.5.0/noreclient-fabric-1.21.8.jar');
+  let pres = await pget('/api/v2/downloads/win');
+  assert.equal(pres.status, 302); assert.equal(pres.headers.get('location'), 'https://objects.githubusercontent.example/signed/1/NoreLauncher-Setup-1.5.0.exe?sig=x');
+  pres = await pget('/api/v1/download/linux'); assert.equal(pres.status, 302); assert.match(pres.headers.get('location'), /signed\/2\/NoreLauncher-1\.5\.0\.AppImage/);
+  pres = await pget('/api/v2/files/v1.5.0/noreclient-fabric-1.21.8.jar'); assert.equal(pres.status, 302); assert.match(pres.headers.get('location'), /signed\/5\//);
+  pres = await pget('/api/v2/updates/feed/latest.yml'); assert.equal(pres.status, 200); assert.match(await pres.text(), /path: NoreLauncher-Setup-1\.5\.0\.exe/);
+  pres = await pget('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe'); assert.match(pres.headers.get('location'), /signed\/1\//);
+  assert.equal(fakes.calls.assetAuth.at(-1), 'Bearer gh-test-token');
+  pr = await (await pget('/api/v1/updates/launcher?platform=win&current=1.4.0')).json(); assert.match(pr.download.url, /^https:\/\/noreclient\.pl\/api\/v2\/files\//);
+  step('private repository: file links point at the Worker, downloads and the update feed redirect to signed GitHub URLs (token sent)');
+
   console.log(`\nall ${passed} web checks passed`);
 } catch (e) {
   console.error('\nFAILED:', e.stack);
@@ -454,6 +621,7 @@ try {
   process.exitCode = 1;
 } finally {
   dev.stop();
+  if (priv) priv.stop();
   for (const x of [fakes.server, modern.server, legacyMc.server]) x.close();
   silent.server.closeAll();
 }

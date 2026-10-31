@@ -365,24 +365,21 @@ public class NoreMainMenu extends NoreScreen {
         float clipP = in(9);
         ctx.setAlpha(base * clipP);
         float cyy = y + (1 - clipP) * 6 * Motion.travel();
+        // announcements of the Nore team (NoreRemote, docs/admin-api.md) go on top of the news;
+        // during Halloween the poster stays and they get a clipping of their own
+        String[][] remote = remoteNews();
         if (halloween) {
             float ph = 92;
             if (cyy + ph < height - 70) {
                 poster(ctx, colX, cyy, colW, ph);
                 y += ph + 10;
+                cyy += ph + 10;
             }
+            if (remote.length > 0) y = newsClipping(ctx, cyy, y, "Od zespołu Nore", remote);
         } else {
-            float nh = 20 + NEWS.length * 11 + 4;
-            if (cyy + nh < height - 70) {
-                Album.clipping(ctx, colX, cyy, colW, nh, Events.tape(), colW / 2f - 15);
-                Render2D.text(ctx, "Nowe w " + NoreClient.VERSION, colX + 10, cyy + 9, Theme.VINYL_INK, false);
-                for (int i = 0; i < NEWS.length; i++) {
-                    float ly = cyy + 22 + i * 11;
-                    Album.dot(ctx, colX + 12, ly + 3.5f, 2, newsColor(NEWS[i][1]));
-                    Render2D.text(ctx, Render2D.trim(NEWS[i][0], (int) colW - 28), colX + 19, ly, 0xFF4B444E, false);
-                }
-                y += nh + 10;
-            }
+            String[][] lines = new String[Math.min(7, remote.length + NEWS.length)][];
+            for (int i = 0; i < lines.length; i++) lines[i] = i < remote.length ? remote[i] : NEWS[i - remote.length];
+            y = newsClipping(ctx, cyy, y, "Nowe w " + NoreClient.VERSION, lines);
         }
 
         // quick join
@@ -396,8 +393,36 @@ public class NoreMainMenu extends NoreScreen {
         ctx.setAlpha(base);
     }
 
+    /** A taped clipping with dot lines at cyy; returns the new y (unchanged when it does not fit). */
+    private float newsClipping(Gfx ctx, float cyy, float y, String title, String[][] lines) {
+        float nh = 20 + lines.length * 11 + 4;
+        if (cyy + nh >= height - 70) return y;
+        Album.clipping(ctx, colX, cyy, colW, nh, Events.tape(), colW / 2f - 15);
+        Render2D.text(ctx, title, colX + 10, cyy + 9, Theme.VINYL_INK, false);
+        for (int i = 0; i < lines.length; i++) {
+            float ly = cyy + 22 + i * 11;
+            Album.dot(ctx, colX + 12, ly + 3.5f, 2, newsColor(lines[i][1]));
+            Render2D.text(ctx, Render2D.trim(lines[i][0], (int) colW - 28), colX + 19, ly, 0xFF4B444E, false);
+        }
+        return y + nh + 10;
+    }
+
+    /** Maintenance and announcements from the Nore team as news lines (W = warning, E = event, A = info). */
+    private static String[][] remoteNews() {
+        java.util.List<dev.noreclient.util.NoreRemote.Notice> list = dev.noreclient.util.NoreRemote.notices();
+        String maint = dev.noreclient.util.NoreRemote.maintenance();
+        java.util.List<String[]> out = new java.util.ArrayList<String[]>();
+        if (maint != null) out.add(new String[]{"Przerwa techniczna: " + maint, "W"});
+        for (dev.noreclient.util.NoreRemote.Notice n : list) {
+            if (out.size() >= 4) break;
+            out.add(new String[]{n.title, "warning".equals(n.level) ? "W" : "event".equals(n.level) ? "E" : "A"});
+        }
+        return out.toArray(new String[0][]);
+    }
+
     private static int newsColor(String k) {
         switch (k) {
+            case "W": return ThemeTokens.DOT_WAIT;
             case "A": return Theme.accent();
             case "E": return ThemeTokens.DOT_EVENT;
             case "N": return ThemeTokens.DOT_READY;

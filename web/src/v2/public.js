@@ -3,7 +3,7 @@
  * Built on the same cached GitHub data as API v1 (src/data.js).
  */
 import NEWS from '../news.json';
-import { readCache, releases, events as v1Events, PLATFORMS, WINTER_START } from '../data.js';
+import { readCache, releases, events as v1Events, PLATFORMS, WINTER_START, assetLocation } from '../data.js';
 import { hubCall } from '../hub.js';
 import { ApiError } from './http.js';
 import { botStore } from './store.js';
@@ -134,7 +134,9 @@ export async function downloadRedirect(request, env, ctx, id) {
   if (!a) throw new ApiError(404, 'no_file', `Najnowsze wydanie nie ma pliku dla ${PLATFORM_NAMES[id]}`);
   const c = counters(env);
   if (c && request.method === 'GET') ctx.waitUntil(c.hit(['download', `download:${id}`]).catch(() => {}));
-  return new Response(null, { status: 302, headers: { Location: a.url, 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*', 'X-Nore-File': a.name } });
+  const file = (data[0].files || []).find(f => f.name === a.name);
+  const location = file ? await assetLocation(env, file) : a.url;
+  return new Response(null, { status: 302, headers: { Location: location, 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*', 'X-Nore-File': a.name } });
 }
 
 // ---------------------------------------------------------------- events

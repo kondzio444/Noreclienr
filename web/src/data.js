@@ -44,13 +44,66 @@ export async function cached(name, loader, ctx) {
 
 // ---------------------------------------------------------------- GitHub releases
 
-export async function fetchReleases(env) {
-  const headers = { 'User-Agent': 'nore-web', Accept: 'application/vnd.github+json' };
+export const githubApi = (env) => String(env.GITHUB_API || 'https://api.github.com').replace(/\/+$/, ''); // GITHUB_API: tests only
+export function githubHeaders(env, accept = 'application/vnd.github+json') {
+  const headers = { 'User-Agent': 'nore-web', Accept: accept, 'X-GitHub-Api-Version': '2022-11-28' };
   if (env.GITHUB_TOKEN) headers.Authorization = `Bearer ${env.GITHUB_TOKEN}`;
-  const res = await fetch(`${env.GITHUB_API || 'https://api.github.com'}/repos/${REPO}/releases?per_page=30`, { headers }); // GITHUB_API: tests only
+  return headers;
+}
+
+/**
+ * Private releases (RELEASES_PRIVATE=true, needs GITHUB_TOKEN): the repository is private, so
+ * github.com download links do not work for players. Every file link in the API then points at
+ * the Worker (/api/v2/files/<version>/<name>), which redirects to a short-lived signed GitHub URL.
+ */
+export const privateReleases = (env) => /^(1|true|yes)$/i.test(String(env.RELEASES_PRIVATE || '')) && !!env.GITHUB_TOKEN;
+export const SITE_ORIGIN = 'https://noreclient.pl';
+export const fileUrl = (env, version, name) => `${String(env.PUBLIC_ORIGIN || SITE_ORIGIN).replace(/\/+$/, '')}/api/v2/files/v${version}/${encodeURIComponent(name)}`;
+
+export async function fetchReleases(env) {
+  const res = await fetch(`${githubApi(env)}/repos/${REPO}/releases?per_page=30`, { headers: githubHeaders(env) });
   if (!res.ok) throw new HttpError(502, `GitHub odpowiedział ${res.status}`);
   const list = await res.json();
-  return list.filter(r => !r.draft).map(shapeRelease);
+  const out = list.filter(r => !r.draft).map(shapeRelease);
+  if (privateReleases(env)) {
+    for (const r of out) {
+      for (const a of [...Object.values(r.assets), ...r.mods]) a.url = fileUrl(env, r.version, a.name);
+    }
+  }
+  return out;
+}
+
+/** Every file of a release (also latest.yml, blockmaps) – kept beside the release, not shown in API v1. */
+function releaseFiles(r) {
+  return (r.assets || []).map(a => ({ id: a.id, name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null }));
+}
+
+/** A release as API v1 shows it (without the internal file list). */
+export function v1Release(r) {
+  if (!r || !r.files) return r;
+  const { files, ...rest } = r;
+  return rest;
+}
+
+/**
+ * Where a release file can be downloaded right now: the public github.com link, or (private
+ * releases) the signed URL GitHub answers for the asset API with the token. null when GitHub
+ * does not give one.
+ */
+export async function assetLocation(env, file, { forcePrivate = false } = {}) {
+  if (!privateReleases(env) && !forcePrivate) return file.url;
+  if (!file.id) return null;
+  const res = await fetch(`${githubApi(env)}/repos/${REPO}/releases/assets/${file.id}`, { headers: githubHeaders(env, 'application/octet-stream'), redirect: 'manual' });
+  const loc = res.headers.get('Location');
+  if (res.status >= 300 && res.status < 400 && loc) return loc;
+  throw new HttpError(502, `GitHub nie dał linku do pliku (${res.status})`);
+}
+
+/** The text of a small release file (latest.yml …), fetched through the asset API. */
+export async function assetText(env, file) {
+  const res = await fetch(`${githubApi(env)}/repos/${REPO}/releases/assets/${file.id}`, { headers: githubHeaders(env, 'application/octet-stream') });
+  if (!res.ok) throw new HttpError(502, `GitHub nie oddał pliku ${file.name} (${res.status})`);
+  return res.text();
 }
 
 export const ASSET_PATTERNS = {
@@ -90,6 +143,7 @@ export function shapeRelease(r) {
     downloads,
     assets,
     mods,
+    files: releaseFiles(r),
   };
 }
 

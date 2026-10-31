@@ -68,6 +68,9 @@ export class NoreApi {
   putMeta(guildId, meta) { return this.bot('PUT', `/bot/guilds/${guildId}/meta`, meta); }
   deleteGuild(guildId) { return this.bot('DELETE', `/bot/guilds/${guildId}`); }
   changes(since) { return this.bot('GET', `/bot/changes?since=${Math.max(0, Math.floor(since))}`); }
+  /** Admin side (docs/admin-api.md): blacklisted Discord IDs, pending actions, Discord announcements. */
+  admin() { return this.bot('GET', '/bot/admin'); }
+  actionDone(id, ok, result) { return this.bot('POST', `/bot/actions/${Number(id)}`, { ok: !!ok, result: result ?? null }); }
 
   /** Optional audit events, rate limited client-side to 100/min per guild as the contract says. */
   async event(guildId, type, data = {}) {

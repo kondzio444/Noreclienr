@@ -102,6 +102,8 @@ export async function readHello(request) {
   if (bad) throw new HubError(400, bad);
   const premium = b.premium === true;
   const serverId = premium && typeof b.serverId === 'string' && /^-?[0-9a-f]{1,40}$/.test(b.serverId) ? b.serverId : null;
+  // optional, not signed: which launcher sends it (for the admin overview only)
+  const client = typeof b.client === 'string' && /^[\w.+-]{1,32}$/.test(b.client) ? b.client : null;
 
   let pubDer, sigDer;
   try { pubDer = unb64(pub); sigDer = unb64(sig); } catch { throw new HubError(400, 'pub i sig muszą być w base64'); }
@@ -112,7 +114,7 @@ export async function readHello(request) {
   try { key = await crypto.subtle.importKey('spki', pubDer, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']); } catch { throw new HubError(400, 'pub: to nie jest klucz P-256'); }
   const signed = utf8.encode(await canonical(b));
   if (!raw || !(await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, raw, signed))) throw new HubError(401, 'Zły podpis');
-  return { name, uuid: uuid.toLowerCase(), hex, ts, online, premium, serverId, cosmetics: JSON.stringify(cosmetics) };
+  return { name, uuid: uuid.toLowerCase(), hex, ts, online, premium, serverId, client, cosmetics: JSON.stringify(cosmetics) };
 }
 
 /** ?names=a,b,c → unique valid lowercase names (at most 100). */
@@ -148,7 +150,44 @@ export class NoreHub {
       CREATE INDEX IF NOT EXISTS players_uuid ON players (uuid);
       CREATE TABLE IF NOT EXISTS hellos (hex TEXT PRIMARY KEY, at INTEGER NOT NULL, ts INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, name_lower TEXT, mc TEXT, version TEXT, at INTEGER NOT NULL);
-      CREATE INDEX IF NOT EXISTS sessions_at ON sessions (at);`);
+      CREATE INDEX IF NOT EXISTS sessions_at ON sessions (at);
+      CREATE TABLE IF NOT EXISTS blocked (kind TEXT NOT NULL, value TEXT NOT NULL, expires INTEGER, PRIMARY KEY (kind, value));`);
+    // added later: the launcher version from the last hello (admin overview)
+    if (!this.sql.exec('PRAGMA table_info(players)').toArray().some(c => c.name === 'client')) this.sql.exec('ALTER TABLE players ADD COLUMN client TEXT');
+  }
+
+  /** The global blacklist (pushed by the admin API): mc_name, mc_uuid and nore_id entries. */
+  setBlocked(entries) {
+    this.sql.exec('DELETE FROM blocked');
+    for (const e of (Array.isArray(entries) ? entries : []).slice(0, 20000)) {
+      if (!['mc_name', 'mc_uuid', 'nore_id'].includes(e.kind) || typeof e.value !== 'string') continue;
+      this.sql.exec('INSERT OR REPLACE INTO blocked (kind, value, expires) VALUES (?, ?, ?)', e.kind, e.value, Number.isFinite(e.expires) ? e.expires : null);
+    }
+    return { blocked: this.sql.exec('SELECT COUNT(*) AS n FROM blocked').one().n };
+  }
+
+  isBlocked(nameLower, uuid, hex) {
+    return this.sql.exec(`SELECT 1 FROM blocked WHERE (expires IS NULL OR expires > ?) AND
+      ((kind = 'mc_name' AND value = ?) OR (kind = 'mc_uuid' AND value = ?) OR (kind = 'nore_id' AND value = ?)) LIMIT 1`, Date.now(), nameLower, uuid, hex).toArray().length > 0;
+  }
+
+  /** Admin overview: recent players, launcher versions in use, hellos in the last hour. */
+  admin({ limit = 100, q = '' } = {}) {
+    const now = Date.now();
+    const lim = Math.max(1, Math.min(500, limit | 0 || 100));
+    const like = q ? `%${String(q).toLowerCase().replace(/[%_]/g, '')}%` : null;
+    const rows = this.sql.exec('SELECT * FROM players WHERE (? IS NULL OR name_lower LIKE ? OR hex LIKE ? OR uuid LIKE ?) ORDER BY seen DESC LIMIT ?', like, like, like, like, lim).toArray();
+    const blocked = (r) => this.isBlocked(r.name_lower, r.uuid, r.hex);
+    const players = rows.map(r => ({
+      name: r.name, uuid: r.uuid, noreId: r.hex, verified: !!r.verified, online: !!r.online && now - r.seen < ONLINE_MS,
+      seen: r.seen, created: r.created, client: r.client || null, blocked: blocked(r), cosmetics: JSON.parse(r.cosmetics),
+    }));
+    const versions = this.sql.exec('SELECT client, COUNT(*) AS n, SUM(online = 1 AND seen > ?) AS online FROM players WHERE seen > ? GROUP BY client ORDER BY n DESC',
+      now - ONLINE_MS, now - 7 * 86400000).toArray().map(r => ({ version: r.client || null, players: r.n, online: r.online || 0 }));
+    const hellosHour = this.sql.exec('SELECT COUNT(*) AS n FROM hellos WHERE at > ?', now - 3600000).one().n;
+    const day = this.sql.exec('SELECT COUNT(*) AS n FROM players WHERE seen > ?', now - 86400000).one().n;
+    const blockedCount = this.sql.exec('SELECT COUNT(*) AS n FROM blocked WHERE expires IS NULL OR expires > ?', now).one().n;
+    return { ...this.stats(), activeDay: day, hellosHour, blocked: blockedCount, versions, players };
   }
 
   async fetch(request) {
@@ -158,6 +197,8 @@ export class NoreHub {
       if (op === 'hello') return Response.json(await this.hello(data));
       if (op === 'players') return Response.json(this.players(data.names));
       if (op === 'stats') return Response.json(this.stats());
+      if (op === 'admin') return Response.json(this.admin(data));
+      if (op === 'blacklist') return Response.json(this.setBlocked(data.entries));
       if (op === 'presence') return Response.json(this.presence(data));
       return Response.json({ error: 'op' }, { status: 404 });
     } catch (e) {
@@ -181,6 +222,7 @@ export class NoreHub {
       this.sql.exec('DELETE FROM players WHERE verified = 0 AND seen < ?', now - CLAIM_MS);
     }
 
+    if (h.online && this.isBlocked(key, h.uuid, h.hex)) throw new HubError(403, 'To konto jest zablokowane w Nore Hub');
     let row = this.row(key);
     if (!h.online) {
       const mine = row && row.hex === h.hex;
@@ -201,12 +243,12 @@ export class NoreHub {
     }
     // a premium player who changed the name leaves no verified claim on the old one
     if (verified) this.sql.exec('DELETE FROM players WHERE uuid = ? AND verified = 1 AND name_lower <> ?', h.uuid, key);
-    this.sql.exec(`INSERT INTO players (name_lower, name, uuid, hex, verified, cosmetics, online, seen, created)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)
+    this.sql.exec(`INSERT INTO players (name_lower, name, uuid, hex, verified, cosmetics, online, seen, created, client)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
       ON CONFLICT (name_lower) DO UPDATE SET name = excluded.name, uuid = excluded.uuid, verified = excluded.verified,
-        cosmetics = excluded.cosmetics, online = 1, seen = excluded.seen,
+        cosmetics = excluded.cosmetics, online = 1, seen = excluded.seen, client = COALESCE(excluded.client, players.client),
         created = CASE WHEN players.hex = excluded.hex THEN players.created ELSE excluded.created END, hex = excluded.hex`,
-    key, name, h.uuid, h.hex, verified ? 1 : 0, h.cosmetics, now, now);
+    key, name, h.uuid, h.hex, verified ? 1 : 0, h.cosmetics, now, now, h.client || null);
     return { ok: true, verified, name };
   }
 
@@ -232,6 +274,7 @@ export class NoreHub {
     const rows = this.sql.exec('SELECT * FROM players WHERE name_lower IN (SELECT value FROM json_each(?)) AND seen > ?',
       JSON.stringify(names.slice(0, MAX_NAMES)), now - CLAIM_MS).toArray();
     for (const r of rows) {
+      if (this.isBlocked(r.name_lower, r.uuid, r.hex)) continue; // blacklisted players are never listed
       players[r.name_lower] = {
         name: r.name, uuid: r.uuid, hex: r.hex, verified: !!r.verified,
         online: !!r.online && now - r.seen < ONLINE_MS, seen: r.seen, cosmetics: JSON.parse(r.cosmetics),
@@ -245,6 +288,8 @@ export class NoreHub {
     const now = Date.now();
     const last = this.sql.exec('SELECT at FROM sessions WHERE sid = ?', p.sid).toArray()[0];
     if (p.online && last && now - last.at < PRESENCE_GAP_MS) throw new HubError(429, 'Za często – najwyżej raz na 20 s');
+    // a blacklisted nick is not counted (and told so), like a refused hello
+    if (p.online && p.name && this.isBlocked(p.name.toLowerCase(), '', '')) { this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid); throw new HubError(403, 'To konto jest zablokowane w Nore Hub'); }
     if (!p.online) this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid);
     else this.sql.exec('INSERT OR REPLACE INTO sessions (sid, name_lower, mc, version, at) VALUES (?, ?, ?, ?, ?)',
       p.sid, p.name ? p.name.toLowerCase() : null, p.mc, p.version, now);

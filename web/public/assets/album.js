@@ -199,12 +199,26 @@
     }).catch(() => { el.innerHTML = '<i class="dot off"></i>Nie udało się sprawdzić stanu API'; });
   }
 
+  // ------------------------------------------------------------------ announcements from the Nore team (admin API, target web)
+  function announcements() {
+    api('announcements?target=web').then((r) => {
+      const list = (r.announcements || []).slice(0, 3);
+      if (!list.length || $('.nore-notice')) return;
+      const box = document.createElement('aside');
+      box.className = 'nore-notice';
+      box.setAttribute('aria-label', 'Ogłoszenia');
+      box.innerHTML = list.map(a => `<p class="nore-notice-item" data-level="${esc(a.level)}"><b>${esc(a.title)}</b>${a.body ? ` ${esc(a.body)}` : ''}${a.link ? ` <a href="${esc(a.link)}" rel="noopener">Więcej</a>` : ''}</p>`).join('');
+      document.body.prepend(box);
+    }).catch(() => {});
+  }
+
   window.Nore = { $, $$, reduced, api, num, plural, bytes, date, ago, until, esc, toast, copy, entrances, onEvent, state };
 
   const start = () => {
     if (state.event) setEvent(state.event);
     entrances();
     footerStatus();
+    announcements();
     api('events').then((ev) => {
       state.events = ev;
       // Halloween is forced on in the API all year; the site shows it during its season (15.10 – 3.11)

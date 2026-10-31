@@ -78,6 +78,8 @@ const modules = {
     releases: feed(false, { prereleases: f.toggle(false), changelog: f.toggle(true) }),
     news: feed(false),
     events: feed(false, { reminders: f.toggle(true, { help: true }) }),
+    // announcements of the Nore team (admin API, target discord – src/core/admin-link.js)
+    announcements: feed(false),
   }),
 
   social: f.group({

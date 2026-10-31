@@ -29,12 +29,15 @@
       // Nore Bot: guild configs, meta, events, panel sessions (src/v2/store.js)
       { "name": "BOT", "class_name": "NoreBot" },
       // download redirect counters (src/v2/counters.js)
-      { "name": "COUNTERS", "class_name": "NoreCounters" }
+      { "name": "COUNTERS", "class_name": "NoreCounters" },
+      // admin data: blacklist, announcements, warns, flags, audit log (src/v2/admin-store.js)
+      { "name": "ADMIN", "class_name": "NoreAdmin" }
     ]
   },
   "migrations": [
     { "tag": "hub-v1", "new_sqlite_classes": ["NoreHub"] },
-    { "tag": "bot-v1", "new_sqlite_classes": ["NoreBot", "NoreCounters"] }
+    { "tag": "bot-v1", "new_sqlite_classes": ["NoreBot", "NoreCounters"] },
+    { "tag": "admin-v1", "new_sqlite_classes": ["NoreAdmin"] }
   ],
   // /api/v2/servers/:address – 20 pings per minute per IP
   "ratelimits": [{ "name": "SLP_LIMIT", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }],

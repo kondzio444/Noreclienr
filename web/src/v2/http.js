@@ -38,6 +38,7 @@ export function allowedOrigin(request, env) {
  * CORS headers for a route kind:
  *   public  – anyone (no credentials)
  *   session – the Nore sites only, with credentials
+ *   admin   – like session, plus the Authorization header (Admin <token>)
  *   bot     – none (server to server)
  */
 export function corsHeaders(kind, request, env, methods = 'GET, HEAD, OPTIONS') {
@@ -50,7 +51,7 @@ export function corsHeaders(kind, request, env, methods = 'GET, HEAD, OPTIONS') 
       'Access-Control-Max-Age': '86400',
     };
   }
-  if (kind === 'session') {
+  if (kind === 'session' || kind === 'admin') {
     const origin = allowedOrigin(request, env);
     const h = { Vary: 'Origin' };
     if (origin) {
@@ -58,7 +59,7 @@ export function corsHeaders(kind, request, env, methods = 'GET, HEAD, OPTIONS') 
         'Access-Control-Allow-Origin': origin,
         'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Allow-Methods': methods,
-        'Access-Control-Allow-Headers': 'Content-Type, If-None-Match',
+        'Access-Control-Allow-Headers': kind === 'admin' ? 'Content-Type, If-None-Match, Authorization' : 'Content-Type, If-None-Match',
         'Access-Control-Expose-Headers': 'ETag, X-Nore-Api',
         'Access-Control-Max-Age': '600',
       });

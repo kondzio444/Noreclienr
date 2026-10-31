@@ -41,6 +41,7 @@ const chat = require('./chat');
 const chatBridge = require('./chat-bridge');
 const official = require('./official');
 const hub = require('./hub');
+const notices = require('./notices');
 const keys = require('./keys');
 
 const FABRIC_API_ID = 'P7dR8mSH';
@@ -247,6 +248,8 @@ app.whenReady().then(async () => {
   updater.init(send, store.get().settings, { checkNow: true });
   await runSplash().catch(() => {});
   createWindow();
+  // announcements, maintenance and the minimum launcher version from the Nore team (docs/admin-api.md)
+  notices.start({ version: app.getVersion(), send: (s) => send('notices:state', s), onUpdateRequired: () => updater.check().catch(() => {}) });
   applyDiscord();
   discord.setActivity(LAUNCHER_ACTIVITY);
 });
@@ -350,6 +353,7 @@ ipcMain.handle('bg:pick', async () => {
   return customBackground();
 });
 
+ipcMain.handle('notices:get', () => notices.get());
 ipcMain.handle('update:state', () => updater.current());
 ipcMain.handle('update:check', () => updater.check());
 ipcMain.handle('update:download', () => updater.download());

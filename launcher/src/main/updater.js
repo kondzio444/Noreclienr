@@ -10,6 +10,10 @@
  * (noreclient.pl, GitHub API as a backup) for the newest release, downloads the installer /
  * AppImage itself, checks its SHA-256 and runs it, so an old version can always move to the new
  * one without visiting GitHub.
+ *
+ * electron-updater reads the Nore API's generic feed (/api/v2/updates/feed, docs/admin-api.md), which
+ * redirects to the release files – also when the GitHub repository is private. The fallback accepts
+ * the same Worker links (/api/v2/files/…) besides github.com.
  */
 const { app, shell } = require('electron');
 const fs = require('fs');
@@ -22,6 +26,9 @@ const net = require('./net');
 
 const REPO = 'kondzio444/Noreclienr';
 const API = 'https://noreclient.pl/api/v1';
+const FEED = 'https://noreclient.pl/api/v2/updates/feed';
+/** Download links the fallback trusts: GitHub release files and the Worker's release-file redirects. */
+const TRUSTED_FILE = /^https:\/\/(github\.com\/kondzio444\/Noreclienr\/releases\/download\/|noreclient\.pl\/api\/v2\/files\/)/;
 
 let updater = null;
 let emit = () => {};
@@ -49,6 +56,10 @@ function load() {
     return null;
   }
   updater.autoInstallOnAppQuit = true;
+  // the Worker's feed works for public and private releases alike (NORE_UPDATER_GITHUB=1: GitHub directly)
+  if (!process.env.NORE_UPDATER_GITHUB) {
+    try { updater.setFeedURL({ provider: 'generic', url: FEED }); } catch { /* keep app-update.yml */ }
+  }
   updater.on('checking-for-update', () => set({ state: 'checking' }));
   updater.on('update-available', (i) => set({ state: updater.autoDownload ? 'downloading' : 'available', next: i.version, percent: 0, notes: notes(i) }));
   updater.on('update-not-available', () => set({ state: 'latest', checkedAt: Date.now() }));
@@ -141,7 +152,7 @@ async function fromNoreApi() {
   const r = await net.getJson(`${API}/updates/launcher?platform=${PLATFORM}&current=${encodeURIComponent(app.getVersion())}`);
   const version = String(r.version || '');
   if (!r.update || !newer(version, app.getVersion())) return { version, latest: true };
-  if (!r.download || !/^https:\/\/github\.com\/kondzio444\/Noreclienr\/releases\/download\//.test(r.download.url)) {
+  if (!r.download || !TRUSTED_FILE.test(r.download.url)) {
     return { version, asset: null, notes: r.notes };
   }
   return { version, notes: r.notes, asset: { name: r.download.name, url: r.download.url, size: r.download.size, sha256: sha256Of(r.download.digest) } };
@@ -252,4 +263,4 @@ function current() { return state; }
 
 function stop() { clearInterval(timer); }
 
-module.exports = { init, configure, check, download, install, current, stop, onState };
+module.exports = { init, configure, check, download, install, current, stop, onState, TRUSTED_FILE, FEED };

@@ -31,11 +31,12 @@ export function openapi() {
         + 'Publiczne ścieżki mają otwarty CORS; /servers ma limit 20 zapytań na minutę na IP. API v1 (/api/v1) działa bez zmian.',
     },
     servers: [{ url: 'https://noreclient.pl' }, { url: 'https://noreclient.pl' }],
-    tags: [{ name: 'public' }, { name: 'bot', description: 'Nore Bot → API (Authorization: Bot <NORE_BOT_SECRET>)' }, { name: 'panel', description: 'Panel na stronie (sesja po logowaniu Discord)' }],
+    tags: [{ name: 'public' }, { name: 'bot', description: 'Nore Bot → API (Authorization: Bot <NORE_BOT_SECRET>)' }, { name: 'panel', description: 'Panel na stronie (sesja po logowaniu Discord)' }, { name: 'admin', description: 'Administracja Nore (Authorization: Admin <ADMIN_TOKEN> albo sesja administratora) – docs/admin-api.md' }],
     components: {
       securitySchemes: {
         botSecret: { type: 'apiKey', in: 'header', name: 'Authorization', description: 'Bot <NORE_BOT_SECRET>' },
         session: { type: 'apiKey', in: 'cookie', name: '__Host-nore_s', description: 'Podpisane ciasteczko sesji po /api/v2/auth/discord/callback' },
+        adminToken: { type: 'apiKey', in: 'header', name: 'Authorization', description: 'Admin <ADMIN_TOKEN>' },
       },
       schemas: {
         Ok: obj({ ok: { const: true } }, ['ok']),
@@ -171,6 +172,47 @@ export function openapi() {
         requestBody: { required: true, content: { 'application/json': { schema: obj({ config: { type: 'object' }, version: { type: 'integer', description: 'wersja, którą edytowano' } }, ['config', 'version']) } } },
         responses: { 200: ok('Zapisano', { version: i, updatedAt: s }), 400: err('Schemat odrzucił konfigurację (errors z JSON Pointer)'), 409: err('Ktoś zapisał w międzyczasie (version = aktualna)'), ...pick(401, 403, 404, 413, 415) },
       } },
+      ...adminPaths(),
     },
+  };
+}
+
+/** Public readers of the admin data, release files, and the admin routes (docs/admin-api.md). */
+function adminPaths() {
+  const target = (list) => q('target', { enum: list }, 'dla kogo');
+  const announcement = obj({ id: s, title: s, body: s, level: { enum: ['info', 'warning', 'event'] }, targets: arr({ enum: ['launcher', 'mod', 'web', 'discord'] }), link: ns, startsAt: s, endsAt: ns, updatedAt: s });
+  const admSec = [{ adminToken: [] }, { session: [] }];
+  const a = (summary, method = 'get', extra = {}) => ({ [method]: { tags: ['admin'], security: admSec, summary, responses: { 200: ok('OK', {}), ...pick(400, 401, 403, 404, 503) }, ...extra } });
+  const merge = (...xs) => Object.assign({}, ...xs);
+  return {
+    '/api/v2/announcements': { get: { tags: ['public'], summary: 'Aktywne ogłoszenia', parameters: [target(['launcher', 'mod', 'web', 'discord'])], responses: { 200: ok('Ogłoszenia', { count: i, announcements: arr(announcement) }), ...pick(400) } } },
+    '/api/v2/client/config': { get: { tags: ['public'], summary: 'Ustawienia z serwera dla launchera i moda', parameters: [target(['launcher', 'mod'])], responses: { 200: ok('Ustawienia', { target: s, maintenance: obj({ enabled: b, message: s }), minLauncherVersion: ns, latestLauncherVersion: ns, killSwitch: obj({ modules: arr(s) }), features: { type: 'object', additionalProperties: b }, announcements: arr(announcement) }), ...pick(400) } } },
+    '/api/v2/blacklist/check': { get: { tags: ['public'], summary: 'Czy ktoś jest na czarnej liście', parameters: [q('name', s), q('uuid', s), q('noreId', s), q('discord', s)], responses: { 200: ok('Wynik', { blocked: b, matches: arr(obj({ kind: s, reason: s, expires: ns })) }), ...pick(400) } } },
+    '/api/v2/files/{version}/{name}': { get: { tags: ['public'], summary: 'Plik wydania (302; przy prywatnym repozytorium podpisany link GitHub)', parameters: [p('version', s), p('name', s)], responses: { 302: { description: 'Do pliku' }, ...pick(404, 502) } } },
+    '/api/v2/updates/feed/{name}': { get: { tags: ['public'], summary: 'Kanał electron-updater (generic): latest*.yml jako tekst, pliki jako 302', parameters: [p('name', s)], responses: { 200: { description: 'latest.yml' }, 302: { description: 'Do pliku' }, ...pick(404, 502) } } },
+    '/api/v2/bot/admin': { get: { tags: ['bot'], security: botSec, summary: 'Czarna lista (Discord), oczekujące akcje i ogłoszenia dla Discorda', responses: { 200: ok('Dane', { blacklist: obj({ discord: arr(s) }), actions: arr({ type: 'object' }), announcements: arr(announcement) }), ...pick(401, 503) } } },
+    '/api/v2/bot/actions/{id}': { post: { tags: ['bot'], security: botSec, summary: 'Bot zgłasza wykonanie akcji', parameters: [p('id', i)], requestBody: { required: true, content: { 'application/json': { schema: obj({ ok: b, result: {} }, ['ok']) } } }, responses: { 200: ok('Zapisano', { action: { type: 'object' } }), ...pick(400, 401, 404, 409) } } },
+    '/api/v2/admin/me': a('Kto jest zalogowany i co jest skonfigurowane'),
+    '/api/v2/admin/overview': a('Pulpit: gracze, serwery bota, pobrania, serwer MC, zdarzenia, audyt'),
+    '/api/v2/admin/blacklist': merge(a('Czarna lista'), a('Dodaj (kind: mc_name, mc_uuid, nore_id, discord albo auto; value, reason, expiresAt)', 'post')),
+    '/api/v2/admin/blacklist/{id}': a('Usuń wpis', 'delete', { parameters: [p('id', i)] }),
+    '/api/v2/admin/blacklist/sync': a('Wyślij czarną listę do Nore Hub jeszcze raz', 'post'),
+    '/api/v2/admin/announcements': merge(a('Wszystkie ogłoszenia (active / scheduled / ended)'), a('Nowe ogłoszenie (title, body, level, targets, link, startsAt, endsAt)', 'post')),
+    '/api/v2/admin/announcements/{id}': merge(a('Zmień ogłoszenie', 'put', { parameters: [p('id', s)] }), a('Usuń ogłoszenie', 'delete', { parameters: [p('id', s)] })),
+    '/api/v2/admin/warns': merge(a('Ostrzeżenia: przegląd albo historia gracza (?subject=&kind=)'), a('Dodaj ostrzeżenie albo notatkę (subject, subjectKind, kind warn|note, text)', 'post')),
+    '/api/v2/admin/warns/{id}': a('Wycofaj wpis (zostaje w historii)', 'delete', { parameters: [p('id', i)] }),
+    '/api/v2/admin/bot/guilds': a('Serwery Discord z Nore Botem'),
+    '/api/v2/admin/bot/guilds/{guildId}': a('Serwer: meta, konfiguracja, zdarzenia', 'get', { parameters: [guildId] }),
+    '/api/v2/admin/bot/guilds/{guildId}/config': a('Zapis konfiguracji dowolnego serwera (version jak w panelu, 409 przy konflikcie)', 'put', { parameters: [guildId] }),
+    '/api/v2/admin/bot/events': a('Ostatnie zdarzenia wszystkich serwerów'),
+    '/api/v2/admin/bot/actions': merge(a('Kolejka akcji bota'), a('Dodaj akcję (message, leave, reload, meta, announce)', 'post')),
+    '/api/v2/admin/bot/actions/{id}': a('Anuluj oczekującą akcję', 'delete', { parameters: [p('id', i)] }),
+    '/api/v2/admin/client': a('Klient i mod: gracze Nore Hub, wersje, przełączniki'),
+    '/api/v2/admin/flags': merge(a('Przełączniki'), a('Zmień przełączniki (maintenance, minLauncherVersion, killSwitch, features)', 'put')),
+    '/api/v2/admin/releases': a('Wydania i pobrania'),
+    '/api/v2/admin/releases/sync': a('Odśwież dane wydań z GitHuba teraz', 'post'),
+    '/api/v2/admin/server': a('Stan serwera Minecraft (domyślnie mc.noreclient.pl)'),
+    '/api/v2/admin/source': a('Kod źródłowy: commity, gałęzie, wydania, CI, pull requesty (GitHub API)'),
+    '/api/v2/admin/audit': a('Dziennik działań administratorów'),
   };
 }

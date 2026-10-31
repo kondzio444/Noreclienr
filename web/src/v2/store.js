@@ -5,6 +5,7 @@
  *   guilds    configuration (versioned), what the bot reported (meta) and whether the bot is there
  *   events    audit/stat events per guild, capped (EVENTS_KEEP newest per guild)
  *   sessions  panel logins: Discord access token and a short-lived copy of the user's guild list
+ *   actions   the admin's action queue for the bot (send a message, leave a guild, reload …)
  *
  * Called over Durable Object RPC. Methods never throw for expected outcomes; they return
  * { error: { status, code, message } } instead (RPC does not carry custom error fields).
@@ -33,7 +34,11 @@ export class NoreBot extends DurableObject {
       CREATE INDEX IF NOT EXISTS events_guild ON events (guild_id, id);
       CREATE TABLE IF NOT EXISTS sessions (
         sid TEXT PRIMARY KEY, user_id TEXT NOT NULL, user TEXT NOT NULL, access_token TEXT NOT NULL,
-        token_exp INTEGER NOT NULL, guilds TEXT, guilds_at INTEGER, created INTEGER NOT NULL, expires INTEGER NOT NULL);`);
+        token_exp INTEGER NOT NULL, guilds TEXT, guilds_at INTEGER, created INTEGER NOT NULL, expires INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS actions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, guild_id TEXT, type TEXT NOT NULL, data TEXT NOT NULL, status TEXT NOT NULL,
+        by TEXT NOT NULL, created INTEGER NOT NULL, done_at INTEGER, result TEXT);
+      CREATE INDEX IF NOT EXISTS actions_status ON actions (status, id);`);
   }
 
   guild(id) {
@@ -132,6 +137,67 @@ export class NoreBot extends DurableObject {
   stats() {
     const r = this.sql.exec('SELECT SUM(present = 1) AS present, SUM(version > 0) AS configured FROM guilds').one();
     return { guilds: r.present || 0, configured: r.configured || 0 };
+  }
+
+  // ---------------------------------------------------------------- admin (docs/admin-api.md)
+
+  /** Every guild the bot reported, with its config version and the newest event time. */
+  adminGuilds() {
+    return this.sql.exec(`SELECT g.id, g.present, g.version, g.updated_at, g.updated_by, g.meta, g.meta_at, g.joined_at, g.left_at,
+        (SELECT MAX(at) FROM events e WHERE e.guild_id = g.id) AS last_event
+      FROM guilds g ORDER BY g.present DESC, g.meta_at DESC LIMIT 2000`).toArray().map(r => {
+      const meta = r.meta ? JSON.parse(r.meta) : null;
+      return {
+        id: r.id, present: !!r.present, name: meta ? meta.name : null, icon: meta ? meta.icon : null, memberCount: meta && meta.memberCount !== undefined ? meta.memberCount : null,
+        channels: meta ? meta.channels.length : 0, roles: meta ? meta.roles.length : 0, version: r.version, updatedAt: r.updated_at || null,
+        updatedBy: r.updated_by ? JSON.parse(r.updated_by) : null, metaAt: r.meta_at, joinedAt: r.joined_at, leftAt: r.left_at, lastEvent: r.last_event,
+      };
+    });
+  }
+
+  /** The newest events of every guild. */
+  recentEvents(limit = 100, type = null) {
+    return this.sql.exec('SELECT id, guild_id, type, data, at FROM events WHERE (? IS NULL OR type = ?) ORDER BY id DESC LIMIT ?', type, type, Math.max(1, Math.min(500, limit)))
+      .toArray().map(r => ({ id: r.id, guildId: r.guild_id, type: r.type, data: JSON.parse(r.data), at: r.at }));
+  }
+
+  actionRow(r) {
+    return { id: r.id, guildId: r.guild_id, type: r.type, data: JSON.parse(r.data), status: r.status, by: JSON.parse(r.by), created: r.created, doneAt: r.done_at, result: r.result ? JSON.parse(r.result) : null };
+  }
+
+  queueAction(guildId, type, data, by) {
+    const pending = this.sql.exec("SELECT COUNT(*) AS n FROM actions WHERE status = 'pending'").one().n;
+    if (pending >= 200) return fail(429, 'queue_full', 'W kolejce czeka już 200 akcji – poczekaj, aż bot je wykona');
+    const r = this.sql.exec("INSERT INTO actions (guild_id, type, data, status, by, created) VALUES (?, ?, ?, 'pending', ?, ?) RETURNING *",
+      guildId, type, JSON.stringify(data), JSON.stringify(by), Date.now()).one();
+    this.sql.exec("DELETE FROM actions WHERE status <> 'pending' AND id <= (SELECT id FROM actions ORDER BY id DESC LIMIT 1 OFFSET 1000)");
+    return { action: this.actionRow(r) };
+  }
+
+  actions({ status = null, limit = 100 } = {}) {
+    return this.sql.exec('SELECT * FROM actions WHERE (? IS NULL OR status = ?) ORDER BY id DESC LIMIT ?', status, status, Math.max(1, Math.min(500, limit)))
+      .toArray().map(r => this.actionRow(r));
+  }
+
+  /** Pending actions for the bot, oldest first. */
+  pendingActions() {
+    return this.sql.exec("SELECT * FROM actions WHERE status = 'pending' ORDER BY id LIMIT 50").toArray().map(r => this.actionRow(r));
+  }
+
+  finishAction(id, ok, result) {
+    const r = this.sql.exec('SELECT * FROM actions WHERE id = ?', id).toArray()[0];
+    if (!r) return fail(404, 'not_found', 'Nie ma takiej akcji');
+    if (r.status !== 'pending') return fail(409, 'not_pending', 'Ta akcja nie czeka już na wykonanie');
+    this.sql.exec('UPDATE actions SET status = ?, done_at = ?, result = ? WHERE id = ?', ok ? 'done' : 'failed', Date.now(), JSON.stringify(result ?? null), id);
+    return { action: this.actionRow(this.sql.exec('SELECT * FROM actions WHERE id = ?', id).one()) };
+  }
+
+  cancelAction(id) {
+    const r = this.sql.exec('SELECT * FROM actions WHERE id = ?', id).toArray()[0];
+    if (!r) return fail(404, 'not_found', 'Nie ma takiej akcji');
+    if (r.status !== 'pending') return fail(409, 'not_pending', 'Ta akcja nie czeka już na wykonanie');
+    this.sql.exec("UPDATE actions SET status = 'cancelled', done_at = ? WHERE id = ?", Date.now(), id);
+    return { action: this.actionRow(this.sql.exec('SELECT * FROM actions WHERE id = ?', id).one()) };
   }
 
   // ---------------------------------------------------------------- sessions

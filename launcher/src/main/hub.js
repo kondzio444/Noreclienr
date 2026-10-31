@@ -13,6 +13,7 @@ const chat = require('./chat');
 const store = require('./store');
 
 const HUB = (process.env.NORE_HUB || 'https://noreclient.pl').replace(/\/+$/, '');
+const CLIENT = require('../../package.json').version; // unsigned, for the admin overview only
 const MOJANG_JOIN = 'https://sessionserver.mojang.com/session/minecraft/join';
 const BEAT_MS = 60 * 1000;
 const GAP_MS = 16 * 1000;  // the worker takes one hello per Nore ID per 15 s
@@ -101,6 +102,7 @@ async function hello(s, online) {
   s.dirty = false;
   const body = { name: s.name, uuid: s.uuid, premium: !!(online && s.premium && s.serverId), hex: me.hex, pub: me.pub, ts: Date.now(), online, cosmetics: wardrobe() };
   if (body.premium) body.serverId = s.serverId;
+  body.client = CLIENT;
   body.sig = chat.sign(canonical(body));
   const res = await fetch(HUB + '/api/v1/hub/hello', {
     method: 'POST', headers: { 'Content-Type': 'application/json', 'User-Agent': 'NoreLauncher' },

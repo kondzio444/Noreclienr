@@ -8,7 +8,8 @@
     "missing_user_perms": "You need these permissions: {perms}",
     "missing_bot_perms": "I am missing these permissions: {perms}",
     "cooldown": "Slow down! Try again in {seconds} s.",
-    "cannot_send": "I cannot send messages in {channel} – check my permissions there."
+    "cannot_send": "I cannot send messages in {channel} – check my permissions there.",
+    "blacklisted": "Your account is blocked on Nore – you cannot use Nore Bot."
   },
   "common": {
     "confirm": "Confirm",
@@ -1473,7 +1474,8 @@
     "event_start_template": "🎉 **{event}** has started! {role}",
     "event_end_template": "{role}",
     "event_reminder_7d": "⏳ **{event}** starts in a week – {when}! {role}",
-    "event_reminder_1d": "⏰ **{event}** starts tomorrow – {when}! {role}"
+    "event_reminder_1d": "⏰ **{event}** starts tomorrow – {when}! {role}",
+    "announcement_template": "📢 **{title}** {role}"
   },
   "player": {
     "nore": "Nore",
@@ -2451,6 +2453,10 @@
         "_label": "Events (start / end)",
         "reminders": "Reminders before start",
         "reminders_help": "A week and a day before an event starts."
+      },
+      "announcements": {
+        "_label": "Nore announcements",
+        "_help": "Announcements from the Nore team for Discord (maintenance, events, important changes)."
       }
     },
     "social": {
