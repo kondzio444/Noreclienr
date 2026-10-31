@@ -10,6 +10,7 @@ const BASE = process.argv[2] || 'http://127.0.0.1:8787';
 const joined = new Map(); // serverId → { id, name }
 const mojang = http.createServer((req, res) => {
   const q = new URL(req.url, 'http://x').searchParams;
+  if (q.get('serverId') === 'd0d0d0d0d0') { res.writeHead(503); return res.end(); }
   const p = joined.get(q.get('serverId'));
   if (!p || p.name.toLowerCase() !== String(q.get('username')).toLowerCase()) { res.writeHead(204); return res.end(); }
   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -75,6 +76,11 @@ assert.equal(st, 400); step(`bad cosmetics → 400 (${out.error})`);
 assert.equal(st, 200, JSON.stringify(out)); assert.deepEqual(out, { ok: true, verified: true, name: 'Notch' }); step('premium hello verified through hasJoined (Mojang name case)');
 [st, out] = await hello(G, { name: 'Jeb_', uuid: '853c80ef3c3749fdaa49938b674adae6', premium: true, serverId: 'abc123' });
 assert.equal(st, 401); step(`premium without a Mojang join → 401 (${out.error})`);
+{
+  const H = launcherKey();
+  const [s2, o2] = await hello(H, { name: 'Mojang_Down', uuid: crypto.randomBytes(16).toString('hex'), premium: true, serverId: 'd0d0d0d0d0' });
+  assert.equal(s2, 200, JSON.stringify(o2)); assert.equal(o2.verified, false); step('Mojang unreachable → hello accepted unverified, player counted');
+}
 const steveUuid = 'aaaabbbbccccddddeeeeffff00001111';
 [st, out] = await hello(F, { uuid: steveUuid, premium: true, serverId: join('Steve_PL', steveUuid) });
 assert.equal(st, 200); assert.equal(out.verified, true); step('verified premium claim takes a name held unverified');
@@ -82,7 +88,7 @@ assert.equal(st, 200); assert.equal(out.verified, true); step('verified premium 
 assert.equal(out.players.steve_pl.hex, F.hex); assert.equal(out.players.steve_pl.verified, true); assert.equal(out.players.notch.online, true);
 
 let [, stats] = await get('/api/v1/hub/stats');
-assert.equal(stats.online, before.online + 2, JSON.stringify({ before, stats })); step(`stats ${JSON.stringify(stats)}`);
+assert.equal(stats.online, before.online + 3, JSON.stringify({ before, stats })); step(`stats (incl. the unverified Mojang_Down) ${JSON.stringify(stats)}`);
 
 [st] = await get('/api/v1/hub/players?names=' + Array.from({ length: 101 }, (_, i) => 'p' + i).join(','));
 assert.equal(st, 400); step('101 names → 400');
@@ -108,7 +114,7 @@ assert.equal(st, 200); step('online:false');
 [, out] = await get('/api/v1/hub/players?names=notch');
 assert.equal(out.players.notch.online, false); assert.equal(out.players.notch.verified, true); step('… marks the player offline at once');
 [, stats] = await get('/api/v1/hub/stats');
-assert.equal(stats.online, before.online + 1); step(`stats ${JSON.stringify(stats)}`);
+assert.equal(stats.online, before.online + 2); step(`stats ${JSON.stringify(stats)}`);
 
 mojang.close();
 console.log('all Nore Hub checks passed');

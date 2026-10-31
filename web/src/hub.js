@@ -250,8 +250,15 @@ export class NoreHub {
     if (h.premium) {
       // later heartbeats of a verified session are signature-only
       const session = row && row.verified && row.hex === h.hex && row.uuid === h.uuid && row.online && now - row.seen < ONLINE_MS;
-      name = session ? row.name : await this.mojang(h);
-      verified = true;
+      try {
+        name = session ? row.name : await this.mojang(h);
+        verified = true;
+      } catch (e) {
+        // Mojang down or refusing Cloudflare: the player still counts, listed unverified until a later
+        // hello gets through. A real "not this account" answer (401) is still an error.
+        if (e.status !== 502) throw e;
+        name = h.name;
+      }
       row = this.row(key); // the Mojang call may have let another hello in
     }
     if (row && row.hex !== h.hex && !verified && (row.verified || now - row.seen < CLAIM_MS)) {
