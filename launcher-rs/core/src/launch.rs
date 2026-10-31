@@ -46,15 +46,11 @@ pub fn expand_args(list: Option<&Value>, vars: &HashMap<String, String>, feature
     for a in list.and_then(Value::as_array).into_iter().flatten() {
         match a {
             Value::String(s) => out.push(substitute(s, vars)),
-            Value::Object(_) => {
-                if versions::rules_allow(a.get("rules"), features) {
-                    match a.get("value") {
-                        Some(Value::Array(vs)) => out.extend(vs.iter().filter_map(Value::as_str).map(|v| substitute(v, vars))),
-                        Some(Value::String(v)) => out.push(substitute(v, vars)),
-                        _ => {}
-                    }
-                }
-            }
+            Value::Object(_) if versions::rules_allow(a.get("rules"), features) => match a.get("value") {
+                Some(Value::Array(vs)) => out.extend(vs.iter().filter_map(Value::as_str).map(|v| substitute(v, vars))),
+                Some(Value::String(v)) => out.push(substitute(v, vars)),
+                _ => {}
+            },
             _ => {}
         }
     }
@@ -216,7 +212,8 @@ pub fn build_command(s: &LaunchSpec) -> GameCommand {
     let mut game = if version.pointer("/arguments/game").is_some() {
         expand_args(version.pointer("/arguments/game"), &vars, &features)
     } else {
-        let mut g: Vec<String> = substitute(version.str_of("minecraftArguments").unwrap_or_default(), &vars).split(' ').filter(|x| !x.is_empty()).map(String::from).collect();
+        let mut g: Vec<String> =
+            substitute(version.str_of("minecraftArguments").unwrap_or_default(), &vars).split(' ').filter(|x| !x.is_empty()).map(String::from).collect();
         if !fullscreen {
             g.extend(["--width".into(), vars["resolution_width"].clone(), "--height".into(), vars["resolution_height"].clone()]);
         }
@@ -327,7 +324,8 @@ mod tests {
 
     #[test]
     fn argument_expansion() {
-        let vars: HashMap<String, String> = [("auth_player_name", "Steve"), ("resolution_width", "1280")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
+        let vars: HashMap<String, String> =
+            [("auth_player_name", "Steve"), ("resolution_width", "1280")].iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();
         let args = expand_args(
             Some(&json!([
                 "--username", "${auth_player_name}",
@@ -380,14 +378,29 @@ mod tests {
                          { "rules": [{ "action": "allow", "features": { "is_quick_play_multiplayer": true } }], "value": ["--quickPlayMultiplayer", "${quickPlayMultiplayer}"] }]
             }
         });
-        let installed = Installed { version, launch_id: "1.21.1".into(), jar_path: "/d/versions/1.21.1/1.21.1.jar".into(), libs: Libs { classpath: vec!["/d/libraries/a.jar".into()], ..Default::default() }, loader_version: None };
+        let installed = Installed {
+            version,
+            launch_id: "1.21.1".into(),
+            jar_path: "/d/versions/1.21.1/1.21.1.jar".into(),
+            libs: Libs { classpath: vec!["/d/libraries/a.jar".into()], ..Default::default() },
+            loader_version: None,
+        };
         let account = crate::auth::create_offline("Gracz").unwrap();
         let instance = json!({ "id": "x", "gameDir": "/d/instances/x", "loader": "vanilla", "joinServer": "mc.noreclient.pl", "width": 0 });
         let settings = crate::store::defaults()["settings"].clone();
         let cmd = build_command(&LaunchSpec {
-            instance: &instance, account: &account, settings: &settings, installed: &installed, java_bin: "/java".into(), java_major: 21,
-            assets_dir: "/d/assets".into(), libraries_dir: "/d/libraries".into(), natives_dir: "/d/versions/1.21.1/natives".into(), launcher_version: "1.4.5",
-            mods: (0, false), ram_mb: (16384, 8000),
+            instance: &instance,
+            account: &account,
+            settings: &settings,
+            installed: &installed,
+            java_bin: "/java".into(),
+            java_major: 21,
+            assets_dir: "/d/assets".into(),
+            libraries_dir: "/d/libraries".into(),
+            natives_dir: "/d/versions/1.21.1/natives".into(),
+            launcher_version: "1.4.5",
+            mods: (0, false),
+            ram_mb: (16384, 8000),
         });
         let a = &cmd.args;
         let sep = if cfg!(windows) { ";" } else { ":" };
@@ -409,13 +422,30 @@ mod tests {
     #[tokio::test]
     async fn spawn_streams_lines_and_exit_code() {
         #[cfg(unix)]
-        let cmd = GameCommand { java_bin: "/bin/sh".into(), args: vec!["-c".into(), "echo one; echo two 1>&2; printf 'three\\r\\n'; exit 3".into()], cwd: std::env::temp_dir(), tuned: crate::jvm::build_jvm_args(&Default::default()) };
+        let cmd = GameCommand {
+            java_bin: "/bin/sh".into(),
+            args: vec!["-c".into(), "echo one; echo two 1>&2; printf 'three\\r\\n'; exit 3".into()],
+            cwd: std::env::temp_dir(),
+            tuned: crate::jvm::build_jvm_args(&Default::default()),
+        };
         #[cfg(windows)]
-        let cmd = GameCommand { java_bin: "cmd".into(), args: vec!["/C".into(), "echo one & echo two 1>&2 & echo three & exit 3".into()], cwd: std::env::temp_dir(), tuned: crate::jvm::build_jvm_args(&Default::default()) };
+        let cmd = GameCommand {
+            java_bin: "cmd".into(),
+            args: vec!["/C".into(), "echo one & echo two 1>&2 & echo three & exit 3".into()],
+            cwd: std::env::temp_dir(),
+            tuned: crate::jvm::build_jvm_args(&Default::default()),
+        };
         let lines = Arc::new(std::sync::Mutex::new(Vec::new()));
         let l2 = lines.clone();
         let (tx, rx) = oneshot::channel();
-        spawn(&cmd, Arc::new(move |l, s| l2.lock().unwrap().push((l.trim().to_string(), s))), Box::new(move |c| { let _ = tx.send(c); })).unwrap();
+        spawn(
+            &cmd,
+            Arc::new(move |l, s| l2.lock().unwrap().push((l.trim().to_string(), s))),
+            Box::new(move |c| {
+                let _ = tx.send(c);
+            }),
+        )
+        .unwrap();
         assert_eq!(rx.await.unwrap(), 3);
         let mut got = lines.lock().unwrap().clone();
         got.sort();

@@ -68,12 +68,8 @@ pub fn neoforge_prefix(mc: &str) -> String {
 pub fn forge_versions_from(xml: &str, mc: &str, recommended: Option<&str>) -> Vec<LoaderVersion> {
     let re = Regex::new(r"<version>([^<]+)</version>").expect("regex");
     let prefix = format!("{mc}-");
-    let mut list: Vec<String> = re
-        .captures_iter(xml)
-        .map(|c| c[1].to_string())
-        .filter(|v| v.starts_with(&prefix))
-        .map(|v| v[prefix.len()..].to_string())
-        .collect();
+    let mut list: Vec<String> =
+        re.captures_iter(xml).map(|c| c[1].to_string()).filter(|v| v.starts_with(&prefix)).map(|v| v[prefix.len()..].to_string()).collect();
     list.sort_by(|a, b| cmp_version(b, a));
     list.into_iter().map(|v| LoaderVersion { stable: Some(v.as_str()) == recommended, version: v }).collect()
 }
@@ -98,11 +94,8 @@ pub async fn versions(env: &Env, loader: &str, mc: &str) -> Result<Vec<LoaderVer
         }
         "forge" => {
             let xml = env.net.get_text(&format!("{FORGE_MAVEN}/maven-metadata.xml")).await?;
-            let promos: Value = env
-                .net
-                .get_json("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json")
-                .await
-                .unwrap_or_else(|_| json!({}));
+            let promos: Value =
+                env.net.get_json("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").await.unwrap_or_else(|_| json!({}));
             let rec = promos.pointer("/promos").and_then(|p| p.get(format!("{mc}-recommended"))).and_then(Value::as_str);
             Ok(forge_versions_from(&xml, mc, rec))
         }
@@ -142,8 +135,7 @@ pub async fn versions(env: &Env, loader: &str, mc: &str) -> Result<Vec<LoaderVer
 pub async fn pick_version(env: &Env, loader: &str, mc: &str) -> Result<String> {
     let list = versions(env, loader, mc).await?;
     let v = list.iter().find(|l| l.stable).or(list.first());
-    v.map(|v| v.version.clone())
-        .ok_or_else(|| msg(format!("{} nie wspiera Minecraft {mc}", name(loader).unwrap_or(loader))))
+    v.map(|v| v.version.clone()).ok_or_else(|| msg(format!("{} nie wspiera Minecraft {mc}", name(loader).unwrap_or(loader))))
 }
 
 /// Fabric / Quilt: writes the launcher profile; returns its version id.
@@ -152,10 +144,7 @@ pub async fn install_profile(env: &Env, loader: &str, mc: &str, lv: &str) -> Res
     let file = env.paths.version_json(&id);
     if !net::exists(&file).await {
         let base = if loader == "quilt" { QUILT_META } else { FABRIC_META };
-        let mut json: Value = env
-            .net
-            .get_json(&format!("{base}/versions/loader/{}/{}/profile/json", urlencoding::encode(mc), urlencoding::encode(lv)))
-            .await?;
+        let mut json: Value = env.net.get_json(&format!("{base}/versions/loader/{}/{}/profile/json", urlencoding::encode(mc), urlencoding::encode(lv))).await?;
         json["id"] = json!(id);
         tokio::fs::create_dir_all(env.paths.version_dir(&id)).await?;
         tokio::fs::write(&file, serde_json::to_vec_pretty(&json)?).await?;

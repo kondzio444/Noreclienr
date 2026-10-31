@@ -84,9 +84,11 @@ pub fn canonical(name: &str, uuid: &str, hex: &str, ts: i64, online: bool, cosme
 }
 
 /// The signed hello body.
-pub fn hello_body(me: &Identity, name: &str, uuid: &str, premium_server_id: Option<&str>, online: bool, cosmetics: &Value, client: &str, ts: i64) -> Value {
-    let premium = online && premium_server_id.is_some();
-    let mut body = json!({ "name": name, "uuid": uuid, "premium": premium, "hex": me.hex, "pub": me.pub_b64, "ts": ts, "online": online, "cosmetics": cosmetics });
+pub fn hello_body(me: &Identity, p: &Player, premium_server_id: Option<&str>, online: bool, cosmetics: &Value, client: &str, ts: i64) -> Value {
+    let (name, uuid) = (p.name.as_str(), p.uuid.as_str());
+    let premium = online && p.premium && premium_server_id.is_some();
+    let mut body =
+        json!({ "name": name, "uuid": uuid, "premium": premium, "hex": me.hex, "pub": me.pub_b64, "ts": ts, "online": online, "cosmetics": cosmetics });
     if premium {
         body["serverId"] = json!(premium_server_id);
     }
@@ -138,10 +140,25 @@ impl Hub {
     pub fn new(client: reqwest::Client, version: &str) -> Self {
         Self { client, version: version.to_string(), pace: Arc::default(), running: std::sync::Mutex::new(None) }
     }
+}
 
-    /// Waits for the gap the worker wants, then sends one hello. Ok(true) when accepted, Ok(false)
-    /// when the name belongs to another Nore player (no more hellos this session).
-    async fn hello(client: &reqwest::Client, pace: &Mutex<Pace>, me: &Identity, p: &Player, server_id: &mut Option<String>, online: bool, cosmetics: &Value, version: &str, log: &Log) -> bool {
+/// One game session announced to the hub.
+struct Session {
+    client: reqwest::Client,
+    pace: Arc<Mutex<Pace>>,
+    me: Arc<Identity>,
+    player: Player,
+    server_id: Option<String>,
+    cosmetics: Value,
+    version: String,
+    log: Log,
+}
+
+impl Session {
+    /// Waits for the gap the worker wants, then sends one hello. true when the session goes on,
+    /// false when the name belongs to another Nore player (no more hellos this session).
+    async fn hello(&mut self, online: bool) -> bool {
+        let Session { client, pace, me, player: p, server_id, cosmetics, version, log } = self;
         let mut pace = pace.lock().await;
         let now = tokio::time::Instant::now();
         let ready = [pace.last.map(|l| l + GAP), pace.failed.map(|f| f + FAIL)].into_iter().flatten().max();
@@ -156,8 +173,14 @@ impl Hub {
                 Err(e) => log(e),
             }
         }
-        let body = hello_body(me, &p.name, &p.uuid, server_id.as_deref().filter(|_| p.premium), online, cosmetics, version, now_ms());
-        let res = client.post(format!("{}/api/v1/hub/hello", hub_base())).header("User-Agent", "NoreLauncher").json(&body).timeout(Duration::from_secs(10)).send().await;
+        let body = hello_body(me, p, server_id.as_deref(), online, cosmetics, version, now_ms());
+        let res = client
+            .post(format!("{}/api/v1/hub/hello", hub_base()))
+            .header("User-Agent", "NoreLauncher")
+            .json(&body)
+            .timeout(Duration::from_secs(10))
+            .send()
+            .await;
         match res {
             Ok(r) if r.status().is_success() => {
                 pace.failed = None;
@@ -180,22 +203,22 @@ impl Hub {
             }
         }
     }
+}
 
+impl Hub {
     /// The game started: hello now, then every 60 s until [`Hub::game_stopped`].
     pub fn game_started(&self, me: Arc<Identity>, player: Player, cosmetics: Value, log: Log) {
         self.game_stopped();
         let token = CancellationToken::new();
         *self.running.lock().unwrap_or_else(|e| e.into_inner()) = Some(token.clone());
-        let client = self.client.clone();
-        let pace = self.pace.clone();
-        let version = self.version.clone();
+        let mut session =
+            Session { client: self.client.clone(), pace: self.pace.clone(), me, player, server_id: None, cosmetics, version: self.version.clone(), log };
         tokio::spawn(async move {
-            let mut server_id = None;
             let mut sent = false;
             loop {
                 let go_on = tokio::select! {
                     _ = token.cancelled() => break,
-                    ok = Self::hello(&client, &pace, &me, &player, &mut server_id, true, &cosmetics, &version, &log) => ok,
+                    ok = session.hello(true) => ok,
                 };
                 sent = true;
                 if !go_on {
@@ -207,7 +230,7 @@ impl Hub {
                 }
             }
             if sent {
-                Self::hello(&client, &pace, &me, &player, &mut server_id, false, &cosmetics, &version, &log).await;
+                session.hello(false).await;
             }
         });
     }
@@ -270,18 +293,24 @@ mod tests {
         let text = canonical("Steve_PL", "0123456789abcdef0123456789abcdef", testdata::ID_HEX, 1792270000000, true, &wings());
         assert_eq!(text, testdata::CANON);
         let me = Identity::from_pem(testdata::ID_PUB, testdata::ID_PRIV).unwrap();
-        let body = hello_body(&me, "Steve_PL", "0123456789abcdef0123456789abcdef", None, true, &wings(), "1.4.5", 1792270000000);
+        let p = Player { name: "Steve_PL".into(), uuid: "0123456789abcdef0123456789abcdef".into(), premium: false, access_token: None };
+        let body = hello_body(&me, &p, None, true, &wings(), "1.4.5", 1792270000000);
         assert_eq!(body["premium"], false);
         assert!(crate::chat::verify(testdata::ID_HEX, body["pub"].as_str().unwrap(), testdata::CANON, body["sig"].as_str().unwrap()));
     }
 
     #[test]
     fn players_that_can_be_announced() {
-        let p = Player::from_account(&json!({ "type": "offline", "name": "Gracz_1", "uuid": "B50AD385-829D-3141-A216-7E7D7539BA7F", "accessToken": "0" })).unwrap();
+        let p =
+            Player::from_account(&json!({ "type": "offline", "name": "Gracz_1", "uuid": "B50AD385-829D-3141-A216-7E7D7539BA7F", "accessToken": "0" })).unwrap();
         assert_eq!(p.uuid, "b50ad385829d3141a2167e7d7539ba7f");
         assert!(!p.premium);
         assert!(Player::from_account(&json!({ "name": "zła nazwa", "uuid": "b50ad385829d3141a2167e7d7539ba7f" })).is_none());
-        assert!(Player::from_account(&json!({ "type": "microsoft", "name": "Steve", "uuid": "b50ad385829d3141a2167e7d7539ba7f", "accessToken": "ey" })).unwrap().premium);
+        assert!(
+            Player::from_account(&json!({ "type": "microsoft", "name": "Steve", "uuid": "b50ad385829d3141a2167e7d7539ba7f", "accessToken": "ey" }))
+                .unwrap()
+                .premium
+        );
     }
 
     #[tokio::test]

@@ -34,7 +34,14 @@ pub fn primary_file(version: &Value) -> Option<&Value> {
 }
 
 /// Installs a mod and its required dependencies into `target`; returns the file names.
-pub fn install_mod<'a>(env: &'a Env, project: &'a str, game_version: &'a str, loader: &'a str, target: &'a Path, seen: &'a mut HashSet<String>) -> BoxFuture<'a, Result<Vec<String>>> {
+pub fn install_mod<'a>(
+    env: &'a Env,
+    project: &'a str,
+    game_version: &'a str,
+    loader: &'a str,
+    target: &'a Path,
+    seen: &'a mut HashSet<String>,
+) -> BoxFuture<'a, Result<Vec<String>>> {
     Box::pin(async move {
         if !seen.insert(project.to_string()) {
             return Ok(vec![]);
@@ -52,7 +59,13 @@ pub fn install_mod<'a>(env: &'a Env, project: &'a str, game_version: &'a str, lo
         }
         tokio::fs::create_dir_all(target).await?;
         env.net
-            .download(file.str_of("url").unwrap_or_default(), &target.join(name), file.pointer("/hashes/sha1").and_then(Value::as_str), file.get("size").and_then(Value::as_u64), &|_| {})
+            .download(
+                file.str_of("url").unwrap_or_default(),
+                &target.join(name),
+                file.pointer("/hashes/sha1").and_then(Value::as_str),
+                file.get("size").and_then(Value::as_u64),
+                &|_| {},
+            )
             .await?;
         let mut installed = vec![name.to_string()];
         for dep in version.get("dependencies").and_then(Value::as_array).into_iter().flatten() {

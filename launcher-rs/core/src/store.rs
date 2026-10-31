@@ -136,10 +136,7 @@ impl Store {
     /// Loads the file (defaults when it is missing or broken).
     pub fn open(file: impl Into<PathBuf>) -> Self {
         let file = file.into();
-        let raw = std::fs::read_to_string(&file)
-            .ok()
-            .and_then(|t| serde_json::from_str::<Value>(&t).ok())
-            .unwrap_or(Value::Null);
+        let raw = std::fs::read_to_string(&file).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok()).unwrap_or(Value::Null);
         Self { file, data: Mutex::new(normalize(raw)) }
     }
 

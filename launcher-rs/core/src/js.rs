@@ -6,10 +6,7 @@ use serde_json::{Map, Value};
 
 /// `Date.now()`: milliseconds since the Unix epoch.
 pub fn now_ms() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_millis() as i64)
-        .unwrap_or(0)
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
 }
 
 /// `JSON.stringify(value)` exactly as V8 writes it (no spaces, keys in insertion order,

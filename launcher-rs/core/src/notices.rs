@@ -69,7 +69,9 @@ pub struct Notices {
 
 impl Default for Notices {
     fn default() -> Self {
-        Self { current: Arc::new(Mutex::new(json!({ "announcements": [], "maintenance": null, "updateRequired": false, "minLauncherVersion": null, "at": 0 }))) }
+        Self {
+            current: Arc::new(Mutex::new(json!({ "announcements": [], "maintenance": null, "updateRequired": false, "minLauncherVersion": null, "at": 0 }))),
+        }
     }
 }
 

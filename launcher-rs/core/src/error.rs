@@ -50,10 +50,7 @@ impl Error {
             Error::Http(e) => e.is_connect() || e.is_timeout() || e.is_request(),
             Error::Io(e) => matches!(
                 e.kind(),
-                std::io::ErrorKind::ConnectionRefused
-                    | std::io::ErrorKind::ConnectionReset
-                    | std::io::ErrorKind::TimedOut
-                    | std::io::ErrorKind::NotConnected
+                std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::ConnectionReset | std::io::ErrorKind::TimedOut | std::io::ErrorKind::NotConnected
             ),
             _ => false,
         }

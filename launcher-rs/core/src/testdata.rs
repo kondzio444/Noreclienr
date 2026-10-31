@@ -2,8 +2,7 @@
 //! so the Rust port is checked against the real thing. The key pair is a throw-away test key.
 
 /// main.js seal() fallback layout: key 00..1f, iv = 12 x 0x07, `{"accessToken":"t","refreshToken":"r"}`.
-pub const ELECTRON_GCM_BOX: &str =
-    "BwcHBwcHBwcHBwcHGlJ9eVgC56n1WZmtQuMIfXRIxz8MaqSHkvJ45e5zzrnVfqFR+pLna5vINq5rtVd1BX7TDKM9";
+pub const ELECTRON_GCM_BOX: &str = "BwcHBwcHBwcHBwcHGlJ9eVgC56n1WZmtQuMIfXRIxz8MaqSHkvJ45e5zzrnVfqFR+pLna5vINq5rtVd1BX7TDKM9";
 
 /// Chromium os_crypt "v10" on Linux (PBKDF2("peanuts"), AES-128-CBC): `{"accessToken":"x"}`.
 pub const OSCRYPT_V10_LINUX: &str = "djEwcwmwCMA70Op3O0k/Q1cxvnXzeIGn0sVKRZ9NjzXUen0=";

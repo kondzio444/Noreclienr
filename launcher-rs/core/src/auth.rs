@@ -158,7 +158,10 @@ impl Auth {
                 _ = tokio::time::sleep(every) => {}
             }
             let (_, j) = self
-                .post_form(&self.ep.token, &[("grant_type", "urn:ietf:params:oauth:grant-type:device_code"), ("client_id", client_id), ("device_code", device_code)])
+                .post_form(
+                    &self.ep.token,
+                    &[("grant_type", "urn:ietf:params:oauth:grant-type:device_code"), ("client_id", client_id), ("device_code", device_code)],
+                )
                 .await?;
             if j.get("access_token").is_some() {
                 return Ok(j);
@@ -222,9 +225,8 @@ impl Auth {
     /// Microsoft refresh token → { accessToken, refreshToken } (the refresh token may rotate).
     pub async fn refresh_ms_token(&self, refresh_token: &str, client_id: Option<&str>) -> Result<(String, String)> {
         let cid = client_id.filter(|c| !c.is_empty()).ok_or_else(|| msg(NO_CLIENT_ID))?;
-        let (_, j) = self
-            .post_form(&self.ep.token, &[("grant_type", "refresh_token"), ("client_id", cid), ("refresh_token", refresh_token), ("scope", SCOPE)])
-            .await?;
+        let (_, j) =
+            self.post_form(&self.ep.token, &[("grant_type", "refresh_token"), ("client_id", cid), ("refresh_token", refresh_token), ("scope", SCOPE)]).await?;
         match j.str_of("access_token") {
             Some(at) => Ok((at.to_string(), j.str_of("refresh_token").unwrap_or(refresh_token).to_string())),
             None => {

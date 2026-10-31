@@ -24,9 +24,7 @@ fn cbc_key(password: &[u8], rounds: u32) -> [u8; 16] {
 fn cbc_decrypt(key: &[u8; 16], data: &[u8]) -> Option<Vec<u8>> {
     use aes::cipher::{block_padding::Pkcs7, BlockDecryptMut, KeyIvInit};
     let iv = [b' '; 16];
-    cbc::Decryptor::<aes::Aes128>::new(key.into(), &iv.into())
-        .decrypt_padded_vec_mut::<Pkcs7>(data)
-        .ok()
+    cbc::Decryptor::<aes::Aes128>::new(key.into(), &iv.into()).decrypt_padded_vec_mut::<Pkcs7>(data).ok()
 }
 
 /// Decrypts one `safeStorage.encryptString` result. `user_data` is Electron's userData folder.
@@ -70,9 +68,7 @@ mod windows {
         let input = CRYPT_INTEGER_BLOB { cbData: data.len() as u32, pbData: data.as_ptr() as *mut u8 };
         let mut output = CRYPT_INTEGER_BLOB { cbData: 0, pbData: std::ptr::null_mut() };
         // SAFETY: input points at `data` for the call; output is allocated by Windows and freed below.
-        let ok = unsafe {
-            CryptUnprotectData(&input, std::ptr::null_mut(), std::ptr::null(), std::ptr::null(), std::ptr::null(), 0, &mut output)
-        };
+        let ok = unsafe { CryptUnprotectData(&input, std::ptr::null_mut(), std::ptr::null(), std::ptr::null(), std::ptr::null(), 0, &mut output) };
         if ok == 0 || output.pbData.is_null() {
             return None;
         }

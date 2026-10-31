@@ -406,7 +406,8 @@ mod tests {
         let mods_dir = dir.path().join("mods");
         std::fs::create_dir_all(&mods_dir).unwrap();
         std::fs::write(mods_dir.join("noreclient-1.21.jar"), b"jar").unwrap();
-        std::fs::write(mods_dir.join("index.json"), r#"[{"file":"noreclient-1.21.jar","versions":["1.21.1"]},{"file":"missing.jar","versions":["1.20.1"]}]"#).unwrap();
+        std::fs::write(mods_dir.join("index.json"), r#"[{"file":"noreclient-1.21.jar","versions":["1.21.1"]},{"file":"missing.jar","versions":["1.20.1"]}]"#)
+            .unwrap();
         let mods = NoreMods::load(&[mods_dir]);
         (dir, Store::memory(json!({})), Paths::new("/tmp/nore-test-root"), mods)
     }
@@ -433,7 +434,10 @@ mod tests {
         let paths = Paths::new(dir.path());
         let inst = Instances { store: &store, paths: &paths, mods: &mods };
         let nore = inst.create(&json!({ "name": "Nore Client", "mcVersion": "1.21.1", "loader": "fabric", "noreClient": true })).unwrap();
-        assert_eq!((nore["modpack"].clone(), nore["noreClient"].clone(), nore["loader"].clone(), nore["perfMods"].clone()), (json!("nore"), json!(true), json!("fabric"), json!(true)));
+        assert_eq!(
+            (nore["modpack"].clone(), nore["noreClient"].clone(), nore["loader"].clone(), nore["perfMods"].clone()),
+            (json!("nore"), json!(true), json!("fabric"), json!(true))
+        );
         assert!(Path::new(nore["gameDir"].as_str().unwrap()).is_dir());
         // Nore Client does not support this version: plain Fabric with the performance pack
         let old = inst.create(&json!({ "name": "x", "mcVersion": "1.20.1", "loader": "fabric", "noreClient": true })).unwrap();
@@ -455,7 +459,10 @@ mod tests {
         let id = a["id"].as_str().unwrap().to_string();
         inst.update(&id, &json!({ "loaderVersion": "0.16.5", "packInstalled": true })).unwrap();
         let b = inst.update(&id, &json!({ "mcVersion": "1.20.1" })).unwrap();
-        assert_eq!((b["loaderVersion"].clone(), b["packInstalled"].clone(), b["modpack"].clone(), b["noreClient"].clone(), b["perfPack"].clone()), (Value::Null, json!(false), json!("fabric"), json!(false), json!(true)));
+        assert_eq!(
+            (b["loaderVersion"].clone(), b["packInstalled"].clone(), b["modpack"].clone(), b["noreClient"].clone(), b["perfPack"].clone()),
+            (Value::Null, json!(false), json!("fabric"), json!(false), json!(true))
+        );
         let c = inst.update(&id, &json!({ "modpack": "vanilla" })).unwrap();
         assert_eq!((c["loader"].clone(), c["perfPack"].clone()), (json!("vanilla"), json!(false)));
         let d = inst.update(&id, &json!({ "id": "hijack", "name": "B" })).unwrap();

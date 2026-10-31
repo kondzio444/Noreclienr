@@ -56,11 +56,7 @@ fn install_crypto_provider() {
 impl Net {
     pub fn new() -> Result<Self> {
         install_crypto_provider();
-        let client = reqwest::Client::builder()
-            .user_agent(UA)
-            .connect_timeout(Duration::from_secs(20))
-            .read_timeout(Duration::from_secs(60))
-            .build()?;
+        let client = reqwest::Client::builder().user_agent(UA).connect_timeout(Duration::from_secs(20)).read_timeout(Duration::from_secs(60)).build()?;
         Ok(Self { client, backoff: Duration::from_millis(500) })
     }
 
@@ -77,11 +73,7 @@ impl Net {
 
     /// Sends a request up to `tries` times: network errors, 429 and 5xx are retried with
     /// exponential backoff; other answers (also 4xx) are returned to the caller.
-    pub async fn send_with_retry(
-        &self,
-        make: impl Fn(&reqwest::Client) -> reqwest::RequestBuilder,
-        tries: u32,
-    ) -> Result<reqwest::Response> {
+    pub async fn send_with_retry(&self, make: impl Fn(&reqwest::Client) -> reqwest::RequestBuilder, tries: u32) -> Result<reqwest::Response> {
         let mut last: Option<Error> = None;
         for i in 0..tries.max(1) {
             match make(&self.client).send().await {
@@ -121,14 +113,7 @@ impl Net {
 
     /// Downloads `url` to `dest` atomically, verifying the SHA-1 when given. Returns false when a
     /// valid file was already there. `on_bytes(n)` is called for every received chunk.
-    pub async fn download(
-        &self,
-        url: &str,
-        dest: &Path,
-        sha1: Option<&str>,
-        size: Option<u64>,
-        on_bytes: &(dyn Fn(u64) + Send + Sync),
-    ) -> Result<bool> {
+    pub async fn download(&self, url: &str, dest: &Path, sha1: Option<&str>, size: Option<u64>, on_bytes: &(dyn Fn(u64) + Send + Sync)) -> Result<bool> {
         if is_valid(dest, sha1, size).await {
             if let Some(s) = size {
                 on_bytes(s);
@@ -192,15 +177,8 @@ impl Net {
         let total_bytes: u64 = tasks.iter().filter_map(|t| t.size).sum();
         let done = Arc::new(AtomicUsize::new(0));
         let bytes = Arc::new(AtomicU64::new(0));
-        let report = |current: String| {
-            progress(Progress {
-                done: done.load(Ordering::Relaxed),
-                total,
-                bytes: bytes.load(Ordering::Relaxed),
-                total_bytes,
-                current,
-            })
-        };
+        let report =
+            |current: String| progress(Progress { done: done.load(Ordering::Relaxed), total, bytes: bytes.load(Ordering::Relaxed), total_bytes, current });
         report(String::new());
         let results = stream::iter(tasks.into_iter().map(|t| {
             let bytes = bytes.clone();
@@ -314,10 +292,7 @@ mod tests {
     async fn download_gives_up_on_a_wrong_checksum() {
         let srv = serve(vec![Reply::bytes(b"x".to_vec()), Reply::bytes(b"x".to_vec()), Reply::bytes(b"x".to_vec())]).await;
         let dir = tempfile::tempdir().unwrap();
-        let e = Net::for_tests()
-            .download(&srv.url("/f"), &dir.path().join("f.bin"), Some(&"0".repeat(40)), None, &|_| {})
-            .await
-            .unwrap_err();
+        let e = Net::for_tests().download(&srv.url("/f"), &dir.path().join("f.bin"), Some(&"0".repeat(40)), None, &|_| {}).await.unwrap_err();
         assert_eq!(e.to_string(), "Błędna suma kontrolna: f.bin");
     }
 
@@ -336,10 +311,7 @@ mod tests {
             })
             .collect();
         let last = std::sync::Mutex::new(None);
-        Net::for_tests()
-            .download_all(tasks, 4, &|p| *last.lock().unwrap() = Some(p), None)
-            .await
-            .unwrap();
+        Net::for_tests().download_all(tasks, 4, &|p| *last.lock().unwrap() = Some(p), None).await.unwrap();
         let p = last.lock().unwrap().clone().unwrap();
         assert_eq!((p.done, p.total), (12, 12));
         assert_eq!(p.total_bytes, 74);

@@ -11,8 +11,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
-pub const ALL: &str =
-    "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
+pub const ALL: &str = "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json";
 
 /// Mojang's platform key in the runtime list.
 pub fn platform_key() -> &'static str {
@@ -173,14 +172,7 @@ pub struct Picked {
 }
 
 /// Java for a Minecraft version: the player's own Java when it fits, otherwise Mojang's runtime.
-pub async fn pick(
-    env: &Env,
-    java_path: &str,
-    need: u32,
-    component: Option<&str>,
-    loader: &str,
-    progress: &ProgressFn,
-) -> Result<Picked> {
+pub async fn pick(env: &Env, java_path: &str, need: u32, component: Option<&str>, loader: &str, progress: &ProgressFn) -> Result<Picked> {
     let mut note = None;
     if !java_path.is_empty() {
         let major = probe_cached(Path::new(java_path)).await;

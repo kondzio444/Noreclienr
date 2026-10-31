@@ -337,11 +337,7 @@ fn arg_str(args: &[Value], i: usize) -> String {
 
 /// Only the last path component (the renderer passes names of worlds and screenshots).
 fn base_name(s: &str) -> Result<String> {
-    Path::new(s)
-        .file_name()
-        .map(|n| n.to_string_lossy().to_string())
-        .filter(|n| n != ".." && n != ".")
-        .ok_or_else(|| msg("Niedozwolona ścieżka."))
+    Path::new(s).file_name().map(|n| n.to_string_lossy().to_string()).filter(|n| n != ".." && n != ".").ok_or_else(|| msg("Niedozwolona ścieżka."))
 }
 
 fn public_account(a: &Value) -> Value {
@@ -470,7 +466,13 @@ impl App {
             // ------------------------------------------------------------ app & window
             "app:info" => {
                 let (total, _) = jvm::system_memory_mb();
-                let platform = if cfg!(windows) { "win32" } else if cfg!(target_os = "macos") { "darwin" } else { "linux" };
+                let platform = if cfg!(windows) {
+                    "win32"
+                } else if cfg!(target_os = "macos") {
+                    "darwin"
+                } else {
+                    "linux"
+                };
                 json!({ "version": self.display_version(), "rawVersion": self.version, "platform": platform, "root": self.env.paths.root().to_string_lossy(), "totalMemMb": total, "shell": "rust" })
             }
             "state:get" => self.state(),
@@ -721,7 +723,10 @@ impl App {
                     ..Default::default()
                 });
                 let mut out = json!(plan);
-                assign(&mut out, &json!({ "autoMb": jvm::auto_memory_mb(mods, &loader, total, shaders), "mods": mods, "totalMb": total, "maxMb": jvm::max_game_mb(total) }));
+                assign(
+                    &mut out,
+                    &json!({ "autoMb": jvm::auto_memory_mb(mods, &loader, total, shaders), "mods": mods, "totalMb": total, "maxMb": jvm::max_game_mb(total) }),
+                );
                 out
             }
 
@@ -882,7 +887,13 @@ impl App {
     }
 
     async fn ms_poll(&self, device_code: &str, expires_in: u64, interval: u64) -> Result<Value> {
-        let cancel = self.ms_logins.lock().unwrap_or_else(|e| e.into_inner()).get(device_code).cloned().ok_or_else(|| msg("Sesja logowania wygasła – zacznij od nowa"))?;
+        let cancel = self
+            .ms_logins
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(device_code)
+            .cloned()
+            .ok_or_else(|| msg("Sesja logowania wygasła – zacznij od nowa"))?;
         let result = async {
             let cid = self.ms_client_id().await.ok_or_else(|| msg("Nie udało się pobrać identyfikatora aplikacji Microsoft – sprawdź połączenie z internetem i spróbuj ponownie."))?;
             let token = self.auth.poll_device_code(&cid, device_code, expires_in, interval, &cancel).await?;
@@ -969,7 +980,10 @@ impl App {
         let (ms_access, ms_refresh) = self.auth.refresh_ms_token(&refresh, cid.as_deref()).await?;
         save(json!({ "refreshToken": ms_refresh, "cid": cid }), json!({}))?;
         let mc = self.auth.minecraft_from_ms(&ms_access).await?;
-        save(json!({ "accessToken": mc["accessToken"], "expiresAt": mc["expiresAt"] }), json!({ "name": mc["name"], "skin": mc["skin"], "verifiedAt": now_ms() }))?;
+        save(
+            json!({ "accessToken": mc["accessToken"], "expiresAt": mc["expiresAt"] }),
+            json!({ "name": mc["name"], "skin": mc["skin"], "verifiedAt": now_ms() }),
+        )?;
         let mut out = acc.clone();
         assign(&mut out, &json!({ "accessToken": mc["accessToken"], "name": mc["name"], "skin": mc["skin"] }));
         out.as_object_mut().map(|o| o.remove("secret"));
@@ -1002,7 +1016,8 @@ impl App {
             Ok(()) => json!({ "loggedIn": true, "account": public_account(&acc) }),
             Err(e) => {
                 let text = e.to_string();
-                let network = !e.is_auth() && (e.is_network() || Regex::new(r"(?i)fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network|Brak połączenia").unwrap().is_match(&text));
+                let network = !e.is_auth()
+                    && (e.is_network() || Regex::new(r"(?i)fetch failed|ENOTFOUND|ECONN|ETIMEDOUT|EAI_AGAIN|network|Brak połączenia").unwrap().is_match(&text));
                 json!({ "loggedIn": true, "offline": network, "expired": !network, "error": text, "account": public_account(&acc) })
             }
         }
@@ -1310,7 +1325,10 @@ impl App {
             app.shell.window("focus");
             if !killed && code != 0 {
                 let lines = tail.lock().map(|t| t.len()).unwrap_or(0);
-                app.log(format!("[Naprawa] Gra zakończyła się kodem {code} ({lines} linii logu). Automatyczna naprawa – w przygotowaniu w wersji Rust."), "out");
+                app.log(
+                    format!("[Naprawa] Gra zakończyła się kodem {code} ({lines} linii logu). Automatyczna naprawa – w przygotowaniu w wersji Rust."),
+                    "out",
+                );
             }
         });
         let handle = launch::spawn(&cmd, on_log, on_exit)?;
@@ -1332,7 +1350,11 @@ impl App {
         match (enabled, player) {
             (true, Some(p)) if !self.hub.is_running() => {
                 let Ok(me) = self.chat.identity(&self.store, &self.secrets) else { return };
-                let cos = self.store.read(|d| d.get("hubCosmetics").cloned()).filter(|c| hub::cosmetics_error(c).is_none()).unwrap_or_else(|| json!({ "v": 1, "slots": {} }));
+                let cos = self
+                    .store
+                    .read(|d| d.get("hubCosmetics").cloned())
+                    .filter(|c| hub::cosmetics_error(c).is_none())
+                    .unwrap_or_else(|| json!({ "v": 1, "slots": {} }));
                 let e = self.emitter.clone();
                 self.hub.game_started(me, p, cos, Arc::new(move |line| e.emit("log", json!({ "line": format!("[Nore Hub] {line}"), "stream": "out" }))));
             }
@@ -1447,7 +1469,14 @@ mod tests {
         assert_eq!(app.invoke("servers:list", vec![]).await.unwrap(), json!([]));
         // ported channels never answer "pending", whatever the arguments
         for (ch, st) in CHANNELS {
-            if *st == Status::Pending || ch.starts_with("versions:") || ch.starts_with("loaders:") || ch.starts_with("game:") || *ch == "net:check" || *ch == "official:status" || ch.starts_with("accounts:ms") {
+            if *st == Status::Pending
+                || ch.starts_with("versions:")
+                || ch.starts_with("loaders:")
+                || ch.starts_with("game:")
+                || *ch == "net:check"
+                || *ch == "official:status"
+                || ch.starts_with("accounts:ms")
+            {
                 continue;
             }
             if let Err(Error::Pending(_)) = app.invoke(ch, vec![]).await {

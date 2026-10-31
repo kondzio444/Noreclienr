@@ -17,9 +17,7 @@ pub struct Paths {
 pub fn default_root() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
     if cfg!(windows) {
-        let appdata = std::env::var_os("APPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| home.join("AppData").join("Roaming"));
+        let appdata = std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or_else(|| home.join("AppData").join("Roaming"));
         appdata.join(".norelauncher")
     } else if cfg!(target_os = "macos") {
         home.join("Library").join("Application Support").join("norelauncher")

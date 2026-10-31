@@ -131,7 +131,10 @@ impl Chat {
         let me = self.identity(store, secrets)?;
         let name = store.read(|d| {
             let sel = d.str_of("selectedAccount").map(String::from);
-            d.get("accounts").and_then(Value::as_array).and_then(|a| a.iter().find(|x| x.str_of("id").map(String::from) == sel)).and_then(|a| a.str_of("name").map(String::from))
+            d.get("accounts")
+                .and_then(Value::as_array)
+                .and_then(|a| a.iter().find(|x| x.str_of("id").map(String::from) == sel))
+                .and_then(|a| a.str_of("name").map(String::from))
         });
         Ok(json!({ "hex": me.hex, "id": me.id, "pub": me.pub_b64, "name": name.unwrap_or_else(|| "Gracz".into()), "peer": format!("nore-{}", me.hex) }))
     }
@@ -205,7 +208,11 @@ pub fn add_contact(store: &Store, my_hex: &str, id_text: &str, name: Option<&str
         return Err(msg("Ten znajomy już jest na liście."));
     }
     let req = requests.iter().find(|r| r.str_of("hex") == Some(&hex)).cloned();
-    let name = name.filter(|n| !n.is_empty()).map(String::from).or_else(|| req.as_ref().and_then(|r| r.str_of("name").map(String::from))).unwrap_or_else(|| "Znajomy".into());
+    let name = name
+        .filter(|n| !n.is_empty())
+        .map(String::from)
+        .or_else(|| req.as_ref().and_then(|r| r.str_of("name").map(String::from)))
+        .unwrap_or_else(|| "Znajomy".into());
     update(store, |c| {
         arr(c, "contacts").push(json!({ "hex": hex, "name": truncate(&name, 24), "pub": req.as_ref().and_then(|r| r.get("pub").cloned()).unwrap_or(Value::Null), "added": now_ms() }));
         arr(c, "requests").retain(|r| r.str_of("hex") != Some(&hex));

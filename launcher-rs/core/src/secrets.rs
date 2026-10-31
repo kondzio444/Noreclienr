@@ -98,12 +98,7 @@ pub fn write_private(file: &Path, data: &[u8]) -> std::io::Result<()> {
     {
         use std::io::Write;
         use std::os::unix::fs::OpenOptionsExt;
-        let mut f = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(file)?;
+        let mut f = std::fs::OpenOptions::new().write(true).create(true).truncate(true).mode(0o600).open(file)?;
         f.write_all(data)
     }
     #[cfg(not(unix))]
@@ -224,10 +219,7 @@ mod tests {
     /// A box sealed by the Electron launcher's fallback (main.js seal(), random session.key).
     #[test]
     fn opens_the_electron_gcm_layout() {
-        let key: [u8; 32] = hex::decode("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let key: [u8; 32] = hex::decode("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f").unwrap().try_into().unwrap();
         // node -e: aes-256-gcm, iv = 12 x 0x07, text {"accessToken":"t","refreshToken":"r"}
         let sealed = B64.decode(crate::testdata::ELECTRON_GCM_BOX).unwrap();
         let plain = gcm_open(&key, &sealed).unwrap();

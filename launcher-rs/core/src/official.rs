@@ -324,8 +324,7 @@ pub async fn fetch_status(client: &reqwest::Client, api: &str) -> Value {
             "ping",
         ),
         Err(e) => {
-            let unknown = matches!(&e, crate::Error::Io(io) if io.kind() == std::io::ErrorKind::NotFound)
-                || e.to_string().contains("failed to lookup address");
+            let unknown = matches!(&e, crate::Error::Io(io) if io.kind() == std::io::ErrorKind::NotFound) || e.to_string().contains("failed to lookup address");
             let mut out = info();
             crate::js::assign(
                 &mut out,
@@ -384,7 +383,8 @@ mod tests {
         }
     }
     fn dat(list: &[(&str, &str)]) -> Vec<u8> {
-        let items = list.iter().map(|(n, ip)| Tag::Compound(vec![("name".into(), Tag::String((*n).into())), ("ip".into(), Tag::String((*ip).into()))])).collect();
+        let items =
+            list.iter().map(|(n, ip)| Tag::Compound(vec![("name".into(), Tag::String((*n).into())), ("ip".into(), Tag::String((*ip).into()))])).collect();
         nbt::write("", &vec![("servers".into(), Tag::List(nbt::COMPOUND, items))])
     }
 
@@ -429,7 +429,11 @@ mod tests {
 
     #[test]
     fn instance_choice() {
-        let list = vec![json!({ "id": "v", "noreClient": false, "lastPlayed": 9 }), json!({ "id": "a", "noreClient": true, "lastPlayed": 1 }), json!({ "id": "b", "noreClient": true, "lastPlayed": 5 })];
+        let list = vec![
+            json!({ "id": "v", "noreClient": false, "lastPlayed": 9 }),
+            json!({ "id": "a", "noreClient": true, "lastPlayed": 1 }),
+            json!({ "id": "b", "noreClient": true, "lastPlayed": 5 }),
+        ];
         assert_eq!(pick_instance(&list, Some("a"))["id"], "a");
         assert_eq!(pick_instance(&list, Some("v"))["id"], "b");
         assert_eq!(pick_instance(&[json!({ "id": "v" })], Some("v")), Value::Null);
@@ -444,7 +448,10 @@ mod tests {
         let s = fetch_status(crate::net::Net::for_tests().client(), &srv.url("/api/v2")).await;
         assert_eq!(srv.seen()[0].path, "/api/v2/servers/mc.noreclient.pl");
         assert_eq!(s["source"], "api");
-        assert_eq!((s["online"].clone(), s["players"].clone(), s["max"].clone(), s["version"].clone(), s["motd"].clone(), s["ping"].clone()), (json!(true), json!(12), json!(100), json!("1.21.x"), json!("Witaj"), json!(31)));
+        assert_eq!(
+            (s["online"].clone(), s["players"].clone(), s["max"].clone(), s["version"].clone(), s["motd"].clone(), s["ping"].clone()),
+            (json!(true), json!(12), json!(100), json!("1.21.x"), json!("Witaj"), json!(31))
+        );
     }
 
     #[tokio::test]
@@ -468,7 +475,8 @@ mod tests {
                     let body: Vec<u8> = buf[o..o + len as usize].to_vec();
                     buf.drain(..o + len as usize);
                     if body == [0] {
-                        let j = br#"{"version":{"name":"Paper 1.21.1"},"players":{"online":3,"max":50},"description":{"text":"Nore ","extra":[{"text":"MC"}]}}"#;
+                        let j =
+                            br#"{"version":{"name":"Paper 1.21.1"},"players":{"online":3,"max":50},"description":{"text":"Nore ","extra":[{"text":"MC"}]}}"#;
                         sock.write_all(&packet(&[&varint(0), &varint(j.len() as i32), j])).await.unwrap();
                     } else if body[0] == 1 {
                         sock.write_all(&packet(&[&body])).await.unwrap();

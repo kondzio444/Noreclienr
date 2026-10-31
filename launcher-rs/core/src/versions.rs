@@ -140,9 +140,7 @@ impl Env {
     }
 
     pub async fn read_version_json(&self, id: &str) -> Result<Value> {
-        let b = tokio::fs::read(self.paths.version_json(id))
-            .await
-            .map_err(|_| msg(format!("Brak pliku wersji {id}")))?;
+        let b = tokio::fs::read(self.paths.version_json(id)).await.map_err(|_| msg(format!("Brak pliku wersji {id}")))?;
         Ok(serde_json::from_slice(&b)?)
     }
 
@@ -150,9 +148,7 @@ impl Env {
     pub async fn fetch_vanilla_json(&self, id: &str) -> Result<Value> {
         let file = self.paths.version_json(id);
         let manifest = self.manifest(false).await.ok();
-        let entry = manifest
-            .as_ref()
-            .and_then(|m| m.get("versions")?.as_array()?.iter().find(|v| v.str_of("id") == Some(id)).cloned());
+        let entry = manifest.as_ref().and_then(|m| m.get("versions")?.as_array()?.iter().find(|v| v.str_of("id") == Some(id)).cloned());
         if let Some(e) = entry {
             let url = e.str_of("url").unwrap_or_default();
             self.net.download(url, &file, e.str_of("sha1"), None, &|_| {}).await?;
@@ -306,10 +302,7 @@ pub fn collect_libraries(version: &Value, libraries_dir: &Path) -> Libs {
         // modern natives are separate libraries with a "natives-<os>" classifier
         if let (Some(c), Some(art)) = (parts.get(3), art) {
             if c.starts_with("natives-") {
-                out.natives.push(Native {
-                    file: libraries_dir.join(art.str_of("path").unwrap_or_default()),
-                    exclude: vec!["META-INF/".into()],
-                });
+                out.natives.push(Native { file: libraries_dir.join(art.str_of("path").unwrap_or_default()), exclude: vec!["META-INF/".into()] });
             }
         }
     }
@@ -360,11 +353,7 @@ pub async fn asset_tasks(env: &Env, version: &Value) -> Result<Vec<Task>> {
             continue;
         }
         let sub = &hash[..2];
-        let dest = if legacy {
-            assets.join("virtual").join("legacy").join(name)
-        } else {
-            assets.join("objects").join(sub).join(hash)
-        };
+        let dest = if legacy { assets.join("virtual").join("legacy").join(name) } else { assets.join("objects").join(sub).join(hash) };
         tasks.push(Task {
             url: format!("{RESOURCES}/{sub}/{hash}"),
             dest,
@@ -394,13 +383,7 @@ pub struct InstallRequest<'a> {
 
 /// Installs everything needed to launch: version JSON, loader, client jar, libraries, log
 /// config and assets (SHA-1 verified, `concurrency` downloads at once).
-pub async fn install_version(
-    env: &Env,
-    req: InstallRequest<'_>,
-    concurrency: usize,
-    progress: ProgressFn,
-    java: Option<JavaProvider>,
-) -> Result<Installed> {
+pub async fn install_version(env: &Env, req: InstallRequest<'_>, concurrency: usize, progress: ProgressFn, java: Option<JavaProvider>) -> Result<Installed> {
     let step = |stage: &str, extra: Value| {
         let mut p = json!({ "stage": stage });
         crate::js::assign(&mut p, &extra);
@@ -417,22 +400,12 @@ pub async fn install_version(
         if req.loader == "forge" || req.loader == "neoforge" {
             // the Forge / NeoForge installer needs the vanilla client jar in place
             if let Some(c) = vanilla.pointer("/downloads/client") {
-                env.net
-                    .download(c.str_of("url").unwrap_or_default(), &vanilla_jar, c.str_of("sha1"), c.get("size").and_then(Value::as_u64), &|_| {})
-                    .await?;
+                env.net.download(c.str_of("url").unwrap_or_default(), &vanilla_jar, c.str_of("sha1"), c.get("size").and_then(Value::as_u64), &|_| {}).await?;
             }
         }
         let component = vanilla.pointer("/javaVersion/component").and_then(Value::as_str).unwrap_or("jre-legacy").to_string();
         let p2 = progress.clone();
-        let r = loaders::install(
-            env,
-            req.loader,
-            mc,
-            loader_version.as_deref(),
-            Arc::new(move |p| p2(p)),
-            java.map(|j| (j, component)),
-        )
-        .await?;
+        let r = loaders::install(env, req.loader, mc, loader_version.as_deref(), Arc::new(move |p| p2(p)), java.map(|j| (j, component))).await?;
         launch_id = r.launch_id;
         loader_version = r.loader_version;
         own_jar = r.own_jar;
@@ -510,10 +483,7 @@ mod tests {
         assert!(rules_allow(Some(&json!([{ "action": "allow" }])), &none));
         assert!(!rules_allow(Some(&json!([{ "action": "allow", "os": { "name": "nonexistent-os" } }])), &none));
         assert!(!rules_allow(Some(&json!([{ "action": "allow" }, { "action": "disallow", "os": { "name": OS_NAME } }])), &none));
-        assert!(rules_allow(
-            Some(&json!([{ "action": "allow", "features": { "has_custom_resolution": true } }])),
-            &json!({ "has_custom_resolution": true })
-        ));
+        assert!(rules_allow(Some(&json!([{ "action": "allow", "features": { "has_custom_resolution": true } }])), &json!({ "has_custom_resolution": true })));
         assert!(!rules_allow(Some(&json!([{ "action": "allow", "features": { "is_demo_user": true } }])), &none));
         assert!(!rules_allow(Some(&json!([{ "action": "allow", "os": { "arch": "x86" } }])), &none) || RULE_ARCH == "x86");
     }

@@ -186,8 +186,7 @@ static SPLIT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?:[^\s"']+|"[^"]
 static QUOTES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#""([^"]*)"|'([^']*)'"#).unwrap());
 static XX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^-XX:[+-]?([A-Za-z0-9_]+)").unwrap());
 static MEM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^-Xm[sx](\d+)([kKmMgG]?)$").unwrap());
-static GC_SELECT: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^-XX:\+Use(G1|Z|Shenandoah|Parallel|ParallelOld|Serial|ConcMarkSweep|Epsilon)GC$").unwrap());
+static GC_SELECT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^-XX:\+Use(G1|Z|Shenandoah|Parallel|ParallelOld|Serial|ConcMarkSweep|Epsilon)GC$").unwrap());
 static GC_TUNING: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(G1|Z|Shenandoah|MaxGCPauseMillis|ParallelRefProcEnabled|InitiatingHeapOccupancyPercent|SurvivorRatio|MaxTenuringThreshold|AlwaysPreTouch|UseStringDeduplication)").unwrap()
 });
@@ -390,7 +389,15 @@ mod tests {
     fn g1_flags_and_pre_touch() {
         let g = gc_flags("auto", 21, 6 * GB, 6 * GB, 12 * GB);
         assert_eq!(g.gc, "g1");
-        for f in ["-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:+DisableExplicitGC", "-XX:G1HeapRegionSize=16M", "-XX:G1ReservePercent=20", "-XX:+AlwaysPreTouch", "-XX:+IgnoreUnrecognizedVMOptions"] {
+        for f in [
+            "-XX:+UseG1GC",
+            "-XX:+ParallelRefProcEnabled",
+            "-XX:+DisableExplicitGC",
+            "-XX:G1HeapRegionSize=16M",
+            "-XX:G1ReservePercent=20",
+            "-XX:+AlwaysPreTouch",
+            "-XX:+IgnoreUnrecognizedVMOptions",
+        ] {
             assert!(g.flags.iter().any(|x| x == f), "{f}");
         }
         assert!(g.flags.iter().any(|f| f.starts_with("-XX:MaxGCPauseMillis=")));
@@ -417,16 +424,30 @@ mod tests {
 
     #[test]
     fn player_arguments_win() {
-        let r = build_jvm_args(&Opts { mode: "auto".into(), java_major: 21, loader: "fabric".into(), total_mb: 16 * GB, user_args: r#"-Xmx6G -XX:+UseZGC -Dfoo="a b""#.into(), ..Default::default() });
+        let r = build_jvm_args(&Opts {
+            mode: "auto".into(),
+            java_major: 21,
+            loader: "fabric".into(),
+            total_mb: 16 * GB,
+            user_args: r#"-Xmx6G -XX:+UseZGC -Dfoo="a b""#.into(),
+            ..Default::default()
+        });
         assert!(!r.args.iter().any(|a| a.starts_with("-Xmx") && a.ends_with('M')), "our -Xmx dropped");
         assert!(!r.args.iter().any(|a| a.starts_with("-Xms")));
         assert!(!r.args.contains(&"-XX:+UseG1GC".into()) && !r.args.iter().any(|a| a.starts_with("-XX:G1")));
         assert!(r.args.contains(&"-XX:+UseZGC".into()) && r.args.contains(&"-Xmx6G".into()) && r.args.contains(&"-Dfoo=a b".into()));
-        let p = build_jvm_args(&Opts { mode: "g1".into(), java_major: 17, total_mb: 16 * GB, user_args: "-XX:MaxGCPauseMillis=100".into(), ..Default::default() });
+        let p =
+            build_jvm_args(&Opts { mode: "g1".into(), java_major: 17, total_mb: 16 * GB, user_args: "-XX:MaxGCPauseMillis=100".into(), ..Default::default() });
         assert_eq!(p.args.iter().filter(|a| a.starts_with("-XX:MaxGCPauseMillis")).collect::<Vec<_>>(), vec!["-XX:MaxGCPauseMillis=100"]);
         let s = build_jvm_args(&Opts { mode: "custom".into(), loader: "vanilla".into(), total_mb: 16 * GB, user_args: "-Xms3G".into(), ..Default::default() });
         assert_eq!(s.args, vec!["-Xmx3072M", "-Xms3G"]);
-        let c = build_jvm_args(&Opts { mode: "custom".into(), loader: "vanilla".into(), total_mb: 16 * GB, user_args: "-XX:+UseG1GC".into(), ..Default::default() });
+        let c = build_jvm_args(&Opts {
+            mode: "custom".into(),
+            loader: "vanilla".into(),
+            total_mb: 16 * GB,
+            user_args: "-XX:+UseG1GC".into(),
+            ..Default::default()
+        });
         assert_eq!(c.args, vec!["-Xmx2048M", "-Xms1024M", "-XX:+UseG1GC"]);
         assert_eq!(build_jvm_args(&Opts { mode: "nonsense".into(), ..Default::default() }).gc, "g1");
         assert_eq!(parse_mem("-Xmx4G"), 4096);

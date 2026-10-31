@@ -119,7 +119,8 @@ async fn run(args: &[String]) -> nore_core::Result<i32> {
     match cmd {
         "invoke" => {
             let channel = args.get(1).cloned().unwrap_or_default();
-            let call: Vec<Value> = args[2.min(args.len())..].iter().filter(|a| !a.starts_with("--")).map(|a| serde_json::from_str(a).unwrap_or_else(|_| json!(a))).collect();
+            let call: Vec<Value> =
+                args[2.min(args.len())..].iter().filter(|a| !a.starts_with("--")).map(|a| serde_json::from_str(a).unwrap_or_else(|_| json!(a))).collect();
             let out = app.invoke(&channel, call).await?;
             println!("{}", serde_json::to_string_pretty(&out).unwrap_or_default());
             Ok(0)
