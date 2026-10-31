@@ -103,6 +103,15 @@ impl Net {
         Ok(res.json().await?)
     }
 
+    /// POST JSON (with retries); None when the answer is not 2xx – like `if (!res.ok) return …`.
+    pub async fn post_json(&self, url: &str, body: &serde_json::Value) -> Result<Option<serde_json::Value>> {
+        let res = self.send_with_retry(|c| c.post(url).json(body), 4).await?;
+        if !res.status().is_success() {
+            return Ok(None);
+        }
+        Ok(Some(res.json().await?))
+    }
+
     pub async fn get_text(&self, url: &str) -> Result<String> {
         let res = self.get(url).await?;
         if !res.status().is_success() {

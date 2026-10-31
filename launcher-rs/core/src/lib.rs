@@ -5,6 +5,8 @@
 
 pub mod auth;
 pub mod chat;
+pub mod config_edit;
+pub mod curseforge;
 pub mod error;
 pub mod friends;
 pub mod gameopts;
@@ -16,6 +18,8 @@ pub mod js;
 pub mod jvm;
 pub mod launch;
 pub mod loaders;
+pub mod mod_manager;
+pub mod mod_meta;
 pub mod modrinth;
 pub mod nbt;
 pub mod net;
@@ -23,9 +27,11 @@ pub mod notices;
 pub mod official;
 pub mod oscrypt;
 pub mod paths;
+pub mod perf;
 pub mod secrets;
 pub mod store;
 pub mod updater;
+pub mod util;
 pub mod versions;
 
 #[cfg(test)]
