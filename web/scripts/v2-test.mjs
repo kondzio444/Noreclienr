@@ -533,6 +533,10 @@ try {
   assert.equal(r.json.server.online, true, JSON.stringify(r.json.server)); assert.equal(r.json.hub.known >= 1, true); assert.ok(Array.isArray(r.json.hub.versions));
   assert.ok(r.json.bot.guilds >= 1); assert.equal(r.json.counts.blacklist, 2); assert.equal(r.json.counts.announcementsActive, 1); assert.ok(r.json.downloads.downloads.total > 0); assert.ok(r.json.audit.length > 0);
   r = await adm('GET', '/client?q=nore'); assert.equal(r.json.hub.players[0].name, 'Nore_Tester'); assert.equal(r.json.flags.maintenance.enabled, true);
+  // a player who only runs the game (mod heartbeat, no launcher) is listed and counted as known
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'ef'.repeat(16), online: true, name: 'GameOnly_K', mc: '1.21.1', version: '1.4.5' } }); assert.equal(r.status, 200, r.text);
+  r = await adm('GET', '/client?q=gameonly'); assert.equal(r.json.hub.players[0].name, 'GameOnly_K'); assert.equal(r.json.hub.players[0].source, 'game'); assert.equal(r.json.hub.players[0].online, true);
+  await req('POST', '/api/v2/presence', { body: { sid: 'ef'.repeat(16), online: false } });
   r = await adm('GET', '/releases'); assert.equal(r.json.releases[0].version, '1.5.0'); assert.ok(r.json.downloads.platforms);
   r = await adm('POST', '/releases/sync'); assert.equal(r.json.sync.ok, true);
   r = await adm('GET', '/server'); assert.equal(r.json.server.online, true);

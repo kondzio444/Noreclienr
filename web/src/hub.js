@@ -151,6 +151,9 @@ export class NoreHub {
       CREATE TABLE IF NOT EXISTS hellos (hex TEXT PRIMARY KEY, at INTEGER NOT NULL, ts INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, name_lower TEXT, mc TEXT, version TEXT, at INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS sessions_at ON sessions (at);
+      CREATE TABLE IF NOT EXISTS game_players (name_lower TEXT PRIMARY KEY, name TEXT NOT NULL, mc TEXT, version TEXT,
+        first INTEGER NOT NULL, seen INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS game_players_seen ON game_players (seen);
       CREATE TABLE IF NOT EXISTS blocked (kind TEXT NOT NULL, value TEXT NOT NULL, expires INTEGER, PRIMARY KEY (kind, value));`);
     // added later: the launcher version from the last hello (admin overview)
     if (!this.sql.exec('PRAGMA table_info(players)').toArray().some(c => c.name === 'client')) this.sql.exec('ALTER TABLE players ADD COLUMN client TEXT');
@@ -184,8 +187,21 @@ export class NoreHub {
     }));
     const versions = this.sql.exec('SELECT client, COUNT(*) AS n, SUM(online = 1 AND seen > ?) AS online FROM players WHERE seen > ? GROUP BY client ORDER BY n DESC',
       now - ONLINE_MS, now - 7 * 86400000).toArray().map(r => ({ version: r.client || null, players: r.n, online: r.online || 0 }));
-    const hellosHour = this.sql.exec('SELECT COUNT(*) AS n FROM hellos WHERE at > ?', now - 3600000).one().n;
-    const day = this.sql.exec('SELECT COUNT(*) AS n FROM players WHERE seen > ?', now - 86400000).one().n;
+    // players who only ran the game (heartbeat from the mod, no launcher hello) are listed too
+    const known = new Set(players.map(p => p.name.toLowerCase()));
+    const game = this.sql.exec('SELECT * FROM game_players WHERE (? IS NULL OR name_lower LIKE ?) ORDER BY seen DESC LIMIT ?', like, like, lim).toArray();
+    const liveNames = new Set(this.sql.exec('SELECT name_lower FROM sessions WHERE at > ? AND name_lower IS NOT NULL', now - ONLINE_MS).toArray().map(x => x.name_lower));
+    for (const g of game) {
+      if (known.has(g.name_lower)) continue;
+      players.push({ name: g.name, uuid: null, noreId: null, verified: false, online: liveNames.has(g.name_lower), seen: g.seen, created: g.first,
+        client: g.version ? 'mod ' + g.version : 'mod', mc: g.mc || null, source: 'game', blocked: this.isBlocked(g.name_lower, '', ''), cosmetics: { v: 1, slots: {} } });
+    }
+    players.sort((a, b) => b.seen - a.seen);
+    players.length = Math.min(players.length, lim);
+    const hellosHour = this.sql.exec('SELECT COUNT(*) AS n FROM hellos WHERE at > ?', now - 3600000).one().n
+      + this.sql.exec('SELECT COUNT(*) AS n FROM sessions WHERE at > ?', now - 3600000).one().n;
+    const day = this.sql.exec(`SELECT COUNT(*) AS n FROM (SELECT name_lower FROM players WHERE seen > ?
+        UNION SELECT name_lower FROM game_players WHERE seen > ?)`, now - 86400000, now - 86400000).one().n;
     const blockedCount = this.sql.exec('SELECT COUNT(*) AS n FROM blocked WHERE expires IS NULL OR expires > ?', now).one().n;
     return { ...this.stats(), activeDay: day, hellosHour, blocked: blockedCount, versions, players };
   }
@@ -291,15 +307,22 @@ export class NoreHub {
     // a blacklisted nick is not counted (and told so), like a refused hello
     if (p.online && p.name && this.isBlocked(p.name.toLowerCase(), '', '')) { this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid); throw new HubError(403, 'To konto jest zablokowane w Nore Hub'); }
     if (!p.online) this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid);
-    else this.sql.exec('INSERT OR REPLACE INTO sessions (sid, name_lower, mc, version, at) VALUES (?, ?, ?, ?, ?)',
-      p.sid, p.name ? p.name.toLowerCase() : null, p.mc, p.version, now);
+    else {
+      this.sql.exec('INSERT OR REPLACE INTO sessions (sid, name_lower, mc, version, at) VALUES (?, ?, ?, ?, ?)',
+        p.sid, p.name ? p.name.toLowerCase() : null, p.mc, p.version, now);
+      // nicks seen through the game itself (also without Nore Launcher): for the admin list and "known"
+      if (p.name) this.sql.exec(`INSERT INTO game_players (name_lower, name, mc, version, first, seen) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(name_lower) DO UPDATE SET name = excluded.name, mc = excluded.mc, version = excluded.version, seen = excluded.seen`,
+        p.name.toLowerCase(), p.name, p.mc, p.version, now, now);
+    }
     if (++this.writes % 200 === 1) this.sql.exec('DELETE FROM sessions WHERE at < ?', now - ONLINE_MS);
     return { ok: true };
   }
 
   stats() {
     const now = Date.now();
-    const [r] = this.sql.exec('SELECT COUNT(*) AS known FROM players WHERE seen > ?', now - CLAIM_MS).toArray();
+    const [r] = this.sql.exec(`SELECT COUNT(*) AS known FROM (SELECT name_lower FROM players WHERE seen > ?
+        UNION SELECT name_lower FROM game_players WHERE seen > ?)`, now - CLAIM_MS, now - CLAIM_MS).toArray();
     // a player is online when the launcher said hello or the game sent a heartbeat (counted once per nick)
     const [o] = this.sql.exec(`SELECT COUNT(*) AS online FROM (
         SELECT name_lower AS k FROM players WHERE online = 1 AND seen > ?
