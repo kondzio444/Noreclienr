@@ -206,7 +206,7 @@ function fileUrl(f) {
 const sha1Of = (f) => ((f.hashes || []).find(h => h.algo === 1) || {}).value;
 
 /** Installs a project into targetDir (mods also get their required dependencies). */
-async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set()) {
+async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set(), ctx = {}) {
   const n = rawId(projectId);
   if (seen.has(n)) return [];
   seen.add(n);
@@ -225,10 +225,24 @@ async function install({ projectId, kind, gameVersion, loader, targetDir, versio
   if (kind === 'mod') {
     for (const d of file.dependencies || []) {
       if (d.relationType !== 3) continue;
-      try { out.push(...await install({ projectId: d.modId, kind, gameVersion, loader, targetDir }, onStatus, seen)); } catch (e) { onStatus && onStatus(`Nie udało się pobrać zależności: ${e.message}`); }
+      if (await hasProject(targetDir, d.modId, ctx)) continue;
+      try { out.push(...await install({ projectId: d.modId, kind, gameVersion, loader, targetDir }, onStatus, seen, ctx)); } catch (e) { onStatus && onStatus(`Nie udało się pobrać zależności: ${e.message}`); }
     }
   }
   return out;
+}
+
+/** Is a CurseForge project already in the folder (any version, also installed from Modrinth)? */
+async function hasProject(dir, modId, ctx) {
+  if (!ctx.ids) ctx.ids = new Set(Object.values(await identify(dir, ['.jar']).catch(() => ({}))).map(m => m.projectId));
+  if (ctx.ids.has(ID(modId))) return true;
+  try {
+    const perf = require('./perf');
+    if (!ctx.present) ctx.present = perf.presentSet(await perf.scan(dir));
+    const m = (await call(`/v1/mods/${rawId(modId)}`)).data;
+    const n = String(m.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return !!n && ctx.present.has(n);
+  } catch { return false; }
 }
 
 // ------------------------------------------------------------------ fingerprints (installed files, updates)
@@ -349,14 +363,51 @@ function guessFolder(file) {
   return 'mods';
 }
 
+/** A file only for dedicated servers (CurseForge tags files with "Client" / "Server"). */
+function serverOnly(f) {
+  const gv = (f.gameVersions || []).map(v => String(v).toLowerCase());
+  return gv.includes('server') && !gv.includes('client');
+}
+
+/**
+ * Pure part of resolving a manifest: manifest.files + the API's file and project records →
+ * { tasks, serverOnly, optional, missing }. Files whose author blocked third-party downloads
+ * (downloadUrl null) get the predictable CDN link and a `blocked` record for the manual-download prompt.
+ */
+function manifestTasks(manifest, fileList, modList, root = '.') {
+  const wantedAll = (manifest.files || []).filter(f => f.projectID && f.fileID);
+  const optional = wantedAll.filter(f => f.required === false).map(f => ({ projectId: f.projectID, fileId: f.fileID }));
+  const wanted = new Set(wantedAll.filter(f => f.required !== false).map(f => Number(f.fileID)));
+  const mods = Object.fromEntries((modList || []).map(m => [m.id, m]));
+  const tasks = [], server = [];
+  const got = new Set();
+  for (const f of fileList || []) {
+    if (!wanted.has(Number(f.id))) continue;
+    got.add(Number(f.id));
+    const mod = mods[f.modId] || {};
+    if (serverOnly(f)) { server.push({ projectId: f.modId, fileId: f.id, name: f.fileName, title: mod.name || f.displayName }); continue; }
+    const folder = FOLDER[CLASS_KIND[mod.classId]] || 'mods';
+    const rel = `${folder}/${f.fileName}`;
+    const t = { url: fileUrl(f), dest: path.join(root, folder, f.fileName), rel, sha1: sha1Of(f), size: f.fileLength, name: f.fileName, guess: false };
+    if (!f.downloadUrl) {
+      const site = (mod.links && mod.links.websiteUrl) || `https://www.curseforge.com/minecraft/mc-mods/${mod.slug || f.modId}`;
+      t.blocked = { projectId: f.modId, fileId: f.id, title: mod.name || f.displayName || f.fileName, file: f.fileName, rel, sha1: t.sha1, size: f.fileLength, page: `${site.replace(/\/+$/, '')}/download/${f.id}` };
+    }
+    tasks.push(t);
+  }
+  const missing = [...wanted].filter(id => !got.has(id));
+  return { tasks, serverOnly: server, optional, missing };
+}
+
 /**
  * Resolves manifest files to { url, dest, sha1, size } – through the API when there is a key,
  * otherwise through the curseforge.com download redirect (folders are guessed after download).
  */
-async function resolveFiles(manifest, root, onProgress) {
+async function resolveFiles(manifest, root, onProgress, report = {}) {
   const wanted = manifest.files.filter(f => f.required !== false && f.projectID && f.fileID);
   if (available()) {
     const out = [];
+    report.serverOnly = []; report.missing = [];
     for (let i = 0; i < wanted.length; i += 200) {
       const chunk = wanted.slice(i, i + 200);
       onProgress({ stage: 'Pobieranie listy plików z CurseForge', done: i, total: wanted.length });
@@ -364,11 +415,10 @@ async function resolveFiles(manifest, root, onProgress) {
         call('/v1/mods/files', { method: 'POST', body: { fileIds: chunk.map(f => f.fileID) } }),
         call('/v1/mods', { method: 'POST', body: { modIds: chunk.map(f => f.projectID) } }),
       ]);
-      const classOf = Object.fromEntries((mods.data || []).map(m => [m.id, m.classId]));
-      for (const f of fl.data || []) {
-        const folder = FOLDER[CLASS_KIND[classOf[f.modId]]] || 'mods';
-        out.push({ url: fileUrl(f), dest: path.join(root, folder, f.fileName), rel: `${folder}/${f.fileName}`, sha1: sha1Of(f), size: f.fileLength, name: f.fileName, guess: false });
-      }
+      const r = manifestTasks({ files: chunk }, fl.data || [], mods.data || [], root);
+      out.push(...r.tasks);
+      report.serverOnly.push(...r.serverOnly);
+      report.missing.push(...r.missing);
     }
     return out;
   }
@@ -443,13 +493,15 @@ async function installPackInto(file, root, onProgress = () => {}, concurrency = 
  */
 async function toIndex(manifest, onProgress = () => {}) {
   if (!available()) throw new NoKeyError();
-  const tasks = await resolveFiles(manifest, '.', onProgress);
+  const report = {};
+  const tasks = await resolveFiles(manifest, '.', onProgress, report);
   const { loader, loaderVersion } = loaderOf(manifest);
   const dep = { fabric: 'fabric-loader', quilt: 'quilt-loader', forge: 'forge', neoforge: 'neoforge' }[loader];
   return {
     name: manifest.name, versionId: manifest.version, summary: manifest.author ? `Autor: ${manifest.author}` : '',
     dependencies: { minecraft: manifest.minecraft.version, ...(dep ? { [dep]: loaderVersion } : {}) },
-    files: tasks.map(t => ({ path: t.rel, downloads: [t.url], hashes: t.sha1 ? { sha1: t.sha1 } : {}, fileSize: t.size })),
+    files: tasks.map(t => ({ path: t.rel, downloads: [t.url], hashes: t.sha1 ? { sha1: t.sha1 } : {}, fileSize: t.size, ...(t.blocked ? { blocked: t.blocked } : {}) })),
+    serverOnly: report.serverOnly || [],
   };
 }
 
@@ -483,5 +535,5 @@ async function downloadPack(projectId, fileId, cacheDir) {
 module.exports = {
   CLASS, isCf, rawId, available, testKey, setKey, NoKeyError, search, categories, details, project, files, install,
   fingerprint, identify, checkUpdates, readManifest, loaderOf, installPackInto, downloadPack, websiteDownload, guessFolder,
-  toIndex, packVersions, encrypt, key,
+  toIndex, packVersions, encrypt, key, manifestTasks, serverOnly,
 };

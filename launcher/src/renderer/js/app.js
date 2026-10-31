@@ -188,6 +188,10 @@ async function launchSelected(instance, opts) {
   if (!App.account()) {
     return offlineLoginModal(() => { if (App.account()) launchSelected(inst, opts); });
   }
+  // older modded instances are asked once whether the launcher may add missing performance mods
+  if (typeof needsPerfAsk === 'function' && needsPerfAsk(inst) && !App.running) {
+    await askPerfOnce(inst);
+  }
   App.logs = [];
   App.lastLaunchError = null;
   try {
@@ -236,8 +240,7 @@ function onboarding() {
     const maxMem = Math.max(4096, total - 1024);
     let step = 0, installed = false;
     const installing = () => { const b = $('.wz-pane:not(.out) #w-go', stage); return !!(b && b.disabled); };
-    let memory = Math.min(8192, Math.max(2048, Math.round(total / 4 / 512) * 512));
-    memory = Math.min(memory, maxMem);
+    let memory = 0; // automatic per instance (by mod count, capped by system RAM)
 
     const go2 = (n) => {
       if (n === step || n < 0 || n >= WIZ_STEPS.length) return;
@@ -386,15 +389,15 @@ function onboarding() {
 
       // 4 — memory
       (pane) => {
-        const gb = (mb) => (mb / 1024).toFixed(mb % 1024 ? 1 : 0) + ' GB';
+        const gb = (mb) => (mb ? (mb / 1024).toFixed(mb % 1024 ? 1 : 0) + ' GB' : 'Auto');
         const rec = total <= 6144 ? 2048 : total <= 8192 ? 3072 : total <= 16384 ? 4096 : 6144;
         const recMb = Math.min(rec, maxMem);
-        const presets = [2048, 4096, 6144, 8192];
+        const presets = [0, 2048, 4096, 6144, 8192];
         pane.innerHTML = `<div class="wz-body">
-          ${head('', 'Pamięć <span>RAM</span>', `Ile pamięci przydzielić grze? Twój komputer ma <b>${(total / 1024).toFixed(1)} GB</b>. Dla Nore Client z modami polecamy 4–6 GB.`)}
+          ${head('', 'Pamięć <span>RAM</span>', `Ile pamięci przydzielić grze? Twój komputer ma <b>${(total / 1024).toFixed(1)} GB</b>. „Auto” dobiera pamięć do każdej instancji: vanilla 2 GB, duże modpacki 6–8 GB – zawsze zostawiając min. 2 GB dla systemu.`)}
           <div class="wz-mem wz-in">
             <div class="wz-mem-top"><div class="big" id="w-memv"></div><div class="state" id="w-mems"></div></div>
-            <input type="range" class="slider" id="w-mem" min="1024" max="${maxMem}" step="512" value="${memory}">
+            <input type="range" class="slider" id="w-mem" min="0" max="${maxMem}" step="512" value="${memory}">
             <div class="wz-membar"><div class="track"><i id="w-memfill"></i></div><div class="lbls"><span><b class="g"></b>Gra</span><span><b></b>Pamięć komputera: ${(total / 1024).toFixed(1)} GB</span></div></div>
             <div class="wz-presets">${presets.map(p => `<button class="lchip" data-v="${p}" ${p > maxMem ? 'disabled title="Za mało pamięci w komputerze"' : ''}>${gb(p)}</button>`).join('')}</div>
           </div>
@@ -408,7 +411,7 @@ function onboarding() {
           $('#w-memv', pane).textContent = gb(memory);
           $('#w-memfill', pane).style.width = Math.min(100, memory / total * 100) + '%';
           const st = $('#w-mems', pane);
-          const [cls, txt] = memory > total * 0.75 ? ['warn', 'Zostawiasz mało pamięci systemowi']
+          const [cls, txt] = !memory ? ['ok', 'Launcher dobierze pamięć do każdej instancji (zalecane)'] : memory > total * 0.75 ? ['warn', 'Zostawiasz mało pamięci systemowi']
             : memory < 3072 ? ['low', 'Wystarczy do vanilli, z modami może przycinać'] : ['ok', 'Optymalnie dla Nore Client'];
           st.className = 'state ' + cls; st.textContent = txt;
           $$('.wz-presets .lchip', pane).forEach(b => b.classList.toggle('on', +b.dataset.v === memory));
@@ -452,7 +455,7 @@ function onboarding() {
           <div class="wz-summary wz-in">
             <div class="sum"><span class="ic">${icon('user')}</span><div><small>Konto</small><b>${acc ? esc(acc.name) : 'Dodasz później'}</b><em>${acc ? (acc.type === 'microsoft' ? 'Premium' : 'Non-premium') : 'Zakładka Konta'}</em></div></div>
             <div class="sum"><span class="ic sw" style="--c1:${ac.b};--c2:${ac.d}"></span><div><small>Wygląd</small><b>${esc(ac.name)}</b><em>Tło: ${esc(sc.name)}</em></div></div>
-            <div class="sum"><span class="ic">${icon('cpu')}</span><div><small>Pamięć RAM</small><b>${(memory / 1024).toFixed(memory % 1024 ? 1 : 0)} GB</b><em>z ${(total / 1024).toFixed(1)} GB</em></div></div>
+            <div class="sum"><span class="ic">${icon('cpu')}</span><div><small>Pamięć RAM</small><b>${memory ? (memory / 1024).toFixed(memory % 1024 ? 1 : 0) + ' GB' : 'Automatycznie'}</b><em>z ${(total / 1024).toFixed(1)} GB</em></div></div>
           </div>
           <div class="wz-cta wz-in"><button class="btn play big" data-enter id="w-done">${icon('play')} DO GRY</button></div>
         </div>`;
@@ -580,7 +583,8 @@ function motionMode(s) {
 }
 function applyMotionSetting(s) {
   const m = motionMode(s);
-  document.body.classList.toggle('no-anim', m === 'off');
+  if (typeof Quiet === 'object' && Quiet.on) Quiet.hadNoAnim = m === 'off';
+  else document.body.classList.toggle('no-anim', m === 'off');
   document.body.classList.toggle('motion-reduced', m === 'reduced');
   if (typeof Embers === 'object') Embers.setEnabled(m !== 'off');
 }
@@ -624,6 +628,7 @@ function launchStoryboard(ready) {
   });
   nore.on('game:state', async (g) => {
     App.running = g.running;
+    Quiet.set(!!g.running && (!App.state || App.state.settings.lightWhilePlaying !== false));
     if (!g.running && g.code != null && g.code !== 0) toast('Gra zakończyła się błędem', `Kod wyjścia ${g.code} — szukam przyczyny…`, 'error', 5000);
     await App.refresh();
   });

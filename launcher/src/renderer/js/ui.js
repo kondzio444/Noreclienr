@@ -1,6 +1,41 @@
 'use strict';
 /* Small DOM + UI helpers shared by every page. */
 
+/**
+ * Quiet mode while the game runs (Settings → "Lżejszy launcher podczas gry"): every animation loop
+ * (requestAnimationFrame) is parked, CSS animations pause, background effects stop and polling waits,
+ * so the launcher takes no CPU / GPU from Minecraft. Everything resumes when the game closes.
+ */
+const Quiet = { on: false, parked: new Map(), seq: 0, hadNoAnim: false };
+(() => {
+  const raf = window.requestAnimationFrame.bind(window), cancel = window.cancelAnimationFrame.bind(window);
+  window.requestAnimationFrame = (cb) => {
+    if (!Quiet.on) return raf(cb);
+    const id = -(++Quiet.seq);
+    Quiet.parked.set(id, cb);
+    return id;
+  };
+  window.cancelAnimationFrame = (id) => (id < 0 ? Quiet.parked.delete(id) : cancel(id));
+})();
+Quiet.set = (on) => {
+  on = !!on;
+  if (on === Quiet.on) return;
+  Quiet.on = on;
+  const b = document.body;
+  b.classList.toggle('game-quiet', on);
+  if (on) {
+    Quiet.hadNoAnim = b.classList.contains('no-anim');
+    b.classList.add('no-anim');
+    document.querySelectorAll('video').forEach(v => { if (!v.paused) { v.dataset.quiet = '1'; v.pause(); } });
+  } else {
+    if (!Quiet.hadNoAnim) b.classList.remove('no-anim');
+    document.querySelectorAll('video[data-quiet]').forEach(v => { delete v.dataset.quiet; v.play().catch(() => {}); });
+    const cbs = [...Quiet.parked.values()];
+    Quiet.parked.clear();
+    cbs.forEach(cb => window.requestAnimationFrame(cb));
+  }
+};
+
 const ICONS = {
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
   layers: '<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',

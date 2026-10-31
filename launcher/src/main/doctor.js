@@ -16,6 +16,8 @@ const AdmZip = require('adm-zip');
 const modrinth = require('./modrinth');
 const instances = require('./instances');
 const store = require('./store');
+const perf = require('./perf');
+const jvm = require('./jvm');
 
 const LOADER_NAMES = { fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge', vanilla: 'Vanilla' };
 const ln = (l) => LOADER_NAMES[l] || l;
@@ -216,8 +218,10 @@ async function analyzeLog(inst, lines) {
   }
   // 6. out of memory
   if (/java\.lang\.OutOfMemoryError/.test(text)) {
-    const cur = inst.memoryMb || store.get().settings.memoryMb;
-    const next = Math.min(Math.max(2048, Math.round(os.totalmem() / 1048576) - 2048), cur + 2048);
+    const totalMb = Math.round(os.totalmem() / 1048576);
+    const size = await jvm.countMods(inst.gameDir);
+    const cur = inst.memoryMb || store.get().settings.memoryMb || jvm.autoMemoryMb({ ...size, loader: inst.loader, totalMb });
+    const next = Math.min(jvm.maxGameMb(totalMb), cur + 2048);
     if (next > cur) add({ kind: 'memory', title: 'Zabrakło pamięci RAM', detail: `Zwiększam pamięć instancji z ${(cur / 1024).toFixed(1)} do ${(next / 1024).toFixed(1)} GB.`, fix: { action: 'memory', mb: next } });
   }
   // 7. a mixin that cannot be applied (mod built for another version of the game)
@@ -231,7 +235,33 @@ async function analyzeLog(inst, lines) {
   if (/NoClassDefFoundError: net\/fabricmc|Mod resolution failed|Incompatible mods found|Missing or unsupported mandatory dependencies|LoadingFailedException/.test(text) || !problems.length) {
     for (const p of await preflight(inst)) add(p);
   }
+  perfAware(inst, problems, lines, add);
   return problems;
+}
+
+/**
+ * Performance mods the launcher added itself are taken back instead of being "fixed": the problem
+ * points at one of them (or its classes / mixins are at the top of the crash), so it is removed and
+ * not added to this instance again.
+ */
+function perfAware(inst, problems, lines, add) {
+  const own = inst.perfAdded || [];
+  if (!own.length) return;
+  const byFile = new Map(own.flatMap(o => [[o.file, o], [o.file + '.disabled', o]]));
+  const taken = new Set();
+  for (const p of problems) {
+    const o = p.file && byFile.get(p.file);
+    if (!o) continue;
+    const slug = o.dep || o.slug;
+    p.fix = { action: 'perf-remove', slug, file: o.file };
+    p.detail = `${perf.titleOf(slug)} dodał launcher (Mody wydajności) – usuwam go i nie dodam ponownie w tej instancji.`;
+    taken.add(slug);
+  }
+  for (const slug of perf.blamePerf(lines, own)) {
+    if (taken.has(slug)) continue;
+    add({ kind: 'perf', title: `Mod wydajności ${perf.titleOf(slug)} wywala grę`, detail: 'Dodał go launcher – usuwam go i nie dodam ponownie w tej instancji (przywrócisz go przyciskiem Optymalizuj).',
+      fix: { action: 'perf-remove', slug } });
+  }
 }
 
 // ------------------------------------------------------------------ fixes
@@ -270,6 +300,7 @@ async function apply(inst, problems) {
       else if (f.action === 'install') { await install(inst, f.id); result = 'pobrano'; }
       else if (f.action === 'replace') result = await replace(inst, f.file, f.projectId || f.slug);
       else if (f.action === 'memory') { instances.update(inst.id, { memoryMb: f.mb }); result = 'zwiększono'; }
+      else if (f.action === 'perf-remove') { const gone = await perf.takeBack(instances.get(inst.id) || inst, f.slug); result = gone.length ? `usunięto ${gone.join(', ')}` : 'zablokowano'; }
       else if (f.action === 'auto-java') { store.update(d => { d.settings.javaPath = ''; }); result = 'ustawiono automatyczną Javę'; }
     } catch (e) {
       result = 'nie udało się: ' + e.message;
@@ -279,4 +310,4 @@ async function apply(inst, problems) {
   return done;
 }
 
-module.exports = { preflight, deepCheck, analyzeLog, apply, scanMods, readJar };
+module.exports = { preflight, deepCheck, analyzeLog, apply, scanMods, readJar, perfAware };

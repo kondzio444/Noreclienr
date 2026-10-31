@@ -107,7 +107,7 @@ Pages.instances = (root) => {
   const save = () => { try { localStorage.setItem('nore.instView', JSON.stringify(instView)); } catch { /* ignore */ } };
 
   root.innerHTML = `<div class="page-head"><div><h2>${icon('layers')} Instancje</h2><p id="isub"></p></div>
-      <div class="actions"><button class="btn ghost" id="imp">${icon('upload')} Importuj .mrpack</button><button class="btn ghost" id="packs">${icon('box')} Modpacki</button><button class="btn" id="new">${icon('plus')} Nowa instancja</button></div></div>
+      <div class="actions"><button class="btn ghost" id="imp-inst" title="Prism Launcher, MultiMC, CurseForge, Modrinth App">${icon('folder')} Importuj instancję</button><button class="btn ghost" id="imp" title="Modrinth .mrpack albo CurseForge .zip">${icon('upload')} Importuj paczkę</button><button class="btn ghost" id="packs">${icon('box')} Modpacki</button><button class="btn" id="new">${icon('plus')} Nowa instancja</button></div></div>
     <div class="br-top card inst-toolbar">
       <div class="search">${icon('search')}<input id="iq" placeholder="Szukaj instancji…" value=""></div>
       <select class="input" id="isort">${SORTS.map(([v, l]) => `<option value="${v}" ${v === instView.sort ? 'selected' : ''}>${l}</option>`).join('')}</select>
@@ -118,6 +118,7 @@ Pages.instances = (root) => {
   $('#new', root).onclick = () => createInstanceModal();
   $('#packs', root).onclick = () => go('modpacks');
   $('#imp', root).onclick = () => installModpackFlow({ file: true, title: 'Import modpacka' });
+  $('#imp-inst', root).onclick = () => installModpackFlow({ file: 'instance', title: 'Import instancji' });
   $('#iq', root).oninput = (e) => { instView.q = e.target.value.toLowerCase(); render(); };
   $('#isort', root).onchange = (e) => { instView.sort = e.target.value; save(); render(); };
   const paintView = () => $$('#iview button', root).forEach(b => b.classList.toggle('on', b.dataset.v === instView.view));

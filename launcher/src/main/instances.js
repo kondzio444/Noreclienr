@@ -35,7 +35,7 @@ function slug(name) {
  * with its own loader). perfPack adds the Nore performance/QoL mod pack from Modrinth and
  * works on every version Fabric supports.
  */
-function create({ name, mcVersion, loader = 'vanilla', loaderVersion = null, noreClient = false, modpack = null, perfPack = false, color = 0 }) {
+function create({ name, mcVersion, loader = 'vanilla', loaderVersion = null, noreClient = false, modpack = null, perfPack = false, color = 0, askPerf = false }) {
   if (!modpack) modpack = loader === 'fabric' ? (noreClient ? 'nore' : 'fabric') : 'vanilla';
   if (modpack === 'nore' && !NORE_VERSIONS.includes(mcVersion)) { modpack = 'fabric'; perfPack = true; }
   if (modpack === 'loader' && (loader === 'vanilla' || loader === 'fabric')) modpack = loader;
@@ -46,6 +46,8 @@ function create({ name, mcVersion, loader = 'vanilla', loaderVersion = null, nor
     modpack, noreClient: modpack === 'nore', perfPack: !!perfPack && modpack !== 'vanilla', packInstalled: false,
     color, created: Date.now(), lastPlayed: 0, playTime: 0, memoryMb: 0, joinServer: '', jvmArgs: '', width: 0, height: 0,
   };
+  // new modded instances get the performance set (perf.js); imported ones are asked once
+  if (modpack !== 'vanilla' && !askPerf) { inst.perfMods = true; inst.perfAsked = true; }
   store.update(d => {
     d.instances.push(inst);
     d.selectedInstance = inst.id;

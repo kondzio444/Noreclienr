@@ -148,7 +148,7 @@ Pages.home = (root) => {
       name.textContent = inst ? inst.name : 'Pusty album';
       name.classList.toggle('long', !!inst && inst.name.length > 16);
       const mem = inst && inst.memoryMb ? inst.memoryMb : s.settings.memoryMb;
-      $('#h-tags', root).innerHTML = inst ? `${loaderLabel(inst)}<span class="label">${(mem / 1024).toFixed(mem % 1024 ? 1 : 0).replace('.', ',')} GB RAM</span>${inst.modpack === 'pack' && inst.pack ? `<span class="label dark">${esc(inst.pack.title || 'Modpack')}</span>` : inst.perfPack ? '<span class="label dark">Pakiet Nore</span>' : ''}` : '';
+      $('#h-tags', root).innerHTML = inst ? `${loaderLabel(inst)}<span class="label">${mem ? (mem / 1024).toFixed(mem % 1024 ? 1 : 0).replace('.', ',') + ' GB RAM' : 'RAM: auto'}</span>${inst.modpack === 'pack' && inst.pack ? `<span class="label dark">${esc(inst.pack.title || 'Modpack')}</span>` : inst.perfPack ? '<span class="label dark">Pakiet Nore</span>' : ''}` : '';
     }
     const st = App.stats[inst && inst.id] || {};
     $('#h-meta', root).innerHTML = inst

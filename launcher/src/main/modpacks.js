@@ -94,6 +94,21 @@ function overrideAction(rel, { exists, current, oldHash, newHash }) {
   return 'keep';
 }
 
+/**
+ * Downloads pack files. Files whose author blocked downloads from other apps (CurseForge, `blocked`)
+ * are tried through the CDN once; when that fails they are returned for the manual-download prompt
+ * instead of failing the whole pack.
+ */
+async function downloadTasks(tasks, { concurrency = 12, progress = () => {} } = {}) {
+  const normal = tasks.filter(t => !t.blocked), risky = tasks.filter(t => t.blocked);
+  await net.downloadAll(normal, { concurrency, progress });
+  const blocked = [];
+  for (const t of risky) {
+    try { await net.download(t.url, t.dest, { sha1: t.sha1, size: t.size }); } catch { blocked.push(t.blocked); }
+  }
+  return blocked;
+}
+
 async function readPack(file) {
   const zip = new AdmZip(file);
   const entry = zip.getEntry('modrinth.index.json');
@@ -129,9 +144,9 @@ async function installIndex(zip, index, meta, onProgress, concurrency = 12) {
     bannerUrl: meta.banner || null,
     packInstalled: true,
     // Fabric packs on a version Nore Client supports run with Nore Client on top;
-    // the pack brings its own performance mods, so the launcher's set is not added
+    // performance mods are added only where the pack does not have them (perf.js)
     noreClient: loader === 'fabric' && instances.NORE_VERSIONS.includes(deps.minecraft),
-    perfMods: false,
+    perfMods: loader !== 'vanilla', perfAsked: true,
   });
   const root = inst.gameDir;
   try {
@@ -140,11 +155,11 @@ async function installIndex(zip, index, meta, onProgress, concurrency = 12) {
     for (const f of files) {
       const dest = inside(root, f.path);
       if (!dest || !f.downloads || !f.downloads.length) continue;
-      tasks.push({ url: f.downloads[0], dest, sha1: f.hashes && f.hashes.sha1, size: f.fileSize, name: path.basename(f.path) });
+      tasks.push({ url: f.downloads[0], dest, sha1: f.hashes && f.hashes.sha1, size: f.fileSize, name: path.basename(f.path), blocked: f.blocked || null });
     }
     let last = 0;
     onProgress({ stage: 'Pobieranie plików paczki', done: 0, total: tasks.length });
-    await net.downloadAll(tasks, {
+    const blocked = await downloadTasks(tasks, {
       concurrency,
       progress: (p) => {
         if (Date.now() - last < 120 && p.done !== p.total) return;
@@ -152,6 +167,9 @@ async function installIndex(zip, index, meta, onProgress, concurrency = 12) {
         onProgress({ stage: 'Pobieranie plików paczki', ...p });
       },
     });
+    if (blocked.length || (index.serverOnly || []).length) {
+      instances.update(inst.id, { pack: { ...instances.get(inst.id).pack, blocked, serverOnly: (index.serverOnly || []).length } });
+    }
     onProgress({ stage: 'Rozpakowywanie ustawień paczki' });
     for (const { rel, entry } of overrideEntries(zip)) {
       const dest = inside(root, rel);
@@ -189,7 +207,7 @@ async function installCurseForge(file, meta = {}, onProgress = () => {}, concurr
         source: 'curseforge', files: r.files, ids: {}, overrides: r.overrides,
       },
       iconUrl: meta.icon || null, bannerUrl: meta.banner || null, packInstalled: true,
-      noreClient: loader === 'fabric' && instances.NORE_VERSIONS.includes(mc), perfMods: false,
+      noreClient: loader === 'fabric' && instances.NORE_VERSIONS.includes(mc), perfMods: loader !== 'vanilla', perfAsked: true,
     });
   } catch (e) {
     await instances.remove(inst.id, true);
@@ -399,7 +417,7 @@ async function updateCurseForge(inst, versionId, onProgress, { backupWorlds, con
     label: { from: p.version, to: d.version, mcFrom: inst.mcVersion, mcTo: deps.minecraft } });
   instances.update(inst.id, {
     mcVersion: deps.minecraft, loader, loaderVersion, packInstalled: true, noreClient,
-    pack: { ...p, versionId: String(d.fileId), version: d.version, type: d.type, date: d.date, ...rec, updated: Date.now() },
+    pack: { ...p, versionId: String(d.fileId), version: d.version, type: d.type, date: d.date, ...rec, updated: Date.now(), blocked: result.blocked || [], serverOnly: (index.serverOnly || []).length },
   });
   onProgress({ stage: 'Gotowe', done: 1, total: 1 });
   return { instance: instances.get(inst.id), ...result };
@@ -461,12 +479,12 @@ async function swapFiles(root, { zip, index, rec, old, onProgress, concurrency, 
       } else {
         created.push(destRel);
       }
-      tasks.push({ url: f.downloads[0], dest: path.join(root, destRel), sha1: sha, size: f.fileSize, name: path.basename(rel) });
+      tasks.push({ url: f.downloads[0], dest: path.join(root, destRel), sha1: sha, size: f.fileSize, name: path.basename(rel), blocked: f.blocked ? { ...f.blocked, rel: destRel } : null });
     }
 
     let last = 0;
     onProgress({ stage: 'Pobieranie nowych plików paczki', done: 0, total: tasks.length });
-    await net.downloadAll(tasks, {
+    const blocked = await downloadTasks(tasks, {
       concurrency,
       progress: (p) => {
         if (Date.now() - last < 120 && p.done !== p.total) return;
@@ -517,7 +535,7 @@ async function swapFiles(root, { zip, index, rec, old, onProgress, concurrency, 
       await fsp.writeFile(path.join(backup, 'nore-backup.json'), JSON.stringify({ ...label, date: Date.now(), moved, kept }, null, 2));
       await modrinth.pruneBackups(root, /-pack$/);
     }
-    return { added: created.length, removed, replaced, kept, backup: hasBackup ? backup : null };
+    return { added: created.length, removed, replaced, kept, backup: hasBackup ? backup : null, blocked };
   } catch (e) {
     // best-effort rollback: drop new files, put moved ones back
     onProgress({ stage: 'Przywracanie poprzednich plików' });
@@ -535,6 +553,41 @@ async function swapFiles(root, { zip, index, rec, old, onProgress, concurrency, 
   }
 }
 
+/**
+ * Files the player downloaded by hand (blocked for other apps on CurseForge): looks for them in the
+ * given folders (Downloads), by name – also "name (1).jar" copies browsers make – and SHA-1, and copies
+ * them into the instance. Returns { found: [file], blocked: [still missing] }.
+ */
+async function resolveBlocked(instId, dirs) {
+  const inst = instances.get(instId);
+  if (!inst || !inst.pack) throw new Error('To nie jest instancja modpacka.');
+  const list = inst.pack.blocked || [];
+  const found = [], rest = [];
+  const listings = [];
+  for (const d of dirs) listings.push({ dir: d, names: await fsp.readdir(d).catch(() => []) });
+  for (const b of list) {
+    const dest = inside(inst.gameDir, b.rel);
+    if (!dest) continue;
+    if (await net.isValid(dest, b.sha1)) { found.push(b.file); continue; }
+    const ext = path.extname(b.file), stem = b.file.slice(0, -ext.length || undefined);
+    let hit = null;
+    for (const { dir, names } of listings) {
+      for (const n of names) {
+        if (n !== b.file && !(n.startsWith(stem) && n.endsWith(ext) && /^ ?\(\d+\)$/.test(n.slice(stem.length, -ext.length || undefined)))) continue;
+        const full = path.join(dir, n);
+        if (await net.isValid(full, b.sha1)) { hit = full; break; }
+      }
+      if (hit) break;
+    }
+    if (!hit) { rest.push(b); continue; }
+    await fsp.mkdir(path.dirname(dest), { recursive: true });
+    await fsp.copyFile(hit, dest);
+    found.push(b.file);
+  }
+  instances.update(inst.id, { pack: { ...instances.get(inst.id).pack, blocked: rest } });
+  return { found, blocked: rest };
+}
+
 /** Reads name / Minecraft version / loader of a local .mrpack without installing it. */
 async function inspect(file) {
   const { index } = await readPack(file);
@@ -542,4 +595,4 @@ async function inspect(file) {
   return { name: index.name, version: index.versionId, mcVersion: deps.minecraft, ...loaderOf(deps), files: (index.files || []).length };
 }
 
-module.exports = { install, installFile, installCurseForge, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };
+module.exports = { resolveBlocked, downloadTasks, install, installFile, installCurseForge, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };

@@ -78,7 +78,7 @@ function primaryFile(version) {
  * Installs a project (and, for mods, its required dependencies) into targetDir.
  * Returns the list of installed file names.
  */
-async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set()) {
+async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set(), ctx = {}) {
   if (seen.has(projectId)) return [];
   seen.add(projectId);
   let version;
@@ -96,14 +96,29 @@ async function install({ projectId, kind, gameVersion, loader, targetDir, versio
   if (kind === 'mod') {
     for (const dep of version.dependencies || []) {
       if (dep.dependency_type !== 'required' || !dep.project_id) continue;
+      // a dependency the folder already has (any version, also from CurseForge) is not downloaded again
+      if (await hasProject(targetDir, dep.project_id, ctx)) continue;
       try {
-        installed.push(...await install({ projectId: dep.project_id, kind, gameVersion, loader, targetDir }, onStatus, seen));
+        installed.push(...await install({ projectId: dep.project_id, kind, gameVersion, loader, targetDir }, onStatus, seen, ctx));
       } catch (e) {
         onStatus && onStatus(`Nie udało się pobrać zależności: ${e.message}`);
       }
     }
   }
   return installed;
+}
+
+/** Is a Modrinth project already in the folder? By file hash, then by mod id = project slug. */
+async function hasProject(dir, projectId, ctx) {
+  if (!ctx.ids) ctx.ids = new Set(Object.values(await identify(dir, ['.jar']).catch(() => ({}))).map(m => m.projectId));
+  if (ctx.ids.has(projectId)) return true;
+  try {
+    const perf = require('./perf');
+    if (!ctx.present) ctx.present = perf.presentSet(await perf.scan(dir));
+    const p = await project(projectId);
+    const n = String(p.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return !!n && ctx.present.has(n);
+  } catch { return false; }
 }
 
 /** Lists installed files in a content folder (with .disabled support). */

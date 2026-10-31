@@ -5,7 +5,8 @@ const { spawn } = require('child_process');
 const crypto = require('crypto');
 const paths = require('./paths');
 const versions = require('./versions');
-const java = require('./java');
+const os = require('os');
+const jvm = require('./jvm');
 const { DISCORD_APP_ID } = require('./store');
 
 const LAUNCHER_NAME = 'nore-launcher';
@@ -43,7 +44,25 @@ function expandArgs(list, vars, features) {
  * Builds the full java command for an installed version.
  * Returns { javaBin, args, cwd }.
  */
-async function buildCommand({ instance, account, settings, installed, javaBin }) {
+/**
+ * Memory + GC flags for an instance (see jvm.js). javaMajor: the Java that runs the game.
+ * Returns { args, memory, gc, note }.
+ */
+async function tunedJvm({ instance, settings, javaMajor }) {
+  const { mods, shaders } = await jvm.countMods(instance.gameDir);
+  return jvm.buildJvmArgs({
+    mode: instance.jvmMode || settings.jvmMode || 'auto',
+    javaMajor: javaMajor || 17,
+    instanceMb: instance.memoryMb || 0,
+    settingsMb: settings.memoryMb || 0,
+    mods, shaders, loader: instance.loader || 'vanilla',
+    totalMb: Math.round(os.totalmem() / 1048576),
+    freeMb: Math.round(os.freemem() / 1048576),
+    userArgs: settings.jvmArgs || '',
+  });
+}
+
+async function buildCommand({ instance, account, settings, installed, javaBin, javaMajor }) {
   const { version, jarPath, libs } = installed;
   const gameDir = instance.gameDir;
   await fsp.mkdir(gameDir, { recursive: true });
@@ -52,7 +71,6 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
 
   const sep = process.platform === 'win32' ? ';' : ':';
   const classpath = [...libs.classpath, jarPath].join(sep);
-  const memory = instance.memoryMb || settings.memoryMb;
   const width = instance.width || settings.width;
   const height = instance.height || settings.height;
 
@@ -83,7 +101,8 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
   };
   const features = { has_custom_resolution: !settings.fullscreen, is_demo_user: false };
 
-  const jvm = [`-Xmx${memory}M`, `-Xms${Math.min(1024, memory)}M`];
+  const tuned = await tunedJvm({ instance, settings, javaMajor: javaMajor || (version.javaVersion && version.javaVersion.majorVersion) });
+  const jvm = [];
   if (version.arguments && version.arguments.jvm) {
     jvm.push(...expandArgs(version.arguments.jvm, vars, features));
   } else {
@@ -98,8 +117,8 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
   if (settings.chatBridge) jvm.push(`-Dnoreclient.chatBridge=${settings.chatBridge}`);
   // the Nore Hub address is built into the mod; NORE_HUB points the launcher and the game elsewhere
   if (process.env.NORE_HUB) jvm.push(`-Dnoreclient.hub=${process.env.NORE_HUB.replace(/\/+$/, '')}`);
-  const extra = (settings.jvmArgs || '').trim();
-  if (extra) jvm.push(...extra.split(/\s+/));
+  // memory, GC and the player's own arguments (theirs win) – after Mojang's, so ours are not overridden
+  jvm.push(...tuned.args);
   if (process.platform === 'darwin') jvm.push('-XstartOnFirstThread');
 
   let game;
@@ -118,7 +137,7 @@ async function buildCommand({ instance, account, settings, installed, javaBin })
   if (settings.fullscreen) game.push('--fullscreen');
   if (instance.joinServer) game.push(...joinArgs(version, instance.joinServer));
 
-  return { javaBin, args: [...jvm, version.mainClass, ...game], cwd: gameDir };
+  return { javaBin, args: [...jvm, version.mainClass, ...game], cwd: gameDir, tuned };
 }
 
 /**
@@ -136,6 +155,9 @@ function joinArgs(version, address) {
 /** Starts the game; onLog(line, stream) receives output; resolves with the child process. */
 async function launch(opts, { onLog, onExit } = {}) {
   const cmd = await buildCommand(opts);
+  const t = cmd.tuned;
+  onLog && onLog(`[Launcher] Pamięć: ${(t.memory.xmx / 1024).toFixed(1)} GB${t.memory.auto ? ' (automatycznie)' : ''}, GC: ${t.gc === 'zgc' ? 'Generational ZGC' : t.gc === 'g1' ? 'G1 zoptymalizowany' : 'własne argumenty'}${opts.javaMajor ? `, Java ${opts.javaMajor}` : ''}`, 'out');
+  if (t.note) onLog && onLog('[Launcher] ' + t.note, 'out');
   const child = spawn(cmd.javaBin, cmd.args, { cwd: cmd.cwd, detached: false, windowsHide: false });
   const pipe = (stream, name) => {
     let buf = '';
@@ -155,4 +177,4 @@ async function launch(opts, { onLog, onExit } = {}) {
   return child;
 }
 
-module.exports = { sessionTicket, buildCommand, launch, expandArgs, substitute, joinArgs };
+module.exports = { sessionTicket, buildCommand, tunedJvm, launch, expandArgs, substitute, joinArgs };

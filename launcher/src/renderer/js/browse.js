@@ -176,7 +176,7 @@ function installModpackFlow({ projectId, versionId, title, icon: iconUrl, file }
     $('#mp-cur', m.el).textContent = p.current || (p.total ? `${p.done || 0} / ${p.total}` : '');
   });
   $('#mp-bar', m.el).classList.add('indet');
-  const run = file === true ? nore.modpacks.import() : nore.modpacks.install({ projectId, versionId });
+  const run = file === 'instance' ? nore.modpacks.importInstance() : file === true ? nore.modpacks.import() : nore.modpacks.install({ projectId, versionId });
   run.then(async (r) => {
     off();
     if (!r) { m.close(); return; }
@@ -190,7 +190,10 @@ function installModpackFlow({ projectId, versionId, title, icon: iconUrl, file }
     const play = $('#mp-play', m.el);
     play.hidden = false;
     play.onclick = () => { m.close(); launchSelected(r.instance); };
-    toast('Zainstalowano modpack', r.instance.name, 'success');
+    toast(file === 'instance' ? 'Zaimportowano instancję' : 'Zainstalowano modpack', r.instance.name, 'success');
+    const pk = r.instance.pack || {};
+    if (pk.serverOnly) $('#mp-cur', m.el).textContent += ` • pominięto ${pk.serverOnly} ${plural(pk.serverOnly, 'plik', 'pliki', 'plików')} tylko dla serwera`;
+    if ((pk.blocked || []).length) blockedFilesModal(r.instance);
   }).catch((e) => {
     off();
     m.close();
@@ -389,7 +392,7 @@ function browsePage(key) {
 
     root.innerHTML = `<div class="browse">
       <div class="page-head"><div><h2>${icon(cfg.icon)} ${cfg.title}</h2><p>${cfg.sub}</p></div>
-        <div class="actions">${isPack ? `<button class="btn ghost" id="import" title="Modrinth .mrpack albo CurseForge .zip">${icon('upload')} Importuj paczkę</button>` : '<div class="instance-picker" id="pick" style="min-width:230px;padding:6px 12px"></div>'}</div></div>
+        <div class="actions">${isPack ? `<button class="btn ghost" id="import-inst" title="Folder instancji z Prism Launcher, MultiMC, aplikacji CurseForge albo Modrinth App">${icon('folder')} Importuj instancję</button><button class="btn ghost" id="import" title="Modrinth .mrpack albo CurseForge .zip">${icon('upload')} Importuj paczkę</button>` : '<div class="instance-picker" id="pick" style="min-width:230px;padding:6px 12px"></div>'}</div></div>
       <div class="br-top card">
         <div id="tabs"></div>
         <div id="src" class="br-src"></div>
@@ -417,6 +420,7 @@ function browsePage(key) {
     };
     if ($('#pick', root)) $('#pick', root).onclick = () => instancePickerModal();
     if ($('#import', root)) $('#import', root).onclick = () => installModpackFlow({ file: true, title: 'Import modpacka' });
+    if ($('#import-inst', root)) $('#import-inst', root).onclick = () => installModpackFlow({ file: 'instance', title: 'Import instancji' });
     const tabs = isPack ? [{ value: 'browse', label: 'Przeglądaj' }]
       : [{ value: 'browse', label: 'Przeglądaj' }, { value: 'installed', label: 'Zainstalowane' }];
     $('#tabs', root).appendChild(segmented(tabs, mem.tab, (v) => { mem.tab = v; mem.offset = 0; load(); }));
