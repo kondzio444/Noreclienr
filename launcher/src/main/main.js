@@ -1010,6 +1010,18 @@ async function checkInstanceUpdates(inst) {
       out[key] = withoutPackFiles(inst, kind, await modrinth.checkUpdates(dir, kind, inst.mcVersion, inst.loader, channel)).length;
     } catch { /* offline */ }
     await pause(400);
+    // files Modrinth does not know may come from CurseForge (pack files are left to the pack)
+    const packSet = packFileSet(inst);
+    if (packSet || inst.modpack !== 'pack') {
+      try {
+        const folder = modrinth.KINDS[kind].folder;
+        const skip = new Set(Object.keys(await modrinth.identify(dir, modrinth.KINDS[kind].ext).catch(() => ({}))));
+        for (const rel of packSet || []) if (rel.startsWith(folder + '/')) skip.add(rel.slice(folder.length + 1));
+        const cfUps = await curseforge.checkUpdates(dir, kind, inst.mcVersion, inst.loader, modrinth.channelTypes(channel), skip);
+        out[key] += withoutPackFiles(inst, kind, cfUps).length;
+      } catch { /* offline */ }
+      await pause(400);
+    }
   }
   return out;
 }

@@ -214,7 +214,8 @@ async function scan(modsDir) {
 /** Version of a project for Minecraft + loader: newest release, else newest beta (never alpha). */
 async function bestVersion(net, modLoaders, projectId, mcVersion, loader) {
   const params = new URLSearchParams({ game_versions: JSON.stringify([mcVersion]), loaders: JSON.stringify(modLoaders(loader)) });
-  const list = await net.getJson(`${API}/project/${encodeURIComponent(projectId)}/version?${params}`).catch(() => []);
+  // a project Modrinth does not have is "missing"; a network error is thrown (checked again next start)
+  const list = await net.getJson(`${API}/project/${encodeURIComponent(projectId)}/version?${params}`).catch((e) => { if (/HTTP 404/.test(e.message)) return []; throw e; });
   return list.find(v => v.version_type === 'release') || list.find(v => v.version_type === 'beta') || null;
 }
 
@@ -229,14 +230,19 @@ async function resolve(plan, { mcVersion, loader, present = [] }) {
   const { modLoaders } = require('./loaders');
   const have = presentSet(present);
   const files = [], missing = [];
+  let errors = 0;
   const doneGroups = new Set(), seen = new Set();
   const addDeps = async (v, forSlug, depth) => {
     for (const d of v.dependencies || []) {
       if (d.dependency_type !== 'required' || !d.project_id || seen.has(d.project_id)) continue;
       seen.add(d.project_id);
       const proj = await net.getJson(`${API}/project/${encodeURIComponent(d.project_id)}`).catch(() => null);
-      if (!proj || have.has(norm(proj.slug)) || have.has(norm(proj.slug).replace(/api$/, ''))) continue;
-      const dv = d.version_id ? await net.getJson(`${API}/version/${encodeURIComponent(d.version_id)}`).catch(() => null) : await bestVersion(net, modLoaders, d.project_id, mcVersion, loader);
+      if (!proj) { errors++; continue; }
+      if ( have.has(norm(proj.slug)) || have.has(norm(proj.slug).replace(/api$/, ''))) continue;
+      let dv = null;
+      try {
+        dv = d.version_id ? await net.getJson(`${API}/version/${encodeURIComponent(d.version_id)}`) : await bestVersion(net, modLoaders, d.project_id, mcVersion, loader);
+      } catch { errors++; continue; }
       const f = dv && primary(dv);
       if (!f) continue;
       files.push({ slug: proj.slug, title: proj.title, version: dv.version_number, versionId: dv.id, projectId: d.project_id, file: f.filename, url: f.url, sha1: f.hashes && f.hashes.sha1, size: f.size, dep: forSlug });
@@ -245,7 +251,8 @@ async function resolve(plan, { mcVersion, loader, present = [] }) {
   };
   for (const a of plan.add) {
     if (a.group && doneGroups.has(a.group)) continue;
-    const v = await bestVersion(net, modLoaders, a.slug, mcVersion, loader);
+    let v = null;
+    try { v = await bestVersion(net, modLoaders, a.slug, mcVersion, loader); } catch { errors++; break; }
     const f = v && primary(v);
     if (!f) { if (!a.group) missing.push({ slug: a.slug, title: a.title }); continue; }
     if (a.group) doneGroups.add(a.group);
@@ -254,8 +261,8 @@ async function resolve(plan, { mcVersion, loader, present = [] }) {
     await addDeps(v, a.slug, 0);
   }
   // a group none of whose members exist for this version
-  for (const a of plan.add) if (a.group && !doneGroups.has(a.group) && !missing.some(m => m.slug === a.group)) missing.push({ slug: a.group, title: 'Sodium / Embeddium' });
-  return { files, missing };
+  if (!errors) for (const a of plan.add) if (a.group && !doneGroups.has(a.group) && !missing.some(m => m.slug === a.group)) missing.push({ slug: a.group, title: 'Sodium / Embeddium' });
+  return { files, missing, errors };
 }
 
 /** Is the performance set on for this instance? (Nore Client instances had it on by default.) */
@@ -282,7 +289,7 @@ async function preview(inst, { blocked } = {}) {
   const present = all.filter(m => !ownFiles.has(m.file));
   const plan = planPerfMods({ loader: inst.loader, present, own: own.filter(o => !o.dep), blocked: blocked || inst.perfBlocked || [] });
   const res = await resolve(plan, { mcVersion: inst.mcVersion, loader: inst.loader, present: all.filter(m => !ownFiles.has(m.file) || own.some(o => o.file === m.file)) });
-  return { plan, files: res.files, missing: res.missing, own, stale, present };
+  return { plan, files: res.files, missing: res.missing, errors: res.errors, own, stale, present };
 }
 
 /**
@@ -298,6 +305,14 @@ async function ensure(inst, { progress = () => {}, log = () => {}, force = false
   const recorded = inst.perfAdded || [];
   if (!force && inst.perfKey === key && recorded.every(o => fs.existsSync(path.join(modsDir, o.file)) || fs.existsSync(path.join(modsDir, o.file + '.disabled')))) return null;
   progress({ stage: 'Mody wydajności: sprawdzanie paczki', step: 'nore' });
+  // offline: do not hold the start up with retries – the check runs again next time
+  try {
+    const res = await fetch('https://api.modrinth.com/', { signal: AbortSignal.timeout(4000), headers: { 'User-Agent': require('./net').UA } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch {
+    log('[Launcher] Mody wydajności: Modrinth niedostępny – sprawdzę przy następnym starcie.');
+    return null;
+  }
   const p = await preview(inst);
   const removed = [];
   const rm = async (file, reason) => {
@@ -313,6 +328,7 @@ async function ensure(inst, { progress = () => {}, log = () => {}, force = false
   const keep = p.own.filter(o => !dropSlugs.has(o.slug) && !(o.dep && dropSlugs.has(o.dep)));
   const net = require('./net');
   const added = [];
+  let failed = p.errors || 0;
   let i = 0;
   for (const f of p.files) {
     progress({ stage: 'Mody wydajności', current: f.title || f.slug, done: i++, total: p.files.length, step: 'nore' });
@@ -320,11 +336,14 @@ async function ensure(inst, { progress = () => {}, log = () => {}, force = false
       await net.download(f.url, path.join(modsDir, f.file), { sha1: f.sha1, size: f.size });
       added.push({ slug: f.slug, file: f.file, projectId: f.projectId, versionId: f.versionId, version: f.version, dep: f.dep || null, added: Date.now() });
     } catch (e) {
+      failed++;
       log(`[Launcher] ${f.title || f.slug} – nie udało się pobrać (${e.message})`);
     }
   }
   for (const m of p.missing) log(`[Launcher] ${m.title}: brak wersji dla ${inst.mcVersion} (${inst.loader}) – pomijam.`);
-  instances.update(inst.id, { perfAdded: [...keep, ...added], perfKey: key, perfFor: { mc: inst.mcVersion, loader: inst.loader }, perfModsInstalled: true });
+  if (p.errors) log('[Launcher] Mody wydajności: brak połączenia z Modrinth – sprawdzę ponownie przy następnym starcie.');
+  // with errors (offline) the check runs again on the next start
+  instances.update(inst.id, { perfAdded: [...keep, ...added], perfKey: failed ? null : key, perfFor: { mc: inst.mcVersion, loader: inst.loader }, perfModsInstalled: true });
   if (added.length) log(`[Launcher] Dodano mody wydajności: ${added.map(a => a.file).join(', ')}`);
   if (removed.length) log(`[Launcher] Usunięto mody wydajności: ${removed.map(r => `${r.file} (${r.reason})`).join(', ')}`);
   return { added, removed, skipped: p.plan.skip, missing: p.missing };

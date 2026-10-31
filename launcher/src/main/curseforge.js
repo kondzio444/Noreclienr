@@ -206,7 +206,7 @@ function fileUrl(f) {
 const sha1Of = (f) => ((f.hashes || []).find(h => h.algo === 1) || {}).value;
 
 /** Installs a project into targetDir (mods also get their required dependencies). */
-async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set()) {
+async function install({ projectId, kind, gameVersion, loader, targetDir, versionId }, onStatus, seen = new Set(), ctx = {}) {
   const n = rawId(projectId);
   if (seen.has(n)) return [];
   seen.add(n);
@@ -225,10 +225,24 @@ async function install({ projectId, kind, gameVersion, loader, targetDir, versio
   if (kind === 'mod') {
     for (const d of file.dependencies || []) {
       if (d.relationType !== 3) continue;
-      try { out.push(...await install({ projectId: d.modId, kind, gameVersion, loader, targetDir }, onStatus, seen)); } catch (e) { onStatus && onStatus(`Nie udało się pobrać zależności: ${e.message}`); }
+      if (await hasProject(targetDir, d.modId, ctx)) continue;
+      try { out.push(...await install({ projectId: d.modId, kind, gameVersion, loader, targetDir }, onStatus, seen, ctx)); } catch (e) { onStatus && onStatus(`Nie udało się pobrać zależności: ${e.message}`); }
     }
   }
   return out;
+}
+
+/** Is a CurseForge project already in the folder (any version, also installed from Modrinth)? */
+async function hasProject(dir, modId, ctx) {
+  if (!ctx.ids) ctx.ids = new Set(Object.values(await identify(dir, ['.jar']).catch(() => ({}))).map(m => m.projectId));
+  if (ctx.ids.has(ID(modId))) return true;
+  try {
+    const perf = require('./perf');
+    if (!ctx.present) ctx.present = perf.presentSet(await perf.scan(dir));
+    const m = (await call(`/v1/mods/${rawId(modId)}`)).data;
+    const n = String(m.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return !!n && ctx.present.has(n);
+  } catch { return false; }
 }
 
 // ------------------------------------------------------------------ fingerprints (installed files, updates)
