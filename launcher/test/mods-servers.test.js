@@ -237,6 +237,7 @@ test('server.properties: validation limits, warnings and MOTD colours', () => {
   assert.deepStrictEqual(props.validate('pvp', 'true'), { value: true });
   assert.strictEqual(props.validate('difficulty', 'nope').value, 'peaceful');
   assert.strictEqual(props.validate('motd', 'a\\nb\nc').value, 'a\nb');
+  assert.strictEqual(props.validate('motd', '&aZielony &lB').value, '§aZielony §lB');
   const w = props.warnings({ 'online-mode': 'false', 'view-distance': '20', 'simulation-distance': '24' }).map(x => x.key);
   assert.deepStrictEqual(w, ['online-mode', 'view-distance', 'simulation-distance']);
   const segs = props.motdSegments('§aZielony &lgruby§r zwykły &#ff8800hex\\ndruga');

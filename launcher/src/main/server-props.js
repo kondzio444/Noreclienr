@@ -89,7 +89,7 @@ function validate(key, value) {
     const ok = f.options.some(o => o[0] === value);
     return ok ? { value } : { value: f.options[0][0], error: `${f.label}: nieznana wartość` };
   }
-  if (f.type === 'motd') return { value: String(value).replace(/\\n/g, '\n').split(/\r?\n/).slice(0, 2).join('\n').slice(0, 300) };
+  if (f.type === 'motd') return { value: String(value).replace(/&([0-9a-fk-or])/gi, '§$1').replace(/\\n/g, '\n').split(/\r?\n/).slice(0, 2).join('\n').slice(0, 300) };
   return { value: String(value) };
 }
 
