@@ -1464,6 +1464,7 @@ ipcMain.handle('servers:loaderVersions', (e, type, mcVersion) => servers.loaderV
 ipcMain.handle('servers:propertiesForm', (e, id) => servers.propertiesForm(id));
 ipcMain.handle('servers:saveProperties', (e, id, changes) => servers.saveProperties(id, changes));
 ipcMain.handle('servers:complete', (e, id, text, history) => servers.complete(id, text, history));
+ipcMain.handle('servers:motdPreview', (e, motd) => require('./server-props').motdSegments(String(motd || '').slice(0, 400)));
 ipcMain.handle('servers:jvmPreview', (e, id, patch = {}) => servers.jvmArgsFor({ ...servers.raw(id), ...patch }).join(' '));
 
 /** Files dropped or picked for a server: .mrpack / server pack .zip install a pack, the rest go to plugins / mods / datapacks. */

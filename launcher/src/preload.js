@@ -121,6 +121,7 @@ contextBridge.exposeInMainWorld('nore', {
     saveProperties: invoke('servers:saveProperties'),
     complete: invoke('servers:complete'),
     jvmPreview: invoke('servers:jvmPreview'),
+    motdPreview: invoke('servers:motdPreview'),
   },
   mods: {
     list: invoke('mods:list'), identify: invoke('mods:identify'), toggle: invoke('mods:toggle'), bulk: invoke('mods:bulk'), pin: invoke('mods:pin'),
