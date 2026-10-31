@@ -79,7 +79,8 @@ Consumers:
 
 * **Nore Hub** (`web/src/hub.js`) gets the Minecraft / Nore ID part of the blacklist pushed on every
   change: a blacklisted player's hello is refused (`403`) and they are never listed by
-  `/api/v1/hub/players` or `/api/v2/players/:name`. The hello may carry an optional, unsigned
+  `/api/v1/hub/players` or `/api/v2/players/:name`; a game presence heartbeat
+  (`POST /api/v2/presence`) with a blacklisted nick answers `403` and is not counted. The hello may carry an optional, unsigned
   `client` (launcher version) shown in the admin overview.
 * **Launcher** (`launcher/src/main/notices.js`): reads `client/config?target=launcher` every 15 min,
   shows announcements and maintenance in a banner, and when `minLauncherVersion` is newer than
