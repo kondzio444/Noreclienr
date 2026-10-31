@@ -1477,3 +1477,6 @@ img[src$="assets/logo.png"] { filter: hue-rotate(var(--logo-hue)) !important; tr
 .off-motd { margin-top: 6px; font-size: 12.5px; min-height: 16px; }
 .off-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
 .off-stats { font-size: 12px; }
+
+/* Quiet mode while the game runs (ui.js Quiet): nothing moves, nothing takes GPU time from Minecraft */
+body.game-quiet *, body.game-quiet *::before, body.game-quiet *::after { animation-play-state: paused !important; }

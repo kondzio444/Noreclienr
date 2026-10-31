@@ -580,7 +580,8 @@ function motionMode(s) {
 }
 function applyMotionSetting(s) {
   const m = motionMode(s);
-  document.body.classList.toggle('no-anim', m === 'off');
+  if (typeof Quiet === 'object' && Quiet.on) Quiet.hadNoAnim = m === 'off';
+  else document.body.classList.toggle('no-anim', m === 'off');
   document.body.classList.toggle('motion-reduced', m === 'reduced');
   if (typeof Embers === 'object') Embers.setEnabled(m !== 'off');
 }
@@ -624,6 +625,7 @@ function launchStoryboard(ready) {
   });
   nore.on('game:state', async (g) => {
     App.running = g.running;
+    Quiet.set(!!g.running && (!App.state || App.state.settings.lightWhilePlaying !== false));
     if (!g.running && g.code != null && g.code !== 0) toast('Gra zakończyła się błędem', `Kod wyjścia ${g.code} — szukam przyczyny…`, 'error', 5000);
     await App.refresh();
   });

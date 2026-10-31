@@ -692,6 +692,18 @@ ipcMain.handle('doctor:fix', async (e, id, problems) => {
   return doctor.apply(inst, problems);
 });
 
+/**
+ * While the game runs the launcher steps aside: its processes drop to below-normal priority so
+ * Minecraft gets the CPU first (the renderer also pauses its animations, see Quiet in ui.js).
+ */
+function launcherPriority(low) {
+  if (low && store.get().settings.lightWhilePlaying === false) return;
+  const prio = low ? os.constants.priority.PRIORITY_BELOW_NORMAL : os.constants.priority.PRIORITY_NORMAL;
+  const pids = [process.pid];
+  try { if (win && !win.isDestroyed()) pids.push(win.webContents.getOSProcessId()); } catch { /* not ready */ }
+  for (const pid of pids) { try { os.setPriority(pid, prio); } catch { /* not allowed – nothing to do */ } }
+}
+
 ipcMain.handle('game:prepare', async (e, instanceId) => {
   if (busy) throw new Error('Trwa już przygotowywanie gry.');
   busy = true;
@@ -757,6 +769,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
         if (game && !game.visible && /Backend library|Setting user|LWJGL/.test(line)) {
           game.visible = true;
           send('game:state', { running: inst.id, phase: 'running' });
+          launcherPriority(true);
           if (settings.afterLaunch === 'hide' && win) win.hide();
           if (settings.afterLaunch === 'minimize' && win) win.minimize();
           if (settings.afterLaunch === 'close') app.quit();
@@ -767,6 +780,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
         const played = Date.now() - started;
         instances.update(inst.id, { playTime: (instances.get(inst.id).playTime || 0) + played });
         game = null;
+        launcherPriority(false);
         hub.gameStopped();
         discord.setActivity(LAUNCHER_ACTIVITY);
         send('game:state', { running: null, code: killed ? 0 : code });

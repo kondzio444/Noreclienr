@@ -63,6 +63,6 @@ const Official = {
     const refresh = (force) => nore.official.status(force).then(fill).catch(() => fill({ online: false, state: 'unknown' }));
     f('refresh').onclick = () => { f('state').textContent = 'Sprawdzanie…'; f('stats').textContent = ''; refresh(true); };
     refresh(false);
-    const timer = setInterval(() => (box.isConnected ? refresh(false) : clearInterval(timer)), 60_000);
+    const timer = setInterval(() => (!box.isConnected ? clearInterval(timer) : Quiet.on ? null : refresh(false)), 60_000);
   },
 };
