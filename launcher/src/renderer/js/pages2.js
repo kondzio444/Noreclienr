@@ -100,9 +100,9 @@ function askPerfOnce(inst) {
 }
 
 /** CurseForge files the author blocked for other apps: download them by hand, the launcher picks them up from Downloads. */
-function blockedFilesModal(inst) {
+function blockedFilesModal(inst, api = { list: () => nore.modpacks.blocked(inst.id), resolve: () => nore.modpacks.resolveBlocked(inst.id) }) {
   const m = modal(`<h3>${icon('download')} Pobierz ręcznie</h3>
-    <p class="sub">Autorzy tych plików nie pozwalają na pobieranie przez inne aplikacje niż CurseForge. Otwórz każdą stronę, pobierz plik do folderu <b>Pobrane</b>, a potem kliknij „Sprawdź pobrane” – launcher sam przeniesie je do instancji.</p>
+    <p class="sub">Autorzy tych plików nie pozwalają na pobieranie przez inne aplikacje niż CurseForge. Otwórz każdą stronę, pobierz plik do folderu <b>Pobrane</b>, a potem kliknij „Sprawdź pobrane” – launcher sam przeniesie je na miejsce.</p>
     <div class="upd-list" id="bl-list"></div>
     <div class="foot"><button class="btn ghost" data-close>Później</button><button class="btn" id="bl-scan">${icon('refresh')} Sprawdź pobrane</button></div>`);
   const draw = (list) => {
@@ -110,9 +110,9 @@ function blockedFilesModal(inst) {
     $('#bl-list', m.el).innerHTML = list.map((b, k) => `<div class="upd-item"><b>${esc(b.title || b.file)}</b><span class="from">${esc(b.file)}</span><button class="btn ghost sm" data-k="${k}" style="margin-left:auto">${icon('external')} Strona</button></div>`).join('');
     $$('[data-k]', m.el).forEach(btn => { btn.onclick = () => nore.open(list[+btn.dataset.k].page); });
   };
-  nore.modpacks.blocked(inst.id).then(draw);
+  api.list().then(draw);
   $('#bl-scan', m.el).onclick = async () => {
-    const r = await nore.modpacks.resolveBlocked(inst.id).catch((e) => { errorToast(e); return null; });
+    const r = await api.resolve().catch((e) => { errorToast(e); return null; });
     if (!r) return;
     if (r.found.length) toast('Znaleziono', r.found.join(', '), 'success');
     else if (r.blocked.length) toast('Jeszcze nie ma', 'Nie znalazłem tych plików w folderze Pobrane.', 'info');
@@ -383,6 +383,20 @@ Pages.instance = (root, { id, tab: startTab }) => {
 
   async function contentTab(page, i, key) {
     const cfg = CONTENT[key];
+    if (cfg.kind === 'mod' && typeof ModManager !== 'undefined') {
+      page.innerHTML = `<div class="setting card" style="padding:10px 14px;margin-bottom:12px"><div class="col"><b>Aktualizuj mody automatycznie</b><span>Przy każdym uruchomieniu instancji (z Modrinth, zgodne z ${esc(i.mcVersion)}; przypięte mody są pomijane)</span></div>
+        <label class="switch"><input type="checkbox" id="autoupd" ${i.autoUpdateMods ? 'checked' : ''}><i></i></label></div><div id="mmx"></div>`;
+      $('#autoupd', page).onchange = (e) => nore.instances.update(i.id, { autoUpdateMods: e.target.checked }).then(() => toast('Zapisano', e.target.checked ? 'Mody będą aktualizowane przy starcie' : 'Automatyczne aktualizacje wyłączone', 'success'));
+      const mm = ModManager.mount($('#mmx', page), { instanceId: i.id }, {
+        title: i.name, exportPack: true,
+        browse: async () => { await nore.instances.select(i.id); await App.refresh(); go(key); },
+        updates: () => nore.content.updates({ instanceId: i.id, kind: 'mod', skipPack: i.modpack === 'pack' }),
+        applyUpdates: (list) => nore.content.applyUpdates({ instanceId: i.id, kind: 'mod', updates: list }),
+      });
+      const prevAlive = () => alive;
+      const timer = setInterval(() => { if (!prevAlive() || !document.body.contains(page)) { mm.destroy(); clearInterval(timer); } }, 2000);
+      return;
+    }
     page.innerHTML = `<div class="row" style="margin-bottom:14px"><span class="dim">${cfg.title} w tej instancji</span><span class="spacer"></span>
       <button class="btn ghost sm" id="upd">${icon('refresh')} Aktualizacje</button><button class="btn ghost sm" id="open">${icon('folder')} Folder</button><button class="btn sm" id="add">${icon('plus')} Dodaj z Modrinth</button></div>
       ${cfg.kind === 'mod' ? `<div class="setting card" style="padding:10px 14px;margin-bottom:12px"><div class="col"><b>Aktualizuj mody automatycznie</b><span>Przy każdym uruchomieniu instancji (z Modrinth, zgodne z ${esc(i.mcVersion)})</span></div>

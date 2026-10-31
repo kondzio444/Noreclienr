@@ -48,6 +48,8 @@ const perf = require('./perf');
 const jvm = require('./jvm');
 const gameopts = require('./gameopts');
 const importers = require('./importers');
+const modManager = require('./mod-manager');
+const modMeta = require('./mod-meta');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
@@ -598,7 +600,7 @@ async function prepareGame(inst, settings, progress) {
     try {
       progress({ stage: 'Aktualizacja modów', step: 'nore' });
       const dir = path.join(inst.gameDir, 'mods');
-      const ups = await modrinth.checkUpdates(dir, 'mod', inst.mcVersion, inst.loader, settings.updateChannel);
+      const ups = withoutPinnedMods(inst, 'mod', await modrinth.checkUpdates(dir, 'mod', inst.mcVersion, inst.loader, settings.updateChannel));
       if (ups.length) {
         await modrinth.applyUpdates(dir, ups, { gameDir: inst.gameDir });
         remapPackFiles(inst, dir, ups);
@@ -972,9 +974,16 @@ function packFileSet(inst) {
 /** Updates of files a modpack brought are left to the modpack itself. */
 function withoutPackFiles(inst, kind, ups) {
   const set = packFileSet(inst);
-  if (!set) return inst.modpack === 'pack' ? [] : ups;
+  if (!set) return inst.modpack === 'pack' ? [] : withoutPinnedMods(inst, kind, ups);
   const folder = modrinth.KINDS[kind].folder;
-  return ups.filter(u => !set.has(`${folder}/${u.oldFile}`));
+  return withoutPinnedMods(inst, kind, ups.filter(u => !set.has(`${folder}/${u.oldFile}`)));
+}
+
+/** Mods the player pinned ("nie aktualizuj") never get updates. */
+function withoutPinnedMods(inst, kind, ups) {
+  if (kind !== 'mod' || !(inst.modPins || []).length) return ups;
+  const dir = path.join(inst.gameDir, 'mods');
+  return modManager.withoutPinned(ups, inst.modPins, (f) => modManager.modKey(f, modMeta.readJar(path.join(dir, f))));
 }
 
 /** Keeps a modpack's file list in sync when one of its files is updated on its own. */
@@ -1172,7 +1181,7 @@ ipcMain.handle('content:updates', async (e, { instanceId, kind, world, skipPack 
     const known = new Set(Object.keys(await modrinth.identify(dir, modrinth.KINDS[kind].ext).catch(() => ({}))));
     ups.push(...await curseforge.checkUpdates(dir, kind, inst.mcVersion, inst.loader, modrinth.channelTypes(channel), known).catch(() => []));
   }
-  return skipPack ? withoutPackFiles(inst, kind, ups) : ups;
+  return skipPack ? withoutPackFiles(inst, kind, ups) : withoutPinnedMods(inst, kind, ups);
 });
 ipcMain.handle('content:applyUpdates', async (e, { instanceId, kind, world, updates }) => {
   const inst = instances.get(instanceId);
@@ -1364,9 +1373,22 @@ ipcMain.handle('servers:icon', (e, id) => {
   return fs.existsSync(f) ? 'data:image/png;base64,' + fs.readFileSync(f).toString('base64') : null;
 });
 
-// server content (plugins / mods / datapacks / modpacks)
+// server content (plugins / mods / datapacks / modpacks) from Modrinth, CurseForge and Hangar
+const serverCf = require('./server-cf');
+const hangar = require('./hangar');
+
+/** Content kinds per source: { modrinth: [...], curseforge: [...], hangar: [...] }. */
 ipcMain.handle('servers:contentKinds', (e, id) => serverContent.kindsFor(servers.get(id).type));
-ipcMain.handle('servers:contentSearch', (e, id, opts) => serverContent.search(servers.get(id), opts));
+ipcMain.handle('servers:contentSources', (e, id) => {
+  const type = servers.get(id).type;
+  return { modrinth: serverContent.kindsFor(type), curseforge: serverCf.kindsFor(type), hangar: hangar.platformFor(type) ? ['plugin'] : [] };
+});
+ipcMain.handle('servers:contentSearch', (e, id, opts = {}) => {
+  const srv = servers.get(id);
+  if (opts.source === 'curseforge') return serverCf.search(srv, opts);
+  if (opts.source === 'hangar') return hangar.search(srv, opts);
+  return serverContent.search(srv, opts);
+});
 /** Installs / updates a modpack on a stopped server; the world is backed up first. */
 async function serverModpack(id, run) {
   const srv = servers.get(id);
@@ -1382,42 +1404,87 @@ async function serverModpack(id, run) {
     if (r.mcVersion) patch.mcVersion = r.mcVersion;
     if (r.type) patch.type = r.type;
     if (r.loaderVersion !== undefined) patch.loaderVersion = r.loaderVersion;
-    if (r.pack) patch.pack = r.pack;
+    if (r.pack) patch.pack = { source: 'modrinth', ...r.pack };
     servers.update(id, patch);
     return r;
   } finally {
     send('server:progress', { id, done: true });
   }
 }
+const cfPackDeps = () => ({ serverContent, modpacks });
 
 ipcMain.handle('servers:contentInstall', async (e, id, opts) => {
-  if (opts.kind === 'modpack') return serverModpack(id, (srv, p) => serverContent.installModpack(srv, { projectId: opts.projectId, versionId: opts.versionId }, p));
+  const isCfPack = opts.source === 'curseforge' || curseforge.isCf(opts.projectId);
+  if (opts.kind === 'modpack') {
+    if (isCfPack) return serverModpack(id, (srv, p) => serverCf.installModpack(srv, { projectId: opts.projectId, versionId: opts.versionId }, cfPackDeps(), p));
+    return serverModpack(id, (srv, p) => serverContent.installModpack(srv, { projectId: opts.projectId, versionId: opts.versionId }, p));
+  }
   const srv = servers.get(id);
-  const files = await serverContent.install(srv, opts, (stage) => send('server:progress', { id, stage }));
-  send('server:progress', { id, done: true });
-  return files;
+  const status = (stage) => send('server:progress', { id, stage });
+  try {
+    if (hangar.isHangar(opts.projectId)) {
+      const got = await hangar.install(srv, { projectId: opts.projectId, dir: serverContent.folderOf(srv, 'plugin') }, status);
+      const rec = { ...(servers.get(id).hangar || {}) };
+      for (const g of got) rec[g.file] = { slug: g.slug, version: g.version };
+      servers.update(id, { hangar: rec });
+      return got.map(g => g.file);
+    }
+    if (isCfPack) return await serverCf.install(srv, opts, status);
+    return await serverContent.install(srv, opts, status);
+  } finally {
+    send('server:progress', { id, done: true });
+  }
 });
-ipcMain.handle('servers:modpackVersions', (e, id, projectId) => serverContent.modpackVersions(servers.get(id), projectId || (servers.get(id).pack || {}).projectId));
-ipcMain.handle('servers:modpackUpdate', (e, id) => serverContent.modpackUpdate(servers.get(id)));
+ipcMain.handle('servers:modpackVersions', (e, id, projectId) => {
+  const srv = servers.get(id);
+  const pid = projectId || (srv.pack || {}).projectId;
+  return curseforge.isCf(pid) ? serverCf.packVersions(pid) : serverContent.modpackVersions(srv, pid);
+});
+ipcMain.handle('servers:modpackUpdate', (e, id) => {
+  const srv = servers.get(id);
+  if (srv.pack && srv.pack.source === 'curseforge') return serverCf.packUpdate(srv, serverContent.versionTypes());
+  return serverContent.modpackUpdate(srv);
+});
 ipcMain.handle('servers:modpackApply', (e, id, versionId) => {
   const pack = servers.get(id).pack;
-  if (!pack || !pack.projectId) throw new Error('Ten serwer nie ma paczki z Modrinth.');
+  if (!pack || !pack.projectId) throw new Error('Ten serwer nie ma paczki z Modrinth ani CurseForge.');
+  if (pack.source === 'curseforge') return serverModpack(id, (srv, p) => serverCf.installModpack(srv, { projectId: pack.projectId, versionId }, cfPackDeps(), p));
   return serverModpack(id, (srv, p) => serverContent.installModpack(srv, { projectId: pack.projectId, versionId }, p));
 });
+/** CurseForge files blocked for other apps (server packs built from manifest.json). */
+ipcMain.handle('servers:blocked', (e, id) => ((servers.get(id) || {}).pack || {}).blocked || []);
+ipcMain.handle('servers:resolveBlocked', async (e, id) => {
+  const srv = servers.get(id);
+  const dirs = [...new Set([app.getPath('downloads'), path.join(os.homedir(), 'Downloads'), path.join(os.homedir(), 'Pobrane')])];
+  const r = await modpacks.findDownloaded(srv.dir, (srv.pack || {}).blocked || [], dirs);
+  servers.update(id, { pack: { ...servers.get(id).pack, blocked: r.rest } });
+  return { found: r.found, blocked: r.rest };
+});
 ipcMain.handle('servers:loaderVersions', (e, type, mcVersion) => servers.loaderVersions(type, mcVersion));
+ipcMain.handle('servers:propertiesForm', (e, id) => servers.propertiesForm(id));
+ipcMain.handle('servers:saveProperties', (e, id, changes) => servers.saveProperties(id, changes));
+ipcMain.handle('servers:complete', (e, id, text, history) => servers.complete(id, text, history));
+ipcMain.handle('servers:motdPreview', (e, motd) => require('./server-props').motdSegments(String(motd || '').slice(0, 400)));
+ipcMain.handle('servers:jvmPreview', (e, id, patch = {}) => servers.jvmArgsFor({ ...servers.raw(id), ...patch }).join(' '));
 
 /** Files dropped or picked for a server: .mrpack / server pack .zip install a pack, the rest go to plugins / mods / datapacks. */
+function isCfPackFile(f) {
+  try { return /\.zip$/i.test(f) && !!curseforge.readManifest(f); } catch { return false; }
+}
+
 async function addServerFiles(id, files) {
   files = files.filter(f => typeof f === 'string' && fs.existsSync(f) && fs.statSync(f).isFile());
   const out = { added: [], pack: null };
   for (const f of files) {
     if (f.toLowerCase().endsWith('.mrpack')) {
       out.pack = await serverModpack(id, (srv, p) => serverContent.installModpack(srv, { file: f }, p));
+    } else if (f.toLowerCase().endsWith('.zip') && isCfPackFile(f)) {
+      out.pack = await serverModpack(id, (srv, p) => serverCf.installModpack(srv, { file: f }, cfPackDeps(), p));
     } else if (f.toLowerCase().endsWith('.zip') && serverContent.isServerPack(f)) {
       out.pack = await serverModpack(id, (srv, p) => serverContent.installServerPack(srv, f, p).then(r => ({ ...r, name: path.basename(f) })));
     }
   }
-  out.added = await serverContent.addFiles(servers.get(id), files.filter(f => !/\.mrpack$/i.test(f)));
+  out.added = await serverContent.addFiles(servers.get(id), files.filter(f => !/\.mrpack$/i.test(f) && !isCfPackFile(f)));
   return out;
 }
 ipcMain.handle('servers:contentList', (e, id) => serverContent.listInstalled(servers.get(id)));
@@ -1429,11 +1496,32 @@ ipcMain.handle('servers:contentAddFiles', async (e, id) => {
   return addServerFiles(id, r.filePaths);
 });
 ipcMain.handle('servers:contentAddPaths', (e, id, files) => addServerFiles(id, Array.isArray(files) ? files : []));
-ipcMain.handle('servers:contentUpdates', (e, id) => serverContent.checkUpdates(servers.get(id)));
+ipcMain.handle('servers:contentUpdates', (e, id) => {
+  const srv = servers.get(id);
+  const keyOf = (f) => {
+    for (const kind of ['plugin', 'mod']) {
+      const p = path.join(serverContent.folderOf(srv, kind), f);
+      if (fs.existsSync(p)) return modManager.modKey(f, modMeta.readJar(p));
+    }
+    return modManager.modKey(f, null);
+  };
+  return serverContent.checkAllUpdates(srv, { pins: srv.modPins || [], keyOf });
+});
 ipcMain.handle('servers:contentApplyUpdates', async (e, id, updates) => {
   const n = await serverContent.applyUpdates(servers.get(id), updates, (stage) => send('server:progress', { id, stage }));
   send('server:progress', { id, done: true });
+  const hang = updates.filter(u => u.source === 'hangar');
+  if (hang.length) {
+    const rec = { ...(servers.get(id).hangar || {}) };
+    for (const u of hang) { delete rec[u.oldFile]; rec[u.newFile] = { slug: hangar.slugOf(u.projectId), version: u.version }; }
+    servers.update(id, { hangar: rec });
+  }
   return n;
+});
+
+// mod manager for instances and servers (details, toggles, pins, profiles, export, configs)
+require('./ipc-mods').register({
+  ipcMain, dialog, getWin: () => win, send, instances, servers, serverContent, modrinth, curseforge, net,
 });
 
 // network, domain & tunnel

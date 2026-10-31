@@ -237,7 +237,56 @@ async function countMods(gameDir) {
   return { mods, shaders };
 }
 
+// ------------------------------------------------------------------ dedicated servers
+
+const SERVER_PROFILES = ['aikar', 'zgc', 'basic', 'custom'];
+
+/**
+ * Flags for a local server. profile: 'aikar' (Aikar's G1 flags, the Paper recommendation), 'zgc'
+ * (Java 21+, big heaps), 'basic' (only memory) or 'custom' (only the user's arguments + memory).
+ * Proxies (Velocity / BungeeCord) get Velocity's small-heap flags. freeMb decides AlwaysPreTouch.
+ */
+function serverFlags({ profile = 'aikar', memoryMb = 2048, javaMajor = 21, proxy = false, freeMb = 0 } = {}) {
+  const xmx = Math.max(512, Math.round(memoryMb));
+  const preTouch = freeMb > 0 && freeMb - xmx >= 2 * GB;
+  const base = ['-XX:+IgnoreUnrecognizedVMOptions', '-XX:+UnlockExperimentalVMOptions'];
+  if (profile === 'basic' || profile === 'custom') return { xms: Math.min(1024, xmx), flags: [], note: null };
+  if (proxy) {
+    return { xms: xmx, flags: [...base, '-XX:+UseG1GC', '-XX:G1HeapRegionSize=4M', '-XX:+ParallelRefProcEnabled', ...(preTouch ? ['-XX:+AlwaysPreTouch'] : []), '-XX:MaxInlineLevel=15'], note: null };
+  }
+  let note = null;
+  if (profile === 'zgc') {
+    if (javaMajor >= 21) {
+      const flags = [...base, '-XX:+UseZGC'];
+      if (javaMajor < 23) flags.push('-XX:+ZGenerational');
+      flags.push('-XX:+DisableExplicitGC', '-XX:+PerfDisableSharedMem');
+      if (preTouch) flags.push('-XX:+AlwaysPreTouch');
+      return { xms: xmx, flags, note };
+    }
+    note = `ZGC wymaga Javy 21+ (jest ${javaMajor}) – użyto flag Aikara.`;
+  }
+  const big = xmx >= 12 * GB;
+  const flags = [
+    ...base, '-XX:+UseG1GC', '-XX:+ParallelRefProcEnabled', '-XX:MaxGCPauseMillis=200', '-XX:+DisableExplicitGC',
+    `-XX:G1NewSizePercent=${big ? 40 : 30}`, `-XX:G1MaxNewSizePercent=${big ? 50 : 40}`, `-XX:G1HeapRegionSize=${big ? 16 : 8}M`,
+    `-XX:G1ReservePercent=${big ? 15 : 20}`, '-XX:G1HeapWastePercent=5', '-XX:G1MixedGCCountTarget=4', `-XX:InitiatingHeapOccupancyPercent=${big ? 20 : 15}`,
+    '-XX:G1MixedGCLiveThresholdPercent=90', '-XX:G1RSetUpdatingPauseTimePercent=5', '-XX:SurvivorRatio=32', '-XX:+PerfDisableSharedMem',
+    '-XX:MaxTenuringThreshold=1', '-Dusing.aikars.flags=https://mcflags.emc.gs', '-Daikars.new.flags=true',
+  ];
+  if (preTouch) flags.push('-XX:+AlwaysPreTouch');
+  // Aikar: Xms = Xmx – only when the RAM is really free, otherwise half of it
+  return { xms: preTouch ? xmx : Math.min(xmx, Math.max(1024, Math.round(xmx / 2 / 512) * 512)), flags, note };
+}
+
+/** Full JVM arguments for a server: memory + profile flags merged with the owner's own arguments (theirs win). */
+function serverJvmArgs(opts = {}) {
+  const f = serverFlags(opts);
+  const xmx = Math.max(512, Math.round(opts.memoryMb || 2048));
+  return mergeArgs({ xmx, xms: f.xms }, f.flags, opts.userArgs || '');
+}
+
 module.exports = {
+  SERVER_PROFILES, serverFlags, serverJvmArgs,
   MODES, systemReserveMb, maxGameMb, wantedMb, autoMemoryMb, memoryPlan, g1RegionMb, gcFlags, splitArgs, mergeArgs,
   buildJvmArgs, parseMem, parseMc, requiredJava, componentFor, javaFits, countMods,
 };

@@ -561,12 +561,18 @@ async function swapFiles(root, { zip, index, rec, old, onProgress, concurrency, 
 async function resolveBlocked(instId, dirs) {
   const inst = instances.get(instId);
   if (!inst || !inst.pack) throw new Error('To nie jest instancja modpacka.');
-  const list = inst.pack.blocked || [];
+  const { found, rest } = await findDownloaded(inst.gameDir, inst.pack.blocked || [], dirs);
+  instances.update(inst.id, { pack: { ...instances.get(inst.id).pack, blocked: rest } });
+  return { found, blocked: rest };
+}
+
+/** Looks for blocked files ({ file, rel, sha1 }) in dirs and copies them under root. Shared by instances and servers. */
+async function findDownloaded(root, list, dirs) {
   const found = [], rest = [];
   const listings = [];
   for (const d of dirs) listings.push({ dir: d, names: await fsp.readdir(d).catch(() => []) });
   for (const b of list) {
-    const dest = inside(inst.gameDir, b.rel);
+    const dest = inside(root, b.rel);
     if (!dest) continue;
     if (await net.isValid(dest, b.sha1)) { found.push(b.file); continue; }
     const ext = path.extname(b.file), stem = b.file.slice(0, -ext.length || undefined);
@@ -584,8 +590,7 @@ async function resolveBlocked(instId, dirs) {
     await fsp.copyFile(hit, dest);
     found.push(b.file);
   }
-  instances.update(inst.id, { pack: { ...instances.get(inst.id).pack, blocked: rest } });
-  return { found, blocked: rest };
+  return { found, rest };
 }
 
 /** Reads name / Minecraft version / loader of a local .mrpack without installing it. */
@@ -595,4 +600,4 @@ async function inspect(file) {
   return { name: index.name, version: index.versionId, mcVersion: deps.minecraft, ...loaderOf(deps), files: (index.files || []).length };
 }
 
-module.exports = { resolveBlocked, downloadTasks, install, installFile, installCurseForge, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };
+module.exports = { resolveBlocked, findDownloaded, downloadTasks, install, installFile, installCurseForge, inspect, loaderOf, checkUpdate, versions, update, overrideAction, packRecord, cdnProject };
