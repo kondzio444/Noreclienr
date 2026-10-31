@@ -935,10 +935,10 @@ Pages.server = (root, { id, tab: startTab }) => {
     const sch = s.schedule || {};
     const v = (form && form.values) || {};
     const field = (f) => {
-      const val = v[f.key] ?? '';
+      const val = v[f.key] ?? (f.type === 'bool' && f.def != null ? String(f.def) : '');
       if (f.type === 'bool') return `<label class="switch"><input type="checkbox" data-pf="${f.key}" ${String(val) === 'true' ? 'checked' : ''}><i></i></label>`;
       if (f.type === 'enum') return `<select class="input" data-pf="${f.key}">${f.options.map(([o, l]) => `<option value="${esc(o)}" ${String(val) === o ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-      if (f.type === 'int') return `<input class="input" type="number" min="${f.min}" max="${f.max}" data-pf="${f.key}" value="${esc(val)}">`;
+      if (f.type === 'int') return `<input class="input" type="number" min="${f.min}" max="${f.max}" data-pf="${f.key}" value="${esc(val)}" placeholder="${f.def ?? ''}">`;
       return `<input class="input" data-pf="${f.key}" value="${esc(val)}" ${f.key === 'resource-pack' ? 'placeholder="https://…/paczka.zip"' : ''}>`;
     };
     const groups = form ? Object.entries(form.groups).map(([g, label]) => {

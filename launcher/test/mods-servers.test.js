@@ -289,6 +289,7 @@ test('CurseForge manifest → server: only server / both-side files, client mods
   assert.ok(scf.serverOverride('kubejs/server_scripts/a.js'));
   assert.ok(!scf.serverOverride('resourcepacks/x.zip'));
   assert.ok(!scf.serverOverride('options.txt'));
+  assert.ok(!scf.serverOverride('servers.dat_old'));
   assert.ok(!scf.serverOverride('world/level.dat'));
   assert.ok(!scf.serverOverride('server.properties'));
   assert.deepStrictEqual(scf.kindsFor('paper'), ['plugin', 'datapack', 'modpack']);

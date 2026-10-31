@@ -81,12 +81,13 @@ const ModManager = {
 
     const upFor = (m) => (ups || []).find(u => u.oldFile === m.file);
 
+    const nameOfFile = (f) => { const m = data.mods.find(x => x.file === f); return m ? m.name : f; };
     function warnHtml() {
       const w = data.warnings || [];
       if (!w.length) return '';
       const label = (x) => ({
         missing: `<b>${esc(x.name)}</b> wymaga <b>${esc(x.dep)}</b>${x.disabled ? ` – jest wyłączony (${esc(x.disabled)})` : ' – brak w folderze'}`,
-        conflict: `<b>${esc(x.name)}</b> nie działa razem z <b>${esc(x.other)}</b>`,
+        conflict: `<b>${esc(x.name)}</b> nie działa razem z <b>${esc(nameOfFile(x.other))}</b>`,
         duplicate: `<b>${esc(x.name)}</b> jest dwa razy (${esc(x.file)} i ${esc(x.other)}) – zostaw jedną wersję`,
         client: `<b>${esc(x.name)}</b> działa tylko w grze – na serwerze zostanie wyłączony`,
         loader: `<b>${esc(x.name)}</b> jest dla ${esc(MM_LOADER[x.loader] || x.loader)} – nie zadziała z tym loaderem`,

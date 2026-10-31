@@ -15,7 +15,7 @@ const cf = require('./curseforge');
 const MOD_LOADERS = ['fabric', 'quilt', 'forge', 'neoforge'];
 const PLUGIN_TYPES = ['paper', 'purpur', 'folia'];
 /** Overrides that only matter in the game client. */
-const CLIENT_PATHS = /^(resourcepacks|shaderpacks|screenshots|saves|options\.txt|optionsof\.txt|optionsshaders\.txt|servers\.dat|config\/(iris|oculus|sodium|embeddium|rubidium)[^/]*)(\/|$)/i;
+const CLIENT_PATHS = /^(resourcepacks|shaderpacks|screenshots|saves|options\.txt|optionsof\.txt|optionsshaders\.txt|servers\.dat[^/]*|config\/(iris|oculus|sodium|embeddium|rubidium)[^/]*)(\/|$)/i;
 /** Never written from a pack into a server. */
 const PROTECTED = /^(world|world_nether|world_the_end|backups|\.nore-backup|server\.properties|eula\.txt|whitelist\.json|ops\.json|banned-players\.json|banned-ips\.json)(\/|$)/i;
 

@@ -5,7 +5,7 @@
 .mm-search { position: relative; flex: 1 1 220px; max-width: 320px; }
 .mm-search svg { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
 .mm-search .input { padding-left: 32px; height: 34px; width: 100%; }
-.mm-bar select.input { height: 34px; width: auto; padding-right: 26px; font-size: 12.5px; }
+.mm-bar select.input { height: 34px; width: auto; min-width: 0; max-width: 175px; flex: 0 1 auto; padding-right: 26px; font-size: 12.5px; }
 .mm-head { display: flex; align-items: center; gap: 10px; padding: 0 14px 6px; font-size: 12.5px; }
 .mm-rows { display: flex; flex-direction: column; gap: 6px; }
 .mm-row { border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); transition: border-color .2s, opacity .2s; }
