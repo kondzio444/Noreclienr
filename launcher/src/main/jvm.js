@@ -119,9 +119,9 @@ function gcFlags({ mode = 'auto', javaMajor = 17, xmx = 4096, xms = 1024, freeMb
 /** Splits a user's argument string, keeping "quoted values" together. */
 function splitArgs(str) {
   const out = [];
-  const re = /"([^"]*)"|'([^']*)'|(\S+)/g;
+  const re = /(?:[^\s"']+|"[^"]*"|'[^']*')+/g;
   let m;
-  while ((m = re.exec(String(str || '')))) out.push(m[1] != null ? m[1] : m[2] != null ? m[2] : m[3]);
+  while ((m = re.exec(String(str || '')))) out.push(m[0].replace(/"([^"]*)"|'([^']*)'/g, (q, a, b) => (a != null ? a : b)));
   return out;
 }
 
