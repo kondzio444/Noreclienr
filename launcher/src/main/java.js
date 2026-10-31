@@ -77,4 +77,33 @@ function probeJava(bin) {
   });
 }
 
-module.exports = { ensureRuntime, probeJava, platformKey };
+const probed = new Map(); // bin|mtime → major
+/** probeJava with a cache (the binary is only run again when it changes). */
+async function probeCached(bin) {
+  let key = bin;
+  try { key += '|' + fs.statSync(bin).mtimeMs; } catch { return null; }
+  if (!probed.has(key)) probed.set(key, await probeJava(bin));
+  return probed.get(key);
+}
+
+/**
+ * Java for a Minecraft version: the player's own Java when it fits, otherwise Mojang's runtime.
+ * need: required major (jvm.requiredJava), component: Mojang's component from the version JSON.
+ * Returns { bin, major, own, note }.
+ */
+async function pick({ javaPath, need, component, loader, progress }) {
+  const { javaFits, componentFor } = require('./jvm');
+  let note = null;
+  if (javaPath) {
+    const major = await probeCached(javaPath);
+    if (javaFits(major, need, loader)) return { bin: javaPath, major, own: true, note };
+    note = major
+      ? `Twoja Java ${major} nie pasuje do tej wersji gry (potrzebna ${need}${need <= 8 ? '' : '+'}) – używam Javy pobranej automatycznie.`
+      : 'Nie udało się uruchomić Javy z ustawień – używam Javy pobranej automatycznie.';
+  }
+  const comp = component || componentFor(need);
+  const bin = await ensureRuntime(comp, { progress });
+  return { bin, major: need, own: false, note };
+}
+
+module.exports = { ensureRuntime, probeJava, probeCached, pick, platformKey };
