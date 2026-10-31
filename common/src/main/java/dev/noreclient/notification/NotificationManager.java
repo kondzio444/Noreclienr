@@ -1,31 +1,35 @@
 package dev.noreclient.notification;
 
 import dev.noreclient.NoreClient;
-import dev.noreclient.module.client.ClientSettings;
-import dev.noreclient.util.Animation;
-import dev.noreclient.util.ColorUtil;
-import dev.noreclient.util.Render2D;
-import dev.noreclient.util.Theme;
 import dev.noreclient.api.Gfx;
+import dev.noreclient.gui.widget.Album;
+import dev.noreclient.module.client.ClientSettings;
+import dev.noreclient.util.ColorUtil;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.Render2D;
+import dev.noreclient.util.Spring;
+import dev.noreclient.util.Theme;
+import dev.noreclient.util.ThemeTokens;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/** Small animated toasts in the corner of the screen. */
+/**
+ * Toasts in the "Album" style: a white sticker slapped into the corner (stick spring), a state dot
+ * and two lines, the float shadow; leaving, it peels off up and away.
+ */
 public final class NotificationManager {
     public enum Type {
-        INFO(0xFFFF8A1F, "i"), SUCCESS(Theme.SUCCESS, "✔"), ERROR(Theme.ERROR, "✖"), WARNING(Theme.WARNING, "!");
+        INFO(ThemeTokens.DOT_INFO), SUCCESS(ThemeTokens.DOT_READY), ERROR(ThemeTokens.DOT_ERROR), WARNING(ThemeTokens.DOT_WAIT);
         final int color;
-        final String icon;
 
-        Type(int color, String icon) {
+        Type(int color) {
             this.color = color;
-            this.icon = icon;
         }
     }
 
-    private static final long DURATION = 2200;
+    private static final long DURATION = 2400;
     private static final List<Notification> ACTIVE = new ArrayList<Notification>();
 
     private NotificationManager() {}
@@ -49,34 +53,45 @@ public final class NotificationManager {
             boolean top = side.startsWith("Top");
             boolean left = side.endsWith("Left");
             int sw = ctx.width(), sh = ctx.height();
-            float h = 30, gap = 4;
-            float y = top ? 6 : sh - 6 - h;
+            float h = 26, gap = 5;
+            float y = top ? 8 : sh - 8 - h;
             long now = System.currentTimeMillis();
-            Iterator<Notification> it = ACTIVE.iterator();
             List<Notification> ordered = new ArrayList<Notification>(ACTIVE);
             if (!top) java.util.Collections.reverse(ordered);
+            float base = ctx.getAlpha();
             for (Notification n : ordered) {
                 long age = now - n.created;
                 boolean leaving = age > DURATION;
-                n.slide.target(leaving ? 0 : 1);
-                float p = n.slide.update();
-                float w = Math.max(120, Math.max(Render2D.textWidth(n.title), Render2D.textWidth(n.message)) + 40);
-                float x = left ? 6 - (1 - p) * (w + 12) : sw - 6 - w + (1 - p) * (w + 12);
-                float r = Theme.radius();
-                Render2D.shadow(ctx, x, y, w, h, r, 5, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 70), p));
-                Render2D.roundedRect(ctx, x, y, w, h, r, ColorUtil.fade(0xF0160F26, p));
-                Render2D.roundedOutline(ctx, x, y, w, h, r, 1, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 150), p));
-                Render2D.roundedRect(ctx, x + 6, y + 7, 16, 16, 8, ColorUtil.fade(ColorUtil.withAlpha(n.type.color, 60), p));
-                Render2D.centeredText(ctx, n.type.icon, x + 14, y + 11, ColorUtil.fade(n.type.color, p), false);
-                Render2D.text(ctx, n.title, x + 28, y + 6, ColorUtil.fade(Theme.TEXT, p), false);
-                Render2D.text(ctx, n.message, x + 28, y + 17, ColorUtil.fade(Theme.TEXT_DIM, p), false);
+                if (leaving && n.leftAt == 0) n.leftAt = now;
+                float in = Motion.progress(n.created, 0, ThemeTokens.DUR_OVERLAY, ThemeTokens.EASE_OUT);
+                float out = n.leftAt == 0 ? 0 : Motion.progress(n.leftAt, 0, ThemeTokens.DUR_PEEL, ThemeTokens.EASE_PEEL);
+                float p = in * (1 - out);
+                n.slot.target(1).update();
+                float w = Math.max(120, Math.max(Render2D.textWidth(n.title), Render2D.textWidth(n.message)) + 28);
+                float x = left ? 8 : sw - 8 - w;
+                float k = Motion.stickScale(n.created);
+                float dx = out * 10 * Motion.travel(), dy = -out * 8 * Motion.travel();
+                ctx.setAlpha(base * p);
+                ctx.push();
+                ctx.translate(x + w / 2f + dx, y + h / 2f + dy);
+                ctx.scale(k, k);
+                ctx.translate(-w / 2f, -h / 2f);
+                Render2D.shadow(ctx, 0, 3, w, h, Album.R, 6, 0x90000000);
+                Album.white(ctx, 0, 0, w, h, 0);
+                Album.dot(ctx, 10, 9, 2.5f, n.type.color);
+                Render2D.text(ctx, Render2D.trim(n.title, (int) w - 24), 17, 5, Theme.VINYL_INK, false);
+                Render2D.text(ctx, Render2D.trim(n.message, (int) w - 24), 17, 15, Theme.VINYL_INK_SOFT, false);
+                // exact-length time left
                 float progress = 1f - Math.min(1f, age / (float) DURATION);
-                Render2D.roundedRect(ctx, x + 4, y + h - 2.5f, (w - 8) * progress, 1.5f, 0.75f, ColorUtil.fade(n.type.color, p));
-                y += top ? (h + gap) * p : -(h + gap) * p;
+                Render2D.rect(ctx, 4, h - 2, (w - 8) * progress, 1, ColorUtil.withAlpha(n.type.color, 200));
+                ctx.pop();
+                float step = (h + gap) * Math.max(0, Math.min(1, n.leftAt == 0 ? 1 : 1 - out));
+                y += top ? step : -step;
             }
-            while (it.hasNext()) {
+            ctx.setAlpha(base);
+            for (Iterator<Notification> it = ACTIVE.iterator(); it.hasNext(); ) {
                 Notification n = it.next();
-                if (now - n.created > DURATION && n.slide.get() < 0.02f) it.remove();
+                if (n.leftAt != 0 && now - n.leftAt > ThemeTokens.DUR_PEEL + 20) it.remove();
             }
         }
     }
@@ -85,7 +100,8 @@ public final class NotificationManager {
         final String title, message;
         final Type type;
         final long created = System.currentTimeMillis();
-        final Animation slide = new Animation(0, 12);
+        long leftAt;
+        final Spring slot = Spring.stick(0);
 
         Notification(String title, String message, Type type) {
             this.title = title;

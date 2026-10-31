@@ -88,6 +88,7 @@ try {
   r = await get('/api/v2/openapi.json');
   assert.equal(r.json.openapi, '3.1.0');
   for (const p of ['/api/v2/status', '/api/v2/servers/{address}', '/api/v2/bot/changes', '/api/v2/panel/guilds/{guildId}/config', '/api/v2/me', '/api/v2/downloads/{platform}', '/api/v2/players/{name}']) assert.ok(r.json.paths[p], p);
+  assert.ok(r.json.paths['/api/v2/bot/guilds/{guildId}/config'].patch, 'bot PATCH config documented');
   step(`OpenAPI 3.1 with ${Object.keys(r.json.paths).length} paths`);
 
   r = await get('/api/v2/status');
@@ -349,6 +350,43 @@ try {
   r = await bot('GET', '/changes?since=-5'); assert.equal(r.status, 400);
   step('bot: changes feed (since/now), GET config returns the saved version with defaults filled in');
 
+  // bot writes what it changed itself (builder, /config, panel actions) – PATCH, merged and versioned
+  const sincePatch = (await bot('GET', `/changes?since=${since}`)).json.now;
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: { tickets: { enabled: true, category: '800000000000000001' } } }, null); assert.equal(r.status, 401);
+  r = await bot('PATCH', `/guilds/${G1}/config`, {
+    config: { tickets: { enabled: true, category: '800000000000000001', logChannel: '800000000000000001', staffRoles: ['700000000000000001'], panels: [{ id: 'main', channel: '800000000000000001' }] } },
+    by: { id: '111111111111111111' }, reason: 'builder',
+  });
+  assert.equal(r.status, 200, r.text); assert.deepEqual(Object.keys(r.json), ['ok', 'guildId', 'version', 'updatedAt', 'updatedBy', 'config']);
+  assert.equal(r.json.version, 4); assert.ok(Date.parse(r.json.updatedAt) > 0);
+  assert.deepEqual(r.json.updatedBy, { id: 'bot', name: 'Nore Bot', bot: true, userId: '111111111111111111', reason: 'builder' });
+  assert.equal(r.json.config.tickets.enabled, true); assert.equal(r.json.config.tickets.category, '800000000000000001');
+  assert.equal(r.json.config.tickets.panels[0].style, 'buttons', 'list items completed with defaults');
+  assert.equal(r.json.config.general.language, 'en', 'fields outside the patch are kept'); assert.equal(r.json.config.welcome.enabled, true);
+  step('bot PATCH config: partial merge, schema defaults, version 3 → 4, updatedBy = Nore Bot (+ who and why)');
+  r = await bot('GET', `/changes?since=${sincePatch}`); assert.deepEqual(r.json.guilds, [G1]);
+  r = await bot('GET', `/guilds/${G1}/config`); assert.equal(r.json.version, 4); assert.equal(r.json.config.tickets.staffRoles[0], '700000000000000001');
+  r = await get(`/api/v2/panel/guilds/${G1}`, { cookie: alice });
+  assert.equal(r.json.version, 4); assert.equal(r.json.config.tickets.enabled, true); assert.equal(r.json.config.tickets.logChannel, '800000000000000001');
+  assert.equal(r.json.updatedBy.name, 'Nore Bot');
+  assert.ok(r.json.events.some(e => e.type === 'bot_config_saved' && e.data.version === 4 && e.data.by.bot === true));
+  r = await put({ config: cfg, version: 3 }); assert.equal(r.status, 409); assert.equal(r.json.version, 4); assert.equal(r.json.updatedBy.name, 'Nore Bot');
+  step('bot PATCH is visible at once: changes feed, bot GET, panel GET (+ bot_config_saved event), stale panel save → 409');
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: { tickets: { enabled: 'yes', category: 'abc' } } });
+  assert.equal(r.status, 400); assert.equal(r.json.code, 'invalid_config'); assert.deepEqual(r.json.errors.map(e => e.path).sort(), ['/tickets/category', '/tickets/enabled']);
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: { nope: {} } }); assert.equal(r.status, 400); assert.deepEqual(r.json.errors.map(e => e.path), ['/nope']);
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: [] }); assert.equal(r.status, 400); assert.equal(r.json.code, 'bad_config');
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: {}, baseVersion: 'x' }); assert.equal(r.status, 400); assert.equal(r.json.code, 'bad_version');
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: { tickets: { maxOpen: 2 } }, baseVersion: 1 }); assert.equal(r.status, 409); assert.equal(r.json.code, 'version_conflict'); assert.equal(r.json.version, 4);
+  r = await bot('GET', `/guilds/${G1}/config`); assert.equal(r.json.version, 4, 'rejected patches change nothing');
+  step('bot PATCH: schema errors as JSON pointers, bad body / baseVersion → 400, stale baseVersion → 409, nothing saved');
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: { tickets: { category: null, staffRoles: ['700000000000000002', '700000000000000003'] } }, baseVersion: 4 });
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.version, 5); assert.equal(r.json.config.tickets.category, '', 'null → default');
+  assert.deepEqual(r.json.config.tickets.staffRoles, ['700000000000000002', '700000000000000003'], 'lists replace'); assert.equal(r.json.config.tickets.enabled, true);
+  r = await bot('PATCH', `/guilds/${G2}/config`, { config: { welcome: { enabled: true } } }); assert.equal(r.status, 200); assert.equal(r.json.version, 1);
+  r = await bot('PATCH', `/guilds/${G1}/config`, { config: {} }); assert.equal(r.status, 200); assert.equal(r.json.version, 6, 'an empty patch still saves (the bot re-syncs)');
+  step('bot PATCH: matching baseVersion, null restores the default, lists replace, a guild without a saved config starts at 1');
+
   r = await bot('POST', `/guilds/${G1}/events`, { type: 'member_join', data: { user: 'Steve' } }); assert.equal(r.status, 201);
   r = await bot('POST', `/guilds/${G1}/events`, { type: 'Bad Type' }); assert.equal(r.status, 400);
   r = await bot('POST', `/guilds/${G1}/events`, { type: 'x', data: { big: 'y'.repeat(5000) } }); assert.equal(r.status, 413);
@@ -391,6 +429,10 @@ try {
   r = await get('/api/v2/players/Nore_Tester'); assert.equal(r.json.player.nore, false);
   r = await get('/api/v2/blacklist/check?name=NORE_TESTER'); assert.equal(r.json.blocked, true); assert.equal(r.json.matches[0].reason, 'cheaty');
   r = await get('/api/v2/blacklist/check?name=Somebody'); assert.equal(r.json.blocked, false);
+  // the game's presence heartbeat with a blacklisted nick is refused and not counted
+  const statsBefore = (await get('/api/v1/hub/stats')).json.online;
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'ef'.repeat(16), online: true, name: 'NORE_tester', mc: '1.21.1' } }); assert.equal(r.status, 403, r.text); assert.match(r.json.error, /zablokowane/);
+  assert.equal((await get('/api/v1/hub/stats')).json.online, statsBefore);
   r = await get('/api/v2/blacklist/check'); assert.equal(r.status, 400);
   // a blacklisted Nore ID cannot say hello
   const kp2 = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
@@ -517,6 +559,19 @@ try {
   assert.equal(r.status, 200); assert.match(r.headers.get('set-cookie'), /__Host-nore_s=; .*Max-Age=0/);
   r = await get('/api/v2/me', { cookie: alice }); assert.equal(r.status, 401);
   step('logout revokes the session server-side');
+
+  // ------------------------------------------------------------ presence (games without the launcher)
+  const before = (await get('/api/v2/stats')).json.online;
+  const sid = 'ab'.repeat(16);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: true, name: 'Presence_T', mc: '1.21.1', version: '1.4.5' } });
+  assert.equal(r.status, 200, r.text);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: true } }); assert.equal(r.status, 429);
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'xyz', online: true } }); assert.equal(r.status, 400);
+  r = await req('POST', '/api/v2/presence', { body: { sid: 'cd'.repeat(16), online: true, name: 'bad name!' } }); assert.equal(r.status, 400);
+  assert.equal((await get('/api/v2/stats')).json.online, before + 1);
+  r = await req('POST', '/api/v2/presence', { body: { sid, online: false } }); assert.equal(r.status, 200);
+  assert.equal((await get('/api/v2/stats')).json.online, before);
+  step('POST /api/v2/presence: game heartbeat counts as online (once per nick), validation, 20 s limit, online:false leaves');
 
   // ------------------------------------------------------------ hosts + site
   let h = await hostGet('www.noreclient.pl', '/api/v1/version?x=1');

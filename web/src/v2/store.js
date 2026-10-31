@@ -114,8 +114,8 @@ export class NoreBot extends DurableObject {
     };
   }
 
-  /** Saves a validated config when `expected` is the current version; bumps the version. */
-  saveConfig(guildId, config, expected, by) {
+  /** Saves a validated config when `expected` is the current version; bumps the version (panel PUT and bot PATCH). */
+  saveConfig(guildId, config, expected, by, eventType = 'panel_config_saved') {
     const g = this.guild(guildId);
     const current = g ? g.version : 0;
     if (expected !== current) return fail(409, 'version_conflict', 'Konfiguracja zmieniła się w międzyczasie – odśwież panel i zapisz jeszcze raz', { version: current, updatedAt: g && g.updated_at ? g.updated_at : null, updatedBy: g && g.updated_by ? JSON.parse(g.updated_by) : null });
@@ -124,7 +124,7 @@ export class NoreBot extends DurableObject {
     this.sql.exec(`INSERT INTO guilds (id, version, updated_at, updated_by, config) VALUES (?, ?, ?, ?, ?)
       ON CONFLICT (id) DO UPDATE SET version = excluded.version, updated_at = excluded.updated_at, updated_by = excluded.updated_by, config = excluded.config`,
     guildId, version, at, JSON.stringify(by), JSON.stringify(config));
-    this.sql.exec('INSERT INTO events (guild_id, type, data, at) VALUES (?, ?, ?, ?)', guildId, 'panel_config_saved', JSON.stringify({ version, by }), at);
+    this.sql.exec('INSERT INTO events (guild_id, type, data, at) VALUES (?, ?, ?, ?)', guildId, eventType === 'bot_config_saved' ? 'bot_config_saved' : 'panel_config_saved', JSON.stringify({ version, by }), at);
     return { version, updatedAt: at };
   }
 

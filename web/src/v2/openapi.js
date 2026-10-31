@@ -107,6 +107,12 @@ export function openapi() {
         responses: { 200: ok('Wynik', { server: ref('Server') }), ...NOT_MODIFIED, ...pick(400, 403, 429) },
       } },
       '/api/v2/servers/{address}/favicon': { get: { tags: ['public'], summary: 'Ikona serwera', parameters: [p('address', s)], responses: { 200: { description: 'PNG', content: { 'image/png': {} } }, ...pick(400, 403, 404, 429) } } },
+      '/api/v2/presence': { post: {
+        tags: ['public'], summary: 'Nore Client w grze (licznik online)',
+        description: 'Gra z Nore Client wysyła co 60 s { sid, online: true, name?, mc?, version? } i { sid, online: false } przy wyjściu. sid to losowy identyfikator sesji gry (16–64 hex). Najwyżej raz na 20 s na sesję.',
+        requestBody: { required: true, content: { 'application/json': { schema: obj({ sid: s, online: b, name: s, mc: s, version: s }) } } },
+        responses: { 200: ok('Przyjęto', {}), ...pick(400, 429) },
+      } },
       '/api/v2/stats': { get: {
         tags: ['public'], summary: 'Statystyki',
         responses: { 200: ok('Statystyki', {
@@ -119,6 +125,15 @@ export function openapi() {
       '/api/v2/bot/guilds/{guildId}/config': { get: {
         tags: ['bot'], security: botSec, summary: 'Konfiguracja serwera (domyślna, gdy nigdy nie zapisana: version 0)', parameters: [guildId],
         responses: { 200: ok('Konfiguracja', { guildId: s, version: i, updatedAt: ns, config: { type: 'object' } }), ...pick(400, 401, 503) },
+      }, patch: {
+        tags: ['bot'], security: botSec, parameters: [guildId],
+        summary: 'Bot zapisuje to, co sam zmienił (kreator, /config, akcje panelu): część konfiguracji scalana z zapisaną',
+        description: 'Obiekty są scalane pole po polu, listy i wartości proste zastępowane, null przywraca wartość domyślną. Wynik jest sprawdzany schematem, wersja rośnie o 1, updatedBy to bot. Bez baseVersion równoległy zapis jest ponawiany na nowej wersji; z baseVersion inna bieżąca wersja daje 409.',
+        requestBody: { required: true, content: { 'application/json': { schema: obj({
+          config: { type: 'object', description: 'część konfiguracji (scalana)' }, baseVersion: { type: 'integer', minimum: 0 },
+          by: obj({ id: s }), reason: { type: 'string', pattern: '^[a-z][a-z0-9_.:-]{0,39}$', description: 'np. builder, command, action' },
+        }, ['config']) } } },
+        responses: { 200: ok('Zapisano', { guildId: s, version: i, updatedAt: s, updatedBy: { type: 'object' }, config: { type: 'object' } }), ...pick(400, 401, 409, 413, 415, 503) },
       } },
       '/api/v2/bot/guilds/{guildId}/meta': { put: {
         tags: ['bot'], security: botSec, summary: 'Bot zgłasza kanały i role serwera', parameters: [guildId],

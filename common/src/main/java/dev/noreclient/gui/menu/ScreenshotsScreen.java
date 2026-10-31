@@ -63,7 +63,7 @@ public class ScreenshotsScreen extends NoreScreen {
     public void render(Gfx g, int mx, int my, float delta) {
         CurrentGfx.set(g);
         if (!game().inWorld()) MenuBackground.render(g, width, height, mx, my);
-        Render2D.rect(g, 0, 0, width, height, 0x900A0614);
+        Render2D.rect(g, 0, 0, width, height, 0x900A090C);
         float in = Animation.easeOutCubic((System.currentTimeMillis() - opened) / 400f);
 
         // header
@@ -101,7 +101,7 @@ public class ScreenshotsScreen extends NoreScreen {
             float h = anim(files[i].getName()).target(hov ? 1 : 0).update();
             float r2 = Theme.radius();
             if (h > 0.01f) Render2D.shadow(g, x, y, cell, cellH, r2, 5, ColorUtil.withAlpha(Theme.accent(), (int) (70 * h)));
-            Render2D.roundedRect(g, x, y, cell, cellH, r2, ColorUtil.lerp(0xC0120E0B, 0xE01A1410, h));
+            Render2D.roundedRect(g, x, y, cell, cellH, r2, ColorUtil.lerp(0xC0141216, 0xE01A1410, h));
             Render2D.roundedOutline(g, x, y, cell, cellH, r2, 1, ColorUtil.lerp(0x26FFFFFF, ColorUtil.withAlpha(Theme.accent(), 170), h));
             TextureRef t = Thumbnails.get(files[i], 256);
             float iw = cell - 6, ih = iw * 9 / 16f;
@@ -166,7 +166,7 @@ public class ScreenshotsScreen extends NoreScreen {
             x -= w;
             viewerButtons[i] = new float[]{x, by, w, 18};
             boolean hov = Render2D.hovered(mx, my, x, by, w, 18);
-            int col = i == 2 ? 0xFFFF5C5C : Theme.accent();
+            int col = i == 2 ? 0xFFFF5A4F : Theme.accent();
             Widgets.glowBox(g, x, by, w, 18, Theme.radius(), col, anim("vb" + i).target(hov ? 1 : 0).update(), i == 0 ? 1f : 0.55f);
             Render2D.centeredText(g, labels[i], x + w / 2f, by + 5, Widgets.glowText(col, 0.3f), false);
             x -= 6;

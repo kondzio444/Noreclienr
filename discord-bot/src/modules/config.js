@@ -45,7 +45,11 @@ export default {
         async run(ctx) {
           const mod = ctx.str('module');
           const schema = ctx.bot.config.schema;
-          const cfg = ctx.cfg;
+          // same values as the panel: send local changes and fetch a newer panel save first (bounded wait)
+          if (ctx.bot.api.botEnabled && !ctx.bot.api.offline) {
+            await Promise.race([ctx.bot.config.load(ctx.guild.id).catch(() => {}), new Promise(r => setTimeout(r, 1500).unref?.())]);
+          }
+          const cfg = ctx.bot.cfg(ctx.guild.id);
           if (!mod) {
             const lines = MODULE_NAMES.map((m) => {
               const en = cfg[m]?.enabled;
@@ -77,7 +81,7 @@ export default {
           if (!node || node.type === 'object') return ctx.fail('config.unknown_key', { key });
           const parsed = parseValue(node, ctx.str('value'));
           if (!parsed.ok) return ctx.fail(`config.invalid_${parsed.error}`, { key, details: parsed.details?.map(d => d.message).join('; ') ?? '' });
-          const res = ctx.bot.config.set(ctx.guild.id, key, parsed.value, { by: ctx.user.id });
+          const res = ctx.bot.config.set(ctx.guild.id, key, parsed.value, { by: ctx.user.id, reason: 'command' });
           if (!res.ok) return ctx.fail('config.invalid_schema', { key, details: res.errors.map(d => d.message).join('; ') });
           ctx.bot.audit(ctx.guild.id, 'config_set', { key, by: ctx.user.id });
           return ctx.ok('config.saved', { key, value: showValue(node, parsed.value) });
@@ -103,7 +107,7 @@ export default {
         async run(ctx) {
           const mod = ctx.str('module');
           const on = ctx.bool('enabled');
-          ctx.bot.config.set(ctx.guild.id, `${mod}.enabled`, on, { by: ctx.user.id });
+          ctx.bot.config.set(ctx.guild.id, `${mod}.enabled`, on, { by: ctx.user.id, reason: 'command' });
           ctx.bot.audit(ctx.guild.id, 'config_set', { key: `${mod}.enabled`, value: on, by: ctx.user.id });
           return ctx.ok(on ? 'config.module_on' : 'config.module_off', { module: ctx.t(`panel.${mod}._label`) });
         },
@@ -112,7 +116,7 @@ export default {
         options: [opt.string('language', true, { choices: { values: LANGUAGES, names: LANGUAGE_NAMES } })],
         async run(ctx) {
           const lang = ctx.str('language');
-          ctx.bot.config.set(ctx.guild.id, 'general.language', lang, { by: ctx.user.id });
+          ctx.bot.config.set(ctx.guild.id, 'general.language', lang, { by: ctx.user.id, reason: 'command' });
           return ctx.reply({ embeds: [okEmbed(t(lang, 'config.language_set', { language: LANGUAGE_NAMES[lang] }))], flags: EPHEMERAL });
         },
       },

@@ -83,7 +83,7 @@ public class ModsScreen extends PanelScreen {
             boolean hov = my >= ly && my <= ly + lh && Render2D.hovered(mx, my, x, ry, lw, row);
             float a = anim("m" + i).target(hov ? 1 : 0).update();
             boolean sel = i == selected;
-            Render2D.roundedRect(g, x, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA0160F26, 0xD0201634, Math.max(a, sel ? 1 : 0)));
+            Render2D.roundedRect(g, x, ry, lw, row, Theme.radius(), ColorUtil.lerp(0xA01E1B21, 0xD028242C, Math.max(a, sel ? 1 : 0)));
             Render2D.roundedOutline(g, x, ry, lw, row, Theme.radius(), 1, sel ? ColorUtil.withAlpha(Theme.accent(), 200) : ColorUtil.lerp(0x18FFFFFF, ColorUtil.withAlpha(Theme.accent(), 120), a));
             drawIcon(g, m, x + 4, ry + 4, 20);
             Render2D.text(g, Render2D.trim(m[1], (int) lw - 40), x + 29, ry + 5, Theme.TEXT, false);

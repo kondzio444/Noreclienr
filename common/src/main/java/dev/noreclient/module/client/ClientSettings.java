@@ -15,7 +15,7 @@ public class ClientSettings extends Module {
     public final ModeSetting accentMode = add(new ModeSetting("Accent Mode", "Sposób kolorowania akcentu", "Gradient", "Static", "Gradient", "Wave", "Rainbow"));
     public final ColorSetting accent = add(new ColorSetting("Accent", "Główny kolor akcentu", 0xFF9D5CFF));
     public final ColorSetting accent2 = add(new ColorSetting("Accent 2", "Drugi kolor gradientu", 0xFFC8A8FF));
-    public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów GUI", 6, 0, 12, 1, "px"));
+    public final NumberSetting cornerRadius = add(new NumberSetting("Corner Radius", "Zaokrąglenie rogów naklejek (Album: 4)", 4, 0, 8, 1, "px"));
     public final ModeSetting menuBackground = add(new ModeSetting("Menu Background", "Tło menu głównego i ekranów Nore", "Wiśniowy staw", "Wiśniowy staw", "Scena Nore", "Panorama", "Mgławica", "Panorama + gwiazdy"));
     /** One-time switch of older configs to the new "Wiśniowy staw" background (hidden). */
     public final BooleanSetting backgroundMigrated = add(new BooleanSetting("Background Migrated", "", false));
@@ -28,6 +28,8 @@ public class ClientSettings extends Module {
     public final BooleanSetting notifications = add(new BooleanSetting("Notifications", "Powiadomienia przy przełączaniu modułów", true));
     public final ModeSetting notificationSide = add(new ModeSetting("Notification Side", "Gdzie pokazywać powiadomienia", "Bottom Right", "Bottom Right", "Top Right", "Top Left"));
     public final BooleanSetting sounds = add(new BooleanSetting("GUI Sounds", "Dźwięki kliknięć w GUI", true));
+    public final ModeSetting animations = add(new ModeSetting("Animacje", "Ruch w menu: Pełne, Oszczędne (tylko przenikanie) albo Wyłączone", "Pełne", "Pełne", "Oszczędne", "Wyłączone"));
+    public final ModeSetting eventIntensity = add(new ModeSetting("Efekty wydarzeń", "Siła efektów Halloween i zimy (wydarzeń nie można wyłączyć)", "Pełne", "Pełne", "Średnie", "Subtelne"));
     public final BooleanSetting hudInChat = add(new BooleanSetting("HUD In Chat", "Pokazuj HUD gdy czat jest otwarty", true));
 
     public ClientSettings() {

@@ -232,13 +232,13 @@
 
   const Background = {
     SCENES: [
+      { id: 'minimal', name: 'Album', desc: 'Czarna karta albumu (domyślne)' },
       { id: 'photo', name: 'Mgławica', desc: 'Zdjęcie z teleskopu JWST' },
       { id: 'aurora', name: 'Zorza', desc: 'Płynące wstęgi światła' },
       { id: 'space', name: 'Kosmos', desc: 'Lot między gwiazdami' },
       { id: 'cubes', name: 'Bloki', desc: 'Unoszące się bloki' },
       { id: 'grid', name: 'Synthwave', desc: 'Neonowa siatka i słońce' },
       { id: 'waves', name: 'Fale', desc: 'Spokojne, warstwowe fale' },
-      { id: 'minimal', name: 'Minimal', desc: 'Ciemny gradient bez ruchu' },
       { id: 'custom', name: 'Własne', desc: 'Twój obrazek lub GIF' },
     ],
     PARTICLES: [['none', 'Brak'], ['embers', 'Iskry'], ['fireflies', 'Świetliki'], ['snow', 'Śnieg'], ['stars', 'Gwiazdy'], ['bubbles', 'Bańki']],

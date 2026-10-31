@@ -12,9 +12,9 @@ import java.util.Locale;
 
 /** Small pieces shared by the friends screen and the player menu: heads, the Nore badge, states. */
 public final class SocialWidgets {
-    public static final int NORE = 0xFFFF8A3D;
-    public static final int VERIFIED = 0xFF34D399;
-    public static final int UNVERIFIED = 0xFFFBBF24;
+    public static final int NORE = dev.noreclient.util.ThemeTokens.DOT_NORE;
+    public static final int VERIFIED = dev.noreclient.util.ThemeTokens.DOT_READY;
+    public static final int UNVERIFIED = dev.noreclient.util.ThemeTokens.DOT_WAIT;
 
     private SocialWidgets() {}
 
@@ -39,8 +39,7 @@ public final class SocialWidgets {
         if (!known) return;
         float r = Math.max(1.6f, size * 0.22f);
         float cx = x + size - r * 0.6f, cy = y + size - r * 0.6f;
-        Render2D.circle(g, cx, cy, r + 0.8f, 0xFF120C1E);
-        Render2D.circle(g, cx, cy, r, verified ? VERIFIED : UNVERIFIED);
+        dev.noreclient.gui.widget.Album.dot(g, cx, cy, r, verified ? VERIFIED : UNVERIFIED);
     }
 
     /**
@@ -48,30 +47,22 @@ public final class SocialWidgets {
      * Returns its width.
      */
     public static float badge(Gfx g, float x, float y, boolean verified, boolean known, boolean longForm) {
-        String label = !known ? "Nore" : verified ? (longForm ? "Nore  ✓ zweryfikowany" : "Nore ✓") : (longForm ? "Nore  · niezweryfikowany" : "Nore");
-        float ts = 0.62f;
-        float w = 13 + Render2D.textWidth(label) * ts + 5, h = 10;
-        int col = !known ? NORE : verified ? VERIFIED : UNVERIFIED;
-        Render2D.roundedRect(g, x, y, w, h, 5, ColorUtil.withAlpha(col, 40));
-        Render2D.roundedOutline(g, x, y, w, h, 5, 1, ColorUtil.withAlpha(col, 120));
-        TextureRef logo = BundledTextures.logo();
-        if (logo != null) Render2D.texture(g, logo, x + 2, y + 1, 8, 8, 1f);
-        Render2D.scaledText(g, label, x + 12, y + 2.5f, ts, ColorUtil.lerp(col, 0xFFFFFFFF, 0.35f), false);
-        return w;
+        String label = !known ? "Nore" : verified ? (longForm ? "Nore · zweryfikowany" : "Nore ✓") : (longForm ? "Nore · niezweryfikowany" : "Nore");
+        // label sticker on accent-deep (white text), with the state dot when Nore Hub knows the player
+        float w = dev.noreclient.gui.widget.Album.label(g, label, x, y, dev.noreclient.util.Theme.accentDeep(), 0xFFFFFFFF);
+        if (known) dev.noreclient.gui.widget.Album.dot(g, x + w, y + 1, 1.6f, verified ? VERIFIED : UNVERIFIED);
+        return w + (known ? 3 : 0);
     }
 
-    /** Pill for a plain label (friend, muted…). Returns its width. */
+    /** Label sticker for a plain state (friend, muted…) with a dot of that colour. Returns its width. */
     public static float pill(Gfx g, float x, float y, String label, int col) {
-        float ts = 0.62f;
-        float w = Render2D.textWidth(label) * ts + 10, h = 10;
-        Render2D.roundedRect(g, x, y, w, h, 5, ColorUtil.withAlpha(col, 36));
-        Render2D.roundedOutline(g, x, y, w, h, 5, 1, ColorUtil.withAlpha(col, 110));
-        Render2D.scaledText(g, label, x + 5, y + 2.5f, ts, ColorUtil.lerp(col, 0xFFFFFFFF, 0.35f), false);
-        return w;
+        float w = dev.noreclient.gui.widget.Album.label(g, label, x, y, Theme.VINYL, Theme.VINYL_INK);
+        dev.noreclient.gui.widget.Album.dot(g, x + w - 1, y + 1, 1.6f, col);
+        return w + 2;
     }
 
     /** Colour of a state: 2 on this server, 1 online in Nore, 0 offline. */
     public static int stateColor(int state) {
-        return state == 2 ? Theme.SUCCESS : state == 1 ? Theme.accent() : 0xFF6A6280;
+        return state == 2 ? Theme.SUCCESS : state == 1 ? Theme.accent() : dev.noreclient.util.ThemeTokens.DOT_OFF;
     }
 }

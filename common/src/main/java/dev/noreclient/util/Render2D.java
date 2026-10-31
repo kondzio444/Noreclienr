@@ -196,11 +196,10 @@ public final class Render2D {
         if (tex != null) g.texture(tex, x, y, w, h, alpha);
     }
 
-    /** The client logo with a soft pulsing glow behind it. */
+    /** The client logo as a die-cut sticker (Album: no glow); falls back to the plain logo. */
     public static void logo(Gfx g, float x, float y, float size, float alpha) {
-        float pulse = 0.75f + 0.25f * (float) Math.sin(System.currentTimeMillis() / 600.0);
-        radial(g, x + size / 2f, y + size / 2f, size * 0.85f, ColorUtil.withAlpha(Theme.accent(), (int) (80 * pulse * alpha)), 0);
-        texture(g, BundledTextures.logo(), x, y, size, size, alpha);
+        TextureRef t = BundledTextures.get("logo_sticker");
+        texture(g, t != null ? t : BundledTextures.logo(), x, y, size, size, alpha);
     }
 
     // ------------------------------------------------------------------ text
@@ -231,16 +230,19 @@ public final class Render2D {
         text(g, s, cx - textWidth(s) / 2f, y, color, shadow);
     }
 
+    /**
+     * Former gradient title. Album has no gradient text: titles are ink, sentence case, at the
+     * nearest integer scale (1 or 2).
+     */
     public static void gradientText(Gfx g, String s, float x, float y, float scale, int c1, int c2, boolean shadow) {
-        float cx = 0;
-        g.push();
-        g.translate(x, y);
-        g.scale(scale, scale);
-        for (int i = 0; i < s.length(); i++) {
-            String ch = String.valueOf(s.charAt(i));
-            g.text(ch, cx, 0, ColorUtil.wave(c1, c2, -i * 300L, 1f), shadow);
-            cx += textWidth(ch);
+        if (s.length() > 3 && s.equals(s.toUpperCase(java.util.Locale.ROOT)) && !s.equals(s.toLowerCase(java.util.Locale.ROOT))) {
+            s = s.charAt(0) + s.substring(1).toLowerCase(new java.util.Locale("pl", "PL"));
         }
+        float k = scale >= 1.4f ? 2f : 1f;
+        g.push();
+        g.translate(x, y - (k - scale) * 3);
+        g.scale(k, k);
+        g.text(s, 0, 0, Theme.TEXT, shadow);
         g.pop();
     }
 

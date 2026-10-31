@@ -81,7 +81,6 @@ Pages.servers = (root) => {
       const e = engine(s.type);
       const motd = (s.props && s.props.motd) || `§7${e.label} ${s.mcVersion}`;
       const live = s.state === 'running';
-      const code = live ? '§a' : s.state === 'stopped' ? '§c' : '§e';
       return `<div class="card hover srv2-card srv2-row ${s.state}" data-id="${s.id}" style="--ec:${e.color}">
         <div class="srv2-line">${srvIcon(s)}
           <div class="srv2-text"><h3>${esc(s.name)}</h3>
@@ -91,7 +90,7 @@ Pages.servers = (root) => {
           <div class="srv2-right">
             <div class="srv2-sig ${live ? 'on' : ''}" title="${SRV_STATE[s.state] || s.state}"><i></i><i></i><i></i><i></i><i></i></div>
             <div class="srv2-count">${live ? `${s.players.length}<span>/${s.props['max-players']}</span>` : `${(s.memoryMb / 1024).toFixed(1)} GB`}</div>
-            <div class="motd srv2-st">${Motd.html(code + (SRV_STATE[s.state] || s.state))}</div></div></div>
+            <div class="srv2-st"><i class="sdot sm ${live ? 'ready' : s.state === 'stopped' ? 'off' : s.state === 'crashed' ? 'error' : 'wait'}"></i>${esc(SRV_STATE[s.state] || s.state)}</div></div></div>
         <div class="srv2-actions">
           ${s.state === 'stopped' ? `<button class="btn sm success" data-a="start">${icon('play')} Start</button>` : `<button class="btn sm danger" data-a="stop" ${s.state === 'stopping' ? 'disabled' : ''}>${icon('stop')} Stop</button>`}
           <button class="btn sm" data-a="open">${icon('settings')} Zarządzaj</button>

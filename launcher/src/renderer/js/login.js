@@ -8,19 +8,17 @@ const LoginGate = (() => {
   const clean = (e) => String((e && e.message) || e || '').replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
 
   function ring() {
-    return `<div class="lg-orb"><div class="lg-orb-ring r1"></div><div class="lg-orb-ring r2"></div><div class="lg-orb-ring r3"></div>
-      <img src="assets/logo.png" alt=""><div class="lg-orb-glow"></div></div>`;
+    return '<span class="logo-sticker"><img src="assets/album/logo-art.png" alt=""></span>';
   }
 
   function build(note) {
     const root = el(`<div id="login-gate">
-      <canvas class="lg-stars"></canvas>
-      <div class="lg-grid"></div>
+      <div class="lg-deboss" aria-hidden="true">Nore</div>
       <div class="lg-card">
         <div class="lg-side">
           ${ring()}
-          <h1>NORE<span>CLIENT</span></h1>
-          <p class="lg-tag">Logowanie kontem <b>Minecraft Premium</b></p>
+          <h1>Nore<span>Konto premium</span></h1>
+          <p class="lg-tag">Logowanie kontem <b>Microsoft</b> z Minecraft: Java Edition. Bez premium grasz na samym nicku.</p>
           <ul class="lg-points">
             <li>${icon('shield')}<span>Hasło wpisujesz wyłącznie na stronie Microsoft – launcher nigdy go nie widzi.</span></li>
             <li>${icon('key')}<span>Tokeny sesji są szyfrowane przez system (Windows DPAPI / Keychain).</span></li>
@@ -34,7 +32,6 @@ const LoginGate = (() => {
     </div>`);
     document.body.appendChild(root);
     $('#lg-close', root).onclick = () => leave(null);
-    stars($('.lg-stars', root));
     start($('#lg-main', root), note);
     return root;
   }
@@ -47,7 +44,7 @@ const LoginGate = (() => {
       ${note ? `<div class="lg-alert">${icon('info')}<span>${esc(note)}</span></div>` : ''}
       <button class="lg-ms" id="lg-go"><span class="ms-grid"><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></span>Zaloguj przez Microsoft</button>
       <div class="lg-flow">${['Microsoft', 'Xbox Live', 'Minecraft'].map((t, i) => `<div class="lg-flow-step" style="--i:${i}"><i></i><span>${t}</span></div>`).join('<b></b>')}</div>
-      <button class="lg-link" id="lg-offline">Nie masz premium? Graj na nicku</button>
+      <button class="lg-link" id="lg-offline">Nie masz premium? Graj na samym nicku</button>
     </div>`;
     $('#lg-offline', main).onclick = () => { leave(null); offlineLoginModal(() => { if (resolveGate) resolveGate(App.account()); }); };
   }
@@ -117,25 +114,6 @@ const LoginGate = (() => {
     if (!gate) return;
     gate.classList.add('leave');
     setTimeout(() => { gate.remove(); const r = resolveGate; resolveGate = null; if (r && acc) r(acc); }, 650);
-  }
-
-  function stars(canvas) {
-    const ctx = canvas.getContext('2d');
-    const pts = Array.from({ length: 140 }, () => ({ x: Math.random(), y: Math.random(), z: Math.random(), s: Math.random() * 1.6 + 0.3 }));
-    function frame(t) {
-      if (!canvas.isConnected) return;
-      const w = canvas.width = canvas.clientWidth * devicePixelRatio, h = canvas.height = canvas.clientHeight * devicePixelRatio;
-      ctx.clearRect(0, 0, w, h);
-      for (const p of pts) {
-        const k = 0.2 + p.z * 0.8;
-        const x = ((p.x + t * 0.000004 * k) % 1) * w, y = ((p.y + Math.sin(t * 0.0003 + p.x * 9) * 0.004) % 1) * h;
-        ctx.globalAlpha = 0.25 + 0.75 * k * (0.6 + 0.4 * Math.sin(t * 0.002 + p.x * 40));
-        ctx.fillStyle = p.z > 0.8 ? '#e6d6ff' : '#a98bff';
-        ctx.beginPath(); ctx.arc(x, y, p.s * k * devicePixelRatio, 0, Math.PI * 2); ctx.fill();
-      }
-      requestAnimationFrame(frame);
-    }
-    requestAnimationFrame(frame);
   }
 
   /** Checks the saved premium session on start (never blocks – non-premium works without it). */

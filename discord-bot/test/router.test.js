@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Collection, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { Bot } from '../src/core/bot.js';
+import { FakeApi } from './helpers/fake-api.js';
 
 const GUILD = '900000000000000001';
 const sent = [];
@@ -128,4 +129,35 @@ test('router: commands run end to end with permissions, config and translations'
   await bot.onInteraction(i);
   assert.match(text(i.replies.at(-1)), /Coś poszło nie tak/);
   bot.commands.get('ping').run = orig;
+});
+
+test('router: /config changes reach the panel (API) and /config show shows what the panel saved', async () => {
+  const bot = await new Bot({ env: { noreApi: 'https://noreclient.pl', dataDir: '/tmp/none', botSecret: '' }, dryRun: true }).init();
+  const api = new FakeApi(bot.config.defaults);
+  bot.api = api; bot.config.api = api; bot.config.pushDelay = 5;
+  const world = fakeWorld();
+  bot.client = { guilds: { cache: new Collection([[GUILD, world.guild]]) }, user: { id: 'bot' }, ws: { ping: 42 } };
+
+  let i = interaction(world, { name: 'config', sub: 'set', options: { key: 'tickets.category', value: '900000000000000010' } });
+  await bot.onInteraction(i);
+  i = interaction(world, { name: 'config', sub: 'module', options: { module: 'tickets', enabled: true } });
+  await bot.onInteraction(i);
+  await bot.config.flush(GUILD);
+  const saved = api.doc(GUILD);
+  assert.equal(saved.config.tickets.category, '900000000000000010');
+  assert.equal(saved.config.tickets.enabled, true);
+  assert.ok(api.patches(GUILD).every(p => p.body.reason === 'command'));
+
+  // somebody saves in the panel; /config show fetches it at once (no waiting for the poll)
+  api.panelSave(GUILD, { tickets: { maxOpen: 7, logChannel: '900000000000000010' } });
+  i = interaction(world, { name: 'config', sub: 'show', options: { module: 'tickets' } });
+  await bot.onInteraction(i);
+  const shown = text(i.replies[0]);
+  assert.match(shown, /maxOpen` · [^:]+: 7/);
+  assert.match(shown, /logChannel` · [^:]+: <#900000000000000010>/);
+  assert.match(shown, /enabled` · [^:]+: ✅/);
+  i = interaction(world, { name: 'config', sub: 'show' });
+  await bot.onInteraction(i);
+  assert.match(text(i.replies[0]), new RegExp(`(Wersja z panelu|Panel version) ${api.doc(GUILD).version}`));
+  bot.config.stop();
 });

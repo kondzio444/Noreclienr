@@ -59,6 +59,9 @@ async function runQueue(bot, guild, cfg) {
       bot.store.touch(guild.id);
       let result;
       try { result = { ok: true, ...(await execute(bot, guild, a)) }; } catch (err) { log.warn('action failed', { guildId: guild.id, type: a.type, err: err.message }); result = { ok: false, error: err.message }; }
+      // config the action changed (builder wiring, panels) goes back to the panel before the result
+      const sync = await bot.config.flush(guild.id, { reason: 'action' }).catch(() => ({ ok: false }));
+      if (sync.version) result.configVersion = sync.version;
       bot.audit(guild.id, 'action_result', { id: a.id, type: a.type, ...result });
     }
   } finally { busy.delete(guild.id); }

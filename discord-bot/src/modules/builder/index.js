@@ -29,7 +29,7 @@ import { panelPayload as ticketPanel } from '../tickets.js';
 import { panelPayload as suggestionPanel } from '../suggestions.js';
 import { panelPayload as applicationPanel } from '../applications.js';
 import { postMenu } from '../roles.js';
-import { getPath } from '../../config/validate.js';
+import { getPath, schemaAt } from '../../config/validate.js';
 import { logger } from '../../lib/logger.js';
 
 const log = logger.child('builder');
@@ -77,7 +77,7 @@ function extraOps(bot, guild, job) {
   const tpl = templates()[job.template];
   const v = vars(bot, guild, tpl);
   const set = (p, value) => {
-    const res = bot.config.set(guild.id, p, value, { by: job.by });
+    const res = bot.config.set(guild.id, p, value, { by: job.by, reason: 'builder' });
     if (!res.ok) log.warn('builder config bind rejected', { path: p, errors: res.errors });
   };
   const cid = (map, key) => map[`c:${key}`];
@@ -101,6 +101,7 @@ function extraOps(bot, guild, job) {
     if (op.op === 'config') {
       const lists = {};
       const items = {}; // "applications.forms" -> cloned list, for paths like applications.forms[partner].role
+      const wired = new Set(); // config paths that got a created channel or role
       for (const b of op.binds) {
         const [path, append] = b.path.endsWith('+') ? [b.path.slice(0, -1), true] : [b.path, false];
         let value;
@@ -112,6 +113,7 @@ function extraOps(bot, guild, job) {
         else if (b.ref?.roles) value = b.ref.roles.map(k => rid(map, k)).filter(Boolean);
         else if (b.ref?.channels) value = b.ref.channels.map(k => cid(map, k)).filter(Boolean);
         if (value === undefined || value === null) continue;
+        if (b.value === undefined && (!Array.isArray(value) || value.length)) wired.add(path.replace(/\[[\w-]+\]\..*$/, ''));
         const li = /^(.+)\[([\w-]+)\]\.(\w+)$/.exec(path);
         if (li) {
           const [, listPath, id, field] = li;
@@ -145,6 +147,15 @@ function extraOps(bot, guild, job) {
       }
       // modules switched on by the template
       for (const m of tpl.enable || []) set(`${m}.enabled`, true);
+      // every module (and sub-feature such as nore.releases) that got a channel or role is switched on,
+      // so what the builder wired works right away (autorole for the bot role, feeds, …)
+      for (const p of wired) {
+        const parts = p.split('.');
+        for (let n = parts.length - 1; n >= 1; n--) {
+          const ep = [...parts.slice(0, n), 'enabled'].join('.');
+          if (schemaAt(bot.config.schema, ep)?.type === 'boolean' && getPath(bot.cfg(guild.id), ep) === false) set(ep, true);
+        }
+      }
       if (bot.cfg(guild.id).status.servers.length || bot.cfg(guild.id).status.board.channel) set('status.enabled', true);
       return;
     }
@@ -175,7 +186,7 @@ function extraOps(bot, guild, job) {
       if (kind === 'verification' && cfg.verification.role) await bot.send(guild, chId, verifyPanel(bot, guild.id));
       if (kind === 'tickets') {
         const panels = cfg.tickets.panels.map(p => (p.id === (arg || 'main') ? { ...p, channel: chId } : p));
-        bot.config.set(guild.id, 'tickets.panels', panels, { by: job.by });
+        bot.config.set(guild.id, 'tickets.panels', panels, { by: job.by, reason: 'builder' });
         const p = panels.find(x => x.id === (arg || 'main')) || panels[0];
         if (p) await bot.send(guild, chId, ticketPanel(bot, guild.id, p));
       }
@@ -187,7 +198,7 @@ function extraOps(bot, guild, job) {
           await postMenu(bot, guild, { ...m, channel: chId }, chId);
         }
       }
-      if (kind === 'statusboard') { bot.config.set(guild.id, 'status.board.channel', chId, { by: job.by }); bot.config.set(guild.id, 'status.board.enabled', true, { by: job.by }); bot.config.set(guild.id, 'status.enabled', true, { by: job.by }); }
+      if (kind === 'statusboard') { bot.config.set(guild.id, 'status.board.channel', chId, { by: job.by, reason: 'builder' }); bot.config.set(guild.id, 'status.board.enabled', true, { by: job.by, reason: 'builder' }); bot.config.set(guild.id, 'status.enabled', true, { by: job.by, reason: 'builder' }); }
       return;
     }
     if (op.op === 'settings') {
@@ -209,7 +220,7 @@ function extraOps(bot, guild, job) {
           delete map[k];
         }
       }
-      if (s.autoPublish) bot.config.set(guild.id, 'community.autoPublish', s.autoPublish.map(k => cid(map, k)).filter(Boolean), { by: job.by });
+      if (s.autoPublish) bot.config.set(guild.id, 'community.autoPublish', s.autoPublish.map(k => cid(map, k)).filter(Boolean), { by: job.by, reason: 'builder' });
     }
   };
 }
@@ -249,10 +260,15 @@ export async function runJob(bot, guild, job) {
   job.status = res.cancelled ? 'cancelled' : 'done';
   job.finishedAt = Date.now();
   bot.store.touch(guild.id);
-  bot.audit(guild.id, 'builder_finished', { template: job.template, size: job.size, status: job.status, steps: res.done, errors: job.errors.length });
+  // what the builder wired goes to the panel now (offline: kept and sent when the API is back)
+  const sync = await bot.config.flush(guild.id, { reason: 'builder' }).catch((err) => { log.warn('builder config push failed', { err }); return { ok: false, offline: true }; });
+  job.sync = sync.ok ? { ok: true, version: sync.version ?? bot.config.record(guild.id).remote?.version ?? 0 } : { ok: false, offline: !!sync.offline, skipped: !!sync.skipped, rejected: !!sync.rejected };
+  bot.audit(guild.id, 'builder_finished', { template: job.template, size: job.size, status: job.status, steps: res.done, errors: job.errors.length, configVersion: job.sync.version ?? null });
+  const syncLine = job.sync.ok ? t('builder.synced', { version: job.sync.version, url: `${bot.env.noreApi}/panel/${guild.id}` })
+    : t(job.sync.skipped ? 'builder.sync_off' : job.sync.rejected ? 'builder.sync_rejected' : 'builder.sync_pending');
   const links = ['start', 'rules', 'verify', 'general', 'support_info', 'staff_chat'].map(k => st.map[`c:${k}`]).filter(id => id && guild.channels.cache.has(id)).map(id => `<#${id}>`);
   const summary = embed(job.errors.length ? COLORS.warn : COLORS.ok).setTitle(t(job.status === 'done' ? 'builder.done_title' : 'builder.cancelled_title'))
-    .setDescription(`${t('builder.done_text', { done: res.done, total: res.total, errors: job.errors.length, time: formatDuration(Date.now() - started) })}${links.length ? `\n\n${links.join(' · ')}` : ''}${job.errors.length ? `\n\n\`\`\`\n${clip(job.errors.slice(0, 8).map(e => `${e.step}: ${e.error}`).join('\n'), 900)}\n\`\`\`` : ''}`)
+    .setDescription(`${t('builder.done_text', { done: res.done, total: res.total, errors: job.errors.length, time: formatDuration(Date.now() - started) })}\n${syncLine}${links.length ? `\n\n${links.join(' · ')}` : ''}${job.errors.length ? `\n\n\`\`\`\n${clip(job.errors.slice(0, 8).map(e => `${e.step}: ${e.error}`).join('\n'), 900)}\n\`\`\`` : ''}`)
     .setFooter({ text: t('builder.done_footer') });
   if (status) await status.edit({ embeds: [summary] }).catch(() => {});
   else if (job.progressChannel) await bot.send(guild, job.progressChannel, { embeds: [summary] });

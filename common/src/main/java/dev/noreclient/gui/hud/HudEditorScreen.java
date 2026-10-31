@@ -5,7 +5,8 @@ import dev.noreclient.api.Keys;
 import dev.noreclient.gui.NoreScreen;
 import dev.noreclient.NoreClient;
 import dev.noreclient.gui.click.ClickGuiScreen;
-import dev.noreclient.gui.widget.Widgets;
+import dev.noreclient.gui.widget.Album;
+import dev.noreclient.util.Motion;
 import dev.noreclient.module.HudModule;
 import dev.noreclient.util.Animation;
 import dev.noreclient.util.ColorUtil;
@@ -101,15 +102,16 @@ public class HudEditorScreen extends NoreScreen {
             float x = h.getX(width), y = h.getY(height), w = h.getScaledWidth(), hh = h.getScaledHeight();
             boolean hov = h == hovered || h == dragging;
             float a = anim(h).target(hov ? 1 : 0).update();
-            int outline = ColorUtil.lerp(0x50FFFFFF, Theme.accent(), a);
-            Render2D.roundedOutline(ctx, x - 2, y - 2, w + 4, hh + 4, 3, 1, outline);
+            // at rest every element shows its die line; the hovered / dragged one gets the vinyl rim and a label sticker
+            Album.dashed(ctx, x - 2, y - 2, w + 4, hh + 4, ColorUtil.lerp(0x90FBFAF7, Theme.VINYL, a));
             if (a > 0.05f) {
-                Render2D.rect(ctx, x - 2, y - 2, w + 4, hh + 4, ColorUtil.withAlpha(Theme.accent(), (int) (25 * a)));
-                String label = h.getName() + "  " + String.format("%.0f%%", h.scale.get() * 100);
-                float lw = Render2D.textWidth(label) * 0.75f + 8;
-                float ly = y - 14 < 0 ? y + hh + 4 : y - 14;
-                Render2D.roundedRect(ctx, x - 2, ly, lw, 11, 3, ColorUtil.fade(Theme.accent(), a));
-                Render2D.scaledText(ctx, label, x + 2, ly + 2.5f, 0.75f, ColorUtil.fade(0xFFFFFFFF, a), false);
+                Render2D.roundedOutline(ctx, x - 3, y - 3, w + 6, hh + 6, 3, 1, ColorUtil.withAlpha(Theme.VINYL, (int) (255 * a)));
+                Render2D.rect(ctx, x - 2, y - 2, w + 4, hh + 4, ColorUtil.withAlpha(Theme.accent(), (int) (22 * a)));
+                String label = h.getName() + " · " + String.format("%.0f%%", h.scale.get() * 100);
+                float ly = y - 15 < 0 ? y + hh + 5 : y - 15;
+                ctx.setAlpha(a);
+                Album.label(ctx, label, x - 2, ly, Theme.VINYL, Theme.VINYL_INK);
+                ctx.setAlpha(1);
             }
         }
 
@@ -121,21 +123,23 @@ public class HudEditorScreen extends NoreScreen {
     }
 
     private void renderToolbar(Gfx ctx, int mx, int my, float f) {
-        String help = "Przeciągnij aby przesunąć  •  Scroll = rozmiar  •  PPM = ustawienia  •  Shift = bez przyciągania";
-        float hw = Render2D.textWidth(help) * 0.75f + 16;
-        float bw = 74, bh = 20, gap = 6;
+        String help = width > 520 ? "Przeciągnij · Scroll: rozmiar · PPM: ustawienia · Shift: bez przyciągania" : "Przeciągnij · Scroll · PPM · Shift";
+        float hw = Render2D.textWidth(help) + 16;
+        float bw = 74, bh = 16, gap = 6;
         float total = bw * 4 + gap * 3;
         float x = width / 2f - total / 2f, y = height - bh - 10;
-        float hy = y - 18 + (1 - f) * 8;
-        Render2D.roundedRect(ctx, width / 2f - hw / 2, hy, hw, 14, 7, ColorUtil.fade(0xC0160F26, f));
-        Render2D.scaledText(ctx, help, width / 2f - hw / 2 + 8, hy + 3.5f, 0.75f, ColorUtil.fade(Theme.TEXT_DIM, f), false);
-        y += (1 - f) * 30;
-        String[] labels = {"☰ Elementy", "⚙ Moduły", showGrid ? "▦ Siatka: on" : "▦ Siatka: off", "✔ Gotowe"};
+        float hy = y - 20 + (1 - f) * 8 * Motion.travel();
+        ctx.setAlpha(f);
+        Render2D.roundedRect(ctx, width / 2f - hw / 2, hy, hw, 14, Album.R, ColorUtil.withAlpha(Theme.page(), 0xE0));
+        Render2D.text(ctx, help, width / 2f - hw / 2 + 8, hy + 3, Theme.TEXT_DIM, false);
+        y += (1 - f) * 20 * Motion.travel();
+        String[] labels = {"Elementy", "Moduły", showGrid ? "Siatka: wł." : "Siatka: wył.", "Gotowe"};
         for (int i = 0; i < 4; i++) {
             float bx = x + i * (bw + gap);
             boolean hov = Render2D.hovered(mx, my, bx, y, bw, bh);
-            Widgets.button(ctx, bx, y, bw, bh, labels[i], anim("tb" + i).target(hov ? 1 : 0).update(), i == 3);
+            Album.button(ctx, bx, y, bw, bh, labels[i], i == 3 ? Album.PRIMARY : i == 0 && panelOpen ? Album.WHITE : Album.SECONDARY, anim("tb" + i).target(hov ? 1 : 0).update());
         }
+        ctx.setAlpha(1);
     }
 
     private void renderPanel(Gfx ctx, int mx, int my) {
@@ -144,17 +148,16 @@ public class HudEditorScreen extends NoreScreen {
         List<HudModule> list = huds();
         float pw = 150, ph = Math.min(height - 40, 26 + list.size() * 18 + 6);
         float x = 8 - (1 - p) * (pw + 12), y = 26;
-        Render2D.shadow(ctx, x, y, pw, ph, Theme.radius(), 6, 0x80000000);
-        Render2D.roundedRect(ctx, x, y, pw, ph, Theme.radius(), 0xF0160F26);
-        Render2D.roundedOutline(ctx, x, y, pw, ph, Theme.radius(), 1, Theme.OUTLINE);
-        Render2D.text(ctx, "Elementy HUD", x + 8, y + 8, Theme.TEXT);
+        Album.floating(ctx, x, y, pw, ph, Theme.raised());
+        Album.spine(ctx, x, y, ph);
+        Render2D.text(ctx, "Elementy HUD", x + 11, y + 8, Theme.TEXT);
         float ry = y + 24;
         for (HudModule h : list) {
             if (ry + 16 > y + ph) break;
             boolean hov = Render2D.hovered(mx, my, x + 4, ry, pw - 8, 16);
-            if (hov) Render2D.roundedRect(ctx, x + 4, ry, pw - 8, 16, 4, 0x20FFFFFF);
-            Render2D.text(ctx, Render2D.trim(h.getName(), (int) pw - 50), x + 9, ry + 4, h.isEnabled() ? Theme.TEXT : Theme.TEXT_MUTED);
-            Widgets.toggle(ctx, x + pw - 34, ry + 2, 24, 12, anim("pt_" + h.getName()).target(h.isEnabled() ? 1 : 0).update());
+            if (hov) Render2D.roundedRect(ctx, x + 6, ry, pw - 10, 16, Album.R, Theme.RAISED_2);
+            Render2D.text(ctx, Render2D.trim(h.getName(), (int) pw - 50), x + 11, ry + 4, h.isEnabled() ? Theme.TEXT : Theme.TEXT_MUTED);
+            Album.toggle(ctx, x + pw - 30, ry + 3, 22, 10, anim("pt_" + h.getName()).target(h.isEnabled() ? 1 : 0).update());
             ry += 18;
         }
     }
@@ -179,7 +182,7 @@ public class HudEditorScreen extends NoreScreen {
     }
 
     private boolean toolbarClick(double mx, double my) {
-        float bw = 74, bh = 20, gap = 6;
+        float bw = 74, bh = 16, gap = 6;
         float total = bw * 4 + gap * 3;
         float x = width / 2f - total / 2f, y = height - bh - 10;
         for (int i = 0; i < 4; i++) {
