@@ -1,0 +1,5 @@
+/target
+/node_modules
+/src-tauri/gen
+# the repository ignores bin/ (Gradle output); this one is the nore-cli source
+!/core/src/bin/
