@@ -13,7 +13,8 @@ const store = require('./store');
 
 const API = 'https://api.modrinth.com/v2';
 
-const PLUGIN_LOADERS = { paper: ['paper', 'spigot', 'bukkit', 'purpur'], purpur: ['purpur', 'paper', 'spigot', 'bukkit'], folia: ['folia'] };
+const PLUGIN_LOADERS = { paper: ['paper', 'spigot', 'bukkit', 'purpur'], purpur: ['purpur', 'paper', 'spigot', 'bukkit'], folia: ['folia'], velocity: ['velocity'], bungeecord: ['bungeecord', 'waterfall'] };
+const PROXIES = ['velocity', 'bungeecord'];
 const MOD_LOADERS = { fabric: ['fabric'], quilt: ['quilt', 'fabric'], forge: ['forge'], neoforge: ['neoforge'] };
 
 /** Version types allowed by Settings → update channel ('all' also takes alpha / beta). */
@@ -27,7 +28,7 @@ function kindsFor(type) {
   const kinds = [];
   if (PLUGIN_LOADERS[type]) kinds.push('plugin');
   if (MOD_LOADERS[type]) kinds.push('mod');
-  kinds.push('datapack');
+  if (!PROXIES.includes(type)) kinds.push('datapack');
   if (MOD_LOADERS[type]) kinds.push('modpack');
   return kinds;
 }
@@ -54,7 +55,7 @@ async function search(srv, { kind, query = '', sort = 'relevance', offset = 0 })
   else if (kind === 'mod') facets.push(['project_type:mod'], loadersFor(srv, kind).map(l => `categories:${l}`), ['server_side:required', 'server_side:optional']);
   else if (kind === 'modpack') facets.push(['project_type:modpack'], loadersFor(srv, kind).map(l => `categories:${l}`), ['server_side:required', 'server_side:optional']);
   else facets.push(['project_type:datapack']);
-  if (kind !== 'modpack') facets.push([`versions:${srv.mcVersion}`]);
+  if (kind !== 'modpack' && !PROXIES.includes(srv.type)) facets.push([`versions:${srv.mcVersion}`]);
   const params = new URLSearchParams({ query, index: sort, offset: String(offset), limit: '20', facets: JSON.stringify(facets) });
   return net.getJson(`${API}/search?${params}`);
 }
@@ -75,7 +76,7 @@ function primaryFile(version) {
 async function install(srv, { kind, projectId }, onStatus, seen = new Set()) {
   if (seen.has(projectId)) return [];
   seen.add(projectId);
-  const version = await bestVersion(projectId, { loaders: loadersFor(srv, kind), gameVersion: srv.mcVersion });
+  const version = await bestVersion(projectId, { loaders: loadersFor(srv, kind), gameVersion: PROXIES.includes(srv.type) ? null : srv.mcVersion });
   if (!version) throw new Error(`Brak wersji zgodnej z ${srv.type} ${srv.mcVersion}`);
   const file = primaryFile(version);
   const dir = folderFor(srv, kind);
@@ -200,7 +201,7 @@ async function checkUpdates(srv) {
     for (const f of files) hashes[await net.sha1File(path.join(dir, f))] = f;
     const res = await net.fetchWithRetry(`${API}/version_files/update`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: loadersFor(srv, kind), game_versions: [srv.mcVersion], version_types: versionTypes() }),
+      body: JSON.stringify({ hashes: Object.keys(hashes), algorithm: 'sha1', loaders: loadersFor(srv, kind), ...(PROXIES.includes(srv.type) ? {} : { game_versions: [srv.mcVersion] }), version_types: versionTypes() }),
     });
     if (!res.ok) continue;
     const map = await res.json();
@@ -386,7 +387,32 @@ async function installServerPack(srv, file, onStatus = () => {}) {
   return { files: n, type: MOD_LOADERS[loader] ? loader : null, mcVersion: mc };
 }
 
+/**
+ * Updates from every source: Modrinth (by hash), CurseForge (by fingerprint, files Modrinth does
+ * not know) and Hangar (plugins installed from it). Pinned files ("nie aktualizuj") are left out.
+ */
+async function checkAllUpdates(srv, { pins = [], keyOf = null } = {}) {
+  const ups = await checkUpdates(srv).catch(() => []);
+  const known = new Set(ups.map(u => u.oldFile));
+  const cf = require('./curseforge');
+  for (const kind of ['plugin', 'mod']) {
+    if (!kindsFor(srv.type).includes(kind)) continue;
+    const dir = folderFor(srv, kind);
+    const mr = await require('./modrinth').identify(dir, ['.jar']).catch(() => ({}));
+    const skip = new Set([...Object.keys(mr), ...known]);
+    const list = await cf.checkUpdates(dir, 'mod', srv.mcVersion, kind === 'mod' ? srv.type : null, versionTypes(), skip).catch(() => []);
+    ups.push(...list.map(u => ({ ...u, kind })));
+  }
+  if (srv.hangar && Object.keys(srv.hangar).length) {
+    const hangar = require('./hangar');
+    ups.push(...await hangar.checkUpdates(srv, srv.hangar, folderFor(srv, 'plugin')).catch(() => []));
+  }
+  if (!pins.length || !keyOf) return ups;
+  return require('./mod-manager').withoutPinned(ups, pins, keyOf);
+}
+
 module.exports = {
   kindsFor, search, install, listInstalled, setEnabled, remove, addFiles, checkUpdates, applyUpdates, disableClientOnly,
-  installModpack, modpackVersions, modpackUpdate, isServerPack, installServerPack, overrideAction,
+  installModpack, modpackVersions, modpackUpdate, isServerPack, installServerPack, overrideAction, moveToBackup, checkAllUpdates,
+  folderOf: (srv, kind) => folderFor(srv, kind), versionTypes, PROXIES, MOD_LOADERS, PLUGIN_LOADERS,
 };
