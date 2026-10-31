@@ -351,9 +351,106 @@ pub fn system_memory_mb() -> (u64, u64) {
     (s.total_memory() / 1_048_576, s.available_memory() / 1_048_576)
 }
 
+pub const SERVER_PROFILES: [&str; 4] = ["aikar", "zgc", "basic", "custom"];
+
+/// Flags of a server profile (serverFlags of jvm.js).
+pub struct ServerFlags {
+    pub xms: u64,
+    pub flags: Vec<String>,
+    pub note: Option<String>,
+}
+
+/// Flags for a local server: 'aikar' (Paper's recommendation), 'zgc' (Java 21+), 'basic' / 'custom'
+/// (only memory); proxies get Velocity's small-heap flags. `free_mb` decides AlwaysPreTouch.
+pub fn server_flags(profile: &str, memory_mb: u64, java_major: u32, proxy: bool, free_mb: u64) -> ServerFlags {
+    let xmx = memory_mb.max(512);
+    let pre_touch = free_mb > 0 && free_mb as i64 - xmx as i64 >= 2 * GB as i64;
+    let s = |v: &[&str]| v.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    let base = s(&["-XX:+IgnoreUnrecognizedVMOptions", "-XX:+UnlockExperimentalVMOptions"]);
+    if profile == "basic" || profile == "custom" {
+        return ServerFlags { xms: xmx.min(1024), flags: vec![], note: None };
+    }
+    if proxy {
+        let mut f = base;
+        f.extend(s(&["-XX:+UseG1GC", "-XX:G1HeapRegionSize=4M", "-XX:+ParallelRefProcEnabled"]));
+        if pre_touch {
+            f.push("-XX:+AlwaysPreTouch".into());
+        }
+        f.push("-XX:MaxInlineLevel=15".into());
+        return ServerFlags { xms: xmx, flags: f, note: None };
+    }
+    let mut note = None;
+    if profile == "zgc" {
+        if java_major >= 21 {
+            let mut f = base;
+            f.push("-XX:+UseZGC".into());
+            if java_major < 23 {
+                f.push("-XX:+ZGenerational".into());
+            }
+            f.extend(s(&["-XX:+DisableExplicitGC", "-XX:+PerfDisableSharedMem"]));
+            if pre_touch {
+                f.push("-XX:+AlwaysPreTouch".into());
+            }
+            return ServerFlags { xms: xmx, flags: f, note: None };
+        }
+        note = Some(format!("ZGC wymaga Javy 21+ (jest {java_major}) – użyto flag Aikara."));
+    }
+    let big = xmx >= 12 * GB;
+    let mut f = base;
+    f.extend(s(&["-XX:+UseG1GC", "-XX:+ParallelRefProcEnabled", "-XX:MaxGCPauseMillis=200", "-XX:+DisableExplicitGC"]));
+    f.push(format!("-XX:G1NewSizePercent={}", if big { 40 } else { 30 }));
+    f.push(format!("-XX:G1MaxNewSizePercent={}", if big { 50 } else { 40 }));
+    f.push(format!("-XX:G1HeapRegionSize={}M", if big { 16 } else { 8 }));
+    f.push(format!("-XX:G1ReservePercent={}", if big { 15 } else { 20 }));
+    f.extend(s(&["-XX:G1HeapWastePercent=5", "-XX:G1MixedGCCountTarget=4"]));
+    f.push(format!("-XX:InitiatingHeapOccupancyPercent={}", if big { 20 } else { 15 }));
+    f.extend(s(&[
+        "-XX:G1MixedGCLiveThresholdPercent=90",
+        "-XX:G1RSetUpdatingPauseTimePercent=5",
+        "-XX:SurvivorRatio=32",
+        "-XX:+PerfDisableSharedMem",
+        "-XX:MaxTenuringThreshold=1",
+        "-Dusing.aikars.flags=https://mcflags.emc.gs",
+        "-Daikars.new.flags=true",
+    ]));
+    if pre_touch {
+        f.push("-XX:+AlwaysPreTouch".into());
+    }
+    let half = ((xmx as f64 / 2.0 / 512.0).round() as u64 * 512).max(1024);
+    ServerFlags { xms: if pre_touch { xmx } else { xmx.min(half) }, flags: f, note }
+}
+
+/// Full JVM arguments for a server: memory + profile flags merged with the owner's own (theirs win).
+pub fn server_jvm_args(profile: &str, memory_mb: u64, java_major: u32, proxy: bool, free_mb: u64, user_args: &str) -> Vec<String> {
+    let f = server_flags(profile, memory_mb, java_major, proxy, free_mb);
+    let xmx = if memory_mb == 0 { 2048 } else { memory_mb.max(512) };
+    merge_args(&Memory { xmx, xms: f.xms, auto: false, big: false }, &f.flags, &split_args(user_args))
+}
+
 #[cfg(test)]
 mod tests {
-    //! Port of launcher/test/jvm.test.js.
+    /// mods-servers.test.js: Aikar flags, ZGC on Java 21+, proxy flags, owner arguments win.
+    #[test]
+    fn server_profiles() {
+        use super::*;
+        let a = server_jvm_args("aikar", 4096, 21, false, 0, "");
+        assert!(a.contains(&"-Xmx4096M".into()) && a.contains(&"-Xms2048M".into()));
+        assert!(a.contains(&"-XX:G1HeapRegionSize=8M".into()) && a.contains(&"-Dusing.aikars.flags=https://mcflags.emc.gs".into()));
+        let pre = server_flags("aikar", 4096, 21, false, 16000);
+        assert_eq!(pre.xms, 4096);
+        assert!(pre.flags.contains(&"-XX:+AlwaysPreTouch".into()));
+        assert!(server_flags("aikar", 16384, 21, false, 0).flags.contains(&"-XX:G1HeapRegionSize=16M".into()));
+        assert!(server_flags("zgc", 2048, 21, false, 0).flags.contains(&"-XX:+ZGenerational".into()));
+        let old = server_flags("zgc", 2048, 17, false, 0);
+        assert!(old.flags.contains(&"-XX:+UseG1GC".into()) && old.note.is_some());
+        assert!(server_flags("aikar", 2048, 21, true, 0).flags.contains(&"-XX:MaxInlineLevel=15".into()));
+        assert_eq!(server_jvm_args("basic", 3072, 21, false, 0, ""), vec!["-Xmx3072M", "-Xms1024M"]);
+        let own = server_jvm_args("aikar", 4096, 21, false, 0, "-XX:+UseZGC -Xmx6G");
+        assert!(own.contains(&"-XX:+UseZGC".into()) && own.contains(&"-Xmx6G".into()));
+        assert!(!own.contains(&"-XX:+UseG1GC".into()) && !own.contains(&"-Xmx4096M".into()));
+    }
+
+    // Port of launcher/test/jvm.test.js.
     use super::*;
 
     fn opts(mods: u64, loader: &str, total: u64) -> Opts {
