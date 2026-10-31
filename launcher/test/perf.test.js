@@ -120,3 +120,65 @@ test('graphics profiles in options.txt keep other options', () => {
   assert.strictEqual(gameopts.applyProfile(src, 'nope', '1.21.1'), src);
   assert.strictEqual(gameopts.readOption(gameopts.applyProfile(src, 'balanced', '1.21.1'), 'renderDistance'), '12');
 });
+
+test('ensure: installs once, never duplicates a pack mod, respects deleted files, crash repair takes one back', async () => {
+  const net = require('../src/main/net');
+  const instances = require('../src/main/instances');
+  const doctor = require('../src/main/doctor');
+  const orig = { getJson: net.getJson, download: net.download, fetch: global.fetch };
+  const calls = [];
+  global.fetch = async () => ({ ok: true, status: 200 });
+  net.getJson = async (url) => {
+    calls.push(url);
+    const m = /\/project\/([^/?]+)\/version\?/.exec(url);
+    if (m) {
+      const slug = decodeURIComponent(m[1]);
+      if (slug === 'badoptimizations' || slug === 'embeddium') return [];
+      const deps = slug === 'entityculling' ? [{ dependency_type: 'required', project_id: 'P7dR8mSH' }] : [];
+      return [{ id: `v-${slug}`, project_id: `id-${slug}`, version_number: '1.0', version_type: 'release', dependencies: deps,
+        files: [{ primary: true, filename: `${slug}-1.0.jar`, url: `https://cdn/${slug}.jar`, hashes: { sha1: 'x' }, size: 1 }] }];
+    }
+    if (/\/project\/P7dR8mSH$/.test(url)) return { slug: 'fabric-api', title: 'Fabric API' };
+    throw new Error('HTTP 404 dla ' + url);
+  };
+  net.download = async (url, dest) => { fs.writeFileSync(dest, 'jar'); return true; };
+  try {
+    const inst = instances.create({ name: 'Pack', mcVersion: '1.21.1', loader: 'fabric', modpack: 'pack' });
+    const mods = path.join(inst.gameDir, 'mods');
+    fs.mkdirSync(mods, { recursive: true });
+    const jar = (name, id) => { const z = new AdmZip(); z.addFile('fabric.mod.json', Buffer.from(JSON.stringify({ id }))); z.writeZip(path.join(mods, name)); };
+    jar('fabric-api-0.116.jar', 'fabric-api');
+    jar('lithium-pack.jar', 'lithium');
+    const r = await perf.ensure(instances.get(inst.id));
+    const files = r.added.map(a => a.file).sort();
+    assert.ok(files.includes('sodium-1.0.jar') && files.includes('krypton-1.0.jar'));
+    assert.ok(!files.includes('lithium-1.0.jar'), 'the pack has Lithium');
+    assert.ok(!files.includes('fabric-api-1.0.jar'), 'the pack has Fabric API (dependency of EntityCulling)');
+    assert.ok(!files.some(f => f.startsWith('badoptimizations')), 'not on Modrinth for this version');
+    // nothing changed → no network at all
+    calls.length = 0;
+    assert.strictEqual(await perf.ensure(instances.get(inst.id)), null);
+    assert.strictEqual(calls.length, 0);
+    // the pack now brings its own Sodium; the player deleted our Krypton
+    jar('sodium-pack.jar', 'sodium');
+    fs.rmSync(path.join(mods, 'krypton-1.0.jar'));
+    const r2 = await perf.ensure(instances.get(inst.id));
+    assert.deepStrictEqual(r2.removed.map(x => x.file), ['sodium-1.0.jar']);
+    assert.ok(!fs.existsSync(path.join(mods, 'krypton-1.0.jar')), 'deleted by the player – not added again');
+    assert.deepStrictEqual(instances.get(inst.id).perfRemoved, ['krypton']);
+    // crash in ImmediatelyFast → taken back and blocked
+    const problems = await doctor.analyzeLog(instances.get(inst.id), ['Mixin apply for mod immediatelyfast failed immediatelyfast-common.mixins.json:font.X']);
+    const p = problems.find(x => x.fix && x.fix.action === 'perf-remove');
+    assert.strictEqual(p.fix.slug, 'immediatelyfast');
+    await doctor.apply(instances.get(inst.id), [p]);
+    assert.ok(!fs.existsSync(path.join(mods, 'immediatelyfast-1.0.jar')));
+    assert.deepStrictEqual(instances.get(inst.id).perfBlocked, ['immediatelyfast']);
+    // switching the set off removes only our files
+    const gone = await perf.removeAll(instances.get(inst.id));
+    assert.ok(gone.length > 0 && !gone.includes('lithium-pack.jar'));
+    assert.ok(fs.existsSync(path.join(mods, 'lithium-pack.jar')) && fs.existsSync(path.join(mods, 'sodium-pack.jar')));
+    assert.strictEqual(instances.get(inst.id).perfMods, false);
+  } finally {
+    net.getJson = orig.getJson; net.download = orig.download; global.fetch = orig.fetch;
+  }
+});

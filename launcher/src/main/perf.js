@@ -88,11 +88,12 @@ function disabledSet(present) {
 /**
  * Decides which performance mods to add.
  * present: [{ file, ids, enabled }] – mods of the pack / player (NOT the ones we added),
- * own: [{ slug, file }] – mods added by the launcher earlier, blocked: slugs crash repair took back.
+ * own: [{ slug, file }] – mods added by the launcher earlier, blocked: slugs crash repair took back,
+ * removed: slugs the player deleted by hand (not added again until "Optymalizuj").
  * Returns { add: [entry], keep: [slug], skip: [{ slug, title, reason }], drop: [{ slug, file, reason }] }
  * where add entries may share a group (the resolver keeps the first one Modrinth has).
  */
-function planPerfMods({ loader, present = [], own = [], blocked = [] }) {
+function planPerfMods({ loader, present = [], own = [], blocked = [], removed = [] }) {
   const out = { add: [], keep: [], skip: [], drop: [] };
   if (!loader || loader === 'vanilla') return out;
   const have = presentSet(present);
@@ -113,6 +114,10 @@ function planPerfMods({ loader, present = [], own = [], blocked = [] }) {
     if (blocked.includes(c.slug)) {
       if (mine) out.drop.push({ slug: c.slug, file: mine.file, reason: 'wyłączony po crashu' });
       out.skip.push({ slug: c.slug, title: c.title, reason: 'zabrany po crashu gry' });
+      continue;
+    }
+    if (removed.includes(c.slug) && !mine) {
+      out.skip.push({ slug: c.slug, title: c.title, reason: 'usunięty przez gracza' });
       continue;
     }
     const conflict = (c.conflicts || []).find(id => have.has(norm(id)));
@@ -278,7 +283,7 @@ function stateKey(inst) {
 }
 
 /** What would change in this instance (for the "Optymalizuj" preview and for ensure). */
-async function preview(inst, { blocked } = {}) {
+async function preview(inst, { blocked, removed } = {}) {
   const modsDir = path.join(inst.gameDir, 'mods');
   const all = await scan(modsDir);
   let own = (inst.perfAdded || []).filter(o => all.some(m => m.file === o.file || m.file === o.file + '.disabled'));
@@ -287,7 +292,7 @@ async function preview(inst, { blocked } = {}) {
   if (!sameTarget) own = [];
   const ownFiles = new Set([...own, ...stale].flatMap(o => [o.file, o.file + '.disabled']));
   const present = all.filter(m => !ownFiles.has(m.file));
-  const plan = planPerfMods({ loader: inst.loader, present, own: own.filter(o => !o.dep), blocked: blocked || inst.perfBlocked || [] });
+  const plan = planPerfMods({ loader: inst.loader, present, own: own.filter(o => !o.dep), blocked: blocked || inst.perfBlocked || [], removed: removed || inst.perfRemoved || [] });
   const res = await resolve(plan, { mcVersion: inst.mcVersion, loader: inst.loader, present: all.filter(m => !ownFiles.has(m.file) || own.some(o => o.file === m.file)) });
   return { plan, files: res.files, missing: res.missing, errors: res.errors, own, stale, present };
 }
@@ -303,7 +308,16 @@ async function ensure(inst, { progress = () => {}, log = () => {}, force = false
   const modsDir = path.join(inst.gameDir, 'mods');
   const key = stateKey(inst);
   const recorded = inst.perfAdded || [];
-  if (!force && inst.perfKey === key && recorded.every(o => fs.existsSync(path.join(modsDir, o.file)) || fs.existsSync(path.join(modsDir, o.file + '.disabled')))) return null;
+  const there = (o) => fs.existsSync(path.join(modsDir, o.file)) || fs.existsSync(path.join(modsDir, o.file + '.disabled'));
+  if (!force && inst.perfKey === key && recorded.every(there)) return null;
+  // files of ours the player deleted by hand stay deleted (until "Optymalizuj")
+  const sameTarget = inst.perfFor && inst.perfFor.mc === inst.mcVersion && inst.perfFor.loader === inst.loader;
+  const gone = sameTarget ? recorded.filter(o => !o.dep && !there(o)).map(o => o.slug) : [];
+  if (force || gone.length) {
+    const removedNow = force ? [] : [...new Set([...(inst.perfRemoved || []), ...gone])];
+    instances.update(inst.id, { perfRemoved: removedNow });
+    inst = instances.get(inst.id);
+  }
   progress({ stage: 'Mody wydajności: sprawdzanie paczki', step: 'nore' });
   // offline: do not hold the start up with retries – the check runs again next time
   try {
