@@ -191,9 +191,9 @@ mod tests {
     #[test]
     fn seal_round_trip_and_wrong_key() {
         let s = Secrets::in_memory();
-        let v = json!({ "accessToken": "abc", "refreshToken": "r".repeat(3000), "expiresAt": 1 });
+        let v = json!({ "accessToken": "token-in-plain-text", "refreshToken": "r".repeat(3000), "expiresAt": 1 });
         let b = s.seal(&v);
-        assert!(!b.to_string().contains("abc"));
+        assert!(!b.to_string().contains("token-in-plain-text"));
         assert_eq!(s.unseal(&b), v);
         assert_eq!(Secrets::in_memory().unseal(&b), json!({}));
         assert_eq!(s.unseal(&json!({ "gcm": "AAAA" })), json!({}));

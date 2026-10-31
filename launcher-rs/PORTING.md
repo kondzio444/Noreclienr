@@ -88,13 +88,13 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 
 ## Phase 2 plan
 
-1. **Mods & content** – `modrinth.rs` (search, details, categories, identify by hash, updates,
+1. **Mods & content** – the mod manager (`mods:*`: list / identify / toggle / bulk / pins, profiles, modlist, export, changelogs, config editor), `modrinth.rs` (search, details, categories, identify by hash, updates,
    toggle / delete) and `curseforge.rs` (API key from env / Worker, blocked files); background update
    checks (`content:updatesState` / `content:checkAll`).
 2. **Modpacks** – `.mrpack` / CurseForge zip install, update with world backup, instance importers
    (Prism / MultiMC / CurseForge app / Modrinth App), blocked-files resolution from Downloads.
 3. **Performance mods** – perf.js (Sodium / Lithium / … plan, drop / keep rules, "Optymalizuj").
-4. **Server hosting** – servers.js, server-content.js, server-net.js (UPnP, firewall, DNS),
+4. **Server hosting** – servers.js (incl. Velocity / BungeeCord, CurseForge / Hangar content, server packs with blocked files, properties form, MOTD / JVM previews, console completion, TPS events), server-content.js, server-net.js (UPnP, firewall, DNS),
    server-tunnel.js (playit.gg); `servers:*` and the `server:*` events.
 5. **Chat P2P & bridge** – chat-bridge.js (local HTTP bridge for the in-game chat, `chat:presence`),
    cosmetics from the game (`hub::Hub` already takes them).
@@ -244,6 +244,32 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 - [ ] `servers:upnp`
 - [ ] `servers:applyDomain`
 - [ ] `servers:dnsRecords`
+- [ ] `servers:contentSources`
+- [ ] `servers:blocked`
+- [ ] `servers:resolveBlocked`
+- [ ] `servers:propertiesForm`
+- [ ] `servers:saveProperties`
+- [ ] `servers:complete`
+- [ ] `servers:jvmPreview`
+- [ ] `servers:motdPreview`
+
+#### mods
+
+- [ ] `mods:list`
+- [ ] `mods:identify`
+- [ ] `mods:toggle`
+- [ ] `mods:bulk`
+- [ ] `mods:pin`
+- [ ] `mods:saveProfile`
+- [ ] `mods:applyProfile`
+- [ ] `mods:deleteProfile`
+- [ ] `mods:modlist`
+- [ ] `mods:saveModlist`
+- [ ] `mods:exportPack`
+- [ ] `mods:changelog`
+- [ ] `mods:configs`
+- [ ] `mods:readConfig`
+- [ ] `mods:saveConfig`
 
 #### content
 
