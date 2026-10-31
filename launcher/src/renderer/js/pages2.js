@@ -488,13 +488,14 @@ Pages.instance = (root, { id, tab: startTab }) => {
       <div class="card panel"><div class="section-title">${icon('cpu')} Pamięć i Java</div>
         <div class="setting"><div class="col"><b>RAM dla tej instancji</b><span id="memhint">0 = automatycznie</span></div></div>
         <div class="row" style="padding-bottom:12px"><input type="range" class="slider" id="mem" min="0" max="${maxMem}" step="512" value="${i.memoryMb || 0}" style="flex:1"><div class="value-pill" id="memv"></div></div>
-        <div class="field"><label>Wydajność JVM</label><div id="ijvm"></div><div class="muted" style="font-size:12px;margin-top:6px" id="ijvmd"></div></div>
         <div class="field"><label>Dodatkowe argumenty JVM</label><input class="input" id="jvm" value="${esc(i.jvmArgs || '')}" placeholder="np. -XX:+UseZGC"><div class="muted" style="font-size:12px;margin-top:6px">Twoje argumenty mają pierwszeństwo przed ustawieniami launchera (np. własne -Xmx albo GC).</div></div></div>
-      <div class="card panel"><div class="section-title">${icon('zap')} Wydajność</div>
+      <div class="card panel" style="grid-column:1/-1;order:3"><div class="section-title">${icon('zap')} Wydajność</div>
         ${isModded(i) ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>${perfOn(i) ? `Włączone${(i.perfAdded || []).length ? ` • dodane przez launcher: ${(i.perfAdded || []).map(o => esc(o.slug)).join(', ')}` : ''}` : 'Wyłączone'}</span></div>
           <button class="btn sm" id="optimize">${icon('zap')} Optymalizuj</button></div>
           ${(i.perfAdded || []).length ? `<div class="setting"><div class="col"><b>Usuń mody dodane przez launcher</b><span>Pliki paczki zostają nietknięte</span></div><button class="btn ghost sm" id="perfrm">${icon('trash')} Usuń</button></div>` : ''}` : '<div class="muted" style="font-size:13px;margin:6px 0 10px">Mody wydajności wymagają loadera (Fabric, Quilt, Forge, NeoForge).</div>'}
-        <div class="field" style="margin-top:8px"><label>Profil grafiki</label><div id="oprof"></div><div class="muted" style="font-size:12px;margin-top:6px" id="oprofd"></div></div></div>
+        <div class="grid cols-2" style="margin-top:8px">
+          <div class="field"><label>Wydajność JVM</label><div id="ijvm"></div><div class="muted" style="font-size:12px;margin-top:6px" id="ijvmd"></div></div>
+          <div class="field"><label>Profil grafiki</label><div id="oprof"></div><div class="muted" style="font-size:12px;margin-top:6px" id="oprofd"></div></div></div></div>
       <div class="card panel"><div class="section-title">${icon('monitor')} Okno i serwer</div>
         <div class="setting"><div class="col"><b>Rozdzielczość</b><span>0 = domyślna</span></div>
           <input class="input" id="w" value="${i.width || 0}" style="width:80px"> × <input class="input" id="h" value="${i.height || 0}" style="width:80px"></div>
@@ -506,7 +507,7 @@ Pages.instance = (root, { id, tab: startTab }) => {
     const upd = () => {
       const auto = memInfo ? ` (${(memInfo.autoMb / 1024).toFixed(1)} GB)` : '';
       const glob = App.state.settings.memoryMb;
-      $('#memv', page).textContent = +r.value ? (r.value / 1024).toFixed(1) + ' GB' : glob ? `Jak launcher (${(glob / 1024).toFixed(1)} GB)` : 'Automatycznie' + auto;
+      $('#memv', page).textContent = +r.value ? (r.value / 1024).toFixed(1) + ' GB' : glob ? `Launcher: ${(glob / 1024).toFixed(1)} GB` : 'Auto' + auto;
       sliderFill(r);
     };
     r.oninput = upd; upd();
@@ -516,8 +517,8 @@ Pages.instance = (root, { id, tab: startTab }) => {
       $('#memhint', page).textContent = `0 = ${App.state.settings.memoryMb ? 'jak w ustawieniach launchera' : 'automatycznie'} • mody: ${mi.mods} • automatycznie wyszłoby ${(mi.autoMb / 1024).toFixed(1)} GB (maks. ${(mi.maxMb / 1024).toFixed(1)} GB na tym komputerze)`;
       upd();
     }).catch(() => {});
-    const modes = [{ value: '', label: 'Jak w launcherze' }, ...JVM_MODES.map(({ value, label }) => ({ value, label }))];
-    const jdesc = (v) => { $('#ijvmd', page).textContent = v ? JVM_MODES.find(x => x.value === v).desc : `Ustawienie launchera: ${JVM_MODES.find(x => x.value === (App.state.settings.jvmMode || 'auto')).label}.`; };
+    const modes = [{ value: '', label: 'Jak launcher' }, ...JVM_MODES.map(({ value, short }) => ({ value, label: short }))];
+    const jdesc = (v) => { $('#ijvmd', page).textContent = v ? `${JVM_MODES.find(x => x.value === v).label}: ${JVM_MODES.find(x => x.value === v).desc}` : `Ustawienie launchera: ${JVM_MODES.find(x => x.value === (App.state.settings.jvmMode || 'auto')).label}.`; };
     $('#ijvm', page).appendChild(segmented(modes, i.jvmMode || '', (v) => { jdesc(v); save({ jvmMode: v }); }));
     jdesc(i.jvmMode || '');
     const pdesc = (v) => { $('#oprofd', page).textContent = PROFILE_DESC[v] + (v ? ' Zapisywane raz – zmiany w grze nie są potem nadpisywane.' : ''); };

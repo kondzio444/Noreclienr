@@ -480,10 +480,10 @@ function microsoftLoginModal(done) {
 
 /** Settings → Wydajność JVM (jvm.js). The player's own JVM arguments always win over these. */
 const JVM_MODES = [
-  { value: 'auto', label: 'Automatycznie', desc: 'Zalecane: zoptymalizowany G1 z krótkimi przerwami GC – mniej przycięć na serwerach. Twoje argumenty JVM mają pierwszeństwo.' },
-  { value: 'g1', label: 'G1 zoptymalizowany', desc: 'G1 dostrojony pod klienta (MaxGCPauseMillis, G1NewSizePercent, G1ReservePercent…). Działa na każdej Javie.' },
-  { value: 'zgc', label: 'ZGC', desc: 'Generational ZGC: prawie zerowe przerwy przy dużej ilości RAM. Wymaga Javy 21+ (Minecraft 1.20.5+), na starszej Javie użyje G1.' },
-  { value: 'custom', label: 'Własne', desc: 'Tylko pamięć i Twoje własne argumenty JVM – launcher nie dodaje flag GC.' },
+  { value: 'auto', label: 'Automatycznie', short: 'Auto', desc: 'Zalecane: zoptymalizowany G1 z krótkimi przerwami GC – mniej przycięć na serwerach. Twoje argumenty JVM mają pierwszeństwo.' },
+  { value: 'g1', label: 'G1 zoptymalizowany', short: 'G1', desc: 'G1 dostrojony pod klienta (MaxGCPauseMillis, G1NewSizePercent, G1ReservePercent…). Działa na każdej Javie.' },
+  { value: 'zgc', label: 'ZGC', short: 'ZGC', desc: 'Generational ZGC: prawie zerowe przerwy przy dużej ilości RAM. Wymaga Javy 21+ (Minecraft 1.20.5+), na starszej Javie użyje G1.' },
+  { value: 'custom', label: 'Własne', short: 'Własne', desc: 'Tylko pamięć i Twoje własne argumenty JVM – launcher nie dodaje flag GC.' },
 ];
 
 Pages.settings = (root) => {
