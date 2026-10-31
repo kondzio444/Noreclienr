@@ -208,7 +208,7 @@ async function checkUpdates(srv) {
     for (const [hash, version] of Object.entries(map)) {
       const file = primaryFile(version);
       if (!file || file.hashes.sha1 === hash) continue;
-      updates.push({ kind, oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number, type: version.version_type, projectId: version.project_id });
+      updates.push({ kind, oldFile: hashes[hash], newFile: file.filename, url: file.url, sha1: file.hashes.sha1, size: file.size, version: version.version_number, type: version.version_type, projectId: version.project_id, versionId: version.id, source: 'modrinth' });
     }
   }
   return updates;

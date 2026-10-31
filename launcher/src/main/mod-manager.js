@@ -57,7 +57,7 @@ function describe(mods, { server = false, loader = null, pins = [], ids = {} } =
     return {
       file: m.file, enabled: m.enabled, size: m.size, key,
       id: md.id || null, name: (idf && idf.title) || md.name || baseName(m.file).replace(/\.jar$/i, ''), version: md.version || (idf && idf.version) || '',
-      loader: md.loader || null, kind: md.kind || 'mod', side: md.side || 'unknown', description: md.description || (idf && idf.description) || '',
+      loader: md.loader || null, kind: md.kind || 'mod', side: md.side && md.side !== 'unknown' ? md.side : sideFromProject(idf), description: md.description || (idf && idf.description) || '',
       authors: md.authors || [], depends: md.depends || [], optional: md.optional || [],
       dependents: a.dependents.map(f => ({ file: f, name: nameOf(f) })), missing: a.missing, conflicts: a.conflicts.map(f => ({ file: f, name: nameOf(f) })),
       pinned: pinSet.has(key), source: idf ? idf.source || 'modrinth' : null, projectId: idf ? idf.projectId : null, icon: idf ? idf.icon : null,
@@ -65,6 +65,14 @@ function describe(mods, { server = false, loader = null, pins = [], ids = {} } =
     };
   });
   return { mods: out.sort((a, b) => a.name.localeCompare(b.name, 'pl')), warnings };
+}
+
+/** Side from Modrinth's client_side / server_side ('required' | 'optional' | 'unsupported'). */
+function sideFromProject(p) {
+  if (!p || (!p.clientSide && !p.serverSide)) return 'unknown';
+  if (p.serverSide === 'unsupported') return 'client';
+  if (p.clientSide === 'unsupported') return 'server';
+  return 'both';
 }
 
 /** Filter + sort of the installed list (the same rules the UI uses). */

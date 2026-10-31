@@ -114,6 +114,19 @@ contextBridge.exposeInMainWorld('nore', {
     upnp: invoke('servers:upnp'),
     applyDomain: invoke('servers:applyDomain'),
     dnsRecords: invoke('servers:dnsRecords'),
+    contentSources: invoke('servers:contentSources'),
+    blocked: invoke('servers:blocked'),
+    resolveBlocked: invoke('servers:resolveBlocked'),
+    propertiesForm: invoke('servers:propertiesForm'),
+    saveProperties: invoke('servers:saveProperties'),
+    complete: invoke('servers:complete'),
+    jvmPreview: invoke('servers:jvmPreview'),
+  },
+  mods: {
+    list: invoke('mods:list'), identify: invoke('mods:identify'), toggle: invoke('mods:toggle'), bulk: invoke('mods:bulk'), pin: invoke('mods:pin'),
+    saveProfile: invoke('mods:saveProfile'), applyProfile: invoke('mods:applyProfile'), deleteProfile: invoke('mods:deleteProfile'),
+    modlist: invoke('mods:modlist'), saveModlist: invoke('mods:saveModlist'), exportPack: invoke('mods:exportPack'), changelog: invoke('mods:changelog'),
+    configs: invoke('mods:configs'), readConfig: invoke('mods:readConfig'), saveConfig: invoke('mods:saveConfig'),
   },
   content: {
     search: invoke('content:search'),
@@ -164,7 +177,7 @@ contextBridge.exposeInMainWorld('nore', {
     install: invoke('update:install'),
   },
   on: (channel, fn) => {
-    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'chat:bridgeSend', 'chat:bridgeRead', 'chat:bridgeAdd', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState', 'auth:logout', 'notices:state'];
+    const allowed = ['progress', 'log', 'game:state', 'content:status', 'window:state', 'server:log', 'server:state', 'server:progress', 'server:tunnel', 'chat:bridgeSend', 'chat:bridgeRead', 'chat:bridgeAdd', 'update:state', 'modpack:progress', 'doctor:report', 'content:updatesState', 'auth:logout', 'notices:state', 'server:tps', 'mods:status'];
     if (!allowed.includes(channel)) return () => {};
     const handler = (e, payload) => fn(payload);
     ipcRenderer.on(channel, handler);

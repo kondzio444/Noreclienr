@@ -19,10 +19,15 @@ const versions = require('./versions');
 const java = require('./java');
 const serverNet = require('./server-net');
 const tunnel = require('./server-tunnel');
+const jvm = require('./jvm');
+const propsLib = require('./server-props');
+const tools = require('./server-tools');
 // server-content requires nothing from here, loaded lazily to keep the module graph simple
 const serverContent = () => require('./server-content');
 
-const TYPES = ['vanilla', 'paper', 'purpur', 'folia', 'fabric', 'quilt', 'forge', 'neoforge'];
+const TYPES = ['vanilla', 'paper', 'purpur', 'folia', 'fabric', 'quilt', 'forge', 'neoforge', 'velocity', 'bungeecord'];
+const PROXIES = ['velocity', 'bungeecord'];
+const isProxy = (s) => PROXIES.includes(s.type);
 const running = new Map(); // id -> { child, state, players:Set, log:[], started, stopping, timers:[], tunnel }
 const restarts = new Map(); // id -> [timestamps]
 let emit = () => {};
@@ -39,7 +44,8 @@ function publicView(s) {
     state: rt ? rt.state : 'stopped',
     players: rt ? [...rt.players] : [],
     startedAt: rt ? rt.started : null,
-    hasIcon: fs.existsSync(path.join(dir(s.id), 'server-icon.png')),
+    hasIcon: fs.existsSync(path.join(dir(s.id), 'server-icon.png')), proxy: PROXIES.includes(s.type),
+    tps: rt && rt.tps ? rt.tps : null, nextRestart: rt && rt.nextRestart ? rt.nextRestart : null,
   };
 }
 
@@ -61,7 +67,8 @@ function create({ name, mcVersion, type = 'paper', memoryMb = 2048, port = 25565
   const srv = {
     id, name: name || `Serwer ${mcVersion}`, mcVersion, type, memoryMb, port, eula: !!eula, props: { ...DEFAULT_PROPS },
     created: Date.now(), installed: false, autoRestart: true, backupOnStart: false, backupKeep: 10, upnp: false, domain: null, jvmArgs: '',
-    loaderVersion: '', tunnel: null, disableClientMods: true,
+    loaderVersion: '', tunnel: null, disableClientMods: true, jvmProfile: 'aikar', schedule: { restartAt: '', backupEveryH: 0, warnMinutes: 5 },
+    modPins: [], modProfiles: [],
   };
   store.update(d => { (d.servers = d.servers || []).push(srv); });
   fs.mkdirSync(dir(id), { recursive: true });
@@ -73,6 +80,8 @@ function update(id, patch) {
     const s = (d.servers || []).find(x => x.id === id);
     if (!s) return;
     if (patch.props) { s.props = { ...s.props, ...patch.props }; delete patch.props; }
+    if (patch.schedule) patch.schedule = tools.normalizeSchedule({ ...(s.schedule || {}), ...patch.schedule });
+    if (patch.jvmProfile && !jvm.SERVER_PROFILES.includes(patch.jvmProfile)) delete patch.jvmProfile;
     if (patch.domain) {
       // keep the stored token when the UI sends the domain settings without it
       const token = patch.domain.token === undefined && s.domain ? s.domain.token : encryptToken(patch.domain.token);
@@ -84,6 +93,7 @@ function update(id, patch) {
     if (patch.loaderVersion !== undefined && patch.loaderVersion !== s.loaderVersion) s.installed = false;
     Object.assign(s, patch, { id });
   });
+  if (patch.schedule && running.has(id)) schedule(id);
   return get(id);
 }
 
@@ -201,7 +211,62 @@ function argsFileFor(base, loaderPath) {
   return fs.existsSync(f) ? path.relative(base, f) : null;
 }
 
+/** Velocity version to install: the chosen one, else the newest release (non-SNAPSHOT) with a stable build. */
+async function velocityBuild(wanted) {
+  const proj = await net.getJson('https://fill.papermc.io/v3/projects/velocity');
+  const all = Object.values(proj.versions || {}).flat();
+  const order = wanted ? [wanted] : [...all.filter(v => !/SNAPSHOT/i.test(v)), ...all.filter(v => /SNAPSHOT/i.test(v))];
+  for (const v of order.slice(0, 6)) {
+    const builds = await net.getJson(`https://fill.papermc.io/v3/projects/velocity/versions/${encodeURIComponent(v)}/builds`).catch(() => []);
+    const b = builds.find(x => x.channel === 'STABLE') || builds[0];
+    if (b && b.downloads && b.downloads['server:default']) return { version: v, file: b.downloads['server:default'] };
+  }
+  throw new Error('Nie udało się znaleźć wersji Velocity do pobrania.');
+}
+
+/** Velocity / BungeeCord: one jar, no world, Java 21. */
+async function installProxy(srv, progress) {
+  const base = dir(srv.id);
+  const jar = path.join(base, 'server.jar');
+  update(srv.id, { javaComponent: 'java-runtime-delta' });
+  await fsp.rm(jar, { force: true });
+  if (srv.type === 'velocity') {
+    const b = await velocityBuild(srv.loaderVersion || null);
+    progress({ stage: `Pobieranie Velocity ${b.version}` });
+    await net.download(b.file.url, jar, { size: b.file.size });
+    update(srv.id, { installedLoader: b.version });
+  } else {
+    progress({ stage: 'Pobieranie BungeeCord' });
+    await net.download('https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar', jar);
+    update(srv.id, { installedLoader: 'najnowszy' });
+  }
+  update(srv.id, { installed: true, launch: { mode: 'jar', jar: 'server.jar' } });
+  return get(srv.id);
+}
+
+/** Sets the listening port in the proxy's own config (velocity.toml / config.yml) when it exists. */
+function writeProxyPort(srv) {
+  const base = dir(srv.id);
+  try {
+    if (srv.type === 'velocity') {
+      const f = path.join(base, 'velocity.toml');
+      if (!fs.existsSync(f)) return false;
+      const t = fs.readFileSync(f, 'utf8');
+      const n = t.replace(/^(\s*bind\s*=\s*)"[^"]*"/m, `$1"0.0.0.0:${srv.port}"`);
+      if (n !== t) fs.writeFileSync(f, n);
+      return true;
+    }
+    const f = path.join(base, 'config.yml');
+    if (!fs.existsSync(f)) return false;
+    const t = fs.readFileSync(f, 'utf8');
+    const n = t.replace(/^(\s*host:\s*)\S+/m, (x, a) => `${a}0.0.0.0:${srv.port}`);
+    if (n !== t) fs.writeFileSync(f, n);
+    return true;
+  } catch { return false; }
+}
+
 async function install(srv, progress) {
+  if (isProxy(srv)) return installProxy(srv, progress);
   const base = dir(srv.id);
   const jar = path.join(base, 'server.jar');
   const info = await vanillaInfo(srv.mcVersion);
@@ -291,33 +356,40 @@ async function install(srv, progress) {
 
 function propertiesFile(id) { return path.join(dir(id), 'server.properties'); }
 
+/** File values with the launcher's own settings (srv.props) on top – what the server will use. */
 function readProperties(id) {
-  const out = {};
-  try {
-    for (const l of fs.readFileSync(propertiesFile(id), 'utf8').split(/\r?\n/)) {
-      const m = /^([^#=\s][^=]*)=(.*)$/.exec(l);
-      if (m) out[m[1].trim()] = m[2];
-    }
-  } catch { /* not generated yet */ }
+  let out = {};
+  try { out = propsLib.parse(fs.readFileSync(propertiesFile(id), 'utf8')); } catch { /* not generated yet */ }
   const s = raw(id);
-  return { ...out, ...(s ? Object.fromEntries(Object.entries(s.props).map(([k, v]) => [k, String(v)])) : {}) };
+  return { ...out, ...(s ? Object.fromEntries(Object.entries(s.props || {}).map(([k, v]) => [k, String(v)])) : {}) };
+}
+
+/** Form data for the properties editor: { values, schema, groups, warnings }. */
+function propertiesForm(id) {
+  const values = readProperties(id);
+  return { values, schema: propsLib.SCHEMA, groups: propsLib.GROUPS, warnings: propsLib.warnings(values) };
+}
+
+/** Validates and saves form values; returns { server, errors }. */
+function saveProperties(id, changes) {
+  const props = {}, errors = [];
+  for (const [k, v] of Object.entries(changes || {})) {
+    if (!/^[a-z0-9.\-_]+$/i.test(k)) continue;
+    const r = propsLib.validate(k, v);
+    if (r.error) errors.push(r.error);
+    if (r.value !== null) props[k] = r.value;
+  }
+  const server = update(id, { props });
+  return { server, errors, warnings: propsLib.warnings(readProperties(id)) };
 }
 
 function writeProperties(srv) {
   const file = propertiesFile(srv.id);
-  let lines = [];
-  try { lines = fs.readFileSync(file, 'utf8').split(/\r?\n/); } catch { /* new server */ }
-  const props = { ...srv.props, 'server-port': srv.port, 'query.port': srv.port };
-  const seen = new Set();
-  lines = lines.map(l => {
-    const m = /^([^#=]+)=(.*)$/.exec(l);
-    if (!m || !(m[1] in props)) return l;
-    seen.add(m[1]);
-    return `${m[1]}=${props[m[1]]}`;
-  });
-  for (const [k, val] of Object.entries(props)) if (!seen.has(k)) lines.push(`${k}=${val}`);
-  fs.writeFileSync(file, lines.filter((l, i) => l !== '' || i < lines.length - 1).join('\n') + '\n');
+  let text = '';
+  try { text = fs.readFileSync(file, 'utf8'); } catch { /* new server */ }
+  fs.writeFileSync(file, propsLib.serialize(text, { ...srv.props, 'server-port': srv.port, 'query.port': srv.port }));
 }
+
 
 // ------------------------------------------------------------------ process control
 
@@ -406,7 +478,7 @@ async function start(id, progress = () => {}) {
   if (running.has(id)) throw new Error('Serwer już działa.');
   let srv = raw(id);
   if (!srv) throw new Error('Nie znaleziono serwera.');
-  if (!srv.eula) throw new Error('Musisz zaakceptować EULA Minecraft, aby uruchomić serwer.');
+  if (!srv.eula && !isProxy(srv)) throw new Error('Musisz zaakceptować EULA Minecraft, aby uruchomić serwer.');
   for (const [other, rt] of running) {
     const o = raw(other);
     if (o && o.port === srv.port) throw new Error(`Serwer „${o.name}” już używa portu ${srv.port}${rt.state === 'stopping' ? ' (właśnie się zatrzymuje)' : ''}.`);
@@ -414,40 +486,48 @@ async function start(id, progress = () => {}) {
   await portFree(srv.port);
   if (!srv.installed) { await install(srv, progress); srv = raw(id); }
   const bin = await javaFor(srv, progress);
-  fs.writeFileSync(path.join(dir(id), 'eula.txt'), '# Zaakceptowano w Nore Launcher (https://aka.ms/MinecraftEULA)\neula=true\n');
-  writeProperties(srv);
-  if (srv.disableClientMods !== false) {
+  if (isProxy(srv)) {
+    if (!writeProxyPort(srv) && srv.port !== (srv.type === 'velocity' ? 25565 : 25577)) log(id, `[Launcher] Pierwszy start: proxy utworzy swój plik konfiguracji – port ${srv.port} ustawię przy następnym starcie.`, 'err');
+  } else {
+    fs.writeFileSync(path.join(dir(id), 'eula.txt'), '# Zaakceptowano w Nore Launcher (https://aka.ms/MinecraftEULA)\neula=true\n');
+    writeProperties(srv);
+  }
+  if (srv.disableClientMods !== false && serverContent().MOD_LOADERS[srv.type]) {
     for (const f of await serverContent().disableClientOnly(publicView(srv)).catch(() => [])) log(id, `[Launcher] Wyłączono mod tylko dla klienta (wysypałby serwer): ${f}`, 'err');
   }
-  if (srv.backupOnStart && fs.existsSync(path.join(dir(id), worldName(srv)))) {
+  if (srv.backupOnStart && !isProxy(srv) && fs.existsSync(path.join(dir(id), worldName(srv)))) {
     progress({ stage: 'Kopia zapasowa świata' });
     await backup(id, 'auto');
   }
 
   const launch = srv.launch || { mode: 'jar', jar: 'server.jar' };
-  const mem = [`-Xmx${srv.memoryMb}M`, `-Xms${Math.min(1024, srv.memoryMb)}M`];
-  const extra = (srv.jvmArgs || '').trim() ? srv.jvmArgs.trim().split(/\s+/) : [];
-  const args = launch.mode === 'args' ? [...mem, ...extra, `@${launch.argsFile}`, 'nogui'] : [...mem, ...extra, '-jar', launch.jar, 'nogui'];
+  const args = [...jvmArgsFor(srv), ...(launch.mode === 'args' ? [`@${launch.argsFile}`] : ['-jar', launch.jar]), ...(isProxy(srv) ? [] : ['nogui'])];
   progress({ stage: 'Uruchamianie serwera' });
 
   const child = spawn(bin, args, { cwd: dir(id), windowsHide: true });
-  const rt = { child, state: 'starting', players: new Set(), log: [], started: Date.now(), stopping: false, timers: [], tunnel: null };
+  const rt = { child, state: 'starting', players: new Set(), log: [], started: Date.now(), stopping: false, timers: [], tunnel: null, tps: null, quiet: 0 };
   running.set(id, rt);
   emit('server:state', { id, state: 'starting' });
   prepareNetwork(srv, rt).finally(() => emit('server:state', { id, state: rt.state }));
   const onLine = (line, stream) => {
     line = line.replace(/\x1b\[[0-9;]*m/g, ''); // NeoForge / Forge colour codes
+    // replies to our own TPS poll stay out of the console
+    const tps = tools.parseTps(line);
+    if (tps) { rt.tps = { ...tps, at: Date.now() }; emit('server:tps', { id, ...rt.tps }); }
+    if (rt.quiet > Date.now() && (tps || tools.isTpsNoise(line))) return;
     log(id, line, stream);
-    if (rt.state === 'starting' && /Done \(.*\)! For help/.test(line)) {
+    if (rt.state === 'starting' && tools.isReadyLine(line)) {
       rt.state = 'running';
       emit('server:state', { id, state: 'running' });
+      startTpsPoll(id, rt);
+      if (isProxy(srv)) writeProxyPort(raw(id) || srv);
     }
-    let m = /: (\w{3,16}) joined the game/.exec(line);
-    if (m) { rt.players.add(m[1]); emit('server:state', { id, state: rt.state, players: [...rt.players] }); }
-    m = /: (\w{3,16}) left the game/.exec(line);
-    if (m) { rt.players.delete(m[1]); emit('server:state', { id, state: rt.state, players: [...rt.players] }); }
+    const ev = tools.playerEvent(line);
+    if (ev && ev.join) { rt.players.add(ev.join); emit('server:state', { id, state: rt.state, players: [...rt.players] }); }
+    if (ev && ev.leave) { rt.players.delete(ev.leave); emit('server:state', { id, state: rt.state, players: [...rt.players] }); }
     if (rt.waitSave && /Saved the game|Saved the world/i.test(line)) { rt.waitSave(); rt.waitSave = null; }
   };
+  schedule(id);
   for (const [stream, name] of [[child.stdout, 'out'], [child.stderr, 'err']]) {
     let buf = '';
     stream.on('data', (d) => {
@@ -459,6 +539,7 @@ async function start(id, progress = () => {}) {
   child.on('exit', (code) => {
     running.delete(id);
     for (const t of rt.timers) clearInterval(t);
+    for (const t of rt.schedTimers || []) clearTimeout(t);
     if (rt.tunnel) { try { rt.tunnel.kill(); } catch { /* gone */ } }
     emit('server:state', { id, state: 'stopped', code });
     const s = raw(id);
@@ -481,6 +562,63 @@ async function start(id, progress = () => {}) {
   return true;
 }
 
+/** JVM arguments: memory + the server's flag profile (Aikar by default) merged with the owner's own. */
+function jvmArgsFor(srv) {
+  return jvm.serverJvmArgs({
+    profile: srv.jvmProfile || 'aikar', memoryMb: srv.memoryMb, javaMajor: COMPONENT_MAJOR[srv.javaComponent] || 21,
+    proxy: isProxy(srv), freeMb: Math.round(require('os').freemem() / 1048576), userArgs: srv.jvmArgs || '',
+  });
+}
+
+/** Asks the server for its TPS every 20 s (Paper / Purpur / Folia, Forge, NeoForge); replies are kept out of the console. */
+function startTpsPoll(id, rt) {
+  const s = raw(id);
+  const cmd = s && tools.tpsCommand(s.type);
+  if (!cmd) return;
+  const poll = () => {
+    if (running.get(id) !== rt || rt.state !== 'running') return;
+    rt.quiet = Date.now() + 3000;
+    try { rt.child.stdin.write(cmd + '\n'); } catch { /* closing */ }
+  };
+  setTimeout(poll, 4000);
+  rt.timers.push(setInterval(poll, 20000));
+}
+
+/** Scheduled daily restart (with in-game warnings) and periodic backups while the server runs. */
+function schedule(id) {
+  const rt = running.get(id);
+  const s = raw(id);
+  if (!rt || !s) return;
+  for (const t of rt.schedTimers || []) clearTimeout(t);
+  rt.schedTimers = [];
+  rt.nextRestart = null;
+  const sch = tools.normalizeSchedule(s.schedule || {});
+  const say = (text) => { if (running.get(id) === rt && rt.state === 'running') { try { command(id, isProxy(s) ? `alert ${text}` : `say ${text}`); } catch { /* stopped */ } } };
+  const delay = tools.msUntil(Date.now(), sch.restartAt);
+  if (delay != null) {
+    rt.nextRestart = Date.now() + delay;
+    for (const w of tools.restartWarnings(sch.warnMinutes)) if (delay > w.before) rt.schedTimers.push(setTimeout(() => say(w.text), delay - w.before));
+    rt.schedTimers.push(setTimeout(() => {
+      if (running.get(id) !== rt) return;
+      log(id, '[Launcher] Zaplanowany restart serwera');
+      restart(id).catch(e => log(id, '[Launcher] Restart: ' + e.message, 'err'));
+    }, delay));
+  }
+  if (sch.backupEveryH && !isProxy(s)) {
+    rt.schedTimers.push(setInterval(() => {
+      if (running.get(id) !== rt || rt.state !== 'running') return;
+      backup(id, 'auto').then(f => log(id, `[Launcher] Automatyczna kopia zapasowa: ${f}`)).catch(e => log(id, '[Launcher] Kopia zapasowa: ' + e.message, 'err'));
+    }, sch.backupEveryH * 3600000));
+  }
+}
+
+/** Console autocomplete for this server (commands for its type, online players, history). */
+function complete(id, text, history = []) {
+  const s = raw(id);
+  const rt = running.get(id);
+  return tools.complete(text, { type: s ? s.type : 'paper', players: rt ? [...rt.players] : [], history: Array.isArray(history) ? history.slice(-50) : [] });
+}
+
 function command(id, cmd) {
   const rt = running.get(id);
   if (!rt) throw new Error('Serwer nie działa.');
@@ -494,7 +632,8 @@ function stop(id) {
   rt.state = 'stopping';
   rt.stopping = true;
   emit('server:state', { id, state: 'stopping' });
-  try { rt.child.stdin.write('stop\n'); } catch { /* already closing */ }
+  const s = raw(id);
+  try { rt.child.stdin.write((s && isProxy(s) ? 'end' : 'stop') + '\n'); } catch { /* already closing */ }
   setTimeout(() => { if (running.get(id) === rt) rt.child.kill(); }, 30000);
   return true;
 }
@@ -534,7 +673,7 @@ function stats(id) {
   const pid = rt.child.pid;
   const uptime = Date.now() - rt.started;
   return new Promise((resolve) => {
-    const done = (kb) => resolve({ memMb: kb ? Math.round(kb / 1024) : null, uptime, players: rt.players.size });
+    const done = (kb) => resolve({ memMb: kb ? Math.round(kb / 1024) : null, uptime, players: rt.players.size, tps: rt.tps, nextRestart: rt.nextRestart || null });
     if (process.platform === 'linux') {
       fs.readFile(`/proc/${pid}/status`, 'utf8', (e, t) => done(e ? null : parseInt((/VmRSS:\s+(\d+)/.exec(t) || [])[1], 10)));
     } else if (process.platform === 'win32') {
@@ -675,4 +814,5 @@ module.exports = {
   TYPES, DEFAULT_PROPS, setEmitter, list, get, create, update, remove, install, start, stop, restart, command, logs, stopAll, stats,
   readProperties, players, playerList, backup, listBackups, restoreBackup, deleteBackup, resetWorld, decryptToken, encryptToken, raw,
   loaderVersions, applyDomain, stopAllAndWait, isRunning: (id) => running.has(id), runningCount: () => running.size,
+  propertiesForm, saveProperties, complete, PROXIES, jvmArgsFor, dir,
 };
