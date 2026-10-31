@@ -15,13 +15,15 @@ const DEFAULTS = {
   friends: [],
   friendsRemoved: [],
   settings: {
-    memoryMb: 4096,
+    memoryMb: 0, // 0 = automatically per instance (jvm.js: by mod count, capped by system RAM)
+    jvmMode: 'auto', // Wydajność JVM: auto | g1 | zgc | custom
     javaPath: '',
     jvmArgs: '',
     width: 1280,
     height: 720,
     fullscreen: false,
-    afterLaunch: 'hide', // hide | keep | close
+    afterLaunch: 'hide', // hide | minimize | keep | close
+    lightWhilePlaying: true, // pause the launcher's animations / effects and slow its polling while the game runs
     concurrency: 16,
     showSnapshots: false,
     msClientId: '',
@@ -63,6 +65,8 @@ function load() {
     if (!data.settings.violetMigrated) { if (data.settings.accentPreset === 'orange') data.settings.accentPreset = 'nore'; data.settings.violetMigrated = true; }
     // the Album look is a black album page: move the old default photo background off once (others stay)
     if (!data.settings.albumMigrated) { if (data.settings.bgScene === 'photo') data.settings.bgScene = 'minimal'; if (data.settings.pageTransition === 'rise') data.settings.pageTransition = 'slide'; data.settings.albumMigrated = true; }
+    // 4096 MB was the old fixed default: such players get automatic memory per instance once
+    if (!data.settings.memoryMigrated) { if (Number(data.settings.memoryMb) === 4096) data.settings.memoryMb = 0; data.settings.memoryMigrated = true; }
     data.settings.eventFx = Math.max(25, Math.min(100, Number(data.settings.eventFx) || 100));
   } catch {
     data = structuredClone(DEFAULTS);

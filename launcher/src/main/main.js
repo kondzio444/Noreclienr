@@ -4,6 +4,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const fsp = require('fs/promises');
 const path = require('path');
+const os = require('os');
 const { pathToFileURL } = require('url');
 
 // ------------------------------------------------------------------ IPC guard
@@ -43,12 +44,14 @@ const official = require('./official');
 const hub = require('./hub');
 const notices = require('./notices');
 const keys = require('./keys');
+const perf = require('./perf');
+const jvm = require('./jvm');
+const gameopts = require('./gameopts');
+const importers = require('./importers');
 
 const FABRIC_API_ID = 'P7dR8mSH';
 /** The "Nore Pack": performance + QoL mods installed for modded instances (any Fabric version). */
 const NORE_PACK = ['fabric-api', 'sodium', 'lithium', 'ferrite-core', 'entityculling', 'immediatelyfast', 'modmenu', 'zoomify', 'appleskin'];
-/** Performance mods installed next to Nore Client (several times more FPS than vanilla rendering). */
-const NORE_PERF = ['sodium', 'lithium', 'ferrite-core', 'entityculling', 'immediatelyfast'];
 const ICON = path.join(__dirname, '..', 'renderer', 'assets', 'logo.png');
 
 let win = null;
@@ -555,18 +558,6 @@ async function prepareNore(inst) {
       send('log', { line: `[Launcher] Fabric API niedostępne dla ${inst.mcVersion} (${e.message}) – gram bez niego.`, stream: 'out' });
     }
   }
-  if (inst.perfMods !== false && !inst.perfModsInstalled) {
-    let i = 0;
-    for (const slug of NORE_PERF) {
-      send('progress', { stage: 'Mody wydajności', current: slug, done: i++, total: NORE_PERF.length, step: 'nore' });
-      try {
-        await modrinth.install({ projectId: slug, kind: 'mod', gameVersion: inst.mcVersion, loader: 'fabric', targetDir: mods });
-      } catch (e) {
-        send('log', { line: `[Launcher] ${slug} niedostępny dla ${inst.mcVersion} (${e.message})`, stream: 'out' });
-      }
-    }
-    instances.update(inst.id, { perfModsInstalled: true });
-  }
 }
 
 /** Downloads everything an instance needs (game, loader, Java, Nore Client) without launching. */
@@ -595,6 +586,14 @@ async function prepareGame(inst, settings, progress) {
     }
     instances.update(inst.id, { packInstalled: true });
   }
+  // performance mods (Sodium, Lithium, Krypton...): only what the instance does not have yet, see perf.js
+  if (perf.enabledFor(instances.get(inst.id))) {
+    try {
+      await perf.ensure(instances.get(inst.id), { progress, log: (line) => send('log', { line, stream: 'out' }) });
+    } catch (e) {
+      send('log', { line: `[Launcher] Mody wydajności: ${e.message} – gram bez zmian.`, stream: 'err' });
+    }
+  }
   if (inst.autoUpdateMods && inst.loader !== 'vanilla') {
     try {
       progress({ stage: 'Aktualizacja modów', step: 'nore' });
@@ -609,13 +608,13 @@ async function prepareGame(inst, settings, progress) {
       send('log', { line: `[Launcher] Aktualizacja modów nie powiodła się: ${e.message}`, stream: 'err' });
     }
   }
-  let javaBin = settings.javaPath;
-  if (!javaBin) {
-    const component = (installed.version.javaVersion && installed.version.javaVersion.component) || 'jre-legacy';
-    progress({ stage: 'Java (' + component + ')', step: 'java' });
-    javaBin = await java.ensureRuntime(component, { progress: (p) => progress({ ...p, step: 'java' }) });
-  }
-  return { installed, javaBin };
+  // the Java this Minecraft version needs: the player's own one when it fits, otherwise Mojang's
+  const need = jvm.requiredJava(inst.mcVersion, installed.version);
+  const component = installed.version.javaVersion && installed.version.javaVersion.component;
+  progress({ stage: `Java ${need}`, step: 'java' });
+  const picked = await java.pick({ javaPath: settings.javaPath, need, component, loader: inst.loader, progress: (p) => progress({ ...p, step: 'java' }) });
+  if (picked.note) send('log', { line: '[Launcher] ' + picked.note, stream: 'out' });
+  return { installed, javaBin: picked.bin, javaMajor: picked.major };
 }
 
 /** After a crash: find the cause in the log and (if enabled) fix it automatically. */
@@ -721,7 +720,14 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
     const base = store.get().settings;
     const settings = { ...base, jvmArgs: [base.jvmArgs, inst.jvmArgs].filter(Boolean).join(' ') };
 
-    const { installed, javaBin } = await prepareGame(inst, settings, progress);
+    const { installed, javaBin, javaMajor } = await prepareGame(inst, settings, progress);
+    inst = { ...instances.get(inst.id), joinServer: inst.joinServer };
+
+    // graphics profile chosen in the instance settings (options.txt), written once
+    if (inst.optionsProfile && inst.optionsProfileApplied !== inst.optionsProfile) {
+      await gameopts.applyToInstance(inst, inst.optionsProfile).catch(() => {});
+      instances.update(inst.id, { optionsProfileApplied: inst.optionsProfile });
+    }
 
     await social.sync().catch(() => {});
 
@@ -743,7 +749,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
     const started = Date.now();
     const tail = [];
     // the in-game friends chat talks to the launcher through the local bridge
-    const child = await launcher.launch({ instance: inst, account, settings: { ...settings, chatBridge: inst.noreClient ? chatBridge.address() : null }, installed, javaBin }, {
+    const child = await launcher.launch({ instance: inst, account, settings: { ...settings, chatBridge: inst.noreClient ? chatBridge.address() : null }, installed, javaBin, javaMajor }, {
       onLog: (line, stream) => {
         send('log', { line, stream });
         tail.push(line);
@@ -752,6 +758,7 @@ ipcMain.handle('game:launch', async (e, instanceId, opts = {}) => {
           game.visible = true;
           send('game:state', { running: inst.id, phase: 'running' });
           if (settings.afterLaunch === 'hide' && win) win.hide();
+          if (settings.afterLaunch === 'minimize' && win) win.minimize();
           if (settings.afterLaunch === 'close') app.quit();
         }
       },
@@ -849,6 +856,38 @@ ipcMain.handle('modpacks:import', async () => {
   if (r.canceled || !r.filePaths[0]) return null;
   const file = r.filePaths[0];
   return installPack((progress, concurrency) => modpacks.installFile(file, {}, progress, concurrency));
+});
+
+/** Imports an instance folder of Prism Launcher / MultiMC, the CurseForge app or the Modrinth App. */
+ipcMain.handle('modpacks:importInstance', async () => {
+  const r = await dialog.showOpenDialog(win, { title: 'Wybierz folder instancji (Prism, MultiMC, CurseForge, Modrinth App)', properties: ['openDirectory'] });
+  if (r.canceled || !r.filePaths[0]) return null;
+  const found = importers.detect(r.filePaths[0]);
+  if (!found) throw new Error('Nie rozpoznano instancji. Wybierz folder instancji z Prism Launcher, MultiMC, aplikacji CurseForge albo Modrinth App (ten z plikiem instance.cfg, minecraftinstance.json lub profile.json).');
+  if (!found.mcVersion) throw new Error('Instancja nie podaje wersji Minecraft.');
+  return installPack(async (progress) => {
+    const modpack = found.loader === 'vanilla' ? 'vanilla' : found.loader === 'fabric' ? 'fabric' : 'loader';
+    const inst = instances.create({ name: found.name, mcVersion: found.mcVersion, loader: found.loader, loaderVersion: found.loaderVersion, modpack, askPerf: true });
+    try {
+      await importers.copyGame(found, inst.gameDir, (p) => progress({ ...p }));
+    } catch (e) {
+      await instances.remove(inst.id, true);
+      throw e;
+    }
+    instances.update(inst.id, {
+      loaderVersion: found.loaderVersion, memoryMb: found.memoryMb || 0, jvmArgs: found.jvmArgs || '',
+      imported: { from: found.type, label: found.label, date: Date.now() },
+    });
+    send('log', { line: `[Launcher] Zaimportowano instancję ${found.name} (${found.label}, ${found.mcVersion} ${found.loader})`, stream: 'out' });
+    return instances.get(inst.id);
+  });
+});
+
+/** CurseForge files the author blocked for other apps: the list, and picking them up from Downloads. */
+ipcMain.handle('modpacks:blocked', (e, id) => ((instances.get(id) || {}).pack || {}).blocked || []);
+ipcMain.handle('modpacks:resolveBlocked', (e, id) => {
+  const dirs = [...new Set([app.getPath('downloads'), path.join(os.homedir(), 'Downloads'), path.join(os.homedir(), 'Pobrane')])];
+  return modpacks.resolveBlocked(id, dirs);
 });
 
 ipcMain.handle('modpacks:checkUpdate', async (e, instanceId) => {
@@ -985,6 +1024,8 @@ function checkAllUpdates() {
 function scheduleUpdateChecks(delay = 15000) {
   clearTimeout(updatesTimer);
   updatesTimer = setTimeout(async function tick() {
+    // never compete with the game for CPU / network: try again 10 minutes after it is closed
+    if (game) { updatesTimer = setTimeout(tick, 10 * 60 * 1000); return; }
     if (store.get().settings.notifyContentUpdates !== false) await checkAllUpdates().catch(() => {});
     else { contentUpdates = {}; send('content:updatesState', {}); }
     updatesTimer = setTimeout(tick, UPDATE_CHECK_EVERY);
@@ -1004,6 +1045,88 @@ ipcMain.handle('content:install', async (e, { instanceId, projectId, kind, world
   return (curseforge.isCf(projectId) ? curseforge : modrinth).install({
     projectId, kind, gameVersion: inst.mcVersion, loader, targetDir: contentDir(inst, kind, world), versionId,
   }, (s) => send('content:status', { projectId, status: s }));
+});
+
+// ------------------------------------------------------------------ IPC: performance (perf.js, jvm.js, gameopts.js)
+
+function modded(inst) {
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  if (!inst.loader || inst.loader === 'vanilla') throw new Error('Mody wydajności wymagają instancji z loaderem (Fabric, Quilt, Forge albo NeoForge).');
+  return inst;
+}
+
+/** What "Optymalizuj" would do, without changing anything. */
+ipcMain.handle('perf:preview', async (e, id) => {
+  const inst = modded(instances.get(id));
+  const p = await perf.preview(inst);
+  const { mods } = await jvm.countMods(inst.gameDir);
+  return {
+    enabled: perf.enabledFor(inst),
+    add: p.files.map(f => ({ slug: f.slug, title: f.title, version: f.version, why: f.why || null, dep: f.dep ? perf.titleOf(f.dep) : null, size: f.size })),
+    keep: (inst.perfAdded || []).filter(o => !o.dep && p.plan.keep.includes(o.slug)).map(o => ({ slug: o.slug, title: perf.titleOf(o.slug), file: o.file })),
+    drop: p.plan.drop.map(d => ({ ...d, title: perf.titleOf(d.slug) })),
+    skip: p.plan.skip,
+    missing: p.missing,
+    mods,
+    suggestProfile: mods > 150 ? 'balanced' : null,
+    profile: inst.optionsProfile || null,
+  };
+});
+
+/** Switches the set on and installs it now (the "Optymalizuj" button / the first-time question). */
+ipcMain.handle('perf:apply', async (e, id, { profile, unblock } = {}) => {
+  if (busy) throw new Error('Trwa już przygotowywanie gry.');
+  if (game && game.instanceId === id) throw new Error('Zamknij grę, zanim dodasz mody wydajności.');
+  modded(instances.get(id));
+  busy = true;
+  try {
+    instances.update(id, { perfMods: true, perfAsked: true, ...(unblock ? { perfBlocked: [] } : {}) });
+    const r = await perf.ensure(instances.get(id), { force: true, progress: (p) => send('progress', p), log: (line) => send('log', { line, stream: 'out' }) });
+    if (profile && gameopts.PROFILES[profile]) {
+      await gameopts.applyToInstance(instances.get(id), profile);
+      instances.update(id, { optionsProfile: profile, optionsProfileApplied: profile });
+    }
+    recheckInstance(id);
+    return { added: (r && r.added.map(a => a.file)) || [], removed: (r && r.removed.map(x => x.file)) || [], instance: instances.get(id) };
+  } finally {
+    busy = false;
+    send('progress', null);
+  }
+});
+
+/** Switches the set off and removes every mod the launcher added. */
+ipcMain.handle('perf:remove', async (e, id) => {
+  if (game && game.instanceId === id) throw new Error('Zamknij grę, zanim usuniesz mody wydajności.');
+  const inst = instances.get(id);
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  return { removed: await perf.removeAll(inst), instance: instances.get(id) };
+});
+
+/** "Not now" for the one-time question on older instances. */
+ipcMain.handle('perf:decline', (e, id) => instances.update(id, { perfAsked: true, perfMods: false }));
+
+/** Graphics profile in options.txt ('' = leave the game's own settings alone). */
+ipcMain.handle('instances:optionsProfile', async (e, id, profile) => {
+  const inst = instances.get(id);
+  if (!inst) throw new Error('Nie znaleziono instancji.');
+  profile = gameopts.PROFILES[profile] ? profile : null;
+  instances.update(id, { optionsProfile: profile, optionsProfileApplied: null });
+  if (profile && !(game && game.instanceId === id)) {
+    await gameopts.applyToInstance(inst, profile);
+    instances.update(id, { optionsProfileApplied: profile });
+  }
+  return instances.get(id);
+});
+
+/** Memory the instance gets (for the settings: "Automatycznie – 6 GB"). */
+ipcMain.handle('instances:memoryInfo', async (e, id) => {
+  const inst = instances.get(id);
+  const s = store.get().settings;
+  const totalMb = Math.round(os.totalmem() / 1048576);
+  const size = inst ? await jvm.countMods(inst.gameDir) : { mods: 0, shaders: false };
+  const plan = jvm.memoryPlan({ instanceMb: inst ? inst.memoryMb : 0, settingsMb: s.memoryMb, ...size, loader: inst ? inst.loader : 'vanilla', totalMb });
+  const auto = jvm.autoMemoryMb({ ...size, loader: inst ? inst.loader : 'vanilla', totalMb });
+  return { ...plan, autoMb: auto, mods: size.mods, totalMb, maxMb: jvm.maxGameMb(totalMb) };
 });
 
 ipcMain.handle('content:installed', (e, { instanceId, kind, world }) => {
