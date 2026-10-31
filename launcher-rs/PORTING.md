@@ -15,6 +15,22 @@ workflow `.github/workflows/build.yml` is untouched, `launcher-rs.yml` only buil
 | `compat/nore-tauri.js` | Injected before the page loads (Tauri only): builds `window.nore` with exactly the shape of `launcher/src/preload.js` on top of `invoke` / `listen`. |
 | `../launcher/src/renderer/` | The UI – **shared, not forked**: Tauri serves this folder as its frontend. In Electron `window.nore` already exists, so the compat script never runs there. |
 
+## How to run
+
+```sh
+cd launcher-rs
+cargo test --workspace                     # Rust unit tests (ports of the launcher JS tests)
+cargo clippy --workspace --all-targets -- -D warnings
+npm ci && npm test                         # window.nore compat layer vs launcher/src/preload.js
+npx tauri dev                              # the launcher window (needs WebKitGTK on Linux)
+npx tauri build --debug --bundles deb      # Linux package; Windows: npx tauri build --bundles nsis
+cargo run -p nore-core --bin nore-cli -- channels
+NORE_LAUNCHER_HOME=/tmp/nore cargo run -p nore-core --bin nore-cli -- play --mc 1.21.1 --loader fabric --seconds 30
+```
+
+Linux build dependencies: `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libdbus-1-dev`.
+`NORE_NO_KEYRING=1` skips the system key store (headless machines).
+
 ## How the Rust launcher relates to the Electron one
 
 * **Same data folder** (`%APPDATA%/.norelauncher`, `~/.norelauncher`, `NORE_LAUNCHER_HOME`): versions,

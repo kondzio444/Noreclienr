@@ -406,7 +406,8 @@ mod tests {
         let sep = if cfg!(windows) { ";" } else { ":" };
         assert_eq!(a[0], "-Djava.library.path=/d/versions/1.21.1/natives");
         assert_eq!(a[2], format!("/d/libraries/a.jar{sep}/d/versions/1.21.1/1.21.1.jar"));
-        assert!(a.iter().any(|x| x == "-Dlog4j.configurationFile=/d/assets/log_configs/client-1.12.xml"));
+        let log_cfg = format!("-Dlog4j.configurationFile={}", Path::new("/d/assets").join("log_configs").join("client-1.12.xml").display());
+        assert!(a.contains(&log_cfg));
         assert!(a.iter().any(|x| x.starts_with("-Dnoreclient.session=")));
         assert!(a.iter().any(|x| x == "-Xmx2048M") && a.iter().any(|x| x == "-XX:+UseG1GC"));
         let main = a.iter().position(|x| x == "net.minecraft.client.main.Main").unwrap();
