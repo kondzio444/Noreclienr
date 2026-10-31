@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self' https://0.peerjs.com wss://0.peerjs.com; media-src 'self' blob: mediastream:">
+  <title>Nore Launcher</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="motd.css">
+  <link rel="stylesheet" href="halloween.css">
+  <link rel="stylesheet" href="login.css">
+  <link rel="stylesheet" href="album.css">
+  <link rel="stylesheet" href="events.css">
+  <link rel="stylesheet" href="motion.css">
+</head>
+<body>
+  <!-- app launch storyboard (DESIGN.md §7, dur.launch): the album cover with the logo sticker, then it narrows into the rail -->
+  <div id="splash" aria-hidden="true">
+    <div class="sp-cover"></div>
+    <div class="sp-logo logo-sticker lg"><img src="assets/album/logo-art.png" alt=""></div>
+  </div>
+
+  <div id="bg">
+    <div class="photo"></div>
+    <canvas id="embers"></canvas>
+    <div class="shade"></div>
+  </div>
+
+  <div id="app">
+    <aside id="sidebar">
+      <div class="logo-block">
+        <span class="logo-sticker"><img src="assets/album/logo-art.png" alt=""></span>
+        <div class="lb-text"><h1>Nore</h1><small id="lb-ver">Launcher</small></div>
+      </div>
+      <button class="sb-toggle" id="sb-toggle" title="Zwiń / rozwiń menu"><svg viewBox="0 0 24 24" class="i"><path d="M15 6l-6 6 6 6"/></svg></button>
+      <div class="sb-scroll">
+        <div class="nav-label">Gra</div>
+        <nav class="nav" id="nav-main"></nav>
+        <div class="nav-label">Zawartość</div>
+        <nav class="nav" id="nav-content"></nav>
+        <div class="nav-label">Społeczność</div>
+        <nav class="nav" id="nav-social"></nav>
+        <div class="nav-label">Launcher</div>
+        <nav class="nav" id="nav-launcher"></nav>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="mini-play" id="mini-play"></div>
+        <div class="account-chip" id="account-chip"></div>
+      </div>
+    </aside>
+    <main id="main">
+      <header id="titlebar">
+        <div class="status" id="net-status"><span class="dot"></span><span>Online</span></div>
+        <div class="spacer"></div>
+        <div class="wc">
+          <button id="wc-min" title="Minimalizuj"><svg viewBox="0 0 24 24" class="i"><path d="M5 12h14"/></svg></button>
+          <button id="wc-max" title="Maksymalizuj"><svg viewBox="0 0 24 24" class="i"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button>
+          <button id="wc-close" class="close" title="Zamknij"><svg viewBox="0 0 24 24" class="i"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+      </header>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <div id="toasts"></div>
+  <script src="js/ui.js"></script>
+  <script src="js/motd.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/pages2.js"></script>
+  <script src="js/servers.js"></script>
+  <script src="js/official.js"></script>
+  <script src="js/browse.js"></script>
+  <script src="js/appearance.js"></script>
+  <script src="js/instances.js"></script>
+  <script src="js/doctor.js"></script>
+  <script src="js/social.js"></script>
+  <script src="vendor/peerjs.min.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/home14.js"></script>
+  <script src="js/login.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/halloween.js"></script>
+  <script src="js/notices.js"></script>
+</body>
+</html>

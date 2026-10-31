@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Nore Client – Minecraft po swojemu</title>
+  <meta name="description" content="Nore Client – darmowy klient Minecraft z własnym launcherem: radialne menu, 97 modułów, Szatnia, serwer dla znajomych jednym kliknięciem. Premium albo sam nick. Wersje 1.20 – 26.3.">
+  <meta name="theme-color" content="#141216">
+  <meta property="og:title" content="Nore Client – Minecraft po swojemu">
+  <meta property="og:description" content="Klient i launcher w jednym. Premium albo sam nick.">
+  <meta property="og:image" content="/assets/home/menu.webp">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preload" href="/assets/fonts/dela-gothic-one-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip" href="#tresc">Przejdź do treści</a>
+  <header class="site-nav">
+    <a class="mark" href="/" aria-label="Nore – strona główna"><img src="/assets/album/logo-sticker-256.png" alt="" width="42" height="42">Nore</a>
+    <nav class="links" aria-label="Główne">
+      <a href="#moduly">Moduły</a>
+      <a href="#szatnia">Szatnia</a>
+      <a href="#wydarzenia">Wydarzenia</a>
+      <a href="https://mc.noreclient.pl/">Nore MC</a>
+      <a href="/api">API</a>
+    </nav>
+    <a class="pill sm" href="#pobierz">Pobierz</a>
+  </header>
+
+  <main id="tresc">
+    <!-- the counter object: one die-cut sticker with real product screens, a headline, one row -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="object rv rv-stick" data-ui>
+        <div class="st art" style="--tilt:-3deg">
+          <img class="a" src="/assets/home/menu.webp" alt="Menu główne Nore Client z panoramą wiśniowego stawu" width="1600" height="900" fetchpriority="high">
+          <img class="b" src="/assets/home/ward-capes.webp" alt="Peleryny Halloween w Szatni" width="900" height="900">
+          <img class="c" src="/assets/home/launcher.webp" alt="Ekran Start w Nore Launcherze" width="1200" height="750">
+        </div>
+        <img class="logo" src="/assets/album/logo-sticker-256.png" alt="" width="256" height="256">
+        <img class="corner sprite glow" id="hero-sprite" src="/assets/album/pumpkin-sticker.png" alt="" width="204" height="204">
+        <span class="tag" id="hero-tag">Halloween<br>do 3 listopada</span>
+      </div>
+      <h1 id="hero-title" class="rv">Minecraft po swojemu.</h1>
+      <div class="row rv">
+        <span id="hero-ver">Wersje 1.20 – 26.3</span>
+        <a class="pill lg" id="dl-hero" href="/api/v2/downloads/win"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg><span>Pobierz dla Windows</span></a>
+        <span>Za darmo · premium albo sam nick</span>
+      </div>
+      <p class="live rv" id="hero-live" aria-live="polite"><i class="dot off"></i><span>Sprawdzam, ilu graczy Nore jest w grze…</span></p>
+    </section>
+
+    <!-- violet field: the headline is interrupted by letter-height screenshot stickers -->
+    <section class="band" id="klient" aria-labelledby="band-title">
+      <h2 id="band-title" class="rv">Jeden klik <span class="cut" style="background-image:url(/assets/home/radial.webp)" role="img" aria-label="Menu radialne"></span>i jesteś w grze<span class="cut" style="--tilt:5deg;background-image:url(/assets/home/ward-wings.webp)" role="img" aria-label="Skrzydła Nietoperza w Szatni"></span></h2>
+      <div class="lower">
+        <p class="rv">Launcher sam instaluje grę, mody i Nore Client. Radialne menu, 97 modułów i Szatnia są już w środku.</p>
+        <a class="pill ink rv" href="#moduly">Zobacz, co jest w środku</a>
+      </div>
+    </section>
+
+    <!-- the live thing: type your nick, get it back as a name sticker with your head -->
+    <section class="nick" id="nick" aria-labelledby="nick-title">
+      <div class="nick-copy">
+        <h2 id="nick-title" class="heading rv">Sam nick wystarczy</h2>
+        <p class="rv">Bez konta premium grasz w singleplayerze, na LAN-ie i na serwerach non-premium. Wpisz swój nick i zobacz, jak wygląda w launcherze.</p>
+        <div class="tries rv"><span>Spróbuj:</span>
+          <button type="button" class="pill quiet sm" data-nick="Notch">Notch</button>
+          <button type="button" class="pill quiet sm" data-nick="jeb_">jeb_</button>
+          <button type="button" class="pill quiet sm" data-nick="Dinnerbone">Dinnerbone</button>
+        </div>
+      </div>
+      <div class="nick-play">
+        <label class="plate rv" for="nick-in">
+          <span>Ten album należy do</span>
+          <input id="nick-in" value="Steve_PL" maxlength="16" spellcheck="false" autocomplete="off" autocapitalize="off" aria-describedby="nick-note">
+        </label>
+        <div class="namecard rv" id="nick-out" aria-live="polite" data-ui>
+          <img class="head" id="nick-head" src="https://mc-heads.net/avatar/Steve/96" alt="" width="96" height="96">
+          <div class="who"><b id="nick-name">Steve_PL</b><span class="tags"><span class="label dark" id="nick-tag">bez premium</span><span class="hub" id="nick-hub"></span></span></div>
+          <span class="graj">GRAJ</span>
+        </div>
+        <p class="note rv" id="nick-note">Tak zobaczysz siebie w launcherze. Singleplayer, LAN i serwery non-premium działają od razu.</p>
+      </div>
+    </section>
+
+    <!-- the board: close-ups of the real interface -->
+    <section class="board" id="galeria" aria-labelledby="board-title">
+      <div class="grid">
+        <div class="tile t-head"><h2 id="board-title" class="heading rv">Wszystko pod ręką</h2></div>
+        <a class="tile t-mod rv" href="#moduly">
+          <div data-ui class="ui-mods" aria-hidden="true"><div class="m on"><i></i>Keystrokes</div><div class="m on"><i></i>Armor Status</div><div class="m off"><i></i>Freelook</div><div class="m on"><i></i>Zoom</div><div class="m on"><i></i>CPS</div><div class="m off"><i></i>Auto GG</div></div>
+          <span class="cap"><b>97 modułów jak naklejki</b><span>Włączony moduł to naklejka w albumie. Wyłączony zostawia pusty slot.</span></span>
+        </a>
+        <div class="tile t-keys cloth rv">
+          <div data-ui class="ui-keys" aria-hidden="true"><span>Prawy</span><span>Shift</span></div>
+          <span class="cap"><b>Menu pod jednym klawiszem</b><span>Prawy Shift w każdej wersji.</span></span>
+        </div>
+        <figure class="tile t-radial rv"><img class="art" src="/assets/home/radial.webp" alt="Radialne menu Nore Client z kategoriami i modułami" loading="lazy" width="1200" height="750"><figcaption class="cap"><b>Menu radialne</b><span>Osiem sektorów, dwa pierścienie.</span></figcaption></figure>
+        <a class="tile t-dots rv" href="#serwer"><span data-ui class="ui-dots" aria-hidden="true"><i class="ready"></i><i class="wait"></i></span><span class="cap"><b>Serwer w minutę</b><span>Paper, Fabric, Forge i tunel playit.gg.</span></span></a>
+        <a class="tile t-ev rv" href="#wydarzenia" id="tile-ev"><img data-ui class="ui-ev sprite glow" id="tile-ev-img" src="/assets/album/pumpkin-sticker.png" alt="" width="204" height="204"><span class="cap"><b id="tile-ev-title">Halloween trwa</b><span id="tile-ev-text">3 peleryny do 3 listopada.</span></span></a>
+        <a class="tile t-ward rv" href="#szatnia"><img class="art" src="/assets/home/ward-capes.webp" alt="" loading="lazy" width="900" height="900"><span class="cap"><b>Szatnia na F5</b><span>Peleryny, skrzydła i kapelusz, widoczne w F5.</span></span></a>
+        <figure class="tile t-upd rv"><video class="art" src="/assets/api/updater.webm" poster="/assets/home/updater.webp" muted loop playsinline autoplay preload="none" aria-label="Nore Updater pobiera i instaluje nową wersję" width="1200" height="750"></video><figcaption class="cap"><b>Aktualizuje się sam</b><span>Nore Updater pobiera wydanie i sprawdza SHA-256, zanim cokolwiek zainstaluje.</span></figcaption></figure>
+        <figure class="tile t-launch rv"><img class="art" src="/assets/home/launcher.webp" alt="Ekran Start w Nore Launcherze: instancja, przycisk Graj i ostatnio grane" loading="lazy" width="1200" height="750"><figcaption class="cap"><b>Launcher · Start</b><span>Jeden klik, zero konfiguracji.</span></figcaption></figure>
+        <figure class="tile t-srv rv"><img class="art" src="/assets/home/servers.webp" alt="Lista serwerów w Nore Launcherze z MOTD i stanem" loading="lazy" width="1200" height="750"><figcaption class="cap"><b>Twoje serwery</b><span>Sześć silników i tunel dla znajomych.</span></figcaption></figure>
+        <div class="tile t-nick rv"><div data-ui class="ui-switch" aria-hidden="true">Bez premium<span class="sw"></span></div><span class="cap"><b>Konto premium albo sam nick</b><span>Logowanie Microsoft lub nick, zawsze dostępny.</span></span></div>
+        <figure class="tile t-sky rv"><img class="art" src="/assets/home/sky.webp" alt="Wiśnie o zachodzie słońca, niebo z modułu Sky Style" loading="lazy" width="1200" height="750"><figcaption class="cap"><b>Sky Style</b><span>Siedem stylów nieba i jeden własny.</span></figcaption></figure>
+        <figure class="tile t-wiz rv"><img class="art" src="/assets/home/wizard.webp" alt="Kreator pierwszego uruchomienia Nore Launchera" loading="lazy" width="1200" height="750"><figcaption class="cap"><b>Pierwsze uruchomienie</b><span>Kreator w sześciu krokach, około dwóch minut.</span></figcaption></figure>
+      </div>
+    </section>
+
+    <!-- modules: categories as index tabs, modules as stickers you can peel -->
+    <section class="mods" id="moduly" aria-labelledby="mod-title">
+      <div class="mods-head">
+        <h2 id="mod-title" class="heading rv">97 modułów pod Prawym Shiftem</h2>
+        <p class="rv">Kliknij naklejkę, żeby ją odkleić. W grze tak samo włączasz i wyłączasz moduły.</p>
+      </div>
+      <div class="seg rv" role="tablist" aria-label="Kategorie modułów" id="mod-tabs">
+        <button role="tab" aria-selected="true" data-cat="HUD">HUD</button>
+        <button role="tab" aria-selected="false" data-cat="Render">Render</button>
+        <button role="tab" aria-selected="false" data-cat="Gracz">Gracz</button>
+        <button role="tab" aria-selected="false" data-cat="Narzędzia">Narzędzia</button>
+        <button role="tab" aria-selected="false" data-cat="Klient">Klient</button>
+      </div>
+      <div class="sheet-grid rv" id="mod-grid" role="tabpanel" aria-labelledby="mod-title">
+        <button type="button" class="mod" aria-pressed="true"><b>FPS</b><span>Liczba klatek na sekundę</span></button>
+        <button type="button" class="mod" aria-pressed="true"><b>CPS</b><span>Kliknięcia na sekundę (LPM | PPM)</span></button>
+        <button type="button" class="mod" aria-pressed="true"><b>Keystrokes</b><span>Podgląd wciskanych WASD i myszy</span></button>
+        <button type="button" class="mod" aria-pressed="true"><b>Armor Status</b><span>Zbroja i jej wytrzymałość</span></button>
+      </div>
+      <p class="mods-count rv" id="mod-count" aria-live="polite"></p>
+    </section>
+
+    <!-- server in a minute: type a MOTD, see it in the server list -->
+    <section class="srv" id="serwer" aria-labelledby="srv-title">
+      <div class="srv-copy">
+        <h2 id="srv-title" class="heading rv">Serwer w minutę</h2>
+        <p class="rv">Napisz MOTD swojego serwera z kodami §. Tak zobaczą go znajomi na liście serwerów.</p>
+        <ul class="facts rv">
+          <li><i class="dot ready"></i>Paper, Purpur, Fabric, Quilt, Forge albo NeoForge</li>
+          <li><i class="dot info"></i>Tunel playit.gg dla znajomych spoza Twojej sieci</li>
+          <li><i class="dot nore"></i>Kopie zapasowe, pluginy i własna domena</li>
+        </ul>
+      </div>
+      <div class="srv-play">
+        <div class="motd rv" data-ui>
+          <pre class="motd-edit"><code id="motd-src" contenteditable="plaintext-only" spellcheck="false" role="textbox" aria-multiline="true" aria-label="MOTD serwera">§dNore SMP §8| §aSurvival 1.21
+§7Wbijaj z nickiem, §ebez premium§7!</code></pre>
+          <div class="codes" aria-label="Wstaw kolor">
+            <button type="button" data-code="§a" style="--c:#55ff55">§a</button>
+            <button type="button" data-code="§e" style="--c:#ffff55">§e</button>
+            <button type="button" data-code="§c" style="--c:#ff5555">§c</button>
+            <button type="button" data-code="§6" style="--c:#ffaa00">§6</button>
+            <button type="button" data-code="§b" style="--c:#55ffff">§b</button>
+            <button type="button" data-code="§d" style="--c:#ff55ff">§d</button>
+            <button type="button" data-code="§l" style="--c:#ffffff">§l</button>
+            <button type="button" data-code="§k" style="--c:#aaaaaa">§k</button>
+          </div>
+        </div>
+        <div class="srvrow rv" data-ui>
+          <img class="ico" src="/assets/logo.png" alt="" width="64" height="64">
+          <div class="txt"><b>Nore SMP</b><div class="motd-out" id="motd-out"></div></div>
+          <div class="right"><span class="sig" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="cnt">3<span>/20</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- wardrobe: a big sticker and the cosmetics -->
+    <section class="ward" id="szatnia" aria-labelledby="ward-title">
+      <figure class="ward-img rv rv-stick"><div class="st art" style="--tilt:2deg"><img id="ward-img" src="/assets/home/ward-capes.webp" alt="Animowane peleryny Halloween w Szatni" loading="lazy" width="900" height="900"></div></figure>
+      <div class="ward-side">
+        <div class="seg rv" role="tablist" aria-label="Kosmetyki">
+          <button role="tab" aria-selected="true" data-w="capes">Halloween</button>
+          <button role="tab" aria-selected="false" data-w="history">Historia Nore</button>
+          <button role="tab" aria-selected="false" data-w="hat">Kapelusz</button>
+          <button role="tab" aria-selected="false" data-w="wings">Skrzydła</button>
+        </div>
+        <h2 id="ward-title" class="heading rv">Ubierz się na F5</h2>
+        <p id="ward-desc" class="rv">Trzy animowane peleryny Halloween: Dynia, Nietoperz i Pajęczyna. Do tego Kapelusz Wiedźmy i Skrzydła Nietoperza, widoczne w F5.</p>
+        <ul class="capes rv" aria-label="Peleryny Halloween">
+          <li><img class="glow" src="/assets/album/cape-dynia.png" alt="" width="176" height="292"><span>Dynia</span></li>
+          <li><img class="glow" src="/assets/album/cape-nietoperz.png" alt="" width="174" height="290"><span>Nietoperz</span></li>
+          <li><img class="glow" src="/assets/album/cape-pajeczyna.png" alt="" width="174" height="292"><span>Pajęczyna</span></li>
+        </ul>
+        <p class="small soft rv">Kosmetyki widzisz Ty i inni gracze Nore. Na serwerze nic się nie zmienia.</p>
+      </div>
+    </section>
+
+    <!-- events: posters taped to the page, with live countdowns -->
+    <section class="events" id="wydarzenia" aria-labelledby="ev-title">
+      <h2 id="ev-title" class="heading rv">Wydarzenia włączają się same</h2>
+      <div class="posters">
+        <article class="poster hw rv" id="ev-halloween">
+          <span class="tape kraft"></span>
+          <img class="ph art" src="/assets/home/halloween.webp" alt="Peleryny Halloween: Dynia, Nietoperz, Pajęczyna" loading="lazy" width="640" height="400">
+          <h3>Zgaszone światło</h3>
+          <p class="when"><i class="dot event"></i><span id="hw-when">Halloween · 15 października – 3 listopada</span></p>
+          <p>Dynie w menu gry, nietoperze, latarka w launcherze i trzy świecące peleryny. Mini-gra Łap dynie czeka w launcherze.</p>
+          <p class="count tnum" id="hw-count" aria-live="polite"></p>
+        </article>
+        <article class="poster wt rv" id="ev-winter">
+          <span class="tape mint"></span>
+          <img class="ph art" src="/assets/home/winter.webp" alt="Zimowy motyw Nore Launchera ze śniegiem" loading="lazy" width="640" height="400">
+          <h3>Seria zimowa</h3>
+          <p class="when"><i class="dot info"></i><span>Od 10 grudnia 2026</span></p>
+          <p>Śnieg z konfetti, świąteczne lampki w menu i zimowe naklejki z folią. Włączy się sam, bez aktualizacji.</p>
+          <div class="clock tnum" id="wt-clock" aria-live="off"><span><b>–</b>dni</span><span><b>–</b>godz.</span><span><b>–</b>min</span><span><b>–</b>s</span></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- news and the changelog: clippings and the newest release -->
+    <section class="news" id="nowosci" aria-labelledby="news-title">
+      <h2 id="news-title" class="heading rv">Co nowego</h2>
+      <div class="news-grid">
+        <article class="release rv" id="release" aria-live="polite">
+          <h3 id="rel-title">Najnowsze wydanie</h3>
+          <div class="rel-head"><span class="label nore" id="rel-ver">Nore 1.4</span><span class="soft" id="rel-date"></span></div>
+          <ul class="notes" id="rel-notes"><li>Lista zmian wczyta się z GitHub Releases.</li></ul>
+          <a class="pen" id="rel-link" href="https://github.com/kondzio444/Noreclienr/releases">Wszystkie wydania na GitHubie</a>
+        </article>
+        <div class="clips" id="news-list">
+          <article class="clip rv" style="--tilt:-1.2deg"><span class="tape"></span><p class="meta">16 października 2026 · Launcher</p><h3>Nowy wygląd i nowe logowanie premium</h3><p>Nowe logowanie Microsoft: tokeny szyfrowane systemowo i sprawdzane w Mojang przy starcie. Konta non-premium działają jak dotąd.</p></article>
+          <article class="clip rv" style="--tilt:.8deg"><span class="tape mint"></span><p class="meta">16 października 2026 · Nore Client</p><h3>Szatnia: Kapelusz Wiedźmy i Skrzydła Nietoperza</h3><p>W grze pojawiła się Szatnia – animowane skrzydła, kapelusz z klamrą i peleryny Halloween widoczne w F5.</p></article>
+          <article class="clip rv" style="--tilt:-.6deg"><span class="tape kraft"></span><p class="meta">15 października 2026 · Wydarzenia</p><h3>Halloween trwa, zima od 10 grudnia</h3><p>Halloween jest teraz włączony dla wszystkich. 10 grudnia 2026 sam włączy się zimowy event.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- versions: a white sticker poster -->
+    <section class="vers" id="wersje" aria-labelledby="ver-title">
+      <div class="vers-card rv">
+        <h2 id="ver-title" class="heading">Każda wersja od 1.20</h2>
+        <ul class="vers-list" id="ver-list">
+          <li><b>26.3</b><small>Fabric · Java 25</small></li>
+          <li><b>26.2</b><small>Fabric · Java 25</small></li>
+          <li><b>26.1</b><small>26.1 – 26.1.2 · Java 25</small></li>
+          <li><b>1.21</b><small>1.21 – 1.21.11 · Java 21</small></li>
+          <li><b>1.20</b><small>1.20 – 1.20.6 · Java 17 / 21</small></li>
+        </ul>
+        <p class="vers-note" id="ver-note">Launcher sam dobiera loader i Javę do wersji.</p>
+      </div>
+    </section>
+
+    <!-- download: the sentence has a blank -->
+    <section class="dl" id="pobierz" aria-labelledby="dl-title">
+      <form class="dl-line rv" id="dl-form" action="/api/v2/downloads/win" method="get">
+        <h2 id="dl-title" class="heading"><span>Nore na</span>
+          <label class="sr" for="dl-os">System</label>
+          <select id="dl-os" class="dl-sel">
+            <option value="win">Windows</option>
+            <option value="linux">Linux</option>
+            <option value="mac">macOS</option>
+            <option value="mac-zip">macOS (ZIP)</option>
+          </select>
+        </h2>
+        <button class="pill lg" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Pobierz</button>
+      </form>
+      <p class="dl-note rv" id="dl-note">Pobierasz najnowsze wydanie prosto z GitHub Releases. Instalator sam przeprowadzi Cię przez konto, wygląd i pamięć.</p>
+      <dl class="stats rv" id="stats">
+        <div><dt>graczy Nore w grze</dt><dd id="st-online">–</dd></div>
+        <div><dt>graczy z ostatnich 30 dni</dt><dd id="st-known">–</dd></div>
+        <div><dt>pobrań z GitHub Releases</dt><dd id="st-dl">–</dd></div>
+      </dl>
+      <ul class="files rv" id="dl-files" aria-label="Pliki najnowszego wydania"></ul>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="pytania" aria-labelledby="faq-title">
+      <h2 id="faq-title" class="heading rv">Pytania</h2>
+      <div class="qa-list">
+        <details class="qa rv" name="faq" open><summary>Czy potrzebuję premium?</summary><p>Nie. Zaloguj się kontem Microsoft (Minecraft: Java Edition albo Game Pass) albo wpisz sam nick i graj w singleplayerze, na LAN-ie i na serwerach non-premium.</p></details>
+        <details class="qa rv" name="faq"><summary>Czy to kosztuje?</summary><p>Nie. Klient, launcher, kosmetyki i serwery są darmowe. Kod jest publiczny na GitHubie.</p></details>
+        <details class="qa rv" name="faq"><summary>Kto widzi moje kosmetyki?</summary><p>Ty i inni gracze Nore, którzy grają z Tobą. Peleryny, skrzydła i kapelusz to dodatki po stronie klienta: na serwerze nic się nie zmienia.</p></details>
+        <details class="qa rv" name="faq"><summary>Jak działają aktualizacje?</summary><p>Nore Updater sprawdza nowe wydanie przy starcie, pobiera je w tle i sprawdza sumę SHA-256, zanim cokolwiek zainstaluje. Mody i modpacki aktualizują się bez utraty światów.</p></details>
+        <details class="qa rv" name="faq"><summary>Gdzie jest moje hasło?</summary><p>Nigdzie u nas. Hasło wpisujesz tylko na stronie Microsoft, a launcher trzyma zaszyfrowany token w systemowym sejfie i sprawdza go w Mojang przy każdym starcie.</p></details>
+        <details class="qa rv" name="faq"><summary>Czy jest serwer Nore?</summary><p>Tak, Nore MC pod adresem mc.noreclient.pl. W Nore Launcherze dołączasz do niego jednym kliknięciem. Adres, zasady i stan serwera na żywo znajdziesz na stronie mc.noreclient.pl.</p></details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <p class="name" aria-hidden="true">Nore</p>
+    <div class="row">
+      <span class="state" data-api-state><i class="dot off"></i>Sprawdzam stan API…</span>
+      <div class="cols">
+        <ul><li><a href="#moduly">Moduły</a></li><li><a href="#szatnia">Szatnia</a></li><li><a href="#wydarzenia">Wydarzenia</a></li><li><a href="#nowosci">Co nowego</a></li></ul>
+        <ul><li><a href="/api/v2/downloads/win">Windows</a></li><li><a href="/api/v2/downloads/linux">Linux</a></li><li><a href="/api/v2/downloads/mac">macOS</a></li><li><a href="https://github.com/kondzio444/Noreclienr/releases">Wydania</a></li></ul>
+        <ul><li><a href="https://mc.noreclient.pl/">Serwer Nore MC</a></li><li><a href="/panel">Panel Nore Bota</a></li><li><a href="/api">API</a></li><li><a href="https://github.com/kondzio444/Noreclienr">GitHub</a></li></ul>
+      </div>
+    </div>
+    <div class="legal">
+      <span>Nore Client nie jest powiązany z Mojang Studios ani Microsoft. Minecraft jest znakiem towarowym Mojang AB.</span>
+      <a class="pen" href="#top">Na górę</a>
+    </div>
+  </footer>
+
+  <script src="/assets/album.js" defer></script>
+  <script src="/app.js" defer></script>
+</body>
+</html>

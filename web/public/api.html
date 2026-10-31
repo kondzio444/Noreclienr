@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>API Nore – dokumentacja v2</title>
+  <meta name="description" content="Publiczne API Nore: wydania, pobrania, wydarzenia, gracze Nore, ping serwerów Minecraft oraz API Nore Bota i panelu. JSON bez klucza, CORS i ETag. Dokumentacja v2 z konsolą na żywo, v1 dla starszych launcherów.">
+  <meta name="theme-color" content="#141216">
+  <meta property="og:title" content="API Nore">
+  <meta property="og:description" content="JSON bez klucza, z CORS i ETag. Wersja v2 z konsolą na żywo.">
+  <meta property="og:image" content="/assets/api/menu-news.webp">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preload" href="/assets/fonts/dela-gothic-one-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <link rel="stylesheet" href="/api.css">
+</head>
+<body>
+  <a class="skip" href="#tresc">Przejdź do treści</a>
+  <header class="site-nav">
+    <a class="mark" href="/" aria-label="Nore – strona główna"><img src="/assets/album/logo-sticker-256.png" alt="" width="42" height="42">Nore</a>
+    <nav class="links" aria-label="Główne">
+      <a href="/#moduly">Klient</a>
+      <a href="/#szatnia">Szatnia</a>
+      <a href="/#wydarzenia">Wydarzenia</a>
+      <a href="https://mc.noreclient.pl/">Nore MC</a>
+      <a href="/api" aria-current="page">API</a>
+    </nav>
+    <a class="pill sm" href="/api/v2/openapi.json">OpenAPI</a>
+  </header>
+
+  <div class="doc">
+    <nav class="index" id="index" aria-label="Endpointy">
+      <p class="grp">Na start</p>
+      <a href="#konsola"><span class="m info">żywo</span>Konsola</a>
+      <a href="#endpointy"><span class="m get">GET</span><code>/api/v2</code></a>
+      <a href="#v1"><span class="m old">v1</span>Starsze API</a>
+    </nav>
+
+    <main id="tresc">
+      <section class="intro" aria-labelledby="api-title">
+        <h1 id="api-title" class="rv">API Nore</h1>
+        <p class="lead rv">Wydania, wydarzenia, gracze Nore i ping serwerów Minecraft. JSON bez klucza, z CORS i ETag. Wersja v2 działa pod <code>/api/v2</code>, a v1 zostaje dla starszych launcherów i modów.</p>
+        <ul class="facts rv" id="facts" aria-live="polite">
+          <li><i class="dot off"></i><span id="f-status">Sprawdzam stan…</span></li>
+          <li><i class="dot info"></i><span>OpenAPI 3.1</span></li>
+          <li><i class="dot nore"></i><span>Bez klucza</span></li>
+          <li><i class="dot off" id="f-edge-dot"></i><span id="f-edge">Odpowiada Cloudflare</span></li>
+        </ul>
+      </section>
+
+      <!-- the live console: any public GET, with headers, a pretty body and a preview of what the launcher shows -->
+      <section class="console" id="konsola" aria-labelledby="console-title">
+        <h2 id="console-title" class="heading rv">Zapytaj na żywo</h2>
+        <p class="rv">Wybierz adres i parametry. Odpowiedź przychodzi prosto z tego serwera, razem z nagłówkami.</p>
+        <form class="req rv" id="console-form">
+          <label class="sel"><span class="sr">Endpoint</span>
+            <select id="ep" name="ep">
+              <option value="/api/v2/status">GET /api/v2/status</option>
+            </select>
+          </label>
+          <div class="params" id="params"></div>
+          <button class="pill" type="submit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Wyślij</button>
+        </form>
+        <div class="out rv" data-ui>
+          <div class="url"><span class="m get">GET</span><code id="req-url">/api/v2/status</code><a class="pen" id="res-open" href="/api/v2/status" target="_blank" rel="noopener">Otwórz w nowej karcie</a></div>
+          <div class="status tnum" aria-live="polite">
+            <b id="res-status"><i class="dot off"></i>–</b><span id="res-time">– ms</span><span id="res-cache">cache –</span><span id="res-etag">ETag –</span>
+          </div>
+          <pre><code id="res-body">Wybierz endpoint i wyślij zapytanie.</code></pre>
+          <div class="seen" id="preview" hidden></div>
+        </div>
+        <p class="hint rv">To samo z terminala: <code id="curl">curl https://noreclient.pl/api/v2/status</code></p>
+      </section>
+
+      <section class="shots" aria-labelledby="seen-title">
+        <h2 id="seen-title" class="heading rv">Te dane widzisz w grze</h2>
+        <div class="shots-grid">
+          <figure class="shot wide rv"><img class="art" src="/assets/api/menu-news.webp" width="1180" height="700" alt="Menu główne Nore Client z wiśniowym stawem w tle i kartą Nowe w 1.4 Beta"><figcaption><code>/news</code> i <code>/events</code> w menu głównym moda.</figcaption></figure>
+          <figure class="shot rv"><video class="art" width="400" height="480" muted loop playsinline autoplay preload="none" poster="/assets/api/updater-download.webp" aria-label="Nore Updater pobiera nową wersję i sprawdza sumę kontrolną"><source src="/assets/api/updater.webm" type="video/webm"><source src="/assets/api/updater.mp4" type="video/mp4"></video><figcaption><code>/releases/latest</code>: Nore Updater sprawdza SHA-256 pobranego pliku.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/launcher-winter.webp" width="1220" height="760" alt="Ekran główny Nore Launcher z kartą wydarzenia Święta w Nore i odliczaniem"><figcaption><code>/events</code>: zimowy motyw włącza się sam 10 grudnia.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/radial-menu.webp" width="1180" height="700" alt="Radialne menu Nore: kategorie w wewnętrznym pierścieniu i moduły na zewnętrznym"><figcaption>Radialne menu, wersja z <code>/releases/latest</code>.</figcaption></figure>
+          <figure class="shot rv"><img class="art" src="/assets/api/updater-done.webp" width="400" height="480" alt="Nore Updater po aktualizacji: zielony pierścień i napis Zaktualizowano"><figcaption>Po aktualizacji Updater wita nową wersję.</figcaption></figure>
+        </div>
+      </section>
+
+      <!-- every v2 endpoint, rendered from /api/v2/openapi.json -->
+      <section class="eps" id="endpointy" aria-labelledby="eps-title">
+        <h2 id="eps-title" class="heading rv">Wszystkie adresy v2</h2>
+        <p class="rv">Każda odpowiedź JSON to obiekt: sukces <code>{ "ok": true, … }</code>, błąd <code>{ "ok": false, "status", "code", "error" }</code> z opisem po polsku. Lista poniżej powstaje z <a class="pen" href="/api/v2/openapi.json">opisu OpenAPI</a>, więc zawsze zgadza się z serwerem.</p>
+        <div id="ep-list">
+          <ul class="fallback">
+            <li><code>GET /api/v2/status</code> – stan API i komponentów</li>
+            <li><code>GET /api/v2/releases/latest</code> – najnowsze wydanie</li>
+            <li><code>GET /api/v2/downloads</code> – pliki i liczniki pobrań</li>
+            <li><code>GET /api/v2/events</code> – wydarzenia z odliczaniem</li>
+            <li><code>GET /api/v2/players/{name}</code> – Nore Hub: gracz</li>
+            <li><code>GET /api/v2/servers/{address}</code> – ping serwera Minecraft</li>
+            <li><code>GET /api/v2/stats</code> – statystyki</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- how a request is served: four stages on one slider -->
+      <section class="stages" id="w-tle" aria-labelledby="stage-title">
+        <h2 id="stage-title" class="heading rv">Zapytanie trafia na krawędź</h2>
+        <p class="rv" id="stage-note">Odpowiada serwer Cloudflare najbliżej Ciebie, nie jeden komputer gdzieś daleko.</p>
+        <div class="stage-frag rv" data-ui aria-live="polite">
+          <dl id="stage-rows"></dl>
+          <div class="flow" id="stage-flow"></div>
+        </div>
+        <div class="seg rv" role="tablist" aria-label="Etap zapytania" id="stage-tabs">
+          <button role="tab" aria-selected="true" data-s="0">Krawędź</button>
+          <button role="tab" aria-selected="false" data-s="1">Pamięć</button>
+          <button role="tab" aria-selected="false" data-s="2">Odświeżanie</button>
+          <button role="tab" aria-selected="false" data-s="3">Cron</button>
+        </div>
+      </section>
+
+      <!-- API v1, kept for released launchers and mods -->
+      <section class="v1" id="v1" aria-labelledby="v1-title">
+        <h2 id="v1-title" class="heading rv">Starsze API v1</h2>
+        <p class="rv">Adresy <code>/api/v1</code> działają bez zmian: wołają je wydane wersje Nore Launchera, Nore Updatera i moda. Nowe programy niech używają v2. Odpowiedzi v1 nie mają koperty <code>ok</code>.</p>
+        <div class="v1-table rv">
+          <table>
+            <thead><tr><th scope="col">Metoda</th><th scope="col">Adres</th><th scope="col">Co zwraca</th><th scope="col">Zamiennik v2</th></tr></thead>
+            <tbody id="v1-rows">
+              <tr><td>GET</td><td><code>/api/v1/version</code></td><td>Najnowsze wydanie</td><td><code>/api/v2/releases/latest</code></td></tr>
+              <tr><td>GET</td><td><code>/api/v1/download/{platform}</code></td><td>Przekierowanie do instalatora</td><td><code>/api/v2/downloads/{platform}</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="faq" id="pytania" aria-labelledby="faq-title">
+        <h2 id="faq-title" class="heading rv">Zanim zapytasz</h2>
+        <div class="qa-list">
+          <details class="qa rv" name="faq" open><summary>Czy potrzebuję klucza?</summary><p>Nie. Publiczne adresy działają bez rejestracji. Prosimy tylko, żeby jeden program nie pytał częściej niż co minutę: dane i tak zmieniają się co kilka minut. Ping serwerów ma limit 20 zapytań na minutę na IP.</p></details>
+          <details class="qa rv" name="faq"><summary>Mogę wołać API z przeglądarki?</summary><p>Tak. Publiczne odpowiedzi mają <code>Access-Control-Allow-Origin: *</code>, więc <code>fetch()</code> działa z każdej strony. Adresy panelu i bota nie są publiczne.</p></details>
+          <details class="qa rv" name="faq"><summary>Co znaczy X-Nore-Cache?</summary><p><code>HIT</code> to świeże dane z pamięci, <code>STALE</code> to starsze dane podane od razu i odświeżane w tle, <code>MISS</code> to pierwsze zapytanie z danymi pobranymi na żywo.</p></details>
+          <details class="qa rv" name="faq"><summary>Jak oszczędzać transfer?</summary><p>Zapisz nagłówek <code>ETag</code> i wyślij go następnym razem w <code>If-None-Match</code>. Jeśli nic się nie zmieniło, dostaniesz pustą odpowiedź 304.</p></details>
+          <details class="qa rv" name="faq"><summary>Jak rozpoznać błąd?</summary><p>Po polu <code>ok: false</code> i kodzie HTTP. Pole <code>code</code> jest stałe (na przykład <code>rate_limited</code>), a <code>error</code> to opis dla ludzi. Błędy konfiguracji bota mają listę <code>errors</code> ze ścieżkami JSON Pointer.</p></details>
+          <details class="qa rv" name="faq" id="nore-hub"><summary>Co wysyła Nore Hub?</summary><p>Tylko gdy grasz: nick, UUID, Nore ID i ustawienia garderoby, co 60 s, i <code>online: false</code> po wyjściu z gry. Hello jest podpisane kluczem Nore ID (ECDSA P-256), a konto premium potwierdza Mojang. Wyłączysz to w launcherze: Ustawienia → „Pokazuj innym graczom Nore, że grasz w Nore”.</p></details>
+          <details class="qa rv" name="faq"><summary>Czy v1 zniknie?</summary><p>Nie. Adresy v1 zostają, bo wołają je wydane launchery. Nowe pola mogą dochodzić, ale żadne nie znika ani nie zmienia znaczenia.</p></details>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-foot">
+    <p class="name" aria-hidden="true">Nore</p>
+    <div class="row">
+      <span class="state" data-api-state><i class="dot off"></i>Sprawdzam stan API…</span>
+      <div class="cols">
+        <ul><li><a href="/api/v2">/api/v2</a></li><li><a href="/api/v2/openapi.json">OpenAPI v2</a></li><li><a href="/api/v2/status">Status</a></li></ul>
+        <ul><li><a href="/api/v1">/api/v1</a></li><li><a href="/api/v1/openapi.json">OpenAPI v1</a></li><li><a href="/api/v2/bot/config.schema.json">Schemat Nore Bota</a></li></ul>
+        <ul><li><a href="/">Strona główna</a></li><li><a href="/panel">Panel Nore Bota</a></li><li><a href="https://github.com/kondzio444/Noreclienr">GitHub</a></li></ul>
+      </div>
+    </div>
+    <div class="legal"><span>API Nore · v2 i v1</span><a class="pen" href="#tresc">Na górę</a></div>
+  </footer>
+
+  <script src="/assets/album.js" defer></script>
+  <script src="/api.js" defer></script>
+</body>
+</html>

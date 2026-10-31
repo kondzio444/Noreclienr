@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Launcher – Ustawienia</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="launcher.css">
+<style>
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  .col { gap: 18px !important; }
+  .col { display: grid; gap: 20px; }
+  .sheet { padding: 18px 22px 4px; }
+  .sheet h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font: var(--nore-launcher-section); }
+  .sheet h2 .ic { color: var(--nore-accent-light); width: 19px; height: 19px; }
+  .row { display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; align-items: center; padding: 12px 0; }
+  .row + .row { box-shadow: 0 -1px 0 color-mix(in oklab, var(--nore-ink) 7%, transparent); }
+  .row b { display: block; font: 600 14px/1.25 var(--nore-font-text); }
+  .row small { display: block; margin-top: 3px; font: 500 12.5px/1.35 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .row.full { grid-template-columns: 1fr; }
+  .slide { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; margin-top: 4px; }
+  .val { min-width: 64px; justify-content: center; }
+  .swatches { display: flex; gap: 14px; align-items: center; margin-top: 6px; }
+  .sw { position: relative; width: 26px; height: 26px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--nore-vinyl); }
+  .sw.on { width: 34px; height: 34px; }
+  .sw.on::after { content: ''; position: absolute; inset: 9px 10px 12px; border: solid #fff; border-width: 0 0 3px 3px; rotate: -45deg; }
+  .sw.custom { background: var(--nore-slot); box-shadow: inset 0 0 0 2px var(--nore-ghost); display: grid; place-items: center; color: var(--nore-ink-faint); }
+  .sw.custom .ic { width: 15px; height: 15px; }
+  .preview { display: flex; align-items: center; gap: 14px; margin-top: 4px; padding: 12px 14px; border-radius: 14px; background: var(--nore-page); }
+  .preview .btn-play { --h: 40px; padding: 0 20px 0 16px; font-size: 15px; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+  .preview .btn-play svg { width: 15px; height: 15px; }
+  .two { display: flex; align-items: center; gap: 10px; }
+  .two .input { width: 92px; justify-content: center; }
+  .note { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px; background: color-mix(in oklab, var(--nore-dot-event) 10%, var(--nore-page-raised)); font: 500 13px/1.45 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .note img { width: 26px; image-rendering: pixelated; flex: none; }
+  .note b { color: var(--nore-ink); }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="app">
+  <aside class="rail cloth" data-active="settings"></aside>
+  <section class="page card-grain">
+    <div class="titlebar"><span class="status"><i class="dot sm ready"></i>Online · Nore Hub</span><span class="wc"><svg class="ic"><use href="#i-minus"/></svg></span><span class="wc"><svg class="ic"><use href="#i-square"/></svg></span><span class="wc"><svg class="ic"><use href="#i-x"/></svg></span></div>
+    <div class="content">
+      <div class="page-head"><div><h1>Ustawienia</h1><p>Pamięć, okno gry, wygląd launchera i Java. Zmiany zapisują się od razu.</p></div></div>
+      <div class="cols">
+        <div class="col">
+          <section class="sheet">
+            <h2><svg class="ic"><use href="#i-cpu"/></svg>Wydajność</h2>
+            <div class="row full"><div><b>Pamięć RAM dla gry</b><small>Twój komputer ma 16 GB. Nore Client dobrze działa z 4 GB.</small></div>
+              <div class="slide"><div class="slider" style="--v:22%"><i></i><b></b></div><span class="label val tnum">4 GB</span></div></div>
+            <div class="row full"><div><b>Pobieranie równoległe</b><small>Ile plików pobierać naraz przy instalacji modów.</small></div>
+              <div class="slide"><div class="slider" style="--v:50%"><i></i><b></b></div><span class="label val tnum">16</span></div></div>
+            <div class="row"><div><b>Po uruchomieniu gry</b><small>Co zrobić z oknem launchera.</small></div><div class="seg"><span class="on">Ukryj</span><span>Zostaw</span><span>Zamknij</span></div></div>
+          </section>
+          <section class="sheet">
+            <h2><svg class="ic"><use href="#i-coffee"/></svg>Java</h2>
+            <div class="row full"><div><b>Ścieżka do Javy</b><small>Puste: launcher sam pobierze właściwą wersję od Mojang.</small></div>
+              <div class="two"><div class="input" style="flex:1;justify-content:flex-start"><span class="ph">Automatycznie · Java 21</span></div><button class="btn"><svg class="ic"><use href="#i-folder"/></svg>Wybierz</button></div></div>
+          </section>
+          <div class="note"><img src="assets/pumpkin.png" alt=""><span><b>Wydarzenia są zawsze włączone.</b> Halloween trwa do 3 listopada, zima zacznie się sama 10 grudnia.</span></div>
+        </div>
+        <div class="col">
+          <section class="sheet">
+            <h2><svg class="ic"><use href="#i-palette"/></svg>Wygląd</h2>
+            <div class="row full"><div><b>Kolor akcentu</b><small>Barwi przycisk Graj, okładkę albumu i logo.</small></div>
+              <div class="swatches">
+                <span class="sw on" style="--c:#9d5cff"></span><span class="sw" style="--c:#4aa3ff"></span><span class="sw" style="--c:#2fbf8f"></span><span class="sw" style="--c:#e8b53a"></span><span class="sw" style="--c:#ff7a3a"></span><span class="sw" style="--c:#ff4f7b"></span><span class="sw" style="--c:#d06bff"></span><span class="sw custom"><svg class="ic"><use href="#i-plus"/></svg></span>
+              </div>
+              <div class="preview"><button class="btn-play"><svg class="ic"><use href="#i-play"/></svg><span>GRAJ</span></button><span class="t-meta">Podgląd. Kolor zmienia się po kliknięciu, bez restartu.</span></div>
+            </div>
+            <div class="row"><div><b>Animacje</b><small>Naklejki, strony, wydarzenia.</small></div><div class="seg"><span class="on">Pełne</span><span>Oszczędne</span><span>Wyłączone</span></div></div>
+            <div class="row"><div><b>Dźwięki interfejsu</b><small>Ciche kliknięcia przy naklejaniu i odklejaniu.</small></div><span class="switch on"></span></div>
+          </section>
+          <section class="sheet">
+            <h2><svg class="ic"><use href="#i-monitor"/></svg>Okno gry</h2>
+            <div class="row"><div><b>Rozdzielczość</b><small>Rozmiar okna przy starcie.</small></div><div class="two"><div class="input focus tnum">1600<i class="caret"></i></div><span class="faint">×</span><div class="input tnum">900</div></div></div>
+            <div class="row"><div><b>Pełny ekran</b><small>Uruchamiaj grę na całym ekranie.</small></div><span class="switch"></span></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="rail.js"></script>
+</body>
+</html>

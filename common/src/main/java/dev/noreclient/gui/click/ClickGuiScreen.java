@@ -1,0 +1,1565 @@
+package dev.noreclient.gui.click;
+
+import dev.noreclient.api.Gfx;
+import dev.noreclient.api.Keys;
+import dev.noreclient.gui.NoreScreen;
+import dev.noreclient.NoreClient;
+import dev.noreclient.config.ConfigManager;
+import dev.noreclient.gui.hud.HudEditorScreen;
+import dev.noreclient.gui.widget.Icons;
+import dev.noreclient.gui.widget.TextBox;
+import dev.noreclient.gui.widget.Widgets;
+import dev.noreclient.module.Category;
+import dev.noreclient.module.ExtraModules;
+import dev.noreclient.module.Module;
+import dev.noreclient.module.client.ClickGuiModule;
+import dev.noreclient.notification.NotificationManager;
+import dev.noreclient.setting.BooleanSetting;
+import dev.noreclient.setting.ColorSetting;
+import dev.noreclient.setting.KeybindSetting;
+import dev.noreclient.setting.ModeSetting;
+import dev.noreclient.setting.NumberSetting;
+import dev.noreclient.setting.Setting;
+import dev.noreclient.setting.StringSetting;
+import dev.noreclient.util.Animation;
+import dev.noreclient.util.Events;
+import dev.noreclient.util.Motion;
+import dev.noreclient.util.Spring;
+import dev.noreclient.util.ThemeTokens;
+import dev.noreclient.gui.widget.Album;
+import dev.noreclient.util.ColorUtil;
+import dev.noreclient.util.MenuBackground;
+import dev.noreclient.util.Modrinth;
+import dev.noreclient.util.Render2D;
+import dev.noreclient.util.Sounds;
+import dev.noreclient.util.Theme;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * The main client menu: category sidebar, searchable module cards, a full settings editor
+ * (switches, sliders, mode pickers, colour pickers, keybinds) and a profile manager.
+ *
+ * <p>Implemented as an immediate-mode GUI: every frame the layout is drawn and clickable regions
+ * are recorded; mouse events are matched against the regions recorded in the last frame.
+ */
+public class ClickGuiScreen extends NoreScreen {
+    private static final float W = 540, H = 330, SIDEBAR = 118;
+
+    private enum Page { MODULES, SETTINGS, PROFILES, DOWNLOADS }
+
+    private interface ClickAction { void click(double mx, double my, int button); }
+
+    private interface DragAction { void drag(double mx, double my); }
+
+    private static final class Hit {
+        final float x, y, w, h;
+        final boolean clipped;
+        final ClickAction action;
+
+        Hit(float x, float y, float w, float h, boolean clipped, ClickAction action) {
+            this.x = x; this.y = y; this.w = w; this.h = h; this.clipped = clipped; this.action = action;
+        }
+    }
+
+    // remember the last tab and view between openings
+    private static Category lastCategory = null;
+    private static int lastCollection = 0;
+    private static boolean listView = false;
+
+    /** 0 = category filter, 1 = favourites, 2 = new modules. */
+    private int collection = lastCollection;
+    private float activeNavY = -1;
+
+    private interface IconDraw { void draw(float cx, float cy, int color); }
+
+    private final List<Hit> hits = new ArrayList<>();
+    private final Map<Object, Animation> anims = new HashMap<>();
+    private final TextBox search = new TextBox("Szukaj", 32);
+    private final TextBox profileName = new TextBox("Nazwa profilu", 24);
+    private final Map<StringSetting, TextBox> stringBoxes = new HashMap<>();
+    private final TextBox dlSearch = new TextBox("Szukaj paczek zasobów...", 40);
+    private final List<Modrinth.Hit> dlResults = new ArrayList<>();
+    private final Map<String, String> dlState = new HashMap<>();
+    private String dlQuery = null, dlError = null, dlSort = "relevance", dlCategory = "";
+    private boolean dlLoading, dlMore, dlInstalledTab;
+    private int dlTotal;
+    private long dlTyped;
+    private int dlRequest;
+    private final Animation dlTab = new Animation(0, 16);
+    private List<java.io.File> dlLocal;
+    private final Animation open = new Animation(0, 10);
+    private final Animation scroll = new Animation(0, 16);
+    private final Animation pageAnim = new Animation(1, 12);
+
+    private Page page = Page.MODULES;
+    private Category category = lastCategory;
+    private Module selected;
+    private boolean closing;
+    private float contentHeight;
+    private DragAction drag;
+    private KeybindSetting listening;
+    private ColorSetting expandedColor;
+    private float[] pickerHsb = new float[3];
+    private long resetConfirm;
+
+    private float alpha = 1;
+    private long pageSwitch = System.currentTimeMillis();
+    private String lastSearch = "";
+    /** The active index tab travels on spring.tab. */
+    private final Spring navY = Spring.tab(-1);
+    private final long openedAt = System.currentTimeMillis();
+    private String tipText;
+    private float tipX, tipY;
+    private long tipSince;
+    private Module tipModule;
+    private final Animation navAlpha = new Animation(0, 12);
+    /** When each module was last switched from this screen (ripple on its toggle). */
+    private final Map<Module, Long> toggledAt = new HashMap<>();
+
+    // per-frame transform
+    private float scale, ox, oy;
+    private float clipX, clipY, clipW, clipH;
+
+    public ClickGuiScreen(Object parent) {
+        super(parent);
+    }
+
+    /** Opens the menu directly on the settings page of the given module. */
+    public static ClickGuiScreen forModule(Object parent, Module m) {
+        ClickGuiScreen s = new ClickGuiScreen(parent);
+        s.page = Page.SETTINGS;
+        s.selected = m;
+        s.category = m.getCategory();
+        return s;
+    }
+
+    /** Opens the menu on the Modrinth downloads page. */
+    public static ClickGuiScreen forDownloads(Object parent) {
+        ClickGuiScreen s = new ClickGuiScreen(parent);
+        s.page = Page.DOWNLOADS;
+        return s;
+    }
+
+    private Animation anim(Object key, float speed) {
+        return anims.computeIfAbsent(key, k -> new Animation(0, speed));
+    }
+
+    private ClickGuiModule guiModule() {
+        return NoreClient.get().modules().get(ClickGuiModule.class);
+    }
+
+    @Override
+    public boolean pausesGame() { return false; }
+
+    // ------------------------------------------------------------------ navigation
+
+    private void switchPage(Page p, Module m) {
+        page = p;
+        selected = m;
+        expandedColor = null;
+        listening = null;
+        scroll.set(0);
+        pageAnim.set(0);
+        pageAnim.target(1);
+        pageSwitch = System.currentTimeMillis();
+        Sounds.page();
+    }
+
+    @Override
+    public void close() {
+        if (closing) return;
+        closing = true;
+        open.target(0);
+        search.setFocused(false);
+        NoreClient.get().config().save();
+    }
+
+    // ------------------------------------------------------------------ input mapping
+
+    private double mapX(double mx) { return mx / scale - ox; }
+
+    private double mapY(double my) { return my / scale - oy; }
+
+    private boolean inClip(double x, double y) {
+        return x >= clipX && y >= clipY && x < clipX + clipW && y < clipY + clipH;
+    }
+
+    private void hit(float x, float y, float w, float h, boolean clipped, ClickAction a) {
+        hits.add(new Hit(x, y, w, h, clipped, a));
+    }
+
+    private boolean hovered(double mx, double my, float x, float y, float w, float h, boolean clipped) {
+        return Render2D.hovered(mx, my, x, y, w, h) && (!clipped || inClip(mx, my));
+    }
+
+    // ------------------------------------------------------------------ rendering
+
+    @Override
+    public Background background() { return game().inWorld() ? Background.DIM_WORLD : Background.NONE; }
+
+    private void renderBackground(Gfx context, int mouseX, int mouseY, float delta) {
+        if (!game().inWorld()) {
+            MenuBackground.render(context, width, height, mouseX, mouseY);
+            Render2D.rect(context, 0, 0, width, height, 0x60000000);
+        }
+    }
+
+    @Override
+    public void render(Gfx ctx, int mouseX, int mouseY, float delta) {
+        float o = open.target(closing ? 0 : 1).update();
+        if (!guiModule().openAnimation.isOn() && !closing) open.set(1);
+        if (closing && o < 0.02f) {
+            game().openParent(parent);
+            return;
+        }
+        renderBackground(ctx, mouseX, mouseY, delta);
+
+        float base = Math.min(guiModule().guiScale.floatValue(), Math.min((width - 16) / W, (height - 16) / H));
+        if (Motion.level() == Motion.OFF) open.set(closing ? 0 : 1);
+        // Album: the sheet arrives 6 GUI px from below and fades in; leaving it drops and fades faster
+        float eased = Animation.easeOutCubic(o);
+        scale = base;
+        ox = (width / scale - W) / 2f;
+        oy = (height / scale - H) / 2f + (1 - eased) * (closing ? 4 : 6) * Motion.travel();
+        double mx = mapX(mouseX), my = mapY(mouseY);
+
+        hits.clear();
+        tipText = null;
+        alpha = eased;
+        ctx.setAlpha(alpha);
+        ctx.push();
+        ctx.scale(scale, scale);
+        ctx.translate(ox, oy);
+
+        float r = 6;
+        Render2D.shadow(ctx, 0, 2, W, H, r, 8, ColorUtil.fade(0xB0000000, o));
+        Render2D.roundedRect(ctx, 0, 0, W, H, r, ColorUtil.withAlpha(Theme.page(), 0xF2));
+        renderSidebar(ctx, mx, my);
+        renderHeader(ctx, mx, my);
+
+        clipX = SIDEBAR + 12;
+        clipY = 48;
+        clipW = W - SIDEBAR - 24;
+        clipH = H - 56;
+        scroll.update();
+        float pa = Animation.easeOutCubic(pageAnim.update());
+        enableClip(ctx);
+        ctx.push();
+        ctx.translate(0, -scroll.get() + (1 - pa) * 10);
+        double cmy = my + scroll.get() - (1 - pa) * 10;
+        ctx.setAlpha(alpha * pa);
+        switch (page) {
+            case MODULES: renderModules(ctx, mx, cmy); break;
+            case SETTINGS: renderSettings(ctx, mx, cmy); break;
+            case PROFILES: renderProfiles(ctx, mx, cmy); break;
+            default: renderDownloads(ctx, mx, cmy); break;
+        }
+        ctx.pop();
+        ctx.endScissor();
+        ctx.setAlpha(alpha);
+        renderScrollbar(ctx);
+        renderTooltip(ctx);
+        ctx.pop();
+        ctx.setAlpha(1);
+
+        if (drag != null) drag.drag(mx, cmyForDrag(my));
+        NotificationManager.render(ctx);
+    }
+
+    private double cmyForDrag(double my) {
+        return my + scroll.get();
+    }
+
+    private void enableClip(Gfx ctx) {
+        int x1 = (int) Math.floor((clipX + ox) * scale), y1 = (int) Math.floor((clipY + oy) * scale);
+        int x2 = (int) Math.ceil((clipX + clipW + ox) * scale), y2 = (int) Math.ceil((clipY + clipH + oy) * scale);
+        ctx.scissor(x1, y1, x2, y2);
+    }
+
+    private void renderScrollbar(Gfx ctx) {
+        if (contentHeight <= clipH) return;
+        float trackH = clipH - 8;
+        float barH = Math.max(20, trackH * clipH / contentHeight);
+        float maxScroll = contentHeight - clipH;
+        float y = clipY + 4 + (trackH - barH) * (scroll.get() / maxScroll);
+        Render2D.roundedRect(ctx, W - 7, clipY + 4, 3, trackH, 1.5f, Theme.SLOT);
+        Render2D.roundedRect(ctx, W - 7, y, 3, barH, 1.5f, Theme.TEXT_MUTED);
+    }
+
+    /** "LPM włącz · PPM ustawienia" after resting on a module for a moment. */
+    private void renderTooltip(Gfx ctx) {
+        if (tipText == null) { tipModule = null; return; }
+        if (System.currentTimeMillis() - tipSince < 450) return;
+        float w = Render2D.textWidth(tipText) + 12, h = 14;
+        float x = Math.min(W - w - 4, tipX + 8), y = tipY + 12;
+        if (y + h > H - 4) y = tipY - h - 6;
+        Album.floating(ctx, x, y, w, h, ColorUtil.withAlpha(Theme.SLOT, 0xF2));
+        Render2D.roundedOutline(ctx, x, y, w, h, Album.R, 1, Theme.GHOST);
+        Render2D.text(ctx, tipText, x + 6, y + 3, Theme.TEXT, false);
+    }
+
+    private void renderSidebar(Gfx ctx, double mx, double my) {
+        // the album cover: accent-dyed bookcloth column with index tabs
+        int cover = Theme.cover();
+        Render2D.roundedRect(ctx, 0, 0, SIDEBAR, H, 6, cover);
+        Render2D.rect(ctx, SIDEBAR - 6, 0, 6, H, cover);
+
+        Album.logo(ctx, 10, 9, 16, 1f);
+        Render2D.text(ctx, "Nore", 31, 13, Theme.COVER_INK, false);
+        if (Events.any()) {
+            Album.eventDot(ctx, 33 + Render2D.textWidth("Nore") + 3, 17);
+            if (Events.halloween()) Render2D.text(ctx, Events.halloweenLeft(), 41 + Render2D.textWidth("Nore") + 3, 13, Theme.COVER_INK_SOFT, false);
+        }
+
+        // the active tab: a piece of the page pulled out over the cover, travelling on spring.tab
+        if (activeNavY >= 0) {
+            if (navY.get() < 0) navY.set(activeNavY);
+            navY.target(activeNavY);
+        }
+        float ny = navY.update();
+        float na = navAlpha.target(activeNavY >= 0 ? 1 : 0).update();
+        if (na > 0.01f && ny >= 0) {
+            int page = ColorUtil.withAlpha(Theme.page(), (int) (0xF2 * na));
+            float th = 15;
+            Render2D.roundedRect(ctx, 7, ny, SIDEBAR - 7 + 2, th, 4, page);
+            // concave joins into the page
+            Render2D.rect(ctx, SIDEBAR - 4, ny - 4, 4, 4, page);
+            Render2D.circle(ctx, SIDEBAR - 4, ny - 4, 4, cover);
+            Render2D.rect(ctx, SIDEBAR - 4, ny + th, 4, 4, page);
+            Render2D.circle(ctx, SIDEBAR - 4, ny + th + 4, 4, cover);
+        }
+        activeNavY = -1;
+
+        float y = 32;
+        List<Module> all = NoreClient.get().modules().getModules();
+        y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 0 && category == null, "Wszystkie",
+                (cx, cy, c) -> Icons.grid(ctx, cx, cy, 8, c), String.valueOf(all.size()), () -> openCollection(0, null));
+        for (Category c : Category.values()) {
+            List<Module> mods = NoreClient.get().modules().getModules(c);
+            boolean active = (page == Page.MODULES && collection == 0 || page == Page.SETTINGS && selected != null) && category == c;
+            y = navEntry(ctx, mx, my, y, active, c.displayName, (cx, cy, col) -> Icons.category(ctx, c, cx, cy, 8, col),
+                    String.valueOf(mods.size()), () -> openCollection(0, c));
+        }
+        y = section(ctx, "Kolekcje", y + 4);
+        int favs = 0, news = 0;
+        for (Module m : all) {
+            if (m.isFavorite()) favs++;
+            if (ExtraModules.isNew(m)) news++;
+        }
+        y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 1, "Ulubione",
+                (cx, cy, c) -> Icons.star(ctx, cx, cy, 4.4f, c, false), favs > 0 ? String.valueOf(favs) : "", () -> openCollection(1, null));
+        y = navEntry(ctx, mx, my, y, page == Page.MODULES && collection == 2, "Nowe",
+                (cx, cy, c) -> Icons.sparkle(ctx, cx, cy, 4.6f, c), String.valueOf(news), () -> openCollection(2, null));
+        y = section(ctx, "Zasoby", y + 4);
+        navEntry(ctx, mx, my, y, page == Page.DOWNLOADS, "Paczki zasobów",
+                (cx, cy, c) -> Icons.download(ctx, cx, cy, 8, c), "", () -> switchPage(Page.DOWNLOADS, null));
+
+        // foot: white "Edytuj HUD" pill and the profile pill
+        float bw = SIDEBAR - 16, bx = 8;
+        float by = H - 40;
+        boolean hp = Render2D.hovered(mx, my, bx, by, bw, 15);
+        float ha = anim("btn_hud", 16).target(hp ? 1 : 0).update();
+        Album.sticker(ctx, bx, by, bw, 15, 7.5f, Theme.VINYL, ha);
+        float ly = by - ha * Motion.travel();
+        Icons.hud(ctx, bx + 11, ly + 7.5f, 7.5f, Theme.accent());
+        Render2D.text(ctx, "Edytuj HUD", bx + 20, ly + 4, Theme.VINYL_INK, false);
+        hit(bx, by, bw, 15, false, (x, yy, b) -> {
+            Sounds.page();
+            game().openScreen(new HudEditorScreen(this));
+        });
+        by += 19;
+        boolean pp = Render2D.hovered(mx, my, bx, by, bw, 15) || page == Page.PROFILES;
+        float pa = anim("btn_prof", 16).target(pp ? 1 : 0).update();
+        Render2D.roundedRect(ctx, bx, by, bw, 15, 7.5f, ColorUtil.withAlpha(0xFF000000, (int) (70 + 40 * pa)));
+        Icons.sliders(ctx, bx + 11, by + 7.5f, 7, Theme.COVER_INK);
+        Render2D.text(ctx, Render2D.trim("Profil: " + NoreClient.get().config().getActiveProfile(), (int) bw - 26), bx + 20, by + 4, Theme.COVER_INK, false);
+        hit(bx, by, bw, 15, false, (x, yy, b) -> switchPage(Page.PROFILES, null));
+    }
+
+    private float section(Gfx ctx, String label, float y) {
+        Render2D.text(ctx, label, 13, y + 1, Theme.COVER_INK_SOFT, false);
+        return y + 12;
+    }
+
+    private static String countOn(List<Module> mods) {
+        int on = 0;
+        for (Module m : mods) if (m.isEnabled() && m.isToggleable()) on++;
+        return String.valueOf(on);
+    }
+
+    private void openCollection(int coll, Category c) {
+        collection = coll;
+        lastCollection = coll;
+        category = c;
+        lastCategory = c;
+        search.setText("");
+        switchPage(Page.MODULES, null);
+    }
+
+    private float navEntry(Gfx ctx, double mx, double my, float y, boolean active, String label, IconDraw icon, String count, Runnable action) {
+        boolean hov = Render2D.hovered(mx, my, 7, y, SIDEBAR - 7, 15);
+        float a = anim("nav_" + label, 16).target(active ? 1 : hov ? 0.6f : 0).update();
+        if (active) activeNavY = y;
+        if (hov && !active) Render2D.roundedRect(ctx, 7, y, SIDEBAR - 14, 15, 4, ColorUtil.lerp(Theme.cover(), Theme.accent(), 0.12f));
+        int ink = active ? Theme.TEXT : ColorUtil.withAlpha(Theme.COVER_INK, hov ? 0xFF : 0xD9);
+        int ic = active ? Theme.accentLight() : ink;
+        icon.draw(19, y + 7.5f, ic);
+        Render2D.text(ctx, Render2D.trim(label, (int) SIDEBAR - 52), 29, y + 4, ink, false);
+        if (!count.isEmpty()) Album.right(ctx, count, SIDEBAR - 9, y + 4, active ? Theme.TEXT_MUTED : Theme.COVER_INK_SOFT);
+        hit(7, y, SIDEBAR - 7, 15, false, (x, yy, b) -> { if (!active) Sounds.page(); action.run(); });
+        return y + 16;
+    }
+
+    private void renderHeader(Gfx ctx, double mx, double my) {
+        float x = SIDEBAR + 12;
+        String title, sub;
+        if (page == Page.SETTINGS && selected != null) {
+            boolean hb = Render2D.hovered(mx, my, x, 12, 18, 18);
+            float ha = anim("back", 16).target(hb ? 1 : 0).update();
+            Render2D.roundedRect(ctx, x, 12, 18, 18, 9, ColorUtil.lerp(Theme.RAISED_2, Theme.CARD_HOVER, ha));
+            Render2D.centeredText(ctx, "‹", x + 9, 17, ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
+            hit(x, 12, 18, 18, false, (a, b, c) -> switchPage(Page.MODULES, null));
+            x += 24;
+            title = selected.getName();
+            sub = selected.getDescription();
+            // favourite star in the header
+            float sx = W - 24, sy = 22;
+            boolean hs = Render2D.hovered(mx, my, sx - 9, sy - 9, 18, 18);
+            float sa = anim("hstar", 14).target(hs ? 1 : 0).update();
+            if (selected.isFavorite()) Icons.star(ctx, sx, sy, 6 + sa * 0.5f, ThemeTokens.DOT_WAIT, true);
+            else Icons.star(ctx, sx, sy, 6 + sa * 0.5f, ColorUtil.lerp(Theme.TEXT_MUTED, ThemeTokens.DOT_WAIT, sa), false);
+            Module m = selected;
+            hit(sx - 9, sy - 9, 18, 18, false, (a, b, c) -> toggleFavorite(m));
+        } else if (page == Page.DOWNLOADS) {
+            title = "Paczki zasobów";
+            sub = "Modrinth \u2022 Minecraft " + Modrinth.gameVersion() + " \u2022 włączysz jednym kliknięciem";
+        } else if (page == Page.PROFILES) {
+            title = "Profile";
+            sub = "Zapisuj i wczytuj konfiguracje (aktywny: " + NoreClient.get().config().getActiveProfile() + ")";
+        } else if (!search.getText().trim().isEmpty()) {
+            title = "Wyniki wyszukiwania";
+            sub = currentList().size() + " pasujących modułów";
+        } else if (collection == 1) {
+            title = "Ulubione";
+            sub = currentList().isEmpty() ? "Kliknij gwiazdkę na module, aby go tu przypiąć" : currentList().size() + " przypiętych modułów";
+        } else if (collection == 2) {
+            title = "Nowe w " + NoreClient.VERSION;
+            sub = "Waypointy, znacznik trafień, prędkościomierz, licznik totemów, AFK Alert i więcej";
+        } else {
+            List<Module> list = currentList();
+            int on = 0, tog = 0;
+            for (Module mm : list) if (mm.isToggleable()) { tog++; if (mm.isEnabled()) on++; }
+            title = category == null ? "Moduły" : category.displayName;
+            sub = on + " z " + tog + " włączonych" + (category == null ? "" : " · " + category.subtitle);
+        }
+        float tmax = W - x - (page == Page.SETTINGS ? 40 : 190);
+        Album.title(ctx, Render2D.trim(title, (int) (tmax / 2f)), x, 10, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(sub, (int) tmax), x, 30, Theme.TEXT_DIM, false);
+        if (page == Page.SETTINGS && selected != null) {
+            float tw = Math.min(Render2D.textWidth(title) * 2, tmax);
+            float bx = x + tw + 6;
+            if (ExtraModules.isNew(selected)) bx += newBadge(ctx, bx, 15) + 4;
+            if (selected.isToggleable()) Album.dot(ctx, bx + 3, 19, 2.5f, selected.isEnabled() ? ThemeTokens.DOT_READY : ThemeTokens.DOT_OFF);
+        }
+
+        if (page == Page.DOWNLOADS) {
+            float sw = 150, sx = W - sw - 12;
+            dlSearch.render(ctx, sx, 12, sw, 18, TextBox.SEARCH_ICON);
+            hit(sx, 12, sw, 18, false, (a, b, c) -> {
+                dlSearch.setFocused(true);
+                search.setFocused(false);
+                profileName.setFocused(false);
+            });
+        }
+        if (page == Page.MODULES) {
+            float sw = 130, sx = W - sw - 34;
+            search.render(ctx, sx, 12, sw, 18, TextBox.SEARCH_ICON);
+            if (search.getText().isEmpty() && !search.isFocused()) {
+                Album.keycap(ctx, "Ctrl F", sx + sw - 4 - Album.keycapWidth("Ctrl F"), 16);
+            }
+            if (!search.getText().isEmpty()) {
+                // result count and a clear button inside the field
+                String n = String.valueOf(currentList().size());
+                float cw = Render2D.textWidth(n) + 6, cx = sx + sw - 18 - cw;
+                Album.label(ctx, n, cx, 16, currentList().isEmpty() ? ThemeTokens.DOT_ERROR : Theme.VINYL, Theme.VINYL_INK);
+                boolean hc = Render2D.hovered(mx, my, sx + sw - 16, 13, 14, 16);
+                float ca = anim("clearSearch", 16).target(hc ? 1 : 0).update();
+                int xc = ColorUtil.lerp(Theme.TEXT_MUTED, Theme.TEXT, ca);
+                Render2D.line(ctx, sx + sw - 12, 18, sx + sw - 6, 24, 1.2f, xc);
+                Render2D.line(ctx, sx + sw - 6, 18, sx + sw - 12, 24, 1.2f, xc);
+                hit(sx + sw - 16, 13, 14, 16, false, (a, b, c) -> {
+                    search.setText("");
+                    scroll.set(0);
+                    Sounds.click();
+                });
+            }
+            hit(sx, 12, sw, 18, false, (a, b, c) -> {
+                search.setFocused(true);
+                profileName.setFocused(false);
+            });
+            // grid / list toggle
+            float vx = W - 30;
+            boolean hv = Render2D.hovered(mx, my, vx, 12, 18, 18);
+            float va = anim("view", 16).target(hv ? 1 : 0).update();
+            Render2D.roundedRect(ctx, vx, 12, 18, 18, Album.R, ColorUtil.lerp(Theme.SLOT, Theme.RAISED_2, va));
+            int vc = ColorUtil.lerp(Theme.TEXT_DIM, Theme.accentLight(), va);
+            if (listView) Icons.grid(ctx, vx + 9, 21, 9, vc);
+            else for (int k = 0; k < 3; k++) {
+                Render2D.rect(ctx, vx + 4.5f, 16.5f + k * 4, 2, 2, vc);
+                Render2D.rect(ctx, vx + 8, 16.8f + k * 4, 6, 1.4f, vc);
+            }
+            hit(vx, 12, 18, 18, false, (a, b, c) -> {
+                listView = !listView;
+                pageSwitch = System.currentTimeMillis();
+                scroll.set(0);
+                Sounds.page();
+            });
+        }
+    }
+
+    /** The "nowy" label sticker (dot-event fill). Returns its width. */
+    private static float newBadge(Gfx ctx, float x, float y) {
+        return Album.label(ctx, "nowy", x, y, ThemeTokens.DOT_EVENT, 0xFF1A0D04);
+    }
+
+    private void toggleFavorite(Module m) {
+        m.setFavorite(!m.isFavorite());
+        Sounds.toggle(m.isFavorite());
+        NoreClient.get().config().save();
+    }
+
+    private List<Module> currentList() {
+        List<Module> all = NoreClient.get().modules().getModules();
+        if (!search.getText().trim().isEmpty()) return NoreClient.get().modules().search(search.getText());
+        List<Module> out = new ArrayList<>();
+        if (collection == 1) { for (Module m : all) if (m.isFavorite()) out.add(m); return out; }
+        if (collection == 2) { for (Module m : all) if (ExtraModules.isNew(m)) out.add(m); return out; }
+        if (category == null) return all;
+        return NoreClient.get().modules().getModules(category);
+    }
+
+    // ------------------------------------------------------------------ modules page
+
+    private void renderModules(Gfx ctx, double mx, double my) {
+        List<Module> list = currentList();
+        int cols = listView ? 1 : 4;
+        float gap = listView ? 4 : 6;
+        float cw = (clipW - gap * (cols - 1)) / cols;
+        float ch = listView ? 24 : guiModule().showDescriptions.isOn() ? 52 : 43;
+        float startY = clipY + 3;
+        if (list.isEmpty()) {
+            String msg = !search.getText().trim().isEmpty() ? "Brak wyników dla \"" + search.getText() + "\""
+                    : collection == 1 ? "Brak ulubionych – kliknij gwiazdkę na module" : "Brak modułów";
+            Album.slot(ctx, clipX, clipY + 20, clipW, 50);
+            Render2D.centeredText(ctx, msg, clipX + clipW / 2f, clipY + 41, Theme.TEXT_MUTED, false);
+        }
+        if (!search.getText().equals(lastSearch)) {
+            lastSearch = search.getText();
+            pageSwitch = System.currentTimeMillis();
+        }
+        for (int i = 0; i < list.size(); i++) {
+            Module m = list.get(i);
+            float x = clipX + (i % cols) * (cw + gap);
+            float y = startY + (i / cols) * (ch + gap);
+            // entrance: stickers stick in with a 45 ms stagger (max 8)
+            float p = Motion.enter(pageSwitch, i);
+            if (p < 1) {
+                float dy = (1 - p) * 4 * Motion.travel();
+                ctx.setAlpha(alpha * Math.max(0, p));
+                ctx.push();
+                ctx.translate(0, dy);
+                renderCard(ctx, mx, my - dy, m, x, y, cw, ch);
+                ctx.pop();
+                ctx.setAlpha(alpha);
+            } else {
+                renderCard(ctx, mx, my, m, x, y, cw, ch);
+            }
+        }
+        int rows = (list.size() + cols - 1) / cols;
+        contentHeight = rows * (ch + gap) + 6;
+    }
+
+    /** Draws the sticker face (white) or nothing; content is drawn by the caller. */
+    private void stickerFace(Gfx ctx, float x, float y, float w, float h, float lift, float scaleK) {
+        if (scaleK != 1) {
+            float cx = x + w / 2f, cy = y + h / 2f;
+            ctx.push();
+            ctx.translate(cx, cy);
+            ctx.scale(scaleK, scaleK);
+            ctx.translate(-cx, -cy);
+            Album.white(ctx, x, y, w, h, Math.max(lift, (scaleK - 1) * 8));
+            ctx.pop();
+        } else {
+            Album.white(ctx, x, y, w, h, lift);
+        }
+    }
+
+    private void renderCard(Gfx ctx, double mx, double my, Module m, float x, float y, float w, float h) {
+        boolean toggleable = m.isToggleable();
+        float starX = x + w - 9, starY = y + 9;
+        float gearX = x + w - 21;
+        if (y > clipY + scroll.get() + clipH + 10 || y + h < clipY + scroll.get() - 10) {
+            hit(x, y, w, h, true, cardAction(m, x, y, w, h));
+            return;
+        }
+        boolean hov = hovered(mx, my, x, y, w, h, true);
+        float ha = anim(m.getName() + "_hover", 16).target(hov ? 1 : 0).update();
+        boolean on = !toggleable || m.isEnabled();
+        Long tAt = toggledAt.get(m);
+        long now = System.currentTimeMillis();
+        float peel = !on && tAt != null ? Motion.peel(tAt) : 1;
+        float stick = on && tAt != null ? Motion.stickScale(tAt) : 1;
+        if (tAt != null && now - tAt > 600) toggledAt.remove(m);
+
+        // the ghost slot is always printed underneath what can be switched off
+        if (toggleable && (!on || stick != 1)) Album.slot(ctx, x, y, w, h);
+        boolean sticker = on;
+        float lift = listView ? 0 : ha;
+        if (on) stickerFace(ctx, x, y, w, h, lift, stick);
+        else if (peel < 1) {
+            // peel: the sticker flies up-right and fades, revealing the ghost
+            float dx = 6 * peel * Motion.travel(), dy = -6 * peel * Motion.travel();
+            ctx.setAlpha(alpha * (1 - peel));
+            Album.white(ctx, x + dx, y + dy, w, h, 1 - peel);
+            ctx.setAlpha(alpha);
+        } else if (ha > 0.02f) {
+            // hovering a ghost previews the sticker at 50%, lifted
+            float pl = ha * Motion.travel();
+            Render2D.shadow(ctx, x, y + 2 - pl, w, h, Album.R, 4, ColorUtil.withAlpha(0xFF000000, (int) (110 * ha)));
+            Render2D.roundedRect(ctx, x - 1, y - 1 - pl, w + 2, h + 2, Album.R + 1, ColorUtil.withAlpha(Theme.VINYL, (int) (200 * ha)));
+            Render2D.roundedRect(ctx, x, y - pl, w, h, Album.R, ColorUtil.withAlpha(Theme.VINYL, (int) (128 * ha)));
+            sticker = ha > 0.5f;
+        }
+        float yy = y - (on ? lift * Motion.travel() : ha * Motion.travel());
+        int ink = sticker ? Theme.VINYL_INK : Theme.TEXT_MUTED;
+        int soft = sticker ? Theme.VINYL_INK_SOFT : Theme.TEXT_MUTED;
+        int iconC = on ? Theme.accent() : sticker ? Theme.VINYL_INK : Theme.GHOST;
+        if (on && !sticker) iconC = Theme.accent();
+        if (on && ExtraModules.isNew(m) && !listView) { /* label drawn below */ }
+
+        if (hov) {
+            tipText = !toggleable ? "LPM otwórz" : on ? "LPM wyłącz · PPM ustawienia" : "LPM włącz · PPM ustawienia";
+            if (tipModule != m) { tipModule = m; tipSince = now; }
+            tipX = (float) mx;
+            tipY = (float) my - scroll.get();
+        }
+
+        if (listView) {
+            Icons.category(ctx, m.getCategory(), x + 12, yy + h / 2f, 8, iconC);
+            String name = m.getName();
+            matchHighlight(ctx, name, x + 24, yy + 4);
+            Render2D.text(ctx, name, x + 24, yy + 4, ink, false);
+            float nx = x + 24 + Render2D.textWidth(name) + 6;
+            if (ExtraModules.isNew(m)) nx += newBadge(ctx, nx, yy + 3) + 4;
+            if (m.getKeybind().isBound()) keyChip(ctx, m, nx, yy + 3, sticker);
+            Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 90)), x + 24, yy + 13, soft, false);
+            if (toggleable) Album.toggle(ctx, x + w - 30, yy + h / 2f - 5, 22, 10, anim(m.getName() + "_on", 16).target(m.isEnabled() ? 1 : 0).update());
+            else Render2D.text(ctx, "›", x + w - 12, yy + h / 2f - 4, Theme.accentLight(), false);
+            if (m.isFavorite()) Icons.star(ctx, x + w - 42, yy + h / 2f, 3.6f, ThemeTokens.DOT_WAIT, true);
+            hit(x, y, w, h, true, cardAction(m, x, y, w, h));
+            return;
+        }
+
+        Icons.category(ctx, m.getCategory(), x + 10, yy + 10, 9, iconC);
+        boolean desc = guiModule().showDescriptions.isOn();
+        String name = Render2D.trim(m.getName(), (int) (w - 12));
+        float nameY = desc ? yy + 18 : yy + h - 25;
+        matchHighlight(ctx, name, x + 6, nameY);
+        Render2D.text(ctx, name, x + 6, nameY, ink, false);
+        String cat = m.getCategory().displayName;
+        if (desc) Render2D.text(ctx, Render2D.trim(m.getDescription(), (int) (w - 12)), x + 6, yy + 29, soft, false);
+        Render2D.text(ctx, Render2D.trim(cat, (int) (w - 30)), x + 6, yy + h - 13, soft, false);
+        if (m.getKeybind().isBound()) {
+            String k = m.getKeybind().getKeyName();
+            float kx = x + w - 5 - (sticker ? Render2D.textWidth(k) + 4 : Album.keycapWidth(k));
+            if (sticker) Album.keycapLight(ctx, k, kx, yy + h - 15);
+            else Album.keycap(ctx, k, kx, yy + h - 15);
+        }
+        if (ExtraModules.isNew(m)) newBadge(ctx, x + w - Album.labelWidth("nowy") + 2, yy - 4);
+
+        // favourite star + settings shortcut (visible on hover; the star stays when favourite)
+        boolean hs = hovered(mx, my, starX - 6, starY - 6, 12, 12, true);
+        float sa = anim(m.getName() + "_star", 16).target(hs ? 1 : 0).update();
+        float sy = starY - (yy == y ? 0 : y - yy) + (ExtraModules.isNew(m) ? 6 : 0);
+        if (m.isFavorite()) Icons.star(ctx, starX, sy, 3.8f + sa * 0.6f, ThemeTokens.DOT_WAIT, true);
+        else if (hov) Icons.star(ctx, starX, sy, 3.8f + sa * 0.6f, ColorUtil.lerp(soft, ThemeTokens.DOT_WAIT, sa), false);
+        if (hov && toggleable) {
+            boolean hg = hovered(mx, my, gearX - 6, starY - 6, 12, 12, true);
+            Icons.sliders(ctx, gearX, sy, 7, hg ? Theme.accent() : soft);
+            hit(gearX - 6, starY - 6 + (ExtraModules.isNew(m) ? 6 : 0), 12, 12, true, (a, b, c) -> switchPage(Page.SETTINGS, m));
+        }
+        hit(x, y, w, h, true, cardAction(m, x, y, w, h));
+        hit(starX - 6, starY - 6 + (ExtraModules.isNew(m) ? 6 : 0), 12, 12, true, (a, b, c) -> toggleFavorite(m));
+    }
+
+    /** Soft accent mark behind the part of a module name that matches the search. */
+    private void matchHighlight(Gfx ctx, String name, float x, float y) {
+        String q = search.getText().trim().toLowerCase(java.util.Locale.ROOT);
+        if (q.isEmpty()) return;
+        int i = name.toLowerCase(java.util.Locale.ROOT).indexOf(q);
+        if (i < 0) return;
+        float sx = x + Render2D.textWidth(name.substring(0, i)) - 1;
+        float sw = Render2D.textWidth(name.substring(i, Math.min(name.length(), i + q.length()))) + 2;
+        Render2D.rect(ctx, sx + 1, y + 9, sw - 2, 1, Theme.accent());
+    }
+
+    private void keyChip(Gfx ctx, Module m, float kx, float ky, boolean light) {
+        String k = m.getKeybind().getKeyName();
+        if (light) Album.keycapLight(ctx, k, kx, ky);
+        else Album.keycap(ctx, k, kx, ky);
+    }
+
+    private ClickAction cardAction(Module m, float x, float y, float w, float h) {
+        return (cx, cy, button) -> {
+            if (button == 1 || !m.isToggleable()) {
+                switchPage(Page.SETTINGS, m);
+            } else if (button == 0) {
+                m.toggle();
+                toggledAt.put(m, System.currentTimeMillis());
+                Sounds.toggle(m.isEnabled());
+            }
+        };
+    }
+
+    // ------------------------------------------------------------------ settings page
+
+    private void renderSettings(Gfx ctx, double mx, double my) {
+        Module m = selected;
+        float x = clipX, w = clipW;
+        float y = clipY + 2;
+
+        // top row: enabled + keybind
+        if (m.isToggleable()) {
+            y = row(ctx, x, y, w, 30, "Włączony", "Włącz lub wyłącz moduł", mx, my);
+            float ta = anim(m.getName() + "_on", 16).target(m.isEnabled() ? 1 : 0).update();
+            Album.toggle(ctx, x + w - 34, y - 30 + 8, 24, 11, ta);
+            hit(x, y - 30, w, 30, true, (a, b, c) -> {
+                m.toggle();
+                Sounds.toggle(m.isEnabled());
+            });
+        }
+        y = keybindRow(ctx, x, y, w, m.getKeybind(), mx, my);
+
+        for (Setting<?> s : m.getSettings()) {
+            if (!s.isVisible()) continue;
+            if (s instanceof BooleanSetting) y = boolRow(ctx, x, y, w, (BooleanSetting) s, mx, my);
+            else if (s instanceof NumberSetting) y = numberRow(ctx, x, y, w, (NumberSetting) s, mx, my);
+            else if (s instanceof ModeSetting) y = modeRow(ctx, x, y, w, (ModeSetting) s, mx, my);
+            else if (s instanceof ColorSetting) y = colorRow(ctx, x, y, w, (ColorSetting) s, mx, my);
+            else if (s instanceof KeybindSetting) y = keybindRow(ctx, x, y, w, (KeybindSetting) s, mx, my);
+            else if (s instanceof StringSetting) y = stringRow(ctx, x, y, w, (StringSetting) s, mx, my);
+        }
+
+        // reset button
+        y += 4;
+        boolean hr = hovered(mx, my, x, y, 130, 20, true);
+        Widgets.button(ctx, x, y, 130, 20, "↺ Przywróć domyślne", anim("reset_mod", 14).target(hr ? 1 : 0).update(), false);
+        hit(x, y, 130, 20, true, (a, b, c) -> {
+            for (Setting<?> s : m.getSettings()) s.reset();
+            Sounds.click();
+            NotificationManager.push(m.getName(), "Przywrócono ustawienia domyślne", NotificationManager.Type.INFO);
+        });
+        y += 26;
+        contentHeight = y - clipY;
+    }
+
+    private float row(Gfx ctx, float x, float y, float w, float h, String name, String desc, double mx, double my) {
+        boolean hov = hovered(mx, my, x, y, w, h, true);
+        float ha = anim("row_" + (selected == null ? "" : selected.getName()) + name, 16).target(hov ? 1 : 0).update();
+        Render2D.roundedRect(ctx, x, y, w, h - 4, Album.R, ColorUtil.lerp(Theme.raised(), Theme.RAISED_2, ha));
+        Render2D.text(ctx, name, x + 9, y + 4, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(desc, (int) (w * 0.62f)), x + 9, y + 14, Theme.TEXT_MUTED);
+        return y + h;
+    }
+
+    private float boolRow(Gfx ctx, float x, float y, float w, BooleanSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
+        float ta = anim(s, 16).target(s.isOn() ? 1 : 0).update();
+        Album.toggle(ctx, x + w - 34, top + 8, 24, 11, ta);
+        hit(x, top, w, 26, true, (a, b, c) -> {
+            s.toggle();
+            Sounds.toggle(s.isOn());
+        });
+        return y;
+    }
+
+    private float numberRow(Gfx ctx, float x, float y, float w, NumberSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
+        float sw = 120, sx = x + w - sw - 14, sy = top + 11;
+        double range = s.getMax() - s.getMin();
+        float target = (float) ((s.get() - s.getMin()) / range);
+        float p = anim(s, 18).target(target).update();
+        boolean kh = drag != null && dragTarget == s || hovered(mx, my, sx - 4, top, sw + 8, 26, true);
+        Album.slider(ctx, sx, sy, sw, p, kh ? 1 : 0);
+        String v = s.format();
+        Album.label(ctx, v, sx - 10 - Album.labelWidth(v), top + 8, Theme.VINYL, Theme.VINYL_INK);
+        hit(x, top, w, 26, true, (a, b, button) -> {
+            if (button == 1) {
+                s.reset();
+                return;
+            }
+            dragTarget = s;
+            drag = (dmx, dmy) -> {
+                double f = Math.max(0, Math.min(1, (dmx - sx) / sw));
+                s.set(s.getMin() + f * range);
+            };
+            drag.drag(a, b);
+        });
+        return y;
+    }
+
+    private Object dragTarget;
+
+    private float modeRow(Gfx ctx, float x, float y, float w, ModeSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
+        float pw = 110, px = x + w - pw - 10, py = top + 5;
+        boolean hov = hovered(mx, my, px, py, pw, 16, true);
+        int[] swatch = dev.noreclient.module.client.ClientSettings.presetColors(s.get());
+        if (s.getName().equals("Theme Preset") && swatch != null) {
+            Render2D.circle(ctx, px - 18, py + 8, 5, swatch[0]);
+            Render2D.circle(ctx, px - 8, py + 8, 5, swatch[1]);
+            Render2D.ring(ctx, px - 18, py + 8, 5, 1, 0, 360, 0x40FFFFFF);
+        }
+        // segmented look: slot track, the chosen value is a white sticker pill
+        Render2D.roundedRect(ctx, px, py, pw, 16, 8, Theme.SLOT);
+        Album.sticker(ctx, px + 13, py + 2, pw - 26, 12, 6, Theme.VINYL, 0);
+        Render2D.text(ctx, "‹", px + 4, py + 4, hov ? Theme.accentLight() : Theme.TEXT_MUTED);
+        Render2D.text(ctx, "›", px + pw - 9, py + 4, hov ? Theme.accentLight() : Theme.TEXT_MUTED);
+        Animation slide = anim("mode_" + s.hashCode(), 16);
+        slide.update();
+        float sv = slide.get();
+        ctx.scissor((int) ((px + 14 + ox) * scale), (int) ((py + oy - scroll.get()) * scale),
+                (int) ((px + pw - 14 + ox) * scale), (int) ((py + 16 + oy - scroll.get()) * scale));
+        Render2D.centeredText(ctx, Render2D.trim(s.get(), (int) pw - 30), px + pw / 2f + sv * 30 * Motion.travel(), py + 4,
+                ColorUtil.fade(Theme.VINYL_INK, 1 - Math.abs(sv)), false);
+        ctx.endScissor();
+        int idx = s.getModes().indexOf(s.get());
+        float dotW = s.getModes().size() * 5f;
+        for (int i = 0; i < s.getModes().size(); i++) {
+            Render2D.circle(ctx, px + pw / 2f - dotW / 2f + i * 5 + 2.5f, py + 20f, 1.2f, i == idx ? Theme.accent() : Theme.GHOST);
+        }
+        hit(x, top, w, 26, true, (a, b, button) -> {
+            boolean forward = button == 0 && !(a >= px && a < px + pw / 2f && b >= py && b < py + 16);
+            if (button == 1) forward = false;
+            s.cycle(forward);
+            slide.set(forward ? 1 : -1);
+            slide.target(0);
+            Sounds.click();
+        });
+        return y;
+    }
+
+    private float colorRow(Gfx ctx, float x, float y, float w, ColorSetting s, double mx, double my) {
+        boolean expanded = expandedColor == s;
+        float ea = anim(s, 14).target(expanded ? 1 : 0).update();
+        float extra = 84 * Animation.easeOutCubic(ea);
+        float top = y;
+        boolean hov = hovered(mx, my, x, y, w, 26, true);
+        float ha = anim("row_c_" + s.hashCode(), 16).target(hov || expanded ? 1 : 0).update();
+        Render2D.roundedRect(ctx, x, y, w, 26 + extra, Album.R, ColorUtil.lerp(Theme.raised(), Theme.RAISED_2, ha));
+        Render2D.text(ctx, s.getName(), x + 9, y + 4, Theme.TEXT);
+        Render2D.text(ctx, Render2D.trim(s.getDescription(), (int) (w * 0.55f)), x + 9, y + 14, Theme.TEXT_MUTED);
+        float swx = x + w - 44;
+        Widgets.checker(ctx, swx, top + 6, 32, 14, 4);
+        Render2D.roundedRect(ctx, swx, top + 6, 32, 14, 3, s.getColor());
+        Render2D.roundedOutline(ctx, swx - 1, top + 5, 34, 16, 4, 1, Theme.VINYL);
+        String hex = ColorUtil.toHex(s.get());
+        Render2D.text(ctx, hex, swx - 6 - Render2D.textWidth(hex), top + 9, Theme.TEXT_MUTED, false);
+        hit(x, top, w, 26, true, (a, b, c) -> {
+            expandedColor = expanded ? null : s;
+            pickerHsb = ColorUtil.toHsb(s.get());
+            Sounds.click();
+        });
+
+        if (ea > 0.05f) {
+            float py = top + 30;
+            float alpha = ea;
+            // saturation / brightness square
+            float sqx = x + 10, sqw = 140, sqh = 70;
+            int hueColor = ColorUtil.hsb(pickerHsb[0], 1, 1, 255);
+            if (extra > 20) {
+                ctx.scissor((int) ((sqx + ox) * scale), (int) ((top + 26 + oy - scroll.get()) * scale),
+                        (int) ((x + w + ox) * scale), (int) ((top + 26 + extra + oy - scroll.get()) * scale));
+                // nested scissor intersects with the content clip in vanilla's scissor stack
+                Render2D.quadGradient(ctx, sqx, py, sqw, sqh, 0xFFFFFFFF, hueColor, 0xFF000000, 0xFF000000);
+                Render2D.quadGradient(ctx, sqx, py, sqw, sqh, 0xFFFFFFFF, hueColor, ColorUtil.withAlpha(hueColor, 0), 0x00FFFFFF);
+                Render2D.quadGradient(ctx, sqx, py, sqw, sqh, 0x00000000, 0x00000000, 0xFF000000, 0xFF000000);
+                float kx = sqx + pickerHsb[1] * sqw, ky = py + (1 - pickerHsb[2]) * sqh;
+                Render2D.ring(ctx, kx, ky, 4, 1.5f, 0, 360, 0xFFFFFFFF);
+
+                // hue bar
+                float hx = sqx + sqw + 8, hw = 10;
+                for (int i = 0; i < 6; i++) {
+                    int c1 = ColorUtil.hsb(i / 6f, 1, 1, 255), c2 = ColorUtil.hsb((i + 1) / 6f, 1, 1, 255);
+                    Render2D.quadGradient(ctx, hx, py + sqh * i / 6f, hw, sqh / 6f, c1, c1, c2, c2);
+                }
+                Render2D.rect(ctx, hx - 1, py + pickerHsb[0] * sqh - 1, hw + 2, 2, 0xFFFFFFFF);
+
+                // alpha bar
+                float ax = hx + hw + 6;
+                Widgets.checker(ctx, ax, py, hw, sqh, 5);
+                int opaque = ColorUtil.withAlpha(s.get(), 255);
+                Render2D.quadGradient(ctx, ax, py, hw, sqh, opaque, opaque, ColorUtil.withAlpha(opaque, 0), ColorUtil.withAlpha(opaque, 0));
+                float af = ColorUtil.alpha(s.get()) / 255f;
+                Render2D.rect(ctx, ax - 1, py + (1 - af) * sqh - 1, hw + 2, 2, 0xFFFFFFFF);
+
+                // chroma + info
+                float ix = ax + hw + 14;
+                float ca = anim(s.getName() + "_chroma" + s.hashCode(), 14).target(s.isChroma() ? 1 : 0).update();
+                Render2D.text(ctx, "Chroma (tęcza)", ix, py + 3, ColorUtil.fade(Theme.TEXT, alpha));
+                Widgets.toggle(ctx, ix + 80, py + 1, 26, 12, ca);
+                Render2D.text(ctx, "Alpha: " + ColorUtil.alpha(s.get()), ix, py + 22, Theme.TEXT_DIM);
+                Render2D.text(ctx, "RGB: " + ColorUtil.red(s.get()) + ", " + ColorUtil.green(s.get()) + ", " + ColorUtil.blue(s.get()), ix, py + 34, Theme.TEXT_DIM);
+                boolean rh = hovered(mx, my, ix, py + 50, 60, 16, true);
+                Widgets.button(ctx, ix, py + 50, 60, 16, "Reset", anim("cr_" + s.hashCode(), 14).target(rh ? 1 : 0).update(), false);
+                ctx.endScissor();
+
+                hit(sqx, py, sqw, sqh, true, (a, b, c) -> startDrag(s, (dmx, dmy) -> {
+                    pickerHsb[1] = (float) Math.max(0, Math.min(1, (dmx - sqx) / sqw));
+                    pickerHsb[2] = (float) Math.max(0, Math.min(1, 1 - (dmy - py) / sqh));
+                    applyPicker(s);
+                }, a, b));
+                hit(hx - 2, py, hw + 4, sqh, true, (a, b, c) -> startDrag(s, (dmx, dmy) -> {
+                    pickerHsb[0] = (float) Math.max(0, Math.min(0.999, (dmy - py) / sqh));
+                    applyPicker(s);
+                }, a, b));
+                hit(ax - 2, py, hw + 4, sqh, true, (a, b, c) -> startDrag(s, (dmx, dmy) -> {
+                    int al = (int) Math.round(255 * Math.max(0, Math.min(1, 1 - (dmy - py) / sqh)));
+                    s.set(ColorUtil.withAlpha(s.get(), al));
+                }, a, b));
+                hit(ix + 80, py, 26, 14, true, (a, b, c) -> {
+                    s.setChroma(!s.isChroma());
+                    Sounds.toggle(s.isChroma());
+                });
+                hit(ix, py + 50, 60, 16, true, (a, b, c) -> {
+                    s.reset();
+                    pickerHsb = ColorUtil.toHsb(s.get());
+                    Sounds.click();
+                });
+            }
+        }
+        return top + 30 + extra;
+    }
+
+    private void startDrag(Object target, DragAction action, double mx, double my) {
+        dragTarget = target;
+        drag = action;
+        action.drag(mx, my);
+    }
+
+    private void applyPicker(ColorSetting s) {
+        int a = ColorUtil.alpha(s.get());
+        s.set(ColorUtil.hsb(pickerHsb[0], pickerHsb[1], pickerHsb[2], a));
+    }
+
+    private float keybindRow(Gfx ctx, float x, float y, float w, KeybindSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), "Kliknij i naciśnij klawisz (ESC = anuluj, DEL = usuń)", mx, my);
+        boolean isListening = listening == s;
+        String label = isListening ? "Naciśnij klawisz..." : "None".equals(s.getKeyName()) ? "Brak" : s.getKeyName();
+        float bw = Math.max(60, Render2D.textWidth(label) + 16), bx = x + w - bw - 10;
+        float la = anim(s, 16).target(isListening ? 1 : 0).update();
+        // keycap: page face with a dark lip; while listening it is an accent-deep sticker
+        Render2D.roundedRect(ctx, bx, top + 6, bw, 15, 3, 0xFF000000);
+        Render2D.roundedRect(ctx, bx, top + 5, bw, 15, 3, ColorUtil.lerp(Theme.PAGE_SOLID, Theme.accentDeep(), la));
+        Render2D.centeredText(ctx, label, bx + bw / 2f, top + 9, isListening ? 0xFFFFFFFF : Theme.TEXT_DIM, false);
+        hit(x, top, w, 26, true, (a, b, button) -> {
+            if (button == 1) {
+                s.set(Keys.UNKNOWN);
+                listening = null;
+            } else {
+                listening = isListening ? null : s;
+            }
+            Sounds.click();
+        });
+        return y;
+    }
+
+    // ------------------------------------------------------------------ downloads page (resource packs from Modrinth)
+
+    private static final String[][] DL_SORTS = {{"relevance", "Trafność"}, {"downloads", "Pobrania"}, {"follows", "Obserwujący"}, {"newest", "Nowe"}, {"updated", "Aktualne"}};
+    private static final String[][] DL_CATS = {{"", "Wszystkie"}, {"combat", "PvP"}, {"vanilla-like", "Jak vanilla"}, {"simplistic", "Proste"},
+            {"realistic", "Realistyczne"}, {"gui", "Interfejs"}, {"tweaks", "Poprawki"}, {"themed", "Tematyczne"}, {"16x", "16x"}, {"32x", "32x"}, {"64x", "64x+"}};
+
+    private static String dlCatLabel(String c) {
+        for (String[] e : DL_CATS) if (e[0].equals(c)) return e[1];
+        return c.isEmpty() ? c : Character.toUpperCase(c.charAt(0)) + c.substring(1).replace('-', ' ');
+    }
+
+    private static String fmtCount(long n) {
+        return n >= 1_000_000 ? String.format("%.1fM", n / 1e6) : n >= 1000 ? String.format("%.1fK", n / 1e3) : String.valueOf(n);
+    }
+
+    private void runSearch(boolean append) {
+        if (!append) {
+            dlResults.clear();
+            scroll.set(0);
+        }
+        dlQuery = dlSearch.getText();
+        dlLoading = true;
+        dlError = null;
+        final int req = ++dlRequest;
+        Modrinth.search(dlQuery, dlCategory, dlSort, append ? dlResults.size() : 0, (res, t) -> NoreClient.runNextTick(() -> {
+            if (req != dlRequest) return;
+            dlLoading = false;
+            if (t != null) {
+                dlError = "Brak połączenia z Modrinth";
+                return;
+            }
+            dlResults.addAll(res.hits);
+            dlTotal = res.total;
+            dlMore = dlResults.size() < res.total && res.hits.size() == Modrinth.PAGE;
+            if (!append) pageSwitch = System.currentTimeMillis();
+        }));
+    }
+
+    private void install(Modrinth.Hit h) {
+        dlState.put(h.id, "loading");
+        Sounds.click();
+        Modrinth.install(h.id, (file, t) -> NoreClient.runNextTick(() -> {
+            if (t != null) {
+                dlState.put(h.id, "error");
+                Throwable c = t.getCause() != null ? t.getCause() : t;
+                NotificationManager.push(Render2D.trim(h.title, 120), String.valueOf(c.getMessage()), NotificationManager.Type.ERROR);
+                return;
+            }
+            dlState.put(h.id, "done:" + file);
+            dlLocal = null;
+            NotificationManager.push(Render2D.trim(h.title, 120), "Pobrano – kliknij Włącz", NotificationManager.Type.SUCCESS);
+        }));
+    }
+
+    private List<java.io.File> localPacks() {
+        if (dlLocal == null) {
+            dlLocal = new ArrayList<>();
+            java.io.File[] files = Modrinth.packDir().listFiles();
+            if (files != null) {
+                for (java.io.File f : files) if (f.isDirectory() || f.getName().toLowerCase().endsWith(".zip")) dlLocal.add(f);
+            }
+            dlLocal.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        }
+        return dlLocal;
+    }
+
+    /** Small pill used for tabs, sorts and categories; returns its width. */
+    private float pill(Gfx ctx, double mx, double my, float x, float y, float h, String label, boolean on, Object key, Runnable action) {
+        float w = Render2D.textWidth(label) + 12;
+        boolean hov = hovered(mx, my, x, y, w, h, true);
+        float ha = anim(key, 16).target(hov || on ? 1 : 0).update();
+        if (on) Album.sticker(ctx, x, y, w, h, h / 2f, Theme.VINYL, 0);
+        else Render2D.roundedRect(ctx, x, y, w, h, h / 2f, ColorUtil.lerp(Theme.RAISED_2, Theme.CARD_HOVER, ha));
+        Render2D.text(ctx, label, x + 6, y + (h - 8) / 2f, on ? Theme.VINYL_INK : ColorUtil.lerp(Theme.TEXT_DIM, Theme.TEXT, ha), false);
+        hit(x, y, w, h, true, (a, b, c) -> { Sounds.click(); action.run(); });
+        return w;
+    }
+
+    private void renderDownloads(Gfx ctx, double mx, double my) {
+        if (!dlInstalledTab && (dlQuery == null || (!dlSearch.getText().equals(dlQuery) && System.currentTimeMillis() - dlTyped > 350))) runSearch(false);
+        float x = clipX, w = clipW, y = clipY + 2;
+
+        // tabs: browse / installed with a sliding glow pill
+        String[] tabs = {"Przeglądaj", "Zainstalowane (" + localPacks().size() + ")"};
+        float tw = (w - 6) / 2f;
+        float target = x + (dlInstalledTab ? tw + 6 : 0);
+        float px = dlTab.target(target).update();
+        if (Math.abs(px - target) > w) dlTab.set(target);
+        for (int i = 0; i < 2; i++) Render2D.roundedRect(ctx, x + i * (tw + 6), y, tw, 20, Theme.radius(), Theme.PANEL);
+        Widgets.glowBox(ctx, dlTab.get(), y, tw, 20, Theme.radius(), Theme.accent(), 0.3f, 1f);
+        for (int i = 0; i < 2; i++) {
+            float bx = x + i * (tw + 6);
+            boolean on = (i == 1) == dlInstalledTab;
+            boolean hov = hovered(mx, my, bx, y, tw, 20, true);
+            float ic = bx + tw / 2f - Render2D.textWidth(tabs[i]) / 2f - 8;
+            if (i == 0) Icons.globe(ctx, ic, y + 10, 8, on ? 0xFFFFFFFF : Theme.TEXT_MUTED);
+            else Icons.download(ctx, ic, y + 10, 8, on ? 0xFFFFFFFF : Theme.TEXT_MUTED);
+            Render2D.centeredText(ctx, tabs[i], bx + tw / 2f + 5, y + 6, on ? Widgets.glowText(Theme.accent(), 0.4f) : hov ? Theme.TEXT : Theme.TEXT_DIM, false);
+            final boolean inst = i == 1;
+            hit(bx, y, tw, 20, true, (a, b, c) -> {
+                if (dlInstalledTab == inst) return;
+                dlInstalledTab = inst;
+                dlLocal = null;
+                scroll.set(0);
+                pageSwitch = System.currentTimeMillis();
+                Sounds.click();
+            });
+        }
+        y += 27;
+        if (dlInstalledTab) { renderInstalledPacks(ctx, mx, my, x, y, w); return; }
+
+        // sort + category pills (wrapping)
+        float sx = x;
+        Render2D.text(ctx, "Sortuj", sx, y + 3, Theme.TEXT_MUTED, false);
+        sx += Render2D.textWidth("Sortuj") + 6;
+        for (String[] srt : DL_SORTS) {
+            sx += pill(ctx, mx, my, sx, y, 13, srt[1], dlSort.equals(srt[0]), "dls_" + srt[0], () -> { dlSort = srt[0]; runSearch(false); }) + 4;
+        }
+        y += 18;
+        sx = x;
+        for (String[] cat : DL_CATS) {
+            float cw = Render2D.textWidth(cat[1]) + 12;
+            if (sx + cw > x + w) { sx = x; y += 17; }
+            sx += pill(ctx, mx, my, sx, y, 13, cat[1], dlCategory.equals(cat[0]), "dlc_" + cat[0], () -> { dlCategory = cat[0]; runSearch(false); }) + 4;
+        }
+        y += 19;
+        String info = dlLoading && dlResults.isEmpty() ? "Szukam..." : fmtCount(dlTotal) + " paczek zasobów dla Minecraft " + Modrinth.gameVersion();
+        Render2D.scaledText(ctx, info, x + 1, y, 0.72f, Theme.TEXT_MUTED, false);
+        y += 11;
+
+        if (dlResults.isEmpty()) {
+            if (dlLoading) {
+                for (int i = 0; i < 4; i++) {
+                    float cw = (w - 6) / 2f, cx = x + (i % 2) * (cw + 6), cy = y + (i / 2) * 78;
+                    float sh = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 220.0 + i);
+                    Render2D.roundedRect(ctx, cx, cy, cw, 72, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, sh * 0.6f));
+                }
+            } else {
+                Icons.download(ctx, x + w / 2f, y + 40, 16, ColorUtil.withAlpha(Theme.accent(), 160));
+                Render2D.centeredText(ctx, dlError != null ? dlError : "Brak wyników", x + w / 2f, y + 56, Theme.TEXT_MUTED, false);
+            }
+            contentHeight = y + 170 - clipY;
+            return;
+        }
+
+        long since = System.currentTimeMillis() - pageSwitch;
+        float cw = (w - 6) / 2f, ch = 74;
+        for (int i = 0; i < dlResults.size(); i++) {
+            Modrinth.Hit h = dlResults.get(i);
+            float cx = x + (i % 2) * (cw + 6), cy = y + (i / 2) * (ch + 6);
+            if (cy > clipY + scroll.get() + clipH || cy + ch < clipY + scroll.get()) continue;
+            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 35) / 320f);
+            ctx.setAlpha(alpha * Math.max(0, Math.min(1, p)));
+            float ry = cy + (1 - Math.max(0, p)) * 14;
+            renderPackCard(ctx, mx, my, h, cx, ry, cw, ch);
+            ctx.setAlpha(alpha);
+        }
+        y += ((dlResults.size() + 1) / 2) * (ch + 6);
+        if (dlMore) {
+            boolean lh = hovered(mx, my, x + w / 2f - 60, y + 2, 120, 18, true);
+            if (dlLoading) {
+                float a = (System.currentTimeMillis() % 1000) / 1000f * 360;
+                Render2D.ring(ctx, x + w / 2f, y + 11, 6, 2f, a, a + 260, Theme.accent());
+            } else {
+                Widgets.button(ctx, x + w / 2f - 60, y + 2, 120, 18, "Załaduj więcej", anim("dl_more", 14).target(lh ? 1 : 0).update(), false);
+                hit(x + w / 2f - 60, y + 2, 120, 18, true, (a, b, c) -> runSearch(true));
+            }
+            y += 26;
+        }
+        Render2D.scaledText(ctx, "PPM na kafelku otwiera stronę paczki na Modrinth", x, y + 2, 0.7f, Theme.TEXT_MUTED, false);
+        contentHeight = y + 14 - clipY;
+    }
+
+    private void renderPackCard(Gfx ctx, double mx, double my, Modrinth.Hit h, float x, float y, float w, float hgt) {
+        boolean hov = hovered(mx, my, x, y, w, hgt, true);
+        float ha = anim("dl_" + h.id, 14).target(hov ? 1 : 0).update();
+        float r = Theme.radius();
+        if (ha > 0.01f) Render2D.shadow(ctx, x, y, w, hgt, r, 5, ColorUtil.withAlpha(Theme.accent(), (int) (60 * ha)));
+        Render2D.roundedRect(ctx, x, y, w, hgt, r, ColorUtil.lerp(Theme.PANEL, Theme.CARD, 0.4f + 0.6f * ha));
+        // tinted header band
+        Render2D.roundedGradient(ctx, x, y, w, 26, r, ColorUtil.withAlpha(Theme.accent(), (int) (55 + 35 * ha)), ColorUtil.withAlpha(Theme.accent(), 0), true);
+        Render2D.roundedOutline(ctx, x, y, w, hgt, r, 1, ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 150), ha));
+
+        // icon
+        float is = 30 + ha * 2, ix = x + 7 - ha, iy = y + 7 - ha;
+        Render2D.shadow(ctx, ix, iy, is, is, 7, 3, 0x60000000);
+        dev.noreclient.api.TextureRef icon = Modrinth.icon(h.iconUrl);
+        if (icon != null) {
+            Render2D.roundedRect(ctx, ix, iy, is, is, 7, 0xFF1A1411);
+            Render2D.texture(ctx, icon, ix, iy, is, is, 1f);
+        } else {
+            Render2D.roundedGradient(ctx, ix, iy, is, is, 7, Theme.accent2(), Theme.accent(), true);
+            Render2D.centeredText(ctx, h.title.isEmpty() ? "?" : h.title.substring(0, 1).toUpperCase(), ix + is / 2f, iy + is / 2f - 4, 0xFFFFFFFF, true);
+        }
+        float tx = x + 44, maxW = w - 50;
+        Render2D.text(ctx, Render2D.trim(h.title, (int) maxW), tx, y + 9, Theme.TEXT);
+        Render2D.scaledText(ctx, Render2D.trim("od " + h.author, (int) (maxW / 0.7f)), tx, y + 20, 0.7f, Theme.TEXT_MUTED, false);
+
+        // description: two wrapped lines
+        String[] lines = wrap(h.description, (int) ((w - 14) / 0.72f), 2);
+        for (int l = 0; l < lines.length; l++) Render2D.scaledText(ctx, lines[l], x + 7, y + 41 + l * 8, 0.72f, Theme.TEXT_DIM, false);
+
+        // footer: stats + category + button
+        float fy = y + hgt - 15;
+        String stats = "⬇ " + fmtCount(h.downloads) + "   ❤ " + fmtCount(h.follows);
+        Render2D.scaledText(ctx, stats, x + 7, fy + 4, 0.66f, Theme.TEXT_MUTED, false);
+        if (!h.categories.isEmpty()) {
+            String cat = dlCatLabel(h.categories.get(0));
+            float cx = x + 9 + Render2D.textWidth(stats) * 0.66f + 4, cwid = Render2D.textWidth(cat) * 0.62f + 8;
+            if (cx + cwid < x + w - 66) {
+                Render2D.roundedRect(ctx, cx, fy + 2, cwid, 10, 5, ColorUtil.withAlpha(Theme.accent(), 40));
+                Render2D.scaledText(ctx, cat, cx + 4, fy + 4.5f, 0.62f, ColorUtil.brighten(Theme.accent(), 0.4f), false);
+            }
+        }
+        String st = dlState.getOrDefault(h.id, "");
+        float bw = 56, bh = 14, bx = x + w - bw - 6, by = fy;
+        boolean bhov = hovered(mx, my, bx, by, bw, bh, true);
+        float ba = anim("dlb_" + h.id, 16).target(bhov ? 1 : 0).update();
+        int col = Theme.accent();
+        String label;
+        if (st.equals("loading")) {
+            Widgets.glowBox(ctx, bx, by, bw, bh, 7, col, 0.2f, 0.8f);
+            float a = (System.currentTimeMillis() % 900) / 900f * 360;
+            Render2D.ring(ctx, bx + bw / 2f, by + bh / 2f, 4, 1.4f, a, a + 260, Widgets.glowText(col, 0));
+            label = null;
+        } else if (st.equals("enabled")) {
+            col = Theme.SUCCESS;
+            label = "✔ Włączona";
+        } else if (st.startsWith("done:")) {
+            label = "Włącz";
+        } else {
+            label = st.equals("error") ? "Ponów" : "Pobierz";
+        }
+        if (label != null) {
+            Widgets.glowBox(ctx, bx, by, bw, bh, 7, col, ba, 1f);
+            Render2D.scaledText(ctx, label, bx + bw / 2f - Render2D.textWidth(label) * 0.4f, by + 4, 0.8f, Widgets.glowText(col, ba), false);
+            final String state = st;
+            hit(bx, by, bw, bh, true, (a, b, c) -> {
+                if (state.equals("loading") || state.equals("enabled")) return;
+                if (state.startsWith("done:")) {
+                    game().enableResourcePack(state.substring(5));
+                    dlState.put(h.id, "enabled");
+                    Sounds.toggle(true);
+                    return;
+                }
+                install(h);
+            });
+        }
+        hit(x, y, w, hgt - 16, true, (a, b, c) -> {
+            if (c == 1) game().openUrl("https://modrinth.com/resourcepack/" + h.slug);
+        });
+    }
+
+    private void renderInstalledPacks(Gfx ctx, double mx, double my, float x, float y, float w) {
+        List<java.io.File> packs = localPacks();
+        Render2D.scaledText(ctx, packs.size() + " paczek w resourcepacks/ • włączonych: " + game().activeResourcePacks(), x + 1, y, 0.72f, Theme.TEXT_MUTED, false);
+        float fw = 74, fx = x + w - fw;
+        boolean fh = hovered(mx, my, fx, y - 4, fw, 14, true);
+        Widgets.glowBox(ctx, fx, y - 4, fw, 14, 7, Theme.accent(), anim("dl_folder", 14).target(fh ? 1 : 0).update(), 0.6f);
+        Render2D.scaledText(ctx, "Otwórz folder", fx + 8, y - 0.5f, 0.75f, 0xFFFFFFFF, false);
+        hit(fx, y - 4, fw, 14, true, (a, b, c) -> game().openUrl(Modrinth.packDir().toURI().toString()));
+        y += 14;
+        if (packs.isEmpty()) {
+            Icons.download(ctx, x + w / 2f, y + 40, 16, ColorUtil.withAlpha(Theme.accent(), 160));
+            Render2D.centeredText(ctx, "Nie masz jeszcze paczek – znajdziesz je w zakładce Przeglądaj", x + w / 2f, y + 56, Theme.TEXT_MUTED, false);
+            contentHeight = y + 90 - clipY;
+            return;
+        }
+        long since = System.currentTimeMillis() - pageSwitch;
+        for (int i = 0; i < packs.size(); i++) {
+            java.io.File f = packs.get(i);
+            float rh = 26;
+            if (y > clipY + scroll.get() + clipH || y + rh < clipY + scroll.get()) { y += rh + 4; continue; }
+            float p = Animation.easeOutCubic((since - Math.min(i, 12) * 30) / 300f);
+            ctx.setAlpha(alpha * Math.max(0, Math.min(1, p)));
+            float ry = y + (1 - Math.max(0, p)) * 10;
+            boolean on = game().isResourcePackEnabled(f.getName());
+            boolean hov = hovered(mx, my, x, ry, w, rh, true);
+            float ha = anim("dli_" + f.getName(), 14).target(hov ? 1 : 0).update();
+            Render2D.roundedRect(ctx, x, ry, w, rh, Theme.radius(), ColorUtil.lerp(Theme.PANEL, Theme.CARD, ha));
+            Render2D.roundedOutline(ctx, x, ry, w, rh, Theme.radius(), 1, on ? ColorUtil.withAlpha(Theme.SUCCESS, 110) : ColorUtil.lerp(Theme.OUTLINE, ColorUtil.withAlpha(Theme.accent(), 110), ha));
+            Render2D.roundedGradient(ctx, x + 5, ry + 4, 18, 18, 5, on ? Theme.SUCCESS : Theme.accent2(), on ? ColorUtil.darken(Theme.SUCCESS, 0.3f) : Theme.accent(), true);
+            Render2D.centeredText(ctx, f.isDirectory() ? "D" : "Z", x + 14, ry + 9, 0xFFFFFFFF, true);
+            String name = f.getName().replaceAll("(?i)\\.zip$", "");
+            Render2D.text(ctx, Render2D.trim(name, (int) (w - 100)), x + 30, ry + 5, on ? Theme.TEXT : Theme.TEXT_DIM);
+            Render2D.scaledText(ctx, f.isDirectory() ? "folder" : (f.length() / 1024 >= 1024 ? String.format("%.1f MB", f.length() / 1048576.0) : (f.length() / 1024) + " KB"),
+                    x + 30, ry + 15.5f, 0.66f, Theme.TEXT_MUTED, false);
+            float tgx = x + w - 34;
+            Widgets.toggle(ctx, tgx, ry + 7, 26, 12, anim("dlt_" + f.getName(), 14).target(on ? 1 : 0).update());
+            hit(tgx - 4, ry + 3, 34, 20, true, (a, b, c) -> {
+                if (game().isResourcePackEnabled(f.getName())) game().disableResourcePack(f.getName());
+                else game().enableResourcePack(f.getName());
+                Sounds.toggle(!on);
+            });
+            ctx.setAlpha(alpha);
+            y += rh + 4;
+        }
+        contentHeight = y + 6 - clipY;
+    }
+
+    /** Greedy word wrap into at most maxLines lines (the last one is trimmed with an ellipsis). */
+    private static String[] wrap(String text, int maxWidth, int maxLines) {
+        List<String> out = new ArrayList<>();
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split("\\s+")) {
+            String next = line.length() == 0 ? word : line + " " + word;
+            if (Render2D.textWidth(next) <= maxWidth) { line.setLength(0); line.append(next); continue; }
+            if (out.size() == maxLines - 1) { line.setLength(0); line.append(next); break; }
+            if (line.length() > 0) out.add(line.toString());
+            line.setLength(0);
+            line.append(word);
+        }
+        if (line.length() > 0 && out.size() < maxLines) out.add(out.size() == maxLines - 1 ? Render2D.trim(line.toString(), maxWidth) : line.toString());
+        return out.toArray(new String[0]);
+    }
+
+    private float stringRow(Gfx ctx, float x, float y, float w, StringSetting s, double mx, double my) {
+        float top = y;
+        y = row(ctx, x, y, w, 30, s.getName(), s.getDescription(), mx, my);
+        TextBox box = stringBoxes.computeIfAbsent(s, k -> new TextBox("Wpisz tekst...", k.getMaxLength()));
+        if (!box.isFocused()) box.setText(s.get());
+        else s.set(box.getText());
+        float bw = Math.min(200, w * 0.45f), bx = x + w - bw - 8;
+        box.render(ctx, bx, top + 4, bw, 18, null);
+        hit(bx, top + 4, bw, 18, true, (a, b, c) -> {
+            stringBoxes.values().forEach(t -> t.setFocused(false));
+            box.setFocused(true);
+        });
+        return y;
+    }
+
+    private TextBox focusedString() {
+        for (TextBox t : stringBoxes.values()) if (t.isFocused()) return t;
+        return null;
+    }
+
+    // ------------------------------------------------------------------ profiles page
+
+    private void renderProfiles(Gfx ctx, double mx, double my) {
+        ConfigManager cfg = NoreClient.get().config();
+        float x = clipX, w = clipW, y = clipY + 2;
+
+        Render2D.roundedRect(ctx, x, y, w, 44, Theme.radius(), Theme.PANEL);
+        Render2D.text(ctx, "Zapisz obecne ustawienia jako profil", x + 9, y + 6, Theme.TEXT);
+        float tbw = w - 110;
+        profileName.render(ctx, x + 8, y + 18, tbw, 20, "✎");
+        hit(x + 8, y + 18, tbw, 20, true, (a, b, c) -> {
+            profileName.setFocused(true);
+            search.setFocused(false);
+        });
+        boolean sh = hovered(mx, my, x + w - 94, y + 18, 86, 20, true);
+        Widgets.button(ctx, x + w - 94, y + 18, 86, 20, "Zapisz", anim("prof_save", 14).target(sh ? 1 : 0).update(), true);
+        hit(x + w - 94, y + 18, 86, 20, true, (a, b, c) -> saveProfile());
+        y += 52;
+
+        List<String> profiles = cfg.listProfiles();
+        if (profiles.isEmpty()) {
+            Render2D.centeredText(ctx, "Nie masz jeszcze żadnych profili.", x + w / 2f, y + 14, Theme.TEXT_MUTED, false);
+            y += 34;
+        }
+        for (String p : profiles) {
+            boolean active = p.equals(cfg.getActiveProfile());
+            boolean hov = hovered(mx, my, x, y, w, 28, true);
+            Render2D.roundedRect(ctx, x, y, w, 28, Theme.radius(), hov ? Theme.CARD : Theme.PANEL);
+            if (active) Render2D.roundedRect(ctx, x, y + 6, 2.5f, 16, 1.25f, Theme.accent());
+            Render2D.text(ctx, p, x + 10, y + 10, Theme.TEXT);
+            if (active) {
+                float pw = Render2D.textWidth(p);
+                Render2D.roundedRect(ctx, x + 16 + pw, y + 8, 40, 12, 6, ColorUtil.withAlpha(Theme.accent(), 60));
+                Render2D.scaledText(ctx, "aktywny", x + 21 + pw, y + 11, 0.75f, Theme.accent(), false);
+            }
+            float bx = x + w - 130;
+            boolean lh = hovered(mx, my, bx, y + 5, 60, 18, true);
+            Widgets.button(ctx, bx, y + 5, 60, 18, "Wczytaj", anim("pl_" + p, 14).target(lh ? 1 : 0).update(), false);
+            hit(bx, y + 5, 60, 18, true, (a, b, c) -> {
+                boolean ok = cfg.loadProfile(p);
+                Sounds.click();
+                NotificationManager.push("Profil " + p, ok ? "Wczytano profil" : "Nie udało się wczytać",
+                        ok ? NotificationManager.Type.SUCCESS : NotificationManager.Type.ERROR);
+            });
+            boolean dh = hovered(mx, my, bx + 65, y + 5, 60, 18, true);
+            float da = anim("pd_" + p, 14).target(dh ? 1 : 0).update();
+            Render2D.roundedRect(ctx, bx + 65, y + 5, 60, 18, Theme.radius(), ColorUtil.lerp(0x30F87171, 0x70F87171, da));
+            Render2D.centeredText(ctx, "Usuń", bx + 95, y + 10, ColorUtil.lerp(Theme.ERROR, 0xFFFFFFFF, da), false);
+            hit(bx + 65, y + 5, 60, 18, true, (a, b, c) -> {
+                cfg.deleteProfile(p);
+                Sounds.click();
+                NotificationManager.push("Profil " + p, "Usunięto profil", NotificationManager.Type.WARNING);
+            });
+            y += 32;
+        }
+
+        y += 8;
+        boolean confirm = System.currentTimeMillis() - resetConfirm < 3000;
+        boolean rh = hovered(mx, my, x, y, 190, 20, true);
+        float ra = anim("reset_all", 14).target(rh ? 1 : 0).update();
+        Render2D.roundedRect(ctx, x, y, 190, 20, Theme.radius(), ColorUtil.lerp(0x30F87171, 0x70F87171, ra));
+        Render2D.centeredText(ctx, confirm ? "Kliknij ponownie, aby potwierdzić" : "⚠ Resetuj wszystkie ustawienia", x + 95, y + 6, ColorUtil.lerp(Theme.ERROR, 0xFFFFFFFF, ra), false);
+        hit(x, y, 190, 20, true, (a, b, c) -> {
+            if (System.currentTimeMillis() - resetConfirm < 3000) {
+                cfg.resetAll();
+                resetConfirm = 0;
+                NotificationManager.push("Konfiguracja", "Zresetowano wszystkie ustawienia", NotificationManager.Type.WARNING);
+            } else {
+                resetConfirm = System.currentTimeMillis();
+            }
+            Sounds.click();
+        });
+        y += 28;
+        Render2D.scaledText(ctx, "Pliki: .minecraft/config/noreclient/", x, y, 0.75f, Theme.TEXT_MUTED, false);
+        contentHeight = y + 12 - clipY;
+    }
+
+    private void saveProfile() {
+        String name = ConfigManager.sanitize(profileName.getText());
+        if (name.isEmpty()) {
+            NotificationManager.push("Profil", "Podaj nazwę profilu", NotificationManager.Type.ERROR);
+            return;
+        }
+        boolean ok = NoreClient.get().config().saveProfile(name);
+        NotificationManager.push("Profil " + name, ok ? "Zapisano profil" : "Błąd zapisu",
+                ok ? NotificationManager.Type.SUCCESS : NotificationManager.Type.ERROR);
+        profileName.setText("");
+        profileName.setFocused(false);
+        Sounds.click();
+    }
+
+    // ------------------------------------------------------------------ input
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (closing) return false;
+        double mx = mapX(mouseX), my = mapY(mouseY);
+        double cmy = my + scroll.get() - (1 - Animation.easeOutCubic(pageAnim.get())) * 10;
+        boolean wasSearch = search.isFocused(), wasProfile = profileName.isFocused();
+        search.setFocused(false);
+        profileName.setFocused(false);
+        dlSearch.setFocused(false);
+        stringBoxes.values().forEach(t -> t.setFocused(false));
+        if (listening != null && button > 1) {
+            // allow binding mouse side buttons? keep simple: cancel
+            listening = null;
+        }
+        if (!Render2D.hovered(mx, my, 0, 0, W, H)) {
+            close();
+            return true;
+        }
+        List<Hit> snapshot = new ArrayList<>(hits);
+        for (int i = snapshot.size() - 1; i >= 0; i--) {
+            Hit h = snapshot.get(i);
+            double hy = h.clipped ? cmy : my;
+            if (h.clipped && !inClip(mx, my)) continue;
+            if (Render2D.hovered(mx, hy, h.x, h.y, h.w, h.h)) {
+                h.action.click(mx, hy, button);
+                return true;
+            }
+        }
+        // clicking empty space keeps focus state consistent
+        if (wasSearch && Render2D.hovered(mx, my, W - 164, 12, 130, 18)) search.setFocused(true);
+        if (wasProfile) profileName.setFocused(false);
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (drag != null) {
+            drag = null;
+            dragTarget = null;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
+        float max = Math.max(0, contentHeight - clipH);
+        float t = (float) Math.max(0, Math.min(max, scroll.getTarget() - verticalAmount * 28));
+        scroll.target(t);
+        return true;
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int modifiers) {
+        if (listening != null) {
+            if (keyCode == Keys.ESCAPE) listening = null;
+            else if (keyCode == Keys.DELETE || keyCode == Keys.BACKSPACE) {
+                listening.set(Keys.UNKNOWN);
+                listening = null;
+            } else {
+                listening.set(keyCode);
+                listening = null;
+            }
+            Sounds.click();
+            return true;
+        }
+        TextBox fs = focusedString();
+        if (fs != null) {
+            if (keyCode == Keys.ESCAPE || keyCode == Keys.ENTER) {
+                fs.setFocused(false);
+                return true;
+            }
+            if (fs.keyPressed(keyCode)) return true;
+        }
+        if (dlSearch.isFocused()) {
+            if (keyCode == Keys.ESCAPE) {
+                dlSearch.setFocused(false);
+                return true;
+            }
+            if (keyCode == Keys.ENTER) {
+                dlTyped = 0;
+                return true;
+            }
+            if (dlSearch.keyPressed(keyCode)) {
+                dlTyped = System.currentTimeMillis();
+                return true;
+            }
+        }
+        if (search.isFocused() || profileName.isFocused()) {
+            if (keyCode == Keys.ESCAPE) {
+                search.setFocused(false);
+                profileName.setFocused(false);
+                return true;
+            }
+            if (keyCode == Keys.ENTER && profileName.isFocused()) {
+                saveProfile();
+                return true;
+            }
+            if (search.keyPressed(keyCode) || profileName.keyPressed(keyCode)) {
+                if (search.isFocused()) scroll.set(0);
+                return true;
+            }
+        }
+        if (keyCode == Keys.F && game().controlDown()) {
+            if (page == Page.DOWNLOADS) dlSearch.setFocused(true);
+            else {
+                if (page != Page.MODULES) switchPage(Page.MODULES, null);
+                search.setFocused(true);
+            }
+            return true;
+        }
+        if (keyCode == Keys.ESCAPE) {
+            if (page != Page.MODULES) switchPage(Page.MODULES, null);
+            else close();
+            return true;
+        }
+        int bound = guiModule().getKeybind().get();
+        if (keyCode == bound && page == Page.MODULES) {
+            close();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(char chr) {
+        TextBox fs = focusedString();
+        if (fs != null && fs.charTyped(chr)) return true;
+        if (profileName.charTyped(chr)) return true;
+        if (dlSearch.charTyped(chr)) {
+            dlTyped = System.currentTimeMillis();
+            return true;
+        }
+        if (page == Page.DOWNLOADS && Character.isLetterOrDigit(chr)) {
+            dlSearch.setFocused(true);
+            dlSearch.charTyped(chr);
+            dlTyped = System.currentTimeMillis();
+            return true;
+        }
+        if (search.charTyped(chr)) {
+            scroll.set(0);
+            return true;
+        }
+        // start typing anywhere on the modules page to search
+        if (page == Page.MODULES && listening == null && Character.isLetterOrDigit(chr)) {
+            search.setFocused(true);
+            search.charTyped(chr);
+            scroll.set(0);
+            return true;
+        }
+        return false;
+    }
+}

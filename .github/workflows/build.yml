@@ -1,0 +1,174 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# a newer push replaces a running build of the same branch / PR; release builds (default branch,
+# tags) are queued instead, so a release is never cut off halfway through publishing
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && github.ref_name != github.event.repository.default_branch }}
+
+permissions:
+  contents: write  # pushes to the default branch publish the release the launcher auto-updates from
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        # every build gets its own launcher version (major.minor from package.json, patch = build number)
+        # so an installed launcher always sees the next build as an update
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            BASE=$(node -p "require('./launcher/package.json').version.split('.').slice(0,2).join('.')")
+            # build number = run number + 1237 (Nore 1.4.5 started at build 1432); the patch must keep growing for auto-update
+            V="$BASE.$((GITHUB_RUN_NUMBER + 1237))"
+          fi
+          PUBLISH=false
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" && ( "$GITHUB_REF" == refs/tags/v* || "$GITHUB_REF_NAME" == "${{ github.event.repository.default_branch }}" ) ]]; then
+            PUBLISH=true
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Launcher $V (publish: $PUBLISH)"
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # 25 for the 26.x platforms (JAVA_HOME_25_X64), 21 (listed last) stays the default
+          java-version: |
+            25
+            21
+      - name: Build Nore Client (all platforms)
+        run: ./scripts/build-all.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: noreclient-mod
+          path: dist/mods/*.jar
+          retention-days: 1  # the mod ships only inside the launcher
+
+  launcher:
+    needs: [version, mod]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            files: |
+              launcher/dist/*.exe
+              launcher/dist/*.exe.blockmap
+              launcher/dist/latest.yml
+          - os: ubuntu-latest
+            script: dist:linux
+            files: |
+              launcher/dist/*.AppImage
+              launcher/dist/latest-linux.yml
+          - os: macos-latest
+            script: dist:mac
+            files: |
+              launcher/dist/*.dmg
+              launcher/dist/*.zip
+              launcher/dist/latest-mac.yml
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: launcher
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: noreclient-mod
+          path: dist/mods
+      - name: Install dependencies
+        # the Electron binary download occasionally times out on hosted runners – retry
+        run: for i in 1 2 3; do npm ci && exit 0; echo "npm ci failed (attempt $i), retrying"; sleep 15; done; exit 1
+      - run: npm test
+      - name: Set version ${{ needs.version.outputs.version }}
+        run: npm version "${{ needs.version.outputs.version }}" --no-git-tag-version --allow-same-version
+      - name: Build installer
+        env:
+          # baked into the app by scripts/keys.js, never committed (the repository is public)
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        run: npm run ${{ matrix.script }} -- --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nore-launcher-${{ matrix.os }}
+          path: ${{ matrix.files }}
+          if-no-files-found: ignore
+
+  release:
+    needs: [version, launcher]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          pattern: nore-launcher-*  # launcher installers only – the mod is never published on its own
+          merge-multiple: true
+      - name: Publish GitHub release v${{ needs.version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          PREV=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          {
+            echo "## Nore Launcher $V"
+            echo
+            echo "Zainstalowany launcher pobierze tę wersję sam (Ustawienia → Aktualizacje)."
+            echo
+            echo "### Zmiany"
+            if [ -n "$PREV" ]; then git log --no-merges --pretty='- %s' "$PREV..HEAD" | head -40; else git log --no-merges --pretty='- %s' -15; fi
+          } > notes.md
+          ls -la out
+          # the releases API sometimes answers a transient 403 / 5xx – retry before failing the job
+          for i in 1 2 3 4; do
+            if gh release view "v$V" >/dev/null 2>&1; then
+              gh release upload "v$V" out/* --clobber && exit 0
+            else
+              gh release create "v$V" out/* --target "$GITHUB_SHA" --title "Nore Launcher $V" --notes-file notes.md --latest && exit 0
+            fi
+            echo "Publishing the release failed (attempt $i), retrying in $((i * 20)) s"
+            sleep $((i * 20))
+          done
+          exit 1
+      - name: Remove stand-alone mod jars from releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          # immutable releases do not allow removing single files – such an old release is
+          # deleted as a whole (newer releases already supersede it for auto-update)
+          for t in $(gh release list --limit 100 --json tagName -q '.[].tagName'); do
+            [ "$t" = "v$V" ] && continue
+            for a in $(gh release view "$t" --json assets -q '.assets[].name' | grep -E '^noreclient-.*\.jar$' || true); do
+              echo "Removing $a from $t"
+              gh release delete-asset "$t" "$a" -y || gh release delete "$t" -y || echo "::warning::Could not remove $a from $t"
+            done
+          done

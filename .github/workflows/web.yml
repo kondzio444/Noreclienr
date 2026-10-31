@@ -1,0 +1,38 @@
+# Deploys the website + API (web/) to Cloudflare Workers – static assets, no R2.
+# Needs repository secrets CLOUDFLARE_API_TOKEN (Workers Scripts:Edit + Zone:DNS for noreclient.pl)
+# and CLOUDFLARE_ACCOUNT_ID.
+name: Website
+
+on:
+  push:
+    branches: [main, master, 'claude/**']
+    paths: ['web/**', 'platforms/platforms.json', '.github/workflows/web.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: website
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy to Cloudflare Workers
+        if: ${{ env.CF_TOKEN != '' }}
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: web
+          wranglerVersion: '4.42.0'
+      - name: Missing secrets
+        if: ${{ env.CF_TOKEN == '' }}
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: echo "::warning::CLOUDFLARE_API_TOKEN is not set – the website was not deployed."

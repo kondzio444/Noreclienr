@@ -1,0 +1,45 @@
+{
+  // Nore Client website + API – Cloudflare Workers with static assets (no R2).
+  // Deploy: npx wrangler deploy   (CI: .github/workflows/web.yml)
+  // Secrets (wrangler secret put …, never in git): see web/README.md
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "noreclient",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-10-01",
+  // copies discord-bot/config.schema.json (and the panel locales) into the site when present
+  "build": { "command": "node scripts/copy-bot-schema.mjs && node scripts/copy-tokens.mjs" },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // the worker runs first for every request: host routing (mc.noreclient.pl → public/mc/) and the API
+    "run_worker_first": true
+  },
+  "routes": [
+    { "pattern": "noreclient.pl", "custom_domain": true },
+    { "pattern": "www.noreclient.pl", "custom_domain": true },
+    { "pattern": "mc.noreclient.pl", "custom_domain": true }
+  ],
+  // background refresh of the release data (src/worker.js → scheduled)
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "durable_objects": {
+    "bindings": [
+      // Nore Hub: the Nore players (src/hub.js)
+      { "name": "HUB", "class_name": "NoreHub" },
+      // Nore Bot: guild configs, meta, events, panel sessions (src/v2/store.js)
+      { "name": "BOT", "class_name": "NoreBot" },
+      // download redirect counters (src/v2/counters.js)
+      { "name": "COUNTERS", "class_name": "NoreCounters" },
+      // admin data: blacklist, announcements, warns, flags, audit log (src/v2/admin-store.js)
+      { "name": "ADMIN", "class_name": "NoreAdmin" }
+    ]
+  },
+  "migrations": [
+    { "tag": "hub-v1", "new_sqlite_classes": ["NoreHub"] },
+    { "tag": "bot-v1", "new_sqlite_classes": ["NoreBot", "NoreCounters"] },
+    { "tag": "admin-v1", "new_sqlite_classes": ["NoreAdmin"] }
+  ],
+  // /api/v2/servers/:address – 20 pings per minute per IP
+  "ratelimits": [{ "name": "SLP_LIMIT", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }],
+  "observability": { "enabled": true }
+}

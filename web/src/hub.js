@@ -1,0 +1,351 @@
+/*
+ * Nore Hub – which players around me also use Nore, and what they wear (contract: docs/nore-hub.md).
+ *
+ *   POST /api/v1/hub/hello            signed hello / heartbeat from the launcher
+ *   GET  /api/v1/hub/players?names=   Nore users among up to 100 names (the game)
+ *   GET  /api/v1/hub/stats            { online, known }
+ *   POST /api/v2/presence             anonymous heartbeat of a running Nore Client (the mod), so players
+ *                                     who start the game without Nore Launcher are counted too
+ *
+ * The worker checks the hello (fields, Nore ID key, ECDSA P-256 signature, clock) without state;
+ * one SQLite-backed Durable Object (NoreHub, idFromName('global')) keeps the players and does the
+ * rest: the per-ID rate limit, the Mojang check for premium accounts and the name binding.
+ */
+
+const ONLINE_MS = 3 * 60 * 1000;          // a hello in the last 3 minutes = online
+const CLAIM_MS = 30 * 86400 * 1000;       // an unverified name stays bound this long after it was seen
+const CLOCK_MS = 5 * 60 * 1000;           // |now - ts| allowed for a hello
+const GAP_MS = 15 * 1000;                 // at most one hello per Nore ID per 15 s
+const MAX_NAMES = 100;
+const MAX_BODY = 8192;
+const PRESENCE_GAP_MS = 20 * 1000;        // at most one presence heartbeat per game session per 20 s
+const MOJANG = 'https://sessionserver.mojang.com';
+
+export class HubError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+const NAME = /^[A-Za-z0-9_]{2,16}$/;
+const KEY = /^[a-z0-9_]{1,32}$/;
+const OPT = /^[a-z0-9_]{1,24}$/;
+const SLOT_FIELDS = ['id', 'color', 'variant', 'opts'];
+const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const utf8 = new TextEncoder();
+
+/** Why a cosmetics object is not acceptable, or null. Keep in sync with launcher/src/main/hub.js. */
+export function cosmeticsError(c) {
+  if (!isObj(c) || !Number.isInteger(c.v) || !isObj(c.slots)) return 'cosmetics: wymagane { v, slots }';
+  if (Object.keys(c).some(k => k !== 'v' && k !== 'slots')) return 'cosmetics: dozwolone są tylko v i slots';
+  const slots = Object.entries(c.slots);
+  if (slots.length > 10) return 'cosmetics: najwyżej 10 slotów';
+  for (const [slot, s] of slots) {
+    if (!KEY.test(slot) || !isObj(s) || Object.keys(s).some(k => !SLOT_FIELDS.includes(k))) return `cosmetics: zły slot ${slot}`;
+    if (typeof s.id !== 'string' || !KEY.test(s.id)) return `cosmetics: zły id w slocie ${slot}`;
+    if ('variant' in s && (typeof s.variant !== 'string' || !KEY.test(s.variant))) return `cosmetics: zły variant w slocie ${slot}`;
+    if ('color' in s && !(Number.isInteger(s.color) && s.color >= 0 && s.color <= 0xffffff)) return `cosmetics: zły color w slocie ${slot}`;
+    if ('opts' in s) {
+      if (!isObj(s.opts) || Object.keys(s.opts).length > 12) return `cosmetics: złe opts w slocie ${slot}`;
+      for (const [k, v] of Object.entries(s.opts)) {
+        const ok = typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v)) || (typeof v === 'string' && v.length <= 32);
+        if (!OPT.test(k) || !ok) return `cosmetics: zła opcja ${k} w slocie ${slot}`;
+      }
+    }
+  }
+  if (utf8.encode(JSON.stringify(c)).length > 2048) return 'cosmetics: najwyżej 2048 bajtów';
+  return null;
+}
+
+const toHex = (buf) => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+const sha256hex = async (bytes) => toHex(await crypto.subtle.digest('SHA-256', bytes));
+const unb64 = (s) => Uint8Array.from(atob(s), ch => ch.charCodeAt(0));
+
+/** The string the launcher signs (docs/nore-hub.md). */
+export async function canonical({ name, uuid, hex, ts, online, cosmetics }) {
+  const cos = await sha256hex(utf8.encode(JSON.stringify(cosmetics)));
+  return `nore-hub/1|${name}|${uuid}|${hex}|${ts}|${online ? 1 : 0}|${cos}`;
+}
+
+/** DER ECDSA signature (Node crypto.sign) → raw r||s (IEEE P1363, what WebCrypto verifies), or null. */
+export function derToP1363(der) {
+  if (der.length < 8 || der.length > 72 || der[0] !== 0x30 || der[1] !== der.length - 2) return null;
+  const out = new Uint8Array(64);
+  let i = 2;
+  for (const at of [0, 32]) {
+    if (der[i] !== 0x02) return null;
+    const n = der[i + 1];
+    if (n < 1 || n > 33 || i + 2 + n > der.length) return null;
+    let v = der.subarray(i + 2, i + 2 + n);
+    i += 2 + n;
+    while (v.length > 32 && v[0] === 0) v = v.subarray(1); // sign byte
+    if (v.length > 32) return null;
+    out.set(v, at + 32 - v.length);
+  }
+  return i === der.length ? out : null;
+}
+
+/** Reads and checks a hello body; returns the fields the Durable Object needs. Throws HubError. */
+export async function readHello(request) {
+  if (Number(request.headers.get('Content-Length') || 0) > MAX_BODY) throw new HubError(413, 'Za duże żądanie');
+  const text = await request.text();
+  if (text.length > MAX_BODY) throw new HubError(413, 'Za duże żądanie');
+  let b;
+  try { b = JSON.parse(text); } catch { throw new HubError(400, 'Treść musi być JSON-em'); }
+  if (!isObj(b)) throw new HubError(400, 'Treść musi być obiektem JSON');
+  const { name, uuid, hex, pub, ts, online, sig, cosmetics } = b;
+  if (typeof name !== 'string' || !NAME.test(name)) throw new HubError(400, 'Zły nick: 2–16 znaków, litery, cyfry lub _');
+  if (typeof uuid !== 'string' || !/^[0-9a-f]{32}$/i.test(uuid)) throw new HubError(400, 'uuid: 32 znaki hex bez myślników');
+  if (typeof hex !== 'string' || !/^[0-9a-f]{20}$/.test(hex)) throw new HubError(400, 'hex: 20 małych znaków hex');
+  if (!Number.isSafeInteger(ts)) throw new HubError(400, 'ts: czas w milisekundach');
+  if (typeof online !== 'boolean') throw new HubError(400, 'online: true albo false');
+  if (typeof pub !== 'string' || pub.length > 400 || typeof sig !== 'string' || sig.length > 200) throw new HubError(400, 'Brak klucza albo podpisu');
+  const bad = cosmeticsError(cosmetics);
+  if (bad) throw new HubError(400, bad);
+  const premium = b.premium === true;
+  const serverId = premium && typeof b.serverId === 'string' && /^-?[0-9a-f]{1,40}$/.test(b.serverId) ? b.serverId : null;
+  // optional, not signed: which launcher sends it (for the admin overview only)
+  const client = typeof b.client === 'string' && /^[\w.+-]{1,32}$/.test(b.client) ? b.client : null;
+
+  let pubDer, sigDer;
+  try { pubDer = unb64(pub); sigDer = unb64(sig); } catch { throw new HubError(400, 'pub i sig muszą być w base64'); }
+  if ((await sha256hex(pubDer)).slice(0, 20) !== hex) throw new HubError(401, 'Klucz nie pasuje do Nore ID');
+  if (Math.abs(Date.now() - ts) >= CLOCK_MS) throw new HubError(401, 'Zły czas żądania – sprawdź zegar komputera');
+  const raw = derToP1363(sigDer);
+  let key;
+  try { key = await crypto.subtle.importKey('spki', pubDer, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']); } catch { throw new HubError(400, 'pub: to nie jest klucz P-256'); }
+  const signed = utf8.encode(await canonical(b));
+  if (!raw || !(await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, raw, signed))) throw new HubError(401, 'Zły podpis');
+  return { name, uuid: uuid.toLowerCase(), hex, ts, online, premium, serverId, client, cosmetics: JSON.stringify(cosmetics) };
+}
+
+/** ?names=a,b,c → unique valid lowercase names (at most 100). */
+export function readNames(param) {
+  const names = [...new Set(String(param || '').split(',').map(n => n.trim().toLowerCase()).filter(n => NAME.test(n)))];
+  if (names.length > MAX_NAMES) throw new HubError(400, `Najwyżej ${MAX_NAMES} nicków naraz`);
+  return names;
+}
+
+/** Calls the global NoreHub object; its errors come back as HubError. */
+export async function hubCall(env, op, data) {
+  if (!env.HUB) throw new HubError(503, 'Nore Hub jest chwilowo wyłączony');
+  const stub = env.HUB.get(env.HUB.idFromName('global'));
+  const res = await stub.fetch('https://hub/' + op, { method: 'POST', body: JSON.stringify(data) });
+  const out = await res.json();
+  if (!res.ok) throw new HubError(res.status, out.error);
+  return out;
+}
+
+// ---------------------------------------------------------------- Durable Object
+
+export class NoreHub {
+  constructor(ctx, env) {
+    this.env = env;
+    this.sql = ctx.storage.sql;
+    this.writes = 0;
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS players (
+        name_lower TEXT PRIMARY KEY, name TEXT NOT NULL, uuid TEXT NOT NULL, hex TEXT NOT NULL,
+        verified INTEGER NOT NULL, cosmetics TEXT NOT NULL, online INTEGER NOT NULL,
+        seen INTEGER NOT NULL, created INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS players_seen ON players (seen);
+      CREATE INDEX IF NOT EXISTS players_uuid ON players (uuid);
+      CREATE TABLE IF NOT EXISTS hellos (hex TEXT PRIMARY KEY, at INTEGER NOT NULL, ts INTEGER NOT NULL);
+      CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, name_lower TEXT, mc TEXT, version TEXT, at INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS sessions_at ON sessions (at);
+      CREATE TABLE IF NOT EXISTS game_players (name_lower TEXT PRIMARY KEY, name TEXT NOT NULL, mc TEXT, version TEXT,
+        first INTEGER NOT NULL, seen INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS game_players_seen ON game_players (seen);
+      CREATE TABLE IF NOT EXISTS blocked (kind TEXT NOT NULL, value TEXT NOT NULL, expires INTEGER, PRIMARY KEY (kind, value));`);
+    // added later: the launcher version from the last hello (admin overview)
+    if (!this.sql.exec('PRAGMA table_info(players)').toArray().some(c => c.name === 'client')) this.sql.exec('ALTER TABLE players ADD COLUMN client TEXT');
+  }
+
+  /** The global blacklist (pushed by the admin API): mc_name, mc_uuid and nore_id entries. */
+  setBlocked(entries) {
+    this.sql.exec('DELETE FROM blocked');
+    for (const e of (Array.isArray(entries) ? entries : []).slice(0, 20000)) {
+      if (!['mc_name', 'mc_uuid', 'nore_id'].includes(e.kind) || typeof e.value !== 'string') continue;
+      this.sql.exec('INSERT OR REPLACE INTO blocked (kind, value, expires) VALUES (?, ?, ?)', e.kind, e.value, Number.isFinite(e.expires) ? e.expires : null);
+    }
+    return { blocked: this.sql.exec('SELECT COUNT(*) AS n FROM blocked').one().n };
+  }
+
+  isBlocked(nameLower, uuid, hex) {
+    return this.sql.exec(`SELECT 1 FROM blocked WHERE (expires IS NULL OR expires > ?) AND
+      ((kind = 'mc_name' AND value = ?) OR (kind = 'mc_uuid' AND value = ?) OR (kind = 'nore_id' AND value = ?)) LIMIT 1`, Date.now(), nameLower, uuid, hex).toArray().length > 0;
+  }
+
+  /** Admin overview: recent players, launcher versions in use, hellos in the last hour. */
+  admin({ limit = 100, q = '' } = {}) {
+    const now = Date.now();
+    const lim = Math.max(1, Math.min(500, limit | 0 || 100));
+    const like = q ? `%${String(q).toLowerCase().replace(/[%_]/g, '')}%` : null;
+    const rows = this.sql.exec('SELECT * FROM players WHERE (? IS NULL OR name_lower LIKE ? OR hex LIKE ? OR uuid LIKE ?) ORDER BY seen DESC LIMIT ?', like, like, like, like, lim).toArray();
+    const blocked = (r) => this.isBlocked(r.name_lower, r.uuid, r.hex);
+    const players = rows.map(r => ({
+      name: r.name, uuid: r.uuid, noreId: r.hex, verified: !!r.verified, online: !!r.online && now - r.seen < ONLINE_MS,
+      seen: r.seen, created: r.created, client: r.client || null, blocked: blocked(r), cosmetics: JSON.parse(r.cosmetics),
+    }));
+    const versions = this.sql.exec('SELECT client, COUNT(*) AS n, SUM(online = 1 AND seen > ?) AS online FROM players WHERE seen > ? GROUP BY client ORDER BY n DESC',
+      now - ONLINE_MS, now - 7 * 86400000).toArray().map(r => ({ version: r.client || null, players: r.n, online: r.online || 0 }));
+    // players who only ran the game (heartbeat from the mod, no launcher hello) are listed too
+    const known = new Set(players.map(p => p.name.toLowerCase()));
+    const game = this.sql.exec('SELECT * FROM game_players WHERE (? IS NULL OR name_lower LIKE ?) ORDER BY seen DESC LIMIT ?', like, like, lim).toArray();
+    const liveNames = new Set(this.sql.exec('SELECT name_lower FROM sessions WHERE at > ? AND name_lower IS NOT NULL', now - ONLINE_MS).toArray().map(x => x.name_lower));
+    for (const g of game) {
+      if (known.has(g.name_lower)) continue;
+      players.push({ name: g.name, uuid: null, noreId: null, verified: false, online: liveNames.has(g.name_lower), seen: g.seen, created: g.first,
+        client: g.version ? 'mod ' + g.version : 'mod', mc: g.mc || null, source: 'game', blocked: this.isBlocked(g.name_lower, '', ''), cosmetics: { v: 1, slots: {} } });
+    }
+    players.sort((a, b) => b.seen - a.seen);
+    players.length = Math.min(players.length, lim);
+    const hellosHour = this.sql.exec('SELECT COUNT(*) AS n FROM hellos WHERE at > ?', now - 3600000).one().n
+      + this.sql.exec('SELECT COUNT(*) AS n FROM sessions WHERE at > ?', now - 3600000).one().n;
+    const day = this.sql.exec(`SELECT COUNT(*) AS n FROM (SELECT name_lower FROM players WHERE seen > ?
+        UNION SELECT name_lower FROM game_players WHERE seen > ?)`, now - 86400000, now - 86400000).one().n;
+    const blockedCount = this.sql.exec('SELECT COUNT(*) AS n FROM blocked WHERE expires IS NULL OR expires > ?', now).one().n;
+    return { ...this.stats(), activeDay: day, hellosHour, blocked: blockedCount, versions, players };
+  }
+
+  async fetch(request) {
+    const op = new URL(request.url).pathname.slice(1);
+    try {
+      const data = await request.json();
+      if (op === 'hello') return Response.json(await this.hello(data));
+      if (op === 'players') return Response.json(this.players(data.names));
+      if (op === 'stats') return Response.json(this.stats());
+      if (op === 'admin') return Response.json(this.admin(data));
+      if (op === 'blacklist') return Response.json(this.setBlocked(data.entries));
+      if (op === 'presence') return Response.json(this.presence(data));
+      return Response.json({ error: 'op' }, { status: 404 });
+    } catch (e) {
+      return Response.json({ error: String(e.message || e) }, { status: e.status || 500 });
+    }
+  }
+
+  row(nameLower) {
+    return this.sql.exec('SELECT * FROM players WHERE name_lower = ?', nameLower).toArray()[0] || null;
+  }
+
+  async hello(h) {
+    const now = Date.now();
+    const key = h.name.toLowerCase();
+    const last = this.sql.exec('SELECT at, ts FROM hellos WHERE hex = ?', h.hex).toArray()[0];
+    if (last && now - last.at < GAP_MS) throw new HubError(429, 'Za często – najwyżej jedno hello na 15 s');
+    if (last && h.ts <= last.ts) throw new HubError(401, 'To hello już było');
+    this.sql.exec('INSERT OR REPLACE INTO hellos (hex, at, ts) VALUES (?, ?, ?)', h.hex, now, h.ts);
+    if (++this.writes % 200 === 1) {
+      this.sql.exec('DELETE FROM hellos WHERE at < ?', now - 3600 * 1000);
+      this.sql.exec('DELETE FROM players WHERE verified = 0 AND seen < ?', now - CLAIM_MS);
+    }
+
+    if (h.online && this.isBlocked(key, h.uuid, h.hex)) throw new HubError(403, 'To konto jest zablokowane w Nore Hub');
+    let row = this.row(key);
+    if (!h.online) {
+      const mine = row && row.hex === h.hex;
+      if (mine) this.sql.exec('UPDATE players SET online = 0, seen = ? WHERE name_lower = ?', now, key);
+      return { ok: true, verified: !!(mine && row.verified), name: mine ? row.name : h.name };
+    }
+
+    let name = h.name, verified = false;
+    if (h.premium) {
+      // later heartbeats of a verified session are signature-only
+      const session = row && row.verified && row.hex === h.hex && row.uuid === h.uuid && row.online && now - row.seen < ONLINE_MS;
+      try {
+        name = session ? row.name : await this.mojang(h);
+        verified = true;
+      } catch (e) {
+        // Mojang down or refusing Cloudflare: the player still counts, listed unverified until a later
+        // hello gets through. A real "not this account" answer (401) is still an error.
+        if (e.status !== 502) throw e;
+        name = h.name;
+      }
+      row = this.row(key); // the Mojang call may have let another hello in
+    }
+    if (row && row.hex !== h.hex && !verified && (row.verified || now - row.seen < CLAIM_MS)) {
+      throw new HubError(409, 'Ten nick należy już do innego gracza Nore');
+    }
+    // a premium player who changed the name leaves no verified claim on the old one
+    if (verified) this.sql.exec('DELETE FROM players WHERE uuid = ? AND verified = 1 AND name_lower <> ?', h.uuid, key);
+    this.sql.exec(`INSERT INTO players (name_lower, name, uuid, hex, verified, cosmetics, online, seen, created, client)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+      ON CONFLICT (name_lower) DO UPDATE SET name = excluded.name, uuid = excluded.uuid, verified = excluded.verified,
+        cosmetics = excluded.cosmetics, online = 1, seen = excluded.seen, client = COALESCE(excluded.client, players.client),
+        created = CASE WHEN players.hex = excluded.hex THEN players.created ELSE excluded.created END, hex = excluded.hex`,
+    key, name, h.uuid, h.hex, verified ? 1 : 0, h.cosmetics, now, now, h.client || null);
+    return { ok: true, verified, name };
+  }
+
+  /** Mojang hasJoined after the launcher's session/minecraft/join; returns the exact profile name. */
+  async mojang(h) {
+    if (!h.serverId) throw new HubError(401, 'Brak potwierdzenia Mojang (serverId)');
+    const base = this.env.MOJANG_SESSION || MOJANG; // tests only
+    let res;
+    try {
+      res = await fetch(`${base}/session/minecraft/hasJoined?username=${encodeURIComponent(h.name)}&serverId=${encodeURIComponent(h.serverId)}`,
+        { headers: { 'User-Agent': 'nore-hub' }, signal: AbortSignal.timeout(5000) });
+    } catch { throw new HubError(502, 'Mojang nie odpowiada'); }
+    if (res.status !== 200 && res.status !== 204) throw new HubError(502, `Mojang odpowiedział ${res.status}`);
+    const p = res.status === 200 ? await res.json().catch(() => null) : null;
+    if (!p || p.id !== h.uuid || String(p.name).toLowerCase() !== h.name.toLowerCase()) throw new HubError(401, 'Mojang nie potwierdził konta premium');
+    return p.name;
+  }
+
+  players(names) {
+    const now = Date.now();
+    const players = {};
+    if (!Array.isArray(names) || !names.length) return { players };
+    const rows = this.sql.exec('SELECT * FROM players WHERE name_lower IN (SELECT value FROM json_each(?)) AND seen > ?',
+      JSON.stringify(names.slice(0, MAX_NAMES)), now - CLAIM_MS).toArray();
+    for (const r of rows) {
+      if (this.isBlocked(r.name_lower, r.uuid, r.hex)) continue; // blacklisted players are never listed
+      players[r.name_lower] = {
+        name: r.name, uuid: r.uuid, hex: r.hex, verified: !!r.verified,
+        online: !!r.online && now - r.seen < ONLINE_MS, seen: r.seen, cosmetics: JSON.parse(r.cosmetics),
+      };
+    }
+    return { players };
+  }
+
+  /** A running game says it is still there (or gone); one row per game session, no account data. */
+  presence(p) {
+    const now = Date.now();
+    const last = this.sql.exec('SELECT at FROM sessions WHERE sid = ?', p.sid).toArray()[0];
+    if (p.online && last && now - last.at < PRESENCE_GAP_MS) throw new HubError(429, 'Za często – najwyżej raz na 20 s');
+    // a blacklisted nick is not counted (and told so), like a refused hello
+    if (p.online && p.name && this.isBlocked(p.name.toLowerCase(), '', '')) { this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid); throw new HubError(403, 'To konto jest zablokowane w Nore Hub'); }
+    if (!p.online) this.sql.exec('DELETE FROM sessions WHERE sid = ?', p.sid);
+    else {
+      this.sql.exec('INSERT OR REPLACE INTO sessions (sid, name_lower, mc, version, at) VALUES (?, ?, ?, ?, ?)',
+        p.sid, p.name ? p.name.toLowerCase() : null, p.mc, p.version, now);
+      // nicks seen through the game itself (also without Nore Launcher): for the admin list and "known"
+      if (p.name) this.sql.exec(`INSERT INTO game_players (name_lower, name, mc, version, first, seen) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(name_lower) DO UPDATE SET name = excluded.name, mc = excluded.mc, version = excluded.version, seen = excluded.seen`,
+        p.name.toLowerCase(), p.name, p.mc, p.version, now, now);
+    }
+    if (++this.writes % 200 === 1) this.sql.exec('DELETE FROM sessions WHERE at < ?', now - ONLINE_MS);
+    return { ok: true };
+  }
+
+  stats() {
+    const now = Date.now();
+    const [r] = this.sql.exec(`SELECT COUNT(*) AS known FROM (SELECT name_lower FROM players WHERE seen > ?
+        UNION SELECT name_lower FROM game_players WHERE seen > ?)`, now - CLAIM_MS, now - CLAIM_MS).toArray();
+    // a player is online when the launcher said hello or the game sent a heartbeat (counted once per nick)
+    const [o] = this.sql.exec(`SELECT COUNT(*) AS online FROM (
+        SELECT name_lower AS k FROM players WHERE online = 1 AND seen > ?
+        UNION SELECT COALESCE(name_lower, 'sid:' || sid) FROM sessions WHERE at > ?)`, now - ONLINE_MS, now - ONLINE_MS).toArray();
+    return { online: o.online || 0, known: r.known || 0 };
+  }
+}
+
+/** Checks a presence heartbeat (POST /api/v2/presence) and records it. */
+export async function presence(env, b) {
+  if (!isObj(b)) throw new HubError(400, 'Oczekiwano obiektu JSON');
+  const sid = String(b.sid || '');
+  if (!/^[0-9a-f]{16,64}$/.test(sid)) throw new HubError(400, 'sid: 16–64 znaków hex');
+  if (typeof b.online !== 'boolean') throw new HubError(400, 'online: true albo false');
+  const name = b.name == null || b.name === '' ? null : String(b.name);
+  if (name !== null && !NAME.test(name)) throw new HubError(400, 'name: 2–16 znaków A-Z, 0-9, _');
+  const short = (v) => (typeof v === 'string' && /^[\w.+-]{1,32}$/.test(v) ? v : null);
+  return hubCall(env, 'presence', { sid, name, online: b.online, mc: short(b.mc), version: short(b.version) });
+}

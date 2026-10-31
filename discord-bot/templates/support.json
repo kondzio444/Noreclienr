@@ -1,0 +1,89 @@
+{
+  "id": "support",
+  "emoji": "🎫",
+  "accent": "#3ad18b",
+  "statusServer": false,
+  "permissionSets": {
+    "owner": ["Administrator"],
+    "admin": ["ManageGuild", "ManageRoles", "ManageChannels", "ManageMessages", "ManageWebhooks", "ManageNicknames", "ManageThreads", "KickMembers", "BanMembers", "ModerateMembers", "ViewAuditLog", "MentionEveryone", "MoveMembers", "ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "UseApplicationCommands"],
+    "helper": ["ManageMessages", "ManageThreads", "ModerateMembers", "ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "UseApplicationCommands"],
+    "member": ["ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "UseVAD", "UseApplicationCommands"],
+    "none": []
+  },
+  "groups": {
+    "staff": ["owner", "admin", "helper"],
+    "admin": ["owner", "admin"],
+    "moderators": ["admin", "helper"],
+    "member": ["member"],
+    "muted": ["muted"]
+  },
+  "lists": {},
+  "roles": [
+    { "key": "owner", "icon": "👑", "color": "#ff4d6d", "hoist": true, "perms": "owner" },
+    { "key": "admin", "icon": "🛡️", "color": "#ff9f43", "hoist": true, "perms": "admin" },
+    { "key": "helper", "icon": "🤝", "color": "#48dbfb", "hoist": true, "perms": "helper" },
+    { "key": "beta_tester", "icon": "🧪", "color": "#a29bfe", "perms": "member", "size": "medium" },
+    { "key": "member", "icon": "🎮", "color": "#b8adc9", "perms": "member", "bind": ["verification.role"] },
+    { "key": "ping_updates", "icon": "🛠️", "color": "#576574", "perms": "none", "menu": "pings", "bind": ["nore.releases.role"] },
+    { "key": "ping_status", "icon": "📡", "color": "#576574", "perms": "none", "menu": "pings", "bind": ["status.services.role"] },
+    { "key": "muted", "icon": "🔇", "color": "#57606f", "perms": "none" },
+    { "key": "bots", "icon": "🤖", "color": "#2f3542", "hoist": true, "perms": "none", "bind": ["autorole.botRoles+"] }
+  ],
+  "categories": [
+    {
+      "key": "start", "emoji": "🚪", "access": "everyone",
+      "channels": [
+        { "key": "start", "emoji": "👋", "mode": "readonly", "content": ["start"] },
+        { "key": "rules", "emoji": "📜", "mode": "readonly", "content": ["rules"] },
+        { "key": "verify", "emoji": "✅", "mode": "readonly", "access": "unverified", "panel": "verification", "bind": ["verification.channel"] },
+        { "key": "announcements", "type": "announcement", "emoji": "📢", "mode": "readonly", "content": ["announcement"] },
+        { "key": "faq", "emoji": "❓", "mode": "readonly", "content": ["faq"] },
+        { "key": "roles", "emoji": "🎭", "mode": "readonly", "panel": "selfroles", "size": "medium" }
+      ]
+    },
+    {
+      "key": "nore_news", "emoji": "📰", "access": "member", "size": "medium",
+      "channels": [
+        { "key": "nore_updates", "emoji": "🚀", "mode": "readonly", "bind": ["nore.releases.channel"] },
+        { "key": "status", "emoji": "📡", "mode": "readonly", "panel": "statusboard", "bind": ["status.services.channel"] },
+        { "key": "known_issues", "emoji": "📌", "mode": "readonly" }
+      ]
+    },
+    {
+      "key": "support", "emoji": "🎫", "access": "member",
+      "channels": [
+        { "key": "support_info", "emoji": "🎫", "mode": "readonly", "content": ["support"], "panel": "tickets" },
+        { "key": "help_forum", "type": "forum", "emoji": "🙋", "tags": [{ "key": "solved", "emoji": "✅" }, { "key": "question", "emoji": "❓" }, { "key": "bug", "emoji": "🐞" }] },
+        { "key": "bug_reports", "type": "forum", "emoji": "🐞", "tags": [{ "key": "bug", "emoji": "🐞" }, { "key": "confirmed", "emoji": "✔️", "moderated": true }, { "key": "fixed", "emoji": "✅", "moderated": true }] },
+        { "key": "install_help", "emoji": "💿", "size": "medium" },
+        { "key": "crash_reports", "type": "forum", "emoji": "💥", "size": "medium", "tags": [{ "key": "crash", "emoji": "💥" }, { "key": "solved", "emoji": "✅" }] },
+        { "key": "suggestions", "type": "forum", "emoji": "💡", "bind": ["suggestions.channel"], "size": "full", "tags": [{ "key": "new", "emoji": "💡" }, { "key": "accepted", "emoji": "✅", "moderated": true }, { "key": "rejected", "emoji": "❌", "moderated": true }] },
+        { "key": "general", "emoji": "💬", "size": "medium" },
+        { "key": "support_voice", "type": "voice", "emoji": "🎧", "size": "full" }
+      ]
+    },
+    { "key": "tickets", "emoji": "📨", "access": "staff", "channels": [], "bindCategory": "tickets.category" },
+    {
+      "key": "staff", "emoji": "🛡️", "access": "staff",
+      "channels": [
+        { "key": "staff_chat", "emoji": "💬" },
+        { "key": "staff_guide", "emoji": "📘", "mode": "readonly", "content": ["staffguide"], "size": "medium" },
+        { "key": "suggestion_review", "emoji": "💡", "bind": ["suggestions.reviewChannel"], "size": "full" },
+        { "key": "ticket_log", "emoji": "🎫", "bind": ["tickets.logChannel"] },
+        { "key": "mod_log", "emoji": "🔨", "bind": ["moderation.logChannel", "automod.logChannel"] },
+        { "key": "staff_voice", "type": "voice", "emoji": "🔊", "size": "medium" }
+      ]
+    }
+  ],
+  "binds": [
+    { "path": "nore.releases.enabled", "value": true },
+    { "path": "status.services.enabled", "value": true },
+    { "path": "tickets.panels", "value": [{ "id": "main", "channel": "", "title": "", "description": "", "style": "buttons", "categories": [], "color": "#3ad18b" }] }
+  ],
+  "enable": ["welcome", "verification", "tickets", "suggestions", "logging", "automod", "status"],
+  "settings": {
+    "verificationLevel": "low",
+    "explicitContentFilter": "all_members",
+    "defaultNotifications": "mentions"
+  }
+}

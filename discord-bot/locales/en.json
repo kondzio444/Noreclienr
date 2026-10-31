@@ -1,0 +1,2870 @@
+{
+  "errors": {
+    "generic": "Something went wrong. The error has been logged – please try again in a moment.",
+    "guild_only": "This command only works on a server.",
+    "unknown_command": "Unknown command – the command list may be outdated.",
+    "module_disabled": "The {module} module is turned off on this server.",
+    "command_disabled": "This command is turned off on this server.",
+    "missing_user_perms": "You need these permissions: {perms}",
+    "missing_bot_perms": "I am missing these permissions: {perms}",
+    "cooldown": "Slow down! Try again in {seconds} s.",
+    "cannot_send": "I cannot send messages in {channel} – check my permissions there.",
+    "blacklisted": "Your account is blocked on Nore – you cannot use Nore Bot."
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "cancelled": "Cancelled.",
+    "working": "Working on it…",
+    "timeout": "No answer – nothing was changed."
+  },
+  "perm": {
+    "Administrator": "Administrator",
+    "ManageGuild": "Manage Server",
+    "ManageRoles": "Manage Roles",
+    "ManageChannels": "Manage Channels",
+    "ManageMessages": "Manage Messages",
+    "ManageWebhooks": "Manage Webhooks",
+    "ManageEvents": "Manage Events",
+    "ManageGuildExpressions": "Manage Expressions",
+    "ManageNicknames": "Manage Nicknames",
+    "ManageThreads": "Manage Threads",
+    "KickMembers": "Kick Members",
+    "BanMembers": "Ban Members",
+    "ModerateMembers": "Timeout Members",
+    "ViewChannel": "View Channel",
+    "SendMessages": "Send Messages",
+    "SendMessagesInThreads": "Send Messages in Threads",
+    "CreatePublicThreads": "Create Public Threads",
+    "CreatePrivateThreads": "Create Private Threads",
+    "EmbedLinks": "Embed Links",
+    "AttachFiles": "Attach Files",
+    "AddReactions": "Add Reactions",
+    "ReadMessageHistory": "Read Message History",
+    "MentionEveryone": "Mention @everyone",
+    "UseExternalEmojis": "Use External Emojis",
+    "Connect": "Connect",
+    "Speak": "Speak",
+    "MuteMembers": "Mute Members",
+    "DeafenMembers": "Deafen Members",
+    "MoveMembers": "Move Members",
+    "CreateInstantInvite": "Create Invite",
+    "ChangeNickname": "Change Nickname",
+    "ViewAuditLog": "View Audit Log",
+    "UseApplicationCommands": "Use Application Commands",
+    "PrioritySpeaker": "Priority Speaker",
+    "Stream": "Video",
+    "SendVoiceMessages": "Send Voice Messages",
+    "SendPolls": "Create Polls"
+  },
+  "help": {
+    "title": "Nore Bot – help",
+    "intro": "The bot of the Nore Client community. Pick a category below. Admins can configure everything with `/config` or in the panel: {panel}",
+    "pick": "Choose a category…",
+    "footer": "Page {page}/{pages}",
+    "empty": "No commands in this category.",
+    "cat": {
+      "nore": "Nore & Minecraft",
+      "community": "Community",
+      "leveling": "Levels",
+      "tickets": "Tickets",
+      "moderation": "Moderation",
+      "automation": "Automation",
+      "server": "Server management",
+      "builder": "Server builder",
+      "admin": "Administration",
+      "utility": "Utility"
+    },
+    "catdesc": {
+      "nore": "Status, downloads, events, players, Minecraft servers",
+      "community": "Suggestions, polls, giveaways, applications",
+      "leveling": "XP, ranks, leaderboard",
+      "tickets": "Support tickets",
+      "moderation": "Warns, bans, cases, AutoMod",
+      "automation": "Feeds, scheduled messages, custom commands",
+      "server": "Channels, roles, permissions, Community",
+      "builder": "Build a complete server from a template, backups",
+      "admin": "Configuration, panels, self-roles",
+      "utility": "Info, avatars, reminders, embeds"
+    }
+  },
+  "cmdname": {
+    "help": "help"
+  },
+  "cmd": {
+    "help": {
+      "desc": "Show the bot's commands",
+      "opt": {
+        "category": "Category to show"
+      }
+    },
+    "ping": {
+      "desc": "Check the bot's latency"
+    },
+    "userinfo": {
+      "desc": "Information about a user",
+      "opt": {
+        "user": "User (default: you)"
+      }
+    },
+    "serverinfo": {
+      "desc": "Information about this server"
+    },
+    "avatar": {
+      "desc": "Show a user's avatar",
+      "opt": {
+        "user": "User (default: you)",
+        "server": "Show the server-specific avatar"
+      }
+    },
+    "embed": {
+      "desc": "Build and send an embed (opens a form)",
+      "opt": {
+        "channel": "Channel to send it to"
+      }
+    },
+    "config": {
+      "desc": "Configure Nore Bot on this server",
+      "show": {
+        "desc": "Show settings (all modules or one)",
+        "opt": {
+          "module": "Module"
+        }
+      },
+      "set": {
+        "desc": "Change a setting",
+        "opt": {
+          "key": "Setting (e.g. welcome.channel)",
+          "value": "New value (#channel, @role, on/off, text, JSON for lists)"
+        }
+      },
+      "reset": {
+        "desc": "Reset a setting to its default",
+        "opt": {
+          "key": "Setting or module"
+        }
+      },
+      "module": {
+        "desc": "Turn a module on or off",
+        "opt": {
+          "module": "Module",
+          "enabled": "On or off"
+        }
+      },
+      "language": {
+        "desc": "Set the server language of the bot",
+        "opt": {
+          "language": "Language"
+        }
+      },
+      "export": {
+        "desc": "Download the configuration as JSON"
+      },
+      "import": {
+        "desc": "Import a configuration from a JSON file",
+        "opt": {
+          "file": "JSON file"
+        }
+      },
+      "panel": {
+        "desc": "Link to the web panel"
+      }
+    },
+    "nore": {
+      "desc": "Nore Client: status, downloads, news, events, players",
+      "status": {
+        "desc": "Status of the Nore services"
+      },
+      "download": {
+        "desc": "Download Nore Launcher"
+      },
+      "version": {
+        "desc": "Latest Nore version and changelog"
+      },
+      "news": {
+        "desc": "Latest Nore news"
+      },
+      "event": {
+        "desc": "Nore events with countdowns (Halloween, winter)"
+      },
+      "player": {
+        "desc": "Look up a player in Nore Hub",
+        "opt": {
+          "nick": "Minecraft nickname"
+        }
+      }
+    },
+    "mc": {
+      "desc": "Minecraft tools",
+      "server": {
+        "desc": "Status of a Minecraft server",
+        "opt": {
+          "address": "Server address, e.g. MC.noreclient.pl"
+        }
+      }
+    },
+    "warn": {
+      "desc": "Warn a member",
+      "opt": {
+        "user": "Member",
+        "reason": "Reason"
+      }
+    },
+    "warnings": {
+      "desc": "Manage warnings",
+      "list": {
+        "desc": "A member's active warnings",
+        "opt": {
+          "user": "Member"
+        }
+      },
+      "remove": {
+        "desc": "Remove a warning",
+        "opt": {
+          "case": "Case number"
+        }
+      },
+      "clear": {
+        "desc": "Remove all warnings of a member",
+        "opt": {
+          "user": "Member"
+        }
+      }
+    },
+    "timeout": {
+      "desc": "Time out a member",
+      "opt": {
+        "user": "Member",
+        "duration": "Duration, e.g. 10m, 2h, 1d",
+        "reason": "Reason"
+      }
+    },
+    "untimeout": {
+      "desc": "Remove a timeout",
+      "opt": {
+        "user": "Member",
+        "reason": "Reason"
+      }
+    },
+    "kick": {
+      "desc": "Kick a member",
+      "opt": {
+        "user": "Member",
+        "reason": "Reason"
+      }
+    },
+    "ban": {
+      "desc": "Ban a user (optionally temporarily)",
+      "opt": {
+        "user": "User",
+        "reason": "Reason",
+        "duration": "Duration of a temporary ban, e.g. 7d",
+        "delete_messages": "Delete their recent messages"
+      }
+    },
+    "unban": {
+      "desc": "Unban a user",
+      "opt": {
+        "user": "User (name or ID)",
+        "reason": "Reason"
+      }
+    },
+    "purge": {
+      "desc": "Delete many messages at once",
+      "opt": {
+        "amount": "How many (1–500)",
+        "user": "Only from this user",
+        "contains": "Only containing this text",
+        "bots": "Only from bots"
+      }
+    },
+    "case": {
+      "desc": "Moderation cases",
+      "view": {
+        "desc": "Show a case",
+        "opt": {
+          "id": "Case number"
+        }
+      },
+      "reason": {
+        "desc": "Change the reason of a case",
+        "opt": {
+          "id": "Case number",
+          "reason": "New reason"
+        }
+      },
+      "history": {
+        "desc": "A user's moderation history",
+        "opt": {
+          "user": "User"
+        }
+      }
+    },
+    "automod": {
+      "desc": "AutoMod and raid protection",
+      "status": {
+        "desc": "AutoMod rules on this server"
+      },
+      "raidmode": {
+        "desc": "Turn raid mode on or off",
+        "opt": {
+          "state": "On or off",
+          "duration": "How long, e.g. 30m"
+        }
+      },
+      "native": {
+        "desc": "Discord's built-in AutoMod rules",
+        "list": {
+          "desc": "List native AutoMod rules"
+        },
+        "keyword": {
+          "desc": "Create a keyword rule",
+          "opt": {
+            "name": "Rule name",
+            "words": "Words, separated by commas (* = wildcard)",
+            "action": "What to do",
+            "alert_channel": "Channel for alerts"
+          }
+        },
+        "preset": {
+          "desc": "Block profanity, slurs and sexual content (Discord lists)",
+          "opt": {
+            "name": "Rule name",
+            "alert_channel": "Channel for alerts"
+          }
+        },
+        "mentions": {
+          "desc": "Limit mentions per message",
+          "opt": {
+            "name": "Rule name",
+            "limit": "Maximum mentions",
+            "alert_channel": "Channel for alerts"
+          }
+        },
+        "toggle": {
+          "desc": "Turn a rule on or off",
+          "opt": {
+            "rule": "Rule",
+            "enabled": "On or off"
+          }
+        },
+        "delete": {
+          "desc": "Delete a rule",
+          "opt": {
+            "rule": "Rule"
+          }
+        }
+      }
+    },
+    "welcome": {
+      "desc": "Welcome and goodbye messages",
+      "test": {
+        "desc": "Preview the welcome or goodbye message",
+        "opt": {
+          "type": "Which message"
+        }
+      }
+    },
+    "verify": {
+      "desc": "Verification gate",
+      "panel": {
+        "desc": "Post the verification panel",
+        "opt": {
+          "channel": "Channel"
+        }
+      }
+    },
+    "ticket": {
+      "desc": "Support tickets",
+      "panel": {
+        "desc": "Post ticket panels",
+        "opt": {
+          "panel": "Panel (default: all)",
+          "channel": "Channel"
+        }
+      },
+      "open": {
+        "desc": "Open a ticket",
+        "opt": {
+          "category": "Category"
+        }
+      },
+      "close": {
+        "desc": "Close this ticket",
+        "opt": {
+          "reason": "Reason"
+        }
+      },
+      "claim": {
+        "desc": "Claim this ticket"
+      },
+      "unclaim": {
+        "desc": "Release this ticket"
+      },
+      "transfer": {
+        "desc": "Hand this ticket to another staff member",
+        "opt": {
+          "user": "Staff member"
+        }
+      },
+      "add": {
+        "desc": "Add a user to this ticket",
+        "opt": {
+          "user": "User"
+        }
+      },
+      "remove": {
+        "desc": "Remove a user from this ticket",
+        "opt": {
+          "user": "User"
+        }
+      },
+      "priority": {
+        "desc": "Change the priority",
+        "opt": {
+          "priority": "Priority"
+        }
+      },
+      "rename": {
+        "desc": "Rename this ticket",
+        "opt": {
+          "name": "New name"
+        }
+      },
+      "stats": {
+        "desc": "Ticket statistics (response time, ratings…)"
+      },
+      "blacklist": {
+        "desc": "Block or unblock a user from opening tickets",
+        "opt": {
+          "action": "Add or remove",
+          "user": "User"
+        }
+      }
+    },
+    "suggest": {
+      "desc": "Send a suggestion",
+      "opt": {
+        "category": "Category",
+        "anonymous": "Hide your name"
+      }
+    },
+    "suggestion": {
+      "desc": "Manage suggestions",
+      "status": {
+        "desc": "Set the status of a suggestion",
+        "opt": {
+          "id": "Suggestion number",
+          "status": "New status",
+          "reason": "Reason / answer"
+        }
+      },
+      "top": {
+        "desc": "Top suggestions by votes",
+        "opt": {
+          "period": "Period"
+        }
+      },
+      "queue": {
+        "desc": "Suggestions waiting for a decision"
+      },
+      "panel": {
+        "desc": "Post a panel with a \"Suggest\" button",
+        "opt": {
+          "channel": "Channel"
+        }
+      }
+    },
+    "apply": {
+      "desc": "Apply (staff, partnership…)",
+      "opt": {
+        "form": "Application form"
+      }
+    },
+    "applications": {
+      "desc": "Manage applications",
+      "panel": {
+        "desc": "Post an application panel",
+        "opt": {
+          "form": "Form",
+          "channel": "Channel"
+        }
+      },
+      "list": {
+        "desc": "List applications",
+        "opt": {
+          "status": "Status"
+        }
+      }
+    },
+    "selfroles": {
+      "desc": "Self-role menus",
+      "create": {
+        "desc": "Create a menu",
+        "opt": {
+          "id": "Short id, e.g. pings",
+          "title": "Title",
+          "mode": "Buttons, select menu or reactions",
+          "multiple": "Allow several roles",
+          "description": "Description"
+        }
+      },
+      "add": {
+        "desc": "Add a role to a menu",
+        "opt": {
+          "menu": "Menu",
+          "role": "Role",
+          "label": "Label",
+          "emoji": "Emoji",
+          "description": "Short description"
+        }
+      },
+      "remove": {
+        "desc": "Remove a role from a menu",
+        "opt": {
+          "menu": "Menu",
+          "role": "Role"
+        }
+      },
+      "post": {
+        "desc": "Post or update a menu",
+        "opt": {
+          "menu": "Menu",
+          "channel": "Channel"
+        }
+      },
+      "list": {
+        "desc": "List menus"
+      }
+    },
+    "rank": {
+      "desc": "Your level and XP",
+      "opt": {
+        "user": "User"
+      }
+    },
+    "leaderboard": {
+      "desc": "XP leaderboard",
+      "opt": {
+        "page": "Page"
+      }
+    },
+    "xp": {
+      "desc": "Manage XP",
+      "give": {
+        "desc": "Give XP",
+        "opt": {
+          "user": "Member",
+          "amount": "Amount"
+        }
+      },
+      "take": {
+        "desc": "Take XP",
+        "opt": {
+          "user": "Member",
+          "amount": "Amount"
+        }
+      },
+      "set": {
+        "desc": "Set a member's level",
+        "opt": {
+          "user": "Member",
+          "level": "Level"
+        }
+      },
+      "reset": {
+        "desc": "Reset XP (one member or everyone)",
+        "opt": {
+          "user": "Member (empty = everyone)"
+        }
+      }
+    },
+    "giveaway": {
+      "desc": "Giveaways",
+      "start": {
+        "desc": "Start a giveaway",
+        "opt": {
+          "prize": "Prize",
+          "duration": "Duration, e.g. 1d",
+          "winners": "Number of winners",
+          "channel": "Channel",
+          "required_role": "Role required to enter",
+          "description": "Description"
+        }
+      },
+      "end": {
+        "desc": "End a giveaway now",
+        "opt": {
+          "id": "Giveaway"
+        }
+      },
+      "reroll": {
+        "desc": "Draw new winners",
+        "opt": {
+          "id": "Giveaway"
+        }
+      },
+      "list": {
+        "desc": "Running giveaways"
+      }
+    },
+    "poll": {
+      "desc": "Polls",
+      "create": {
+        "desc": "Create a poll",
+        "opt": {
+          "question": "Question",
+          "options": "Options separated by | (2–10)",
+          "duration": "How long, e.g. 1h",
+          "multiple": "Allow several answers"
+        }
+      },
+      "end": {
+        "desc": "End a poll",
+        "opt": {
+          "id": "Poll"
+        }
+      }
+    },
+    "remind": {
+      "desc": "Reminders",
+      "me": {
+        "desc": "Remind me later",
+        "opt": {
+          "when": "In how long, e.g. 10m, 2h, 1d",
+          "text": "What to remind you of",
+          "here": "Remind in this channel instead of DM"
+        }
+      },
+      "list": {
+        "desc": "Your reminders"
+      },
+      "delete": {
+        "desc": "Delete a reminder",
+        "opt": {
+          "id": "Reminder"
+        }
+      }
+    },
+    "cc": {
+      "desc": "Custom commands and auto-responses",
+      "add": {
+        "desc": "Add or replace a custom command",
+        "opt": {
+          "trigger": "Trigger (without prefix)",
+          "response": "Response ({user}, {server}, \\n for new lines)",
+          "match": "How the trigger matches",
+          "embed": "Reply as an embed",
+          "delete_trigger": "Delete the triggering message"
+        }
+      },
+      "remove": {
+        "desc": "Remove a custom command",
+        "opt": {
+          "trigger": "Trigger"
+        }
+      },
+      "list": {
+        "desc": "List custom commands"
+      }
+    },
+    "schedule": {
+      "desc": "Scheduled messages",
+      "add": {
+        "desc": "Add a scheduled message",
+        "opt": {
+          "channel": "Channel",
+          "content": "Message (\\n for new lines)",
+          "mode": "Repeat",
+          "time": "Time HH:MM (daily / weekly)",
+          "every_minutes": "Interval in minutes",
+          "weekday": "Day of the week",
+          "embed": "Send as an embed"
+        }
+      },
+      "list": {
+        "desc": "List scheduled messages"
+      },
+      "remove": {
+        "desc": "Remove a scheduled message",
+        "opt": {
+          "id": "Message"
+        }
+      }
+    },
+    "stats": {
+      "desc": "Server stats channels",
+      "setup": {
+        "desc": "Create stats channels (members, Nore…)",
+        "opt": {
+          "nore": "Include Nore counters"
+        }
+      },
+      "refresh": {
+        "desc": "Update the stats channels now"
+      }
+    },
+    "boosts": {
+      "desc": "Server boosts",
+      "info": {
+        "desc": "Boost level, perks and boosters"
+      },
+      "setup": {
+        "desc": "Boost announcements and booster perks",
+        "opt": {
+          "channel": "Announcement channel",
+          "role": "Extra booster role",
+          "perks_channel": "Booster-only channel"
+        }
+      }
+    },
+    "feeds": {
+      "desc": "Social media and RSS feeds",
+      "list": {
+        "desc": "List feeds"
+      },
+      "add": {
+        "desc": "Add a feed",
+        "opt": {
+          "type": "Type",
+          "source": "YouTube channel ID/URL, Twitch login, RSS URL, owner/repo or username",
+          "channel": "Channel to post in",
+          "role": "Role to ping",
+          "template": "Message template ({title}, {url}, {author}, {role})"
+        }
+      },
+      "remove": {
+        "desc": "Remove a feed",
+        "opt": {
+          "feed": "Feed"
+        }
+      }
+    },
+    "status": {
+      "desc": "Nore services and Minecraft server status",
+      "services": {
+        "desc": "Status and uptime of the Nore services"
+      },
+      "board": {
+        "desc": "Live status board in a channel",
+        "opt": {
+          "channel": "Channel"
+        }
+      },
+      "monitor": {
+        "desc": "Monitor a Minecraft server",
+        "opt": {
+          "address": "Server address",
+          "channel": "Channel for notifications",
+          "name": "Display name",
+          "live": "Live status message updated every minute",
+          "role": "Role to ping"
+        }
+      },
+      "unmonitor": {
+        "desc": "Stop monitoring a server",
+        "opt": {
+          "address": "Server"
+        }
+      }
+    },
+    "link": {
+      "desc": "Link your Minecraft account",
+      "opt": {
+        "code": "Code from the game (if you started there)"
+      }
+    },
+    "unlink": {
+      "desc": "Unlink your Minecraft account"
+    },
+    "minecraft": {
+      "desc": "Minecraft server integration",
+      "token": {
+        "desc": "Create the API token for the server plugin"
+      },
+      "status": {
+        "desc": "Bridge status"
+      },
+      "unlink": {
+        "desc": "Unlink a member's Minecraft account",
+        "opt": {
+          "user": "Member"
+        }
+      },
+      "whois": {
+        "desc": "Show a member's Minecraft account",
+        "opt": {
+          "user": "Member"
+        }
+      }
+    },
+    "guild": {
+      "desc": "Server settings",
+      "name": {
+        "desc": "Rename the server",
+        "opt": {
+          "name": "New name"
+        }
+      },
+      "icon": {
+        "desc": "Change the server icon (empty = remove)",
+        "opt": {
+          "image": "Image",
+          "url": "Image URL"
+        }
+      },
+      "banner": {
+        "desc": "Change the server banner",
+        "opt": {
+          "image": "Image",
+          "url": "Image URL"
+        }
+      },
+      "splash": {
+        "desc": "Change the invite background",
+        "opt": {
+          "image": "Image",
+          "url": "Image URL"
+        }
+      },
+      "description": {
+        "desc": "Server description (Community)",
+        "opt": {
+          "text": "Description"
+        }
+      },
+      "verification": {
+        "desc": "Verification level",
+        "opt": {
+          "level": "Level"
+        }
+      },
+      "contentfilter": {
+        "desc": "Explicit media content filter",
+        "opt": {
+          "filter": "Filter"
+        }
+      },
+      "notifications": {
+        "desc": "Default notification settings",
+        "opt": {
+          "mode": "Mode"
+        }
+      },
+      "systemchannel": {
+        "desc": "System messages channel and options",
+        "opt": {
+          "channel": "Channel",
+          "join_messages": "Welcome messages for new members",
+          "boost_messages": "Boost messages",
+          "welcome_stickers": "Wave sticker replies"
+        }
+      },
+      "afk": {
+        "desc": "AFK channel and timeout",
+        "opt": {
+          "channel": "Voice channel",
+          "timeout": "Timeout"
+        }
+      },
+      "invite": {
+        "desc": "Create an invite",
+        "opt": {
+          "channel": "Channel",
+          "max_age_hours": "Valid for hours (0 = forever)",
+          "max_uses": "Max uses (0 = unlimited)",
+          "temporary": "Temporary membership"
+        }
+      },
+      "invites": {
+        "desc": "List invites"
+      },
+      "vanity": {
+        "desc": "Set the vanity invite (boost level 3)",
+        "opt": {
+          "code": "Code"
+        }
+      },
+      "apply": {
+        "desc": "Apply the server settings from the configuration"
+      }
+    },
+    "channel": {
+      "desc": "Manage channels",
+      "create": {
+        "desc": "Create a channel",
+        "opt": {
+          "name": "Name",
+          "type": "Type",
+          "category": "Category",
+          "topic": "Topic",
+          "private": "Visible only to admins"
+        }
+      },
+      "delete": {
+        "desc": "Delete a channel",
+        "opt": {
+          "channel": "Channel"
+        }
+      },
+      "rename": {
+        "desc": "Rename a channel",
+        "opt": {
+          "channel": "Channel",
+          "name": "New name"
+        }
+      },
+      "move": {
+        "desc": "Move a channel",
+        "opt": {
+          "channel": "Channel",
+          "category": "New category",
+          "position": "Position",
+          "sync_permissions": "Sync permissions with the category"
+        }
+      },
+      "topic": {
+        "desc": "Set the topic",
+        "opt": {
+          "channel": "Channel",
+          "topic": "Topic"
+        }
+      },
+      "slowmode": {
+        "desc": "Set slowmode",
+        "opt": {
+          "duration": "Duration, e.g. 10s, 1m (0 = off)",
+          "channel": "Channel"
+        }
+      },
+      "nsfw": {
+        "desc": "Mark as age-restricted",
+        "opt": {
+          "nsfw": "Age-restricted",
+          "channel": "Channel"
+        }
+      },
+      "sync": {
+        "desc": "Sync permissions with the category",
+        "opt": {
+          "channel": "Channel"
+        }
+      },
+      "clone": {
+        "desc": "Clone a channel",
+        "opt": {
+          "channel": "Channel",
+          "name": "Name of the copy"
+        }
+      },
+      "lock": {
+        "desc": "Lock a channel",
+        "opt": {
+          "channel": "Channel",
+          "reason": "Reason"
+        }
+      },
+      "unlock": {
+        "desc": "Unlock a channel",
+        "opt": {
+          "channel": "Channel"
+        }
+      }
+    },
+    "role": {
+      "desc": "Manage roles",
+      "create": {
+        "desc": "Create a role",
+        "opt": {
+          "name": "Name",
+          "color": "Colour (#hex)",
+          "hoist": "Show separately",
+          "mentionable": "Allow mentions"
+        }
+      },
+      "delete": {
+        "desc": "Delete a role",
+        "opt": {
+          "role": "Role"
+        }
+      },
+      "edit": {
+        "desc": "Edit a role",
+        "opt": {
+          "role": "Role",
+          "name": "Name",
+          "color": "Colour (#hex)",
+          "hoist": "Show separately",
+          "mentionable": "Allow mentions"
+        }
+      },
+      "icon": {
+        "desc": "Role icon (boost level 2)",
+        "opt": {
+          "role": "Role",
+          "image": "Image",
+          "emoji": "Unicode emoji"
+        }
+      },
+      "permission": {
+        "desc": "Grant or revoke a permission",
+        "opt": {
+          "role": "Role",
+          "permission": "Permission",
+          "allow": "Grant (on) or revoke (off)"
+        }
+      },
+      "move": {
+        "desc": "Move a role above another one",
+        "opt": {
+          "role": "Role",
+          "above": "Put above this role"
+        }
+      },
+      "give": {
+        "desc": "Give a role to a member",
+        "opt": {
+          "user": "Member",
+          "role": "Role"
+        }
+      },
+      "take": {
+        "desc": "Take a role from a member",
+        "opt": {
+          "user": "Member",
+          "role": "Role"
+        }
+      },
+      "info": {
+        "desc": "Information about a role",
+        "opt": {
+          "role": "Role"
+        }
+      }
+    },
+    "perms": {
+      "desc": "Channel permission editor",
+      "view": {
+        "desc": "Show permission overwrites",
+        "opt": {
+          "channel": "Channel",
+          "target": "Role or member"
+        }
+      },
+      "set": {
+        "desc": "Set one permission",
+        "opt": {
+          "channel": "Channel",
+          "target": "Role or member",
+          "permission": "Permission",
+          "value": "Allow, deny or inherit"
+        }
+      },
+      "clear": {
+        "desc": "Remove all overwrites of a role/member",
+        "opt": {
+          "channel": "Channel",
+          "target": "Role or member"
+        }
+      },
+      "copy": {
+        "desc": "Copy permissions from one channel to another",
+        "opt": {
+          "from": "From channel",
+          "to": "To channel"
+        }
+      }
+    },
+    "emoji": {
+      "desc": "Server emojis",
+      "add": {
+        "desc": "Add an emoji",
+        "opt": {
+          "name": "Name",
+          "image": "Image",
+          "url": "Image URL"
+        }
+      },
+      "delete": {
+        "desc": "Delete an emoji",
+        "opt": {
+          "emoji": "Emoji"
+        }
+      },
+      "rename": {
+        "desc": "Rename an emoji",
+        "opt": {
+          "emoji": "Emoji",
+          "name": "New name"
+        }
+      },
+      "list": {
+        "desc": "List emojis"
+      }
+    },
+    "sticker": {
+      "desc": "Server stickers",
+      "add": {
+        "desc": "Add a sticker",
+        "opt": {
+          "name": "Name",
+          "image": "PNG/APNG/GIF image (max 512 KB)",
+          "emoji": "Related emoji",
+          "description": "Description"
+        }
+      },
+      "delete": {
+        "desc": "Delete a sticker",
+        "opt": {
+          "sticker": "Sticker"
+        }
+      }
+    },
+    "event": {
+      "desc": "Scheduled events",
+      "create": {
+        "desc": "Create an event",
+        "opt": {
+          "name": "Name",
+          "starts_in": "Starts in, e.g. 2h, 3d",
+          "duration": "Duration (default 2h)",
+          "channel": "Voice/stage channel",
+          "location": "Location (if no channel)",
+          "description": "Description",
+          "image": "Cover image"
+        }
+      },
+      "list": {
+        "desc": "List events"
+      },
+      "delete": {
+        "desc": "Delete an event",
+        "opt": {
+          "event": "Event"
+        }
+      }
+    },
+    "webhook": {
+      "desc": "Webhooks",
+      "create": {
+        "desc": "Create a webhook",
+        "opt": {
+          "name": "Name",
+          "channel": "Channel",
+          "avatar": "Avatar"
+        }
+      },
+      "list": {
+        "desc": "List webhooks"
+      },
+      "delete": {
+        "desc": "Delete a webhook",
+        "opt": {
+          "webhook": "Webhook"
+        }
+      },
+      "send": {
+        "desc": "Send a message through a webhook",
+        "opt": {
+          "webhook": "Webhook",
+          "content": "Message",
+          "username": "Display name"
+        }
+      }
+    },
+    "template": {
+      "desc": "Discord server templates",
+      "create": {
+        "desc": "Create a server template",
+        "opt": {
+          "name": "Name",
+          "description": "Description"
+        }
+      },
+      "list": {
+        "desc": "List templates"
+      },
+      "sync": {
+        "desc": "Sync templates with the current server"
+      },
+      "delete": {
+        "desc": "Delete a template",
+        "opt": {
+          "code": "Template"
+        }
+      }
+    },
+    "community": {
+      "desc": "Discord Community features",
+      "status": {
+        "desc": "Community, Onboarding and Welcome Screen status"
+      },
+      "enable": {
+        "desc": "Enable Community",
+        "opt": {
+          "rules_channel": "Rules channel",
+          "updates_channel": "Channel for Discord updates"
+        }
+      },
+      "disable": {
+        "desc": "Disable Community"
+      },
+      "welcomescreen": {
+        "desc": "Set the Welcome Screen",
+        "opt": {
+          "description": "Description",
+          "channel_1": "Channel 1",
+          "text_1": "Text for channel 1",
+          "channel_2": "Channel 2",
+          "text_2": "Text for channel 2",
+          "channel_3": "Channel 3",
+          "text_3": "Text for channel 3",
+          "channel_4": "Channel 4",
+          "text_4": "Text for channel 4",
+          "enabled": "Enabled"
+        }
+      },
+      "onboarding": {
+        "desc": "Set Onboarding from the self-role menus",
+        "opt": {
+          "enabled": "Enabled",
+          "default_channels": "Default channels (mentions; empty = public ones)"
+        }
+      },
+      "tag": {
+        "desc": "Add or remove a forum tag",
+        "opt": {
+          "forum": "Forum",
+          "action": "Add or remove",
+          "name": "Tag name",
+          "emoji": "Emoji",
+          "moderated": "Only moderators can apply it"
+        }
+      },
+      "crosspost": {
+        "desc": "Auto-publish an announcement channel",
+        "opt": {
+          "channel": "Announcement channel",
+          "enabled": "On or off"
+        }
+      },
+      "stage": {
+        "desc": "Start a stage",
+        "opt": {
+          "channel": "Stage channel",
+          "topic": "Topic"
+        }
+      },
+      "discovery": {
+        "desc": "Server Discovery requirements checklist"
+      }
+    },
+    "backup": {
+      "desc": "Server layout backups",
+      "create": {
+        "desc": "Back up roles, channels and settings",
+        "opt": {
+          "label": "Label"
+        }
+      },
+      "list": {
+        "desc": "List backups"
+      },
+      "load": {
+        "desc": "Restore a backup (shows a preview first)",
+        "opt": {
+          "id": "Backup",
+          "prune": "Also delete what the backup lacks",
+          "settings": "Restore server settings"
+        }
+      },
+      "export": {
+        "desc": "Download a backup as JSON",
+        "opt": {
+          "id": "Backup"
+        }
+      },
+      "import": {
+        "desc": "Import a backup from JSON",
+        "opt": {
+          "file": "JSON file"
+        }
+      },
+      "delete": {
+        "desc": "Delete a backup",
+        "opt": {
+          "id": "Backup"
+        }
+      }
+    },
+    "builder": {
+      "desc": "Build a complete Discord server from a template",
+      "templates": {
+        "desc": "Available templates and their sizes"
+      },
+      "start": {
+        "desc": "Build a server (preview first, then confirm)",
+        "opt": {
+          "template": "Template",
+          "language": "Language of channels, roles and texts",
+          "size": "Size",
+          "content": "Post rules, guides and panels",
+          "settings": "Apply server settings",
+          "prune": "Delete channels/roles not in the template (danger)"
+        }
+      },
+      "repair": {
+        "desc": "Recreate missing parts and update existing ones",
+        "opt": {
+          "template": "Template",
+          "language": "Language",
+          "size": "Size"
+        }
+      },
+      "preview": {
+        "desc": "Show what a template would change",
+        "opt": {
+          "template": "Template",
+          "language": "Language",
+          "size": "Size"
+        }
+      },
+      "status": {
+        "desc": "Progress of the current build"
+      },
+      "cancel": {
+        "desc": "Stop the current build"
+      },
+      "resume": {
+        "desc": "Continue an interrupted build"
+      }
+    }
+  },
+  "choice": {
+    "addremove": {
+      "add": "Add",
+      "remove": "Remove"
+    },
+    "deleteDays": {
+      "0": "Don't delete",
+      "1": "Last 24 hours",
+      "7": "Last 7 days"
+    },
+    "nativeAction": {
+      "block": "Block the message",
+      "alert": "Only alert",
+      "timeout": "Block + 10 min timeout"
+    },
+    "onoff": {
+      "on": "On",
+      "off": "Off"
+    },
+    "period": {
+      "week": "This week",
+      "month": "This month",
+      "all": "All time"
+    },
+    "permValue": {
+      "allow": "Allow",
+      "deny": "Deny",
+      "inherit": "Inherit"
+    },
+    "welcomeType": {
+      "welcome": "Welcome",
+      "goodbye": "Goodbye"
+    }
+  },
+  "config": {
+    "title": "Nore Bot configuration",
+    "footer": "Panel version {version} · waiting to be saved in the panel: {overrides} · API {api}",
+    "api_online": "online",
+    "api_offline": "offline (using cache)",
+    "unknown_module": "Unknown module.",
+    "unknown_key": "Unknown setting `{key}`.",
+    "invalid_toggle": "`{key}` takes on or off.",
+    "invalid_number": "`{key}` takes a number.",
+    "invalid_id": "`{key}` takes a channel or role (mention, ID, or `none`).",
+    "invalid_json": "That is not valid JSON.",
+    "invalid_schema": "Invalid value for `{key}`: {details}",
+    "saved": "Saved `{key}` = {value}",
+    "reset_done": "`{key}` is back to its default.",
+    "module_on": "Module {module} is on.",
+    "module_off": "Module {module} is off.",
+    "language_set": "The bot now speaks {language} on this server.",
+    "exported": "The current configuration:",
+    "import_too_big": "The file is too big.",
+    "imported": "Imported {count} settings ({errors} invalid values skipped).",
+    "panel_link": "Web panel: {url} (log in with Discord, needs Manage Server)."
+  },
+  "ping": {
+    "gateway": "Gateway",
+    "roundtrip": "Round trip",
+    "api": "Nore API",
+    "uptime": "Running since"
+  },
+  "userinfo": {
+    "created": "Account created",
+    "bot": "Bot",
+    "joined": "Joined",
+    "nickname": "Nickname",
+    "boosting": "Boosting since",
+    "roles": {
+      "one": "Role ({count})",
+      "other": "Roles ({count})"
+    },
+    "timeout": "Timed out until"
+  },
+  "serverinfo": {
+    "owner": "Owner",
+    "created": "Created",
+    "members": "Members",
+    "channels": "Channels",
+    "channels_value": "{text} text · {voice} voice · {categories} categories",
+    "roles": "Roles",
+    "emojis": "Emojis",
+    "boosts": "Boosts",
+    "boosts_value": "{count} (level {tier})",
+    "verification": "Verification"
+  },
+  "avatar": {
+    "title": "{name}'s avatar"
+  },
+  "embed": {
+    "modal_title": "Embed builder",
+    "field_title": "Title",
+    "field_description": "Content",
+    "field_color": "Colour (#hex)",
+    "field_image": "Image URL",
+    "field_footer": "Footer",
+    "sent": "Sent: {url}"
+  },
+  "nore": {
+    "status_title": "Nore – status",
+    "api": "API",
+    "up": "🟢 Running",
+    "down": "🔴 Unavailable",
+    "latest": "Latest version",
+    "players_online": "Nore players online",
+    "players_known": "Known Nore players",
+    "last_sync": "Last sync",
+    "api_unavailable": "The Nore API is not answering right now – please try again later.",
+    "website": "Website",
+    "files": "Files",
+    "downloads": "Downloads",
+    "mod_files": "Mod files",
+    "download_title": "Download Nore Launcher",
+    "download_text": "Nore Launcher {version} – Minecraft with Nore Client built in, mods, modpacks, servers in one click and friends. Pick your system:",
+    "news_title": "📰 Nore news",
+    "event_halloween": "Halloween in Nore",
+    "event_christmas": "Christmas in Nore",
+    "event_active": "🟢 **The event is on!**",
+    "event_peak": "The big day: {date} ({when})",
+    "event_ends": "Ends {when}",
+    "event_starts": "Starts {when} – {date}",
+    "event_days_left": {
+      "one": "{count} day left",
+      "other": "{count} days left"
+    },
+    "event_over": "The event is over – see you next year!",
+    "event_features": "What's waiting for you",
+    "event_ended": "🎬 **{event}** has ended – thanks for playing!",
+    "bad_nick": "That is not a valid Minecraft nickname (2–16 characters: letters, digits, _).",
+    "release_template": "🚀 **Nore {version}** is out! {role}",
+    "news_template": "📰 **{title}** {role}",
+    "event_start_template": "🎉 **{event}** has started! {role}",
+    "event_end_template": "{role}",
+    "event_reminder_7d": "⏳ **{event}** starts in a week – {when}! {role}",
+    "event_reminder_1d": "⏰ **{event}** starts tomorrow – {when}! {role}",
+    "announcement_template": "📢 **{title}** {role}"
+  },
+  "player": {
+    "nore": "Nore",
+    "yes_nore": "🟣 Plays with Nore",
+    "no_nore": "Does not use Nore (yet)",
+    "premium": "Premium account",
+    "verified": "Verified",
+    "verified_yes": "✅ Confirmed by Mojang",
+    "verified_no": "⚠️ Non-premium (not verified)",
+    "online": "Online",
+    "online_now": "🟢 Playing now",
+    "seen": "Last seen {when}",
+    "wardrobe": "Wardrobe",
+    "wardrobe_empty": "Nothing equipped",
+    "get_nore": "Get Nore"
+  },
+  "cosmetic": {
+    "slot": {
+      "cape": "Cape",
+      "wings": "Wings",
+      "hat": "Hat",
+      "ears": "Ears",
+      "back": "Back",
+      "head": "Head",
+      "face": "Face",
+      "aura": "Aura",
+      "pet": "Pet",
+      "tail": "Tail"
+    }
+  },
+  "mc": {
+    "invalid": "That is not a valid server address.",
+    "offline": "The server is offline or not answering.",
+    "private": "Private and local addresses cannot be checked.",
+    "players": "Players",
+    "version": "Version",
+    "latency": "Ping",
+    "sample": "Online now",
+    "via_api": "Checked by the Nore API",
+    "via_ping": "Checked directly",
+    "bridge": {
+      "join": "➡️ **{player}** joined the server",
+      "leave": "⬅️ **{player}** left the server",
+      "death": "💀 {message}",
+      "advancement": "🏆 **{player}** made the advancement **{message}**",
+      "server_start": "🟢 The server has started",
+      "server_stop": "🔴 The server has stopped"
+    }
+  },
+  "mclink": {
+    "title": "🔗 Link your Minecraft account",
+    "instructions": "1. Join **{address}**\n2. Type in chat: `/discord link {code}`\n\nThe code expires {expires}. Do not share it.",
+    "current": "Currently linked: **{name}**",
+    "bad_code": "Wrong or expired code. Type `/discord link` in the game to get a new one.",
+    "linked": "Linked with **{name}**! 🎉",
+    "not_linked": "No Minecraft account is linked.",
+    "unlinked": "Unlinked **{name}**.",
+    "token_replace": "A token already exists. A new one will disconnect the plugin until you update it. Continue?",
+    "token": "Your plugin token (shown only once – keep it secret!):\n```\n{token}\n```\nSend it as `Authorization: Bearer <token>` to the bridge on port {port}. See docs/minecraft-integration.md.",
+    "status_title": "Minecraft integration",
+    "bridge": "HTTP bridge",
+    "bridge_off": "off (set MC_BRIDGE_PORT)",
+    "token_set": "Token",
+    "linked_count": "Linked accounts",
+    "whois": "{user} → **{name}** (`{uuid}`), linked {when}"
+  },
+  "mod": {
+    "action": {
+      "warn": "Warning",
+      "timeout": "Timeout",
+      "untimeout": "Timeout removed",
+      "kick": "Kick",
+      "ban": "Ban",
+      "unban": "Unban",
+      "purge": "Purge",
+      "note": "Note"
+    },
+    "case_title": "Case #{id} · {action}",
+    "case_ref": "Case #{id}",
+    "member": "Member",
+    "moderator": "Moderator",
+    "automatic": "Automatic",
+    "duration": "Duration",
+    "reason": "Reason",
+    "no_reason": "No reason given",
+    "when": "When",
+    "removed": "Removed",
+    "appeal": "Appeal",
+    "dm": {
+      "warn": "You received a warning on {server}",
+      "timeout": "You were timed out on {server}",
+      "kick": "You were kicked from {server}",
+      "ban": "You were banned from {server}"
+    },
+    "not_member": "That user is not a member of this server.",
+    "hierarchy": {
+      "self": "You cannot do that to yourself.",
+      "owner": "You cannot do that to the server owner.",
+      "bot_self": "I will not do that to myself.",
+      "actor_hierarchy": "That member's highest role is equal to or above yours.",
+      "bot_hierarchy": "That member's highest role is equal to or above mine – move my role higher."
+    },
+    "reason_required": "This server requires a reason.",
+    "warned": "{user} was warned ({count} active).",
+    "threshold_reason": "Automatic action after {count} warnings",
+    "threshold_applied": "Threshold reached: {action} after {count} warnings.",
+    "warnings_title": "Warnings of {user} ({count})",
+    "no_warnings": "No active warnings.",
+    "case_not_found": "No such case.",
+    "warn_removed": "Warning #{id} removed.",
+    "warns_cleared": "Removed {count} warnings of {user}.",
+    "bad_duration_timeout": "Give a duration between 5 seconds and 28 days, e.g. `10m`, `2h`, `3d`.",
+    "bad_duration": "That is not a valid duration (e.g. `30m`, `7d`).",
+    "timed_out": "{user} is timed out until {until}.",
+    "untimed_out": "{user} can talk again.",
+    "kicked": "{user} was kicked.",
+    "banned": "{user} was banned.",
+    "tempbanned": "{user} was banned until {until}.",
+    "tempban_expired": "Temporary ban expired",
+    "bad_user_id": "Give a user ID or pick a user from the list.",
+    "not_banned": "That user is not banned.",
+    "unbanned": "{user} was unbanned.",
+    "purge_reason": "Deleted {count} messages in {channel}",
+    "purged": {
+      "one": "Deleted {count} message.",
+      "other": "Deleted {count} messages."
+    },
+    "case_updated": "Case #{id} updated.",
+    "history_title": "Moderation history of {user}",
+    "no_history": "Clean record."
+  },
+  "automod": {
+    "rule": {
+      "spam": "Spam",
+      "duplicates": "Repeated messages",
+      "mentions": "Mass mentions",
+      "invites": "Invite links",
+      "links": "Links",
+      "badWords": "Bad words",
+      "caps": "Caps lock",
+      "newAccounts": "New accounts",
+      "raid": "Raid protection"
+    },
+    "reason": "AutoMod: {rule} {detail}",
+    "notice": "{user}, your message was removed ({rule}).",
+    "log_title": "AutoMod · {rule}",
+    "raid_title": "🚨 Raid mode",
+    "raid_on": "Many members joined at once. Raid mode is on until {until} – new members: {action}.",
+    "raid_until": "Active until {until}",
+    "raid_reason": "Raid mode is on",
+    "raid_off": "Raid mode is off.",
+    "raid_started": "Raid mode is on for {duration}.",
+    "new_account_reason": "Account younger than {days} days",
+    "new_account_dm": "Your account is too new to join {server}. Come back once it is at least {days} days old.",
+    "new_account_log": "New account filter: {user} (created {created})",
+    "status_title": "AutoMod",
+    "enabled": "🟢 AutoMod is on",
+    "disabled": "⚫ AutoMod is off – turn it on with `/config module automod on`",
+    "native_title": "Discord AutoMod rules",
+    "native_none": "No native rules.",
+    "native_trigger": {
+      "1": "Keywords",
+      "3": "Spam",
+      "4": "Keyword preset",
+      "5": "Mention spam",
+      "6": "Member profile"
+    },
+    "native_blocked": "Your message was blocked by the server's AutoMod.",
+    "native_created": "Rule **{name}** created.",
+    "native_not_found": "No such rule.",
+    "native_toggled": "Rule **{name}**: {state}",
+    "native_confirm_delete": "Delete the AutoMod rule **{name}**?",
+    "native_deleted": "Rule **{name}** deleted."
+  },
+  "welcome": {
+    "title": "Welcome to {server}!",
+    "goodbye_title": "Goodbye",
+    "footer": "Member #{count}",
+    "card_title": "Welcome",
+    "card_subtitle": "Member #{count} of {server}",
+    "default_welcome": "Hi {user}, welcome to **{server}**! 👋 Read the rules, verify and pick your roles – have fun!",
+    "default_goodbye": "**{name}** left the server. See you around! 👋",
+    "default_dm": "Welcome to **{server}**, {name}! If you need help, open a ticket on the server."
+  },
+  "verify": {
+    "panel_title": "✅ Verification",
+    "panel_text": "Click the button below to confirm you are human and unlock the server.",
+    "button": "Verify",
+    "captcha_title": "Quick check",
+    "captcha_question": "How much is {question}?",
+    "done": "Verified – welcome to {server}! 🎉",
+    "already": "You are already verified.",
+    "wrong": "Wrong answer – click the button to try again.",
+    "expired": "The question expired – click the button again.",
+    "no_role": "The verified role is not set (`/config set verification.role`).",
+    "role_error": "I could not give you the role – please tell the staff.",
+    "panel_sent": "Panel sent: {url}",
+    "kicked_dm": "You were removed from {server} because you did not verify in time. You can join again any time.",
+    "kick_reason": "Not verified in time"
+  },
+  "tickets": {
+    "panel_title": "🎫 Support",
+    "panel_text": "Need help? Pick a category below – a private ticket will be opened for you and our team.",
+    "panel_footer": "Please do not open several tickets for the same issue.",
+    "select_placeholder": "Choose a category…",
+    "defaults": {
+      "support": "Help",
+      "bug": "Bug report",
+      "other": "Other",
+      "appeal": "Ban appeal",
+      "report": "Report a player",
+      "partnership": "Partnership",
+      "shop": "Purchases"
+    },
+    "default_question": "Describe your issue",
+    "default_placeholder": "The more details, the faster we can help.",
+    "form_title": "Ticket: {category}",
+    "blacklisted": "You cannot open tickets on this server.",
+    "limit": {
+      "one": "You already have an open ticket: {channels}",
+      "other": "You already have {count} open tickets: {channels}"
+    },
+    "no_categories": "No ticket categories are configured.",
+    "no_panel": "No such panel.",
+    "thread_parent": "Ticket threads can only be opened from a text channel.",
+    "create_failed": "I could not create the ticket – I need Manage Channels (and Manage Threads for thread mode).",
+    "created": "Your ticket: {channel}",
+    "topic": "Ticket #{number} · {user} · {category}",
+    "opened_title": "Ticket #{number} · {category}",
+    "opened_text": "Hi {user}! Thanks for reaching out – the team will be with you shortly. Meanwhile, add anything that may help (screenshots, logs, steps).",
+    "author": "Author",
+    "priority": "Priority",
+    "claimed_by": "Handled by",
+    "category": "Category",
+    "reason": "Reason",
+    "opened_at": "Opened",
+    "claim": "Claim",
+    "unclaim": "Release",
+    "close": "Close",
+    "close_title": "Close the ticket",
+    "reopen": "Reopen",
+    "delete": "Delete",
+    "claimed": "{user} is now handling this ticket.",
+    "unclaimed": "{user} released this ticket.",
+    "transferred": "{from} handed this ticket to {to}.",
+    "user_added": "{user} was added to the ticket.",
+    "user_removed": "{user} was removed from the ticket.",
+    "cannot_remove_author": "The author cannot be removed.",
+    "priority_set": "Priority: {priority}",
+    "renamed": "Renamed.",
+    "not_ticket": "This is not a ticket channel.",
+    "staff_only": "Only the support team can do that.",
+    "already_closed": "This ticket is already closed.",
+    "closing": "Closing the ticket and saving the transcript…",
+    "closed_title": "🔒 Ticket closed",
+    "closed_text": "Closed by {user}. Reason: {reason}",
+    "closed_auto": "Closed automatically. Reason: {reason}",
+    "rate_prompt": "{user}, how did we do? Rate the help you got:",
+    "rated": "Thanks for the rating {rating}!",
+    "rate_author_only": "Only the ticket author can rate.",
+    "reopened": "Ticket reopened by {user}.",
+    "confirm_delete": "Delete this ticket channel now? The transcript is already saved.",
+    "transcript_title": "Ticket #{number} transcript",
+    "generated": "Generated",
+    "messages": "messages",
+    "dm_transcript": "The transcript of your ticket #{number} on {server}:",
+    "log_opened": "🎫 Ticket #{number} opened by {user} in {channel} ({category})",
+    "log_closed_title": "Ticket #{number} closed",
+    "log_rating": "Ticket #{number} rated {rating}",
+    "closed_by": "Closed by",
+    "duration": "Duration",
+    "inactive_reason": "No activity for {hours} h",
+    "inactive_warning": "{user}, this ticket has been quiet for a while and will close {when} unless someone writes.",
+    "panel_sent": "Panels sent:\n{links}",
+    "stats_title": "📊 Ticket statistics",
+    "stats_open": "Open",
+    "stats_7d": "Closed (7 days)",
+    "stats_30d": "Closed (30 days)",
+    "stats_first": "Avg. first response",
+    "stats_resolve": "Avg. resolution time",
+    "stats_rating": "Avg. rating",
+    "stats_categories": "By category",
+    "stats_staff": "Most handled",
+    "blacklist_added": "{user} can no longer open tickets.",
+    "blacklist_removed": "{user} can open tickets again."
+  },
+  "sug": {
+    "st": {
+      "pending": "Waiting for review",
+      "new": "New",
+      "considering": "Under consideration",
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "implemented": "Implemented"
+    },
+    "status": "Status",
+    "votes": "Votes",
+    "category": "Category",
+    "anonymous": "Anonymous",
+    "staff_reason": "Team's answer",
+    "modal_title": "New suggestion",
+    "field_title": "Title",
+    "field_text": "Describe your idea",
+    "not_configured": "Suggestions are not set up on this server.",
+    "cooldown": "You can send another suggestion {when}.",
+    "sent": "Suggestion #{id} sent! {url}",
+    "sent_review": "Suggestion #{id} was sent to the team for review.",
+    "review_new": "📥 New suggestion #{id} waiting for review",
+    "approve": "Approve",
+    "reject": "Reject",
+    "review_approved": "✅ #{id} approved by {user}",
+    "review_rejected": "❌ #{id} rejected by {user}",
+    "not_found": "No such suggestion.",
+    "staff_only": "Only the team can do that.",
+    "status_set": "Suggestion #{id}: {status}",
+    "dm_title": "Your suggestion #{id} on {server}",
+    "dm_text": "**{title}**\nNew status: {status}\nAnswer: {reason}",
+    "top_title": "🏆 Top suggestions · {period}",
+    "queue_title": "📥 Suggestion queue ({count})",
+    "none": "No suggestions yet.",
+    "panel_title": "💡 Suggestions",
+    "panel_text": "Have an idea for the server, Nore Client or the launcher? Click the button and tell us – everyone can vote!",
+    "panel_button": "Suggest",
+    "panel_sent": "Panel sent: {url}"
+  },
+  "apps": {
+    "title": {
+      "staff": "Staff application",
+      "partner": "Partnership application",
+      "creator": "Content creator",
+      "builder": "Builder application"
+    },
+    "desc": {
+      "staff": "Want to help build the community? Apply to join the team. Click the button and answer a few questions – we read every application.",
+      "partner": "Run a server, a community or a channel? Apply for a partnership with us. Click the button and fill in the form.",
+      "generic": "Click the button below and fill in the form."
+    },
+    "q": {
+      "staff": {
+        "1": "Your age and time zone",
+        "2": "Why do you want to join the team?",
+        "3": "Experience in moderation",
+        "4": "How many hours a week can you help?",
+        "5": "Anything else we should know?"
+      },
+      "partner": {
+        "1": "Name of your server / project",
+        "2": "Your advertisement (text to post)",
+        "3": "Invite link and member count",
+        "4": "Why partner with us?",
+        "5": "Contact person"
+      },
+      "generic": {
+        "1": "Your name or nick",
+        "2": "Tell us more"
+      }
+    },
+    "p": {
+      "staff": {
+        "1": "e.g. 17, Europe/Warsaw",
+        "3": "Servers, roles, how long"
+      },
+      "partner": {
+        "2": "Formatted text, max 1500 characters",
+        "3": "discord.gg/… · 1 200 members"
+      }
+    },
+    "apply_button": "Apply",
+    "not_configured": "Applications are not set up (review channel missing).",
+    "no_form": "No such form.",
+    "cooldown": "You can apply again {when}.",
+    "pending": "You already have a pending application.",
+    "sent": "Application \"{form}\" sent – you will get the answer in a DM.",
+    "status": "Status",
+    "st": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "rejected": "Rejected"
+    },
+    "accept": "Accept",
+    "reject": "Reject",
+    "reason": "Reason (sent to the applicant)",
+    "not_found": "No such application.",
+    "staff_only": "Only the team can review applications.",
+    "already_decided": "This application has already been decided.",
+    "accepted_public": "Welcome {user} – accepted: {form}! 🎉",
+    "partner_footer": "Partner of the server",
+    "dm_accepted": "✅ Your application \"{form}\" on {server} was accepted!",
+    "dm_rejected": "❌ Your application \"{form}\" on {server} was rejected.",
+    "list_title": "Applications · {status}",
+    "none": "No applications.",
+    "panel_sent": "Panel sent: {url}"
+  },
+  "roles": {
+    "default_title": "🎭 Roles",
+    "default_text": "Pick your roles below.",
+    "pick": "Choose roles…",
+    "added": "Added {role}.",
+    "removed": "Removed {role}.",
+    "updated": "Roles updated. Added: {added} · Removed: {removed}",
+    "gone": "This menu or role no longer exists.",
+    "too_high": "That role is above my highest role (or managed by an integration) – I cannot assign it.",
+    "bad_id": "The id may only contain a-z, 0-9, _ and -.",
+    "exists": "A menu with this id already exists.",
+    "created": "Menu `{id}` created. Add roles with `/selfroles add`.",
+    "no_menu": "No such menu.",
+    "role_added": "{role} added to `{menu}`. Post it with `/selfroles post`.",
+    "role_removed": "{role} removed from `{menu}`.",
+    "empty": "The menu has no roles yet.",
+    "posted": "Menu posted: {url}",
+    "list_title": "Self-role menus",
+    "none": "No menus yet – create one with `/selfroles create`.",
+    "roles": "roles"
+  },
+  "level": {
+    "default_message": "🎉 {user} reached **level {level}**! {role}",
+    "rank_title": "Level {level}",
+    "level_short": "lvl {level}",
+    "position": "Rank",
+    "total": "Total",
+    "messages": "Messages",
+    "next_reward": "Next reward",
+    "next_reward_value": "{role} at level {level} ({xp} XP left)",
+    "disabled_note": "Leveling is off on this server.",
+    "leaderboard_title": "🏆 Leaderboard · {server}",
+    "empty": "Nobody has XP yet.",
+    "your_rank": "you are #{rank}",
+    "given": "Gave {amount} XP to {user}.",
+    "taken": "Took {amount} XP from {user}.",
+    "set": "{user} is now level {level}.",
+    "confirm_reset_user": "Reset all XP of {user}?",
+    "confirm_reset_all": "Reset the XP of EVERY member? This cannot be undone.",
+    "reset_done": "XP reset."
+  },
+  "give": {
+    "ends": "Ends {when} ({date})",
+    "ended_at": "Ended {when}",
+    "host": "Hosted by {user}",
+    "winners_count": {
+      "one": "{count} winner",
+      "other": "{count} winners"
+    },
+    "required_role": "Required role: {role}",
+    "winners": "Winners",
+    "no_winners": "nobody entered",
+    "entries": {
+      "one": "{count} entry",
+      "other": "{count} entries"
+    },
+    "enter": "Enter",
+    "congrats": "🎉 Congratulations {users}! You won **{prize}**!",
+    "rerolled": "🎲 New draw: {users} won **{prize}**!",
+    "nobody": "Nobody entered the giveaway for **{prize}**. 😢",
+    "bad_duration": "Duration between 30 seconds and 60 days, e.g. `1d`.",
+    "started": "Giveaway started: {url}",
+    "not_found": "No such giveaway.",
+    "already_ended": "This giveaway has already ended.",
+    "not_ended": "This giveaway is still running.",
+    "ended": {
+      "one": "Ended – {count} winner drawn.",
+      "other": "Ended – {count} winners drawn."
+    },
+    "rerolled_ok": "New winners drawn ({count}).",
+    "list_title": "🎁 Running giveaways",
+    "none": "No running giveaways.",
+    "need_role": "You need {role} to enter.",
+    "entered": "You're in! Good luck 🍀",
+    "left": "You left the giveaway."
+  },
+  "poll": {
+    "info": "Info",
+    "multi": "Several answers",
+    "single": "One answer",
+    "ends": "ends {when}",
+    "ended": "ended {when}",
+    "voters": {
+      "one": "{count} voter",
+      "other": "{count} voters"
+    },
+    "by": "Poll by {user}",
+    "need_options": "Give at least 2 options separated by `|`.",
+    "bad_duration": "Duration between 1 minute and 30 days.",
+    "not_found": "No such poll.",
+    "not_author": "Only the author or a moderator can end the poll.",
+    "closed": "Poll ended.",
+    "is_ended": "This poll has ended.",
+    "voted": "Your vote: {options}",
+    "unvoted": "Your vote was removed."
+  },
+  "remind": {
+    "bad_time": "Give a time between 30 seconds and 1 year, e.g. `10m`, `2h`, `1d`.",
+    "too_many": "You can have at most {count} reminders.",
+    "set": "I will remind you {when} ({date}).",
+    "ping": "⏰ {user}, reminder: {text}",
+    "list_title": "⏰ Your reminders",
+    "none": "No reminders.",
+    "deleted": "Reminder deleted.",
+    "not_found": "No such reminder."
+  },
+  "star": {
+    "jump": "Jump to message"
+  },
+  "cc": {
+    "added": "Custom command `{trigger}` saved.",
+    "removed": "Custom command `{trigger}` removed.",
+    "limit": "Limit reached (100 custom commands).",
+    "list_title": "Custom commands",
+    "none": "No custom commands yet."
+  },
+  "sched": {
+    "bad_time": "Time must be HH:MM, e.g. 18:30.",
+    "limit": "Limit reached (25 scheduled messages).",
+    "added": "Scheduled message `{id}` added.",
+    "removed": "Scheduled message removed.",
+    "list_title": "🗓️ Scheduled messages",
+    "none": "No scheduled messages."
+  },
+  "stats": {
+    "category": "📊 Server stats",
+    "tpl_members": "👥 Members: {members}",
+    "tpl_humans": "🙂 People: {humans}",
+    "tpl_boosts": "💎 Boosts: {boosts}",
+    "tpl_nore_online": "🟣 Nore online: {noreOnline}",
+    "tpl_nore_version": "🚀 Nore {noreVersion}",
+    "created": "Created {count} stats channels – they update every 10 minutes.",
+    "refreshed": "Stats channels updated."
+  },
+  "log": {
+    "message_edited": "Message edited",
+    "message_deleted": "Message deleted",
+    "jump": "Jump",
+    "before": "Before",
+    "after": "After",
+    "attachments": "Attachments",
+    "unknown_author": "Unknown author",
+    "not_cached": "(content unknown – message older than the bot's cache)",
+    "bulk_deleted": "🧹 {count} messages deleted in {channel}",
+    "member_joined": "Member joined",
+    "member_left": "Member left",
+    "member_kicked": "Member kicked",
+    "account_created": "Account created {when}",
+    "new_account": "new account",
+    "member_count": "Members: {count}",
+    "joined_at": "Joined {when}",
+    "by": "by {user}",
+    "roles": "Roles",
+    "nickname": "Nickname changed",
+    "roles_changed": "Roles changed",
+    "timed_out": "🔇 {user} timed out until {until}",
+    "banned": "🔨 {user} was banned",
+    "unbanned": "🕊️ {user} was unbanned",
+    "role_created": "➕ Role created: {role} ({name})",
+    "role_deleted": "➖ Role deleted: {name}",
+    "role_updated": "✏️ Role updated: {role}",
+    "channel_created": "➕ Channel created: {channel} ({name})",
+    "channel_deleted": "➖ Channel deleted: #{name}",
+    "channel_updated": "✏️ Channel updated: {channel}",
+    "server_updated": "✏️ Server settings changed",
+    "name": "Name",
+    "color": "Colour",
+    "permissions": "Permissions",
+    "changed": "changed",
+    "topic": "Topic",
+    "category": "Category",
+    "icon": "Icon",
+    "verification": "Verification",
+    "voice_join": "🔊 {user} joined {channel}",
+    "voice_leave": "🔇 {user} left {channel}",
+    "voice_move": "🔀 {user} moved {from} → {to}"
+  },
+  "boosts": {
+    "title": "💎 Thank you for the boost!",
+    "default_message": "{user} just boosted **{server}**! We now have {boosts} boosts (level {tier}). Thank you! 💜",
+    "dm": "Thank you for boosting {server}! Your booster perks are now active. 💜",
+    "info_title": "💎 Boosts · {server}",
+    "tier": "Level",
+    "count": "Boosts",
+    "next": "Next level",
+    "next_value": {
+      "one": "{count} more boost",
+      "other": "{count} more boosts"
+    },
+    "perks": "Server perks",
+    "perks_0": "Boost the server to unlock better audio, more emoji slots and an animated icon.",
+    "perks_1": "50 emoji slots · 128 kbps audio · animated icon · invite background · 720p streams",
+    "perks_2": "100 emoji slots · 256 kbps audio · server banner · role icons · 1080p streams · 50 MB uploads",
+    "perks_3": "250 emoji slots · 384 kbps audio · vanity URL · animated banner · 100 MB uploads",
+    "boosters": {
+      "one": "Booster ({count})",
+      "other": "Boosters ({count})"
+    },
+    "configured": "Boost settings saved."
+  },
+  "social": {
+    "platform": {
+      "youtube": "YouTube",
+      "twitch": "Twitch",
+      "tiktok": "TikTok",
+      "instagram": "Instagram",
+      "x": "X (Twitter)",
+      "rss": "RSS / Atom",
+      "github": "GitHub"
+    },
+    "tpl": {
+      "youtube": "📺 **{author}** published a new video: **{title}**\n{url} {role}",
+      "twitch": "🟣 **{name}** is live: **{title}** ({game})\n{url} {role}",
+      "tiktok": "🎵 New TikTok from **{name}**: {url} {role}",
+      "instagram": "📸 New post from **{name}** on Instagram: {url} {role}",
+      "x": "𝕏 New post from **{name}**: {url} {role}",
+      "rss": "📰 **{title}**\n{url} {role}",
+      "github": "🐙 **{title}**\n{url} {role}"
+    },
+    "twitch_live": "{name} is live on Twitch",
+    "twitch_ended": "{name} – stream ended",
+    "twitch_duration": "The stream started {since}.",
+    "twitch_end_message": "📴 **{name}** finished streaming. Thanks for watching! {url}",
+    "game": "Game",
+    "viewers": "Viewers",
+    "list_title": "📡 Feeds",
+    "none": "No feeds yet – add one with `/feeds add`.",
+    "interval": "checked every {minutes} min",
+    "twitch_no_key": "Twitch needs TWITCH_CLIENT_ID/SECRET in .env",
+    "no_bridge": "needs RSS_BRIDGE_URL in .env",
+    "bad_youtube": "Give the YouTube channel ID (starts with UC…) or a link with it.",
+    "added": "{type} feed added. The first check only remembers existing posts.",
+    "removed": "Feed removed.",
+    "not_found": "No such feed."
+  },
+  "status": {
+    "svc": {
+      "api": "Nore API",
+      "hub": "Nore Hub",
+      "website": "noreclient.pl"
+    },
+    "down_since": "down since {when}",
+    "incident_title": "{service} is not responding",
+    "incident_text": "We are seeing problems since {since}. We will post here when it's back.",
+    "resolved_title": "{service} works again",
+    "resolved_text": "The outage lasted {duration}.",
+    "tpl_down": "🔴 **{service}** is down. {role}",
+    "tpl_up": "🟢 **{service}** is back after {duration}. {role}",
+    "tpl_server_down": "🔴 **{server}** is offline. {role}",
+    "tpl_server_up": "🟢 **{server}** is online again! {role}",
+    "updated": "Updated {when}",
+    "board_title": "📡 Status",
+    "board_services": "Nore services",
+    "board_servers": "Minecraft servers",
+    "board_footer": "Updated every minute",
+    "board_set": "The status board will appear in {channel} within a minute.",
+    "monitor_added": "Monitoring `{address}`.",
+    "monitor_removed": "Stopped monitoring `{address}`."
+  },
+  "conf": {
+    "audit": "🛠️ {user} · `{action}` · {details}",
+    "saved": "Saved.",
+    "guild_name": "Server renamed to **{name}**.",
+    "icon_set": "Server icon changed.",
+    "icon_removed": "Server icon removed.",
+    "banner_set": "Banner changed.",
+    "splash_set": "Invite background changed.",
+    "need_boost": "This needs the {feature} feature (boost level {tier}).",
+    "need_community": "This needs Community to be enabled (`/community enable`).",
+    "not_image": "That file is not an image.",
+    "need_image": "Attach an image or give a URL.",
+    "invite_created": "Invite: {url}",
+    "invites_title": "Invites",
+    "vanity_set": "Vanity invite: discord.gg/{code}",
+    "applied": "Applied: {fields}",
+    "nothing_to_apply": "Nothing to change – the server already matches the configuration.",
+    "chtype": {
+      "text": "Text",
+      "voice": "Voice",
+      "category": "Category",
+      "announcement": "Announcements",
+      "forum": "Forum",
+      "stage": "Stage"
+    },
+    "channel_created": "Created {channel}.",
+    "channel_deleted": "Deleted #{name}.",
+    "confirm_channel_delete": "Delete the channel **#{name}** with all its messages?",
+    "bad_slowmode": "Slowmode from 0 to 6 hours, e.g. `10s`, `1m`.",
+    "slowmode_set": "Slowmode in {channel}: {seconds} s.",
+    "no_parent": "This channel is not in a category.",
+    "synced": "{channel} now uses the category's permissions.",
+    "locked": "{channel} locked.",
+    "unlocked": "{channel} unlocked.",
+    "locked_notice": "This channel is locked by the team.",
+    "unlocked_notice": "The channel is open again.",
+    "role_created": "Created {role}.",
+    "role_deleted": "Deleted the role **{name}**.",
+    "confirm_role_delete": "Delete the role **{name}** ({count} members have it)?",
+    "confirm_admin": "Give **Administrator** to **{role}**? Members with it can do everything on the server.",
+    "bad_permission": "Unknown permission – pick one from the list.",
+    "members": "Members",
+    "position": "Position",
+    "created": "Created",
+    "permissions": "Permissions",
+    "perms_title": "Permissions in #{channel}",
+    "perms_none": "No permission overwrites.",
+    "confirm_perms_clear": "Remove all permission overwrites of this role/member in #{channel}?",
+    "confirm_perms_copy": "Replace all permissions of #{to} with those of #{from}?",
+    "emoji_added": "Emoji added: {emoji}",
+    "emoji_title": "Emojis ({count})",
+    "confirm_emoji_delete": "Delete the emoji :{name}:?",
+    "sticker_added": "Sticker **{name}** added.",
+    "confirm_sticker_delete": "Delete the sticker **{name}**?",
+    "deleted": "Deleted **{name}**.",
+    "not_found": "Not found.",
+    "bad_start": "Give when it starts, e.g. `2h` or `3d` (at least 1 minute from now).",
+    "need_location": "Give a voice/stage channel or a location.",
+    "event_created": "Event created – {when}: {url}",
+    "events_title": "📅 Events",
+    "confirm_event_delete": "Delete the event **{name}**?",
+    "webhook_created": "Webhook **{name}** created. Keep this URL secret:\n{url}",
+    "webhooks_title": "Webhooks",
+    "confirm_webhook_delete": "Delete the webhook **{name}**?",
+    "sent": "Sent.",
+    "template_created": "Template created: {url}",
+    "templates_title": "Server templates",
+    "templates_synced": "Synced {count} template(s).",
+    "confirm_template_delete": "Delete the template **{name}**?"
+  },
+  "comm": {
+    "status_title": "Discord Community",
+    "rules": "Rules",
+    "updates": "Updates for moderators",
+    "prompts": "questions",
+    "default_channels": "default channels",
+    "welcome_screen": "Welcome Screen",
+    "autopublish": "Auto-publish",
+    "features": "Server features",
+    "confirm_enable": "Enable Community? I will also set verification to at least Low and scan media from all members (Discord requirements).",
+    "enabled": "Community enabled. 🎉",
+    "confirm_disable": "Disable Community? Onboarding, the Welcome Screen, forums and announcement channels will stop working.",
+    "disabled": "Community disabled.",
+    "onboarding_on": "Onboarding is on: {prompts} questions, {channels} default channels.",
+    "onboarding_saved": "Onboarding saved but not enabled ({prompts} questions, {channels} default channels, {writable} writable) – Discord needs at least 7 default channels, 5 of them writable for everyone.",
+    "tags_full": "A forum can have at most 20 tags.",
+    "crosspost_on": "Messages in {channel} will be published automatically.",
+    "crosspost_off": "Auto-publish in {channel} is off.",
+    "stage_started": "Stage \"{topic}\" in {channel} is live.",
+    "discovery_title": "Server Discovery – {ok}/{total} requirements",
+    "discovery_footer": "Discord checks more (activity, safety) when you apply in Server Settings → Discovery.",
+    "check": {
+      "community": "Community is enabled",
+      "members": "At least 1000 members (now {value})",
+      "age": "Server at least 8 weeks old (now {value})",
+      "verification": "Verification level Medium or higher",
+      "content_filter": "Media content filter for all members",
+      "mfa": "2FA required for moderation",
+      "rules": "Rules channel set",
+      "updates": "Community updates channel set",
+      "description": "Server description set",
+      "icon": "Server icon set",
+      "onboarding": "Onboarding enabled"
+    }
+  },
+  "backup": {
+    "created": "Backup `{id}` created ({roles} roles, {channels} channels).",
+    "list_title": "💾 Backups",
+    "none": "No backups yet.",
+    "not_found": "No such backup.",
+    "invalid": "That is not a Nore Bot backup.",
+    "imported": "Backup imported as `{id}`.",
+    "deleted": "Backup deleted.",
+    "preview_title": "Restore backup {id}?",
+    "preview_counts": "Create: {cr} roles, {cc} channels · Update: {ur} roles, {uc} channels · Delete: {dr} roles, {dc} channels",
+    "restoring": "♻️ Restoring backup…",
+    "restored": "♻️ Backup restored"
+  },
+  "builder": {
+    "templates_title": "🏗️ Server templates",
+    "preview_title": "🏗️ {template} · {size} · {language}",
+    "preview_counts": "The template: **{roles}** roles, **{categories}** categories, **{channels}** channels.",
+    "opt_content": "Content & panels",
+    "opt_settings": "Server settings",
+    "opt_prune": "Delete extras",
+    "steps": "Steps",
+    "estimate": "Estimated time",
+    "backup_note": "A backup of the current layout is made automatically before building.",
+    "confirm": "Build the server",
+    "confirm_repair": "Repair the server",
+    "starting": "Backup done – building… Progress is shown in this channel.",
+    "progress_title": "🏗️ Building {template}",
+    "step": "Step {done}/{total}",
+    "eta": "about {time} left",
+    "errors": {
+      "one": "{count} step failed (details in the summary)",
+      "other": "{count} steps failed (details in the summary)"
+    },
+    "do_not_touch": "Please don't edit channels and roles until the build is done.",
+    "done_title": "✅ The server is ready!",
+    "cancelled_title": "⏸️ Build stopped",
+    "done_text": "Done {done}/{total} steps in {time}. Errors: {errors}.",
+    "done_footer": "Missing something later? /builder repair recreates it.",
+    "synced": "✅ Module configuration saved in the panel (version {version}) – see {url}",
+    "sync_pending": "⏳ The panel is unreachable right now – the modules already work and the configuration is saved in the panel when the API is back.",
+    "sync_off": "ℹ️ The bot is not connected to the panel (no NORE_BOT_SECRET) – the configuration works locally only.",
+    "sync_rejected": "⚠️ The panel refused part of the configuration – the modules work locally, details in the bot logs.",
+    "already_running": "A build is already running on this server.",
+    "expired": "This preview has expired – run the command again.",
+    "no_job": "No build has been run yet.",
+    "not_running": "No build is running.",
+    "cancelling": "Stopping after the current step…",
+    "nothing_to_resume": "There is nothing to resume.",
+    "resuming": "Resuming from step {done}/{total}…",
+    "state": "State",
+    "started": "Started",
+    "st": {
+      "pending": "Waiting for confirmation",
+      "running": "Running",
+      "done": "Done",
+      "cancelled": "Stopped",
+      "failed": "Failed",
+      "interrupted": "Interrupted"
+    }
+  },
+  "panel": {
+    "common": {
+      "enabled": "Enabled",
+      "channel": "Channel",
+      "pingRole": "Role to ping",
+      "template": "Message",
+      "template_help": "Leave empty for the default text in the server language. Placeholders: {user}, {name}, {server}, {count}, {role}…",
+      "name": "Name",
+      "logChannel": "Log channel",
+      "embed": "Send as an embed",
+      "color": "Colour",
+      "id": "ID"
+    },
+    "options": {
+      "languages": {
+        "default": "Server language",
+        "pl": "Polski",
+        "en": "English"
+      },
+      "platforms": {
+        "tiktok": "TikTok",
+        "instagram": "Instagram",
+        "x": "X (Twitter)"
+      },
+      "githubKinds": {
+        "releases": "Releases",
+        "commits": "Commits"
+      },
+      "actions": {
+        "delete": "Delete the message",
+        "warn": "Warn",
+        "timeout": "Timeout",
+        "kick": "Kick",
+        "ban": "Ban",
+        "role": "Give a role",
+        "none": "Only alert"
+      },
+      "ticketModes": {
+        "channel": "Private channel",
+        "thread": "Private thread"
+      },
+      "menuStyles": {
+        "buttons": "Buttons",
+        "select": "Select menu",
+        "reactions": "Reactions"
+      },
+      "priorities": {
+        "low": "Low",
+        "normal": "Normal",
+        "high": "High",
+        "urgent": "Urgent"
+      },
+      "inputStyles": {
+        "short": "Short answer",
+        "paragraph": "Long answer"
+      },
+      "announce": {
+        "off": "Off",
+        "current": "In the same channel",
+        "channel": "In a chosen channel",
+        "dm": "In a DM"
+      },
+      "match": {
+        "command": "Command with prefix",
+        "exact": "Exact message",
+        "prefix": "Message starts with",
+        "contains": "Message contains",
+        "word": "Contains the word"
+      },
+      "scheduleModes": {
+        "interval": "Every N minutes",
+        "daily": "Every day",
+        "weekly": "Every week"
+      },
+      "weekdays": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
+      "verificationLevels": {
+        "keep": "Don't change",
+        "none": "None",
+        "low": "Low – verified email",
+        "medium": "Medium – registered for 5 min",
+        "high": "High – member for 10 min",
+        "very_high": "Highest – verified phone"
+      },
+      "contentFilters": {
+        "keep": "Don't change",
+        "disabled": "Don't scan",
+        "members_without_roles": "Members without roles",
+        "all_members": "All members"
+      },
+      "notifications": {
+        "keep": "Don't change",
+        "all": "All messages",
+        "mentions": "Only mentions"
+      },
+      "afkTimeouts": {
+        "0": "Don't change",
+        "60": "1 minute",
+        "300": "5 minutes",
+        "900": "15 minutes",
+        "1800": "30 minutes",
+        "3600": "1 hour"
+      },
+      "actionTypes": {
+        "setup": "Build the server from a template",
+        "setup_repair": "Repair the server from a template",
+        "backup_create": "Create a backup",
+        "post_panels": "Post panels (tickets, verification, roles)",
+        "discovery_check": "Check Discovery requirements",
+        "apply_server": "Apply server settings"
+      },
+      "templates": {
+        "nore-client": "Nore Client community",
+        "mc-server": "Minecraft server (MC.noreclient.pl)",
+        "gaming": "Gaming community",
+        "support": "Support only"
+      },
+      "sizes": {
+        "small": "Small",
+        "medium": "Medium",
+        "full": "Full"
+      }
+    },
+    "general": {
+      "_label": "General",
+      "_help": "Language, colours and staff roles used by every module.",
+      "language": "Server language",
+      "useMemberLocale": "Reply in each member's own language",
+      "useMemberLocale_help": "Private (ephemeral) replies use the member's Discord language; public messages use the server language.",
+      "timezone": "Time zone",
+      "timezone_help": "IANA name, e.g. Europe/Warsaw – used by scheduled messages.",
+      "color": "Embed colour",
+      "staffRoles": "Staff roles",
+      "staffRoles_help": "Members with these roles count as staff everywhere (tickets, suggestions, applications).",
+      "commandCooldownSeconds": "Command cooldown (seconds)",
+      "disabledCommands": "Disabled commands",
+      "disabledCommands_help": "Top-level command names, e.g. giveaway, poll."
+    },
+    "nore": {
+      "_label": "Nore",
+      "_help": "Nore Client releases, news and events posted to your channels.",
+      "releases": {
+        "_label": "New releases",
+        "prereleases": "Include beta versions",
+        "changelog": "Include the changelog"
+      },
+      "news": {
+        "_label": "News posts"
+      },
+      "events": {
+        "_label": "Events (start / end)",
+        "reminders": "Reminders before start",
+        "reminders_help": "A week and a day before an event starts."
+      },
+      "announcements": {
+        "_label": "Nore announcements",
+        "_help": "Announcements from the Nore team for Discord (maintenance, events, important changes)."
+      }
+    },
+    "social": {
+      "_label": "Social media",
+      "_help": "YouTube, Twitch, TikTok/Instagram/X (via RSS-Bridge), RSS and GitHub feeds.",
+      "intervalMinutes": "Check every (minutes)",
+      "youtube": {
+        "_label": "YouTube channels",
+        "channelId": "YouTube channel ID",
+        "channelId_help": "Starts with UC… (channel page → Share → Copy channel ID)."
+      },
+      "twitch": {
+        "_label": "Twitch streamers",
+        "login": "Twitch login",
+        "endMessage": "Post when the stream ends"
+      },
+      "bridges": {
+        "_label": "TikTok / Instagram / X",
+        "_help": "Needs RSS_BRIDGE_URL in the bot's .env (a self-hosted RSS-Bridge).",
+        "platform": "Platform",
+        "username": "Username"
+      },
+      "rss": {
+        "_label": "RSS / Atom feeds",
+        "url": "Feed URL"
+      },
+      "github": {
+        "_label": "GitHub",
+        "repo": "Repository (owner/name)",
+        "kind": "What to post",
+        "branch": "Branch (commits)"
+      }
+    },
+    "status": {
+      "_label": "Status",
+      "_help": "Nore services status, Minecraft server monitors and a live status board.",
+      "services": {
+        "_label": "Nore services",
+        "downTemplate": "Message when a service goes down",
+        "upTemplate": "Message when it is back",
+        "failuresBeforeIncident": "Failed checks before announcing"
+      },
+      "servers": {
+        "_label": "Minecraft servers",
+        "address": "Address",
+        "notify": "Post online/offline changes",
+        "live": "Live status message",
+        "live_help": "A message edited every minute with players and version."
+      },
+      "board": {
+        "_label": "Status board",
+        "services": "Show Nore services",
+        "servers": "Show Minecraft servers"
+      }
+    },
+    "moderation": {
+      "_label": "Moderation",
+      "_help": "Warns, timeouts, kicks, bans, cases and automatic actions after warnings.",
+      "modRoles": "Moderator roles",
+      "modRoles_help": "Can use moderation commands even without Discord permissions.",
+      "dmOnAction": "DM the member about actions",
+      "requireReason": "Require a reason",
+      "appealUrl": "Appeal link (sent with bans)",
+      "warnExpiryDays": "Warnings expire after (days)",
+      "warnExpiryDays_help": "0 = never.",
+      "thresholds": {
+        "_label": "Warning thresholds",
+        "warns": "Number of warnings",
+        "durationMinutes": "Duration (minutes, timeout/ban)"
+      }
+    },
+    "automod": {
+      "_label": "AutoMod",
+      "_help": "Spam, mentions, invites, links, bad words, caps, new accounts and raids.",
+      "action": "Action",
+      "exemptRoles": "Exempt roles",
+      "exemptChannels": "Exempt channels",
+      "timeoutMinutes": "Timeout length (minutes)",
+      "spam": {
+        "_label": "Spam / flood",
+        "maxMessages": "Max messages",
+        "perSeconds": "In seconds"
+      },
+      "duplicates": {
+        "_label": "Repeated messages",
+        "max": "Same message at most"
+      },
+      "mentions": {
+        "_label": "Mass mentions",
+        "max": "Max mentions per message"
+      },
+      "invites": {
+        "_label": "Invite links",
+        "allowed": "Allowed invite codes",
+        "allowed_help": "E.g. your own vanity code."
+      },
+      "links": {
+        "_label": "Links (allow-list)",
+        "allowList": "Allowed domains"
+      },
+      "badWords": {
+        "_label": "Bad words",
+        "words": "Words",
+        "words_help": "word = whole word, word* = starts with, *word* = anywhere. Diacritics and leetspeak are handled."
+      },
+      "caps": {
+        "_label": "Caps lock",
+        "minLength": "Minimum letters",
+        "percent": "Upper-case percent"
+      },
+      "newAccounts": {
+        "_label": "New accounts",
+        "minAgeDays": "Minimum account age (days)",
+        "role": "Quarantine role",
+        "role_help": "Used when the action is \"Give a role\"."
+      },
+      "raid": {
+        "_label": "Raid protection",
+        "joins": "Joins",
+        "perSeconds": "In seconds",
+        "durationMinutes": "Raid mode length (minutes)",
+        "durationMinutes_help": "While raid mode is on, the action applies to every new member."
+      }
+    },
+    "welcome": {
+      "_label": "Welcome",
+      "_help": "Welcome message, generated image and DM.",
+      "image": "Welcome image",
+      "image_help": "A card with the avatar (needs the optional canvas package).",
+      "dm": "Also send a DM",
+      "dmMessage": "DM text"
+    },
+    "goodbye": {
+      "_label": "Goodbye",
+      "_help": "Message when a member leaves."
+    },
+    "autorole": {
+      "_label": "Autorole",
+      "_help": "Roles given to new members.",
+      "roles": "Roles for members",
+      "botRoles": "Roles for bots",
+      "delaySeconds": "Delay (seconds)"
+    },
+    "verification": {
+      "_label": "Verification",
+      "_help": "A button (and optional captcha) that unlocks the server.",
+      "role": "Verified role",
+      "unverifiedRole": "Unverified role",
+      "unverifiedRole_help": "Given on join and removed after verification (optional).",
+      "captcha": "Captcha question",
+      "message": "Panel text",
+      "kickAfterHours": "Kick unverified after (hours)",
+      "kickAfterHours_help": "0 = never."
+    },
+    "tickets": {
+      "_label": "Tickets",
+      "_help": "Support tickets with panels, categories, forms, transcripts and ratings.",
+      "mode": "Ticket type",
+      "category": "Category for ticket channels",
+      "staffRoles": "Support roles",
+      "maxOpen": "Open tickets per member",
+      "nameTemplate": "Channel name",
+      "nameTemplate_help": "{number}, {user}, {category}",
+      "openMessage": "Opening message",
+      "pingStaff": "Ping support roles",
+      "autoCloseHours": "Auto-close after inactivity (hours)",
+      "autoCloseHours_help": "0 = never.",
+      "warnBeforeCloseHours": "Warn before closing (hours)",
+      "ratings": "Ask for a rating",
+      "dmTranscript": "DM the transcript to the author",
+      "blacklist": "Blocked users",
+      "blacklist_help": "User IDs that cannot open tickets.",
+      "blacklistRoles": "Blocked roles",
+      "panels": {
+        "_label": "Panels",
+        "title": "Title",
+        "description": "Description",
+        "style": "Style",
+        "categories": "Categories",
+        "categories_help": "Category ids; empty = all."
+      },
+      "categories": {
+        "_label": "Categories",
+        "label": "Label",
+        "emoji": "Emoji",
+        "description": "Description",
+        "staffRoles": "Own support roles",
+        "parent": "Own channel category",
+        "priority": "Default priority",
+        "questions": {
+          "_label": "Form questions",
+          "label": "Question",
+          "placeholder": "Hint",
+          "style": "Answer",
+          "required": "Required"
+        }
+      }
+    },
+    "suggestions": {
+      "_label": "Suggestions",
+      "_help": "Suggestions with votes, threads, statuses and a review queue.",
+      "channel": "Suggestions channel (text or forum)",
+      "reviewChannel": "Review channel",
+      "reviewChannel_help": "Where new suggestions wait when pre-moderation is on.",
+      "staffRoles": "Roles that decide",
+      "allowAnonymous": "Allow anonymous suggestions",
+      "threads": "Thread for every suggestion",
+      "cooldownMinutes": "Cooldown (minutes)",
+      "dmOnStatus": "DM the author on status change",
+      "requireReview": "Pre-moderation",
+      "requireReview_help": "Suggestions are published only after the team approves them.",
+      "categories": {
+        "_label": "Categories",
+        "label": "Label",
+        "emoji": "Emoji"
+      }
+    },
+    "applications": {
+      "_label": "Applications",
+      "_help": "Staff applications, partnerships and other forms reviewed by the team.",
+      "reviewChannel": "Review channel",
+      "staffRoles": "Reviewer roles",
+      "dmResult": "DM the result",
+      "forms": {
+        "_label": "Forms",
+        "title": "Title",
+        "description": "Panel text",
+        "role": "Role on acceptance",
+        "role_help": "E.g. Trial for staff, Partner for partnerships.",
+        "resultChannel": "Post accepted applications in",
+        "resultChannel_help": "For partnerships: the channel with partner ads.",
+        "cooldownDays": "Days between applications",
+        "questions": {
+          "_label": "Questions (max 5)",
+          "label": "Question",
+          "placeholder": "Hint",
+          "style": "Answer",
+          "required": "Required"
+        }
+      }
+    },
+    "minecraft": {
+      "_label": "Minecraft",
+      "_help": "Chat bridge, account linking and rank roles for your Minecraft server.",
+      "address": "Server address",
+      "address_help": "E.g. MC.noreclient.pl – shown in /link.",
+      "chatChannel": "Chat bridge channel",
+      "chatChannel_help": "Messages here go to the game and back (needs the server plugin).",
+      "linkedRole": "Role for linked accounts",
+      "syncNicknames": "Set nickname to the Minecraft name",
+      "nicknameTemplate": "Nickname",
+      "rankRoles": {
+        "_label": "Rank → role",
+        "_help": "In-game ranks reported by the plugin.",
+        "rank": "Rank",
+        "role": "Role"
+      }
+    },
+    "roles": {
+      "_label": "Self-roles",
+      "_help": "Menus where members pick their roles.",
+      "menus": {
+        "_label": "Menus",
+        "title": "Title",
+        "description": "Description",
+        "mode": "Type",
+        "multiple": "Allow several",
+        "roles": {
+          "_label": "Roles",
+          "role": "Role",
+          "label": "Label",
+          "emoji": "Emoji",
+          "description": "Description"
+        }
+      }
+    },
+    "leveling": {
+      "_label": "Levels",
+      "_help": "XP for activity, level-up messages and level roles.",
+      "xpMin": "Min XP per message",
+      "xpMax": "Max XP per message",
+      "cooldownSeconds": "Cooldown (seconds)",
+      "multiplier": "Multiplier",
+      "voiceXpPerMinute": "XP per minute in voice",
+      "voiceXpPerMinute_help": "0 = off. Only when at least 2 people talk.",
+      "announce": "Level-up message",
+      "ignoredChannels": "Channels without XP",
+      "ignoredRoles": "Roles without XP",
+      "rewards": {
+        "_label": "Level roles",
+        "level": "Level",
+        "role": "Role"
+      },
+      "stackRewards": "Keep lower level roles"
+    },
+    "giveaways": {
+      "_label": "Giveaways",
+      "_help": "Giveaways with an enter button.",
+      "managerRoles": "Giveaway managers"
+    },
+    "polls": {
+      "_label": "Polls",
+      "_help": "Polls with buttons."
+    },
+    "reminders": {
+      "_label": "Reminders",
+      "_help": "Personal reminders.",
+      "maxPerUser": "Reminders per member"
+    },
+    "starboard": {
+      "_label": "Starboard",
+      "_help": "The best messages, chosen by reactions.",
+      "emoji": "Emoji",
+      "threshold": "Reactions needed",
+      "selfStar": "Count your own reaction",
+      "nsfw": "Include age-restricted channels",
+      "ignoredChannels": "Ignored channels"
+    },
+    "customCommands": {
+      "_label": "Custom commands",
+      "_help": "Your own commands and auto-responses.",
+      "prefix": "Prefix",
+      "commands": {
+        "_label": "Commands",
+        "trigger": "Trigger",
+        "response": "Response",
+        "match": "Matching",
+        "reply": "Reply to the message",
+        "deleteTrigger": "Delete the triggering message"
+      }
+    },
+    "scheduled": {
+      "_label": "Scheduled messages",
+      "_help": "Messages sent automatically on a schedule.",
+      "messages": {
+        "_label": "Messages",
+        "content": "Content",
+        "mode": "Repeat",
+        "everyMinutes": "Every (minutes)",
+        "time": "Time (HH:MM)",
+        "weekday": "Day"
+      }
+    },
+    "stats": {
+      "_label": "Stats channels",
+      "_help": "Channel names with live counters.",
+      "intervalMinutes": "Update every (minutes)",
+      "channels": {
+        "_label": "Channels",
+        "template_help": "{members}, {humans}, {bots}, {boosts}, {channels}, {roles}, {noreOnline}, {noreVersion}, {noreDownloads}"
+      }
+    },
+    "logging": {
+      "_label": "Logs",
+      "_help": "Server activity logged to channels.",
+      "messages": "Messages (edits, deletions)",
+      "members": "Members (joins, leaves, roles)",
+      "server": "Server (roles, channels, settings)",
+      "voice": "Voice",
+      "ignoredChannels": "Ignored channels",
+      "ignoreBots": "Ignore bots"
+    },
+    "boosts": {
+      "_label": "Boosts",
+      "_help": "Boost announcements and booster perks.",
+      "role": "Extra booster role",
+      "role_help": "Given while a member boosts.",
+      "perksChannel": "Booster-only channel",
+      "thankDm": "Thank in a DM"
+    },
+    "community": {
+      "_label": "Community",
+      "_help": "Discord Community extras.",
+      "autoPublish": "Auto-publish announcement channels",
+      "autoPublish_help": "New messages are published to following servers automatically.",
+      "forumAutoTag": "Auto-tag forum posts",
+      "forumAutoTag_help": "Applies tags whose names appear in the post title."
+    },
+    "server": {
+      "_label": "Server settings",
+      "_help": "Desired Discord settings – applied with /guild apply or automatically.",
+      "applyOnSync": "Apply automatically when saved",
+      "applyOnSync_help": "The bot changes the server settings as soon as you save here.",
+      "name": "Server name",
+      "keep_help": "Empty = don't change.",
+      "description": "Description",
+      "verificationLevel": "Verification level",
+      "explicitContentFilter": "Media content filter",
+      "defaultNotifications": "Default notifications",
+      "systemChannel": "System messages channel",
+      "afkChannel": "AFK channel",
+      "afkTimeout": "AFK timeout"
+    },
+    "actions": {
+      "_label": "Actions",
+      "_help": "Ask the bot to do something (it runs every new entry once).",
+      "queue": {
+        "_label": "Action queue",
+        "_help": "Add an entry with a new ID and save – the result appears in the events.",
+        "type": "Action",
+        "template": "Template",
+        "size": "Size",
+        "language": "Language"
+      }
+    },
+    "utility": {
+      "_label": "Utility",
+      "_help": "Help, info, avatars, embeds."
+    }
+  }
+}
