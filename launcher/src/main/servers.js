@@ -234,7 +234,8 @@ async function installProxy(srv, progress) {
     const b = await velocityBuild(srv.loaderVersion || null);
     progress({ stage: `Pobieranie Velocity ${b.version}` });
     await net.download(b.file.url, jar, { size: b.file.size });
-    update(srv.id, { installedLoader: b.version });
+    // Velocity 4 is built for Java 25, 3.x for Java 21
+    update(srv.id, { installedLoader: b.version, javaComponent: parseInt(b.version, 10) >= 4 ? 'java-runtime-epsilon' : 'java-runtime-delta' });
   } else {
     progress({ stage: 'Pobieranie BungeeCord' });
     await net.download('https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar', jar);
