@@ -4,6 +4,8 @@
 ; Included by electron-builder before its own script: colours must be defined before MUI2.nsh.
 !define MUI_BGCOLOR "141216"
 !define MUI_TEXTCOLOR "F3EFE9"
+; finish page checkbox labels: event orange (tokens: dot-event #ff8a1f)
+!define NORE_CHECK_INK "FF8A1F"
 
 ; progress bar: the theme is removed so the bar can take the accent fill on a slot track.
 ; Own names: this file is included before WinMessages.nsh, which defines the PBM_/LVM_ ones itself.
@@ -72,6 +74,7 @@
     FunctionEnd
 
     !define MUI_FINISHPAGE_RUN
+    !define NORE_HAS_RUN ; MUI undefines MUI_FINISHPAGE_RUN after the page
     !define MUI_FINISHPAGE_RUN_TEXT "Uruchom Nore Launcher"
     !define MUI_FINISHPAGE_RUN_FUNCTION "StartApp"
   !endif
@@ -94,6 +97,14 @@
 
   ; after an update with UI, don't bring back a desktop shortcut the player has removed
   Function noreFinishShow
+    ; themed checkboxes ignore SetCtlColors (Windows draws their label dark blue): drop the theme so the
+    ; labels take the event orange on the album page
+    System::Call 'UxTheme::SetWindowTheme(p $mui.FinishPage.ShowReadme, w "", w "")'
+    SetCtlColors $mui.FinishPage.ShowReadme "${NORE_CHECK_INK}" "${MUI_BGCOLOR}"
+    !ifdef NORE_HAS_RUN
+      System::Call 'UxTheme::SetWindowTheme(p $mui.FinishPage.Run, w "", w "")'
+      SetCtlColors $mui.FinishPage.Run "${NORE_CHECK_INK}" "${MUI_BGCOLOR}"
+    !endif
     ${If} ${isUpdated}
     ${AndIfNot} ${FileExists} "$newDesktopLink"
       SendMessage $mui.FinishPage.ShowReadme ${BM_SETCHECK} ${BST_UNCHECKED} 0
