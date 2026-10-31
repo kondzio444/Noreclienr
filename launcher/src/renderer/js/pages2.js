@@ -1,6 +1,125 @@
 'use strict';
 /* Instance details (edit), new-instance installer, downloaded versions and local servers (BETA). */
 
+// ================================================================== PERFORMANCE (perf.js, gameopts.js in main)
+
+const OPTION_PROFILES = [
+  { value: '', label: 'Bez zmian' }, { value: 'performance', label: 'Wydajność' },
+  { value: 'balanced', label: 'Zrównoważony' }, { value: 'quality', label: 'Jakość' },
+];
+const PROFILE_DESC = {
+  '': 'Launcher nie zmienia ustawień grafiki z gry.',
+  performance: 'Render 8, symulacja 6, szybka grafika, mniej cząsteczek – najmniej lagów na dużych serwerach.',
+  balanced: 'Render 12, symulacja 8 – dobry wybór dla dużych modpacków.',
+  quality: 'Render 16, symulacja 12, ładna grafika – dla mocnych komputerów.',
+};
+
+const isModded = (i) => !!i && !!i.loader && i.loader !== 'vanilla';
+/** Older modded instances (and imported ones) are asked once whether to add performance mods. */
+function needsPerfAsk(i) {
+  return isModded(i) && !i.perfAsked && i.perfMods !== true && !(i.noreClient && i.perfMods === undefined);
+}
+function perfOn(i) {
+  return isModded(i) && (i.perfMods === true || (i.perfMods === undefined && !!i.noreClient));
+}
+const cleanError = (e) => String((e && e.message) || e).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+
+/** "Optymalizuj": shows what will be added (only what the pack lacks), then installs it. Resolves true when applied. */
+function optimizeModal(inst) {
+  return new Promise((resolve) => {
+    let done = false;
+    let profile = inst.optionsProfile || '';
+    const m = modal(`<h3>${icon('zap')} Optymalizuj: ${esc(inst.name)}</h3>
+      <p class="sub">Launcher dodaje tylko mody wydajności, których ${inst.modpack === 'pack' ? 'paczka' : 'instancja'} nie ma i które z nią nie kolidują – w wersjach dla Minecraft ${esc(inst.mcVersion)} (${esc(loaderName(inst.loader))}). Mody paczki nigdy nie są podmieniane.</p>
+      <div id="op-body"><div class="skeleton" style="height:140px"></div></div>
+      <div class="field" style="margin-top:14px"><label>Profil grafiki (options.txt)</label><div id="op-prof"></div><div class="muted" style="font-size:12px;margin-top:6px" id="op-pdesc"></div></div>
+      <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn" id="op-go" disabled>${icon('zap')} Optymalizuj</button></div>`,
+    { onClose: () => { if (!done) resolve(false); } });
+    const pdesc = () => { $('#op-pdesc', m.el).textContent = PROFILE_DESC[profile] || ''; };
+    const drawProfile = () => {
+      const box = $('#op-prof', m.el);
+      box.innerHTML = '';
+      box.appendChild(segmented(OPTION_PROFILES, profile, (v) => { profile = v; pdesc(); }));
+      pdesc();
+    };
+    drawProfile();
+    nore.perf.preview(inst.id).then((p) => {
+      if (!p.profile && p.suggestProfile && !inst.optionsProfile) { profile = p.suggestProfile; drawProfile(); }
+      const row = (title, sub, tag) => `<div class="upd-item"><b>${esc(title)}</b>${tag || ''}<span class="from" style="margin-left:auto">${esc(sub || '')}</span></div>`;
+      const parts = [];
+      if (p.add.length) parts.push(`<div class="section-title" style="margin:6px 0">Zostanie dodane (${p.add.length})</div><div class="upd-list">${p.add.map(a => row(a.title || a.slug, a.dep ? `zależność: ${a.dep}` : a.why, `<span class="tag">${esc(a.version)}</span>`)).join('')}</div>`);
+      if (p.keep.length) parts.push(`<div class="section-title" style="margin:10px 0 6px">Już dodane przez launcher</div><div class="upd-list">${p.keep.map(k => row(k.title, k.file)).join('')}</div>`);
+      if (p.drop.length) parts.push(`<div class="section-title" style="margin:10px 0 6px">Zostanie usunięte</div><div class="upd-list">${p.drop.map(d => row(d.title, d.reason)).join('')}</div>`);
+      if (p.skip.length) parts.push(`<details style="margin-top:10px"><summary class="muted">Pominięte (${p.skip.length})</summary><div class="upd-list">${p.skip.map(x => row(x.title || x.slug, x.reason)).join('')}</div></details>`);
+      if (p.missing.length) parts.push(`<div class="muted" style="font-size:12px;margin-top:8px">Brak wersji dla tej gry: ${p.missing.map(x => esc(x.title || x.slug)).join(', ')}</div>`);
+      if (!p.add.length && !p.drop.length) parts.unshift(`<div class="card" style="padding:12px 14px">${icon('check')} Ta instancja ma już wszystkie pasujące mody wydajności.</div>`);
+      parts.push(`<div class="muted" style="font-size:12px;margin-top:8px">Mody w instancji: ${p.mods}. Dodane pliki są zapamiętane – aktualizacja paczki ich nie rusza, a usuniesz je jednym kliknięciem.</div>`);
+      $('#op-body', m.el).innerHTML = parts.join('');
+      $('#op-go', m.el).disabled = false;
+    }).catch((e) => {
+      $('#op-body', m.el).innerHTML = `<div class="empty">${icon('globe')}<div>Nie udało się sprawdzić modów.</div><div class="muted">${esc(cleanError(e))}</div></div>`;
+    });
+    $('#op-go', m.el).onclick = async () => {
+      const b = $('#op-go', m.el);
+      b.disabled = true; b.innerHTML = '<span class="spinner"></span> Pobieranie…';
+      try {
+        const r = await nore.perf.apply(inst.id, { profile: profile || null });
+        if (!profile && inst.optionsProfile) await nore.instances.optionsProfile(inst.id, '');
+        done = true;
+        await App.refresh();
+        toast('Zoptymalizowano', r.added.length ? `Dodano: ${r.added.length} ${plural(r.added.length, 'mod', 'mody', 'modów')}` : 'Nic nie trzeba było dodawać', 'success');
+        resolve(true);
+        m.close();
+      } catch (e) {
+        b.disabled = false; b.innerHTML = `${icon('zap')} Optymalizuj`;
+        errorToast(e, 'Optymalizacja');
+      }
+    };
+  });
+}
+
+/** The one-time question for older modded instances, shown before their next start. Resolves when answered. */
+function askPerfOnce(inst) {
+  return new Promise((resolve) => {
+    let done = false;
+    const m = modal(`<h3>${icon('zap')} Dodać mody wydajności?</h3>
+      <p class="sub">Launcher może dodać do „${esc(inst.name)}” brakujące mody wydajności – np. Sodium / Embeddium, Lithium, FerriteCore, ModernFix, EntityCulling i Krypton (mniej lagów na serwerach). Tylko te, których ${inst.modpack === 'pack' ? 'paczka' : 'instancja'} nie ma i które z nią nie kolidują. Usuniesz je jednym kliknięciem w ustawieniach instancji.</p>
+      <div class="foot"><button class="btn ghost" id="pa-no">Nie, dziękuję</button><button class="btn ghost" id="pa-show">Pokaż, co zostanie dodane</button><button class="btn" id="pa-yes">${icon('zap')} Dodaj</button></div>`,
+    { onClose: () => { if (!done) { done = true; resolve(false); } } });
+    const finish = (v) => { done = true; resolve(v); m.close(); };
+    $('#pa-no', m.el).onclick = async () => { await nore.perf.decline(inst.id).catch(() => {}); await App.refresh(); finish(false); };
+    $('#pa-yes', m.el).onclick = async () => { await nore.instances.update(inst.id, { perfMods: true, perfAsked: true }); await App.refresh(); finish(true); };
+    $('#pa-show', m.el).onclick = async () => {
+      done = true; m.close();
+      const ok = await optimizeModal(inst);
+      if (!ok) await nore.perf.decline(inst.id).catch(() => {});
+      await App.refresh();
+      resolve(ok);
+    };
+  });
+}
+
+/** CurseForge files the author blocked for other apps: download them by hand, the launcher picks them up from Downloads. */
+function blockedFilesModal(inst) {
+  const m = modal(`<h3>${icon('download')} Pobierz ręcznie</h3>
+    <p class="sub">Autorzy tych plików nie pozwalają na pobieranie przez inne aplikacje niż CurseForge. Otwórz każdą stronę, pobierz plik do folderu <b>Pobrane</b>, a potem kliknij „Sprawdź pobrane” – launcher sam przeniesie je do instancji.</p>
+    <div class="upd-list" id="bl-list"></div>
+    <div class="foot"><button class="btn ghost" data-close>Później</button><button class="btn" id="bl-scan">${icon('refresh')} Sprawdź pobrane</button></div>`);
+  const draw = (list) => {
+    if (!list.length) { m.close(); toast('Wszystkie pliki są na miejscu', inst.name, 'success'); App.refresh(); return; }
+    $('#bl-list', m.el).innerHTML = list.map((b, k) => `<div class="upd-item"><b>${esc(b.title || b.file)}</b><span class="from">${esc(b.file)}</span><button class="btn ghost sm" data-k="${k}" style="margin-left:auto">${icon('external')} Strona</button></div>`).join('');
+    $$('[data-k]', m.el).forEach(btn => { btn.onclick = () => nore.open(list[+btn.dataset.k].page); });
+  };
+  nore.modpacks.blocked(inst.id).then(draw);
+  $('#bl-scan', m.el).onclick = async () => {
+    const r = await nore.modpacks.resolveBlocked(inst.id).catch((e) => { errorToast(e); return null; });
+    if (!r) return;
+    if (r.found.length) toast('Znaleziono', r.found.join(', '), 'success');
+    else if (r.blocked.length) toast('Jeszcze nie ma', 'Nie znalazłem tych plików w folderze Pobrane.', 'info');
+    draw(r.blocked);
+  };
+}
+
 // ================================================================== NEW INSTANCE ("installer" for any version)
 
 function modpackLabel(inst) {
@@ -190,8 +309,9 @@ Pages.instance = (root, { id, tab: startTab }) => {
         <div class="field"><label>Rodzaj</label><div id="mp"></div></div>
         <div class="setting"><div class="col"><b>Pakiet Nore</b><span>Mody wydajności i QoL z Modrinth (pobiorą się przy starcie)</span></div>
           <label class="switch"><input type="checkbox" id="pack" ${i.perfPack ? 'checked' : ''} ${i.loader === 'fabric' ? '' : 'disabled'}><i></i></label></div>
-        ${i.noreClient ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>Sodium, Lithium, FerriteCore, EntityCulling, ImmediatelyFast – dużo więcej FPS</span></div>
-          <label class="switch"><input type="checkbox" id="perfmods" ${i.perfMods !== false ? 'checked' : ''}><i></i></label></div>` : ''}
+        ${isModded(i) ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>Sodium / Embeddium, Lithium, FerriteCore, ModernFix, Krypton… – tylko te, których brakuje${(i.perfAdded || []).length ? ` • dodane: ${(i.perfAdded || []).length}` : ''}</span></div>
+          <label class="switch"><input type="checkbox" id="perfmods" ${perfOn(i) ? 'checked' : ''}><i></i></label></div>` : ''}
+        ${i.pack && (i.pack.blocked || []).length ? `<div class="setting"><div class="col"><b>Pliki do pobrania ręcznie: ${i.pack.blocked.length}</b><span>Autorzy nie pozwalają pobierać ich spoza CurseForge</span></div><button class="btn sm" id="blocked">${icon('download')} Pobierz</button></div>` : ''}
         <div class="muted" style="font-size:12px;margin-top:6px">${i.loader === 'vanilla' ? 'Bez loadera modów' : `${loaderName(i.loader)} Loader: ${esc(i.loaderVersion || 'najnowszy stabilny')}`}</div>
       </div>
       <div class="card panel"><div class="section-title">${icon('edit')} Wygląd</div>
@@ -222,9 +342,18 @@ Pages.instance = (root, { id, tab: startTab }) => {
     $('#mp', page).appendChild(mp);
     $('#pack', page).onchange = async (e) => { await nore.instances.update(i.id, { perfPack: e.target.checked }); await App.refresh(); };
     if ($('#perfmods', page)) $('#perfmods', page).onchange = async (e) => {
-      await nore.instances.update(i.id, { perfMods: e.target.checked });
-      toast(e.target.checked ? 'Mody wydajności włączone' : 'Mody wydajności wyłączone', e.target.checked ? 'Pobiorą się przy następnym starcie' : 'Usuń je ręcznie z folderu mods, jeśli są już pobrane');
+      try {
+        if (e.target.checked) {
+          await nore.instances.update(i.id, { perfMods: true, perfAsked: true });
+          toast('Mody wydajności włączone', 'Brakujące mody pobiorą się przy następnym starcie (albo od razu: Ustawienia → Optymalizuj)');
+        } else {
+          const r = await nore.perf.remove(i.id);
+          toast('Mody wydajności wyłączone', r.removed.length ? `Usunięto: ${r.removed.join(', ')}` : 'Launcher nie dodawał tu żadnych plików');
+        }
+      } catch (err) { e.target.checked = !e.target.checked; errorToast(err); }
+      await App.refresh();
     };
+    if ($('#blocked', page)) $('#blocked', page).onclick = () => blockedFilesModal(i);
     $('#name', page).onchange = async (e) => { await nore.instances.update(i.id, { name: e.target.value.trim() || i.name }); await App.refresh(); };
     let color = i.color;
     $('#colors', page).innerHTML = INSTANCE_COLORS.map(([a, b], k) => `<button data-c="${k}" style="background:linear-gradient(135deg,${a},${b})"></button>`).join('');
@@ -354,12 +483,18 @@ Pages.instance = (root, { id, tab: startTab }) => {
   }
 
   function settingsTab(page, i) {
-    const maxMem = Math.max(4096, App.info.totalMemMb - 1024);
+    const maxMem = Math.max(4096, App.info.totalMemMb - 2048);
     page.innerHTML = `<div class="grid cols-2 stagger">
       <div class="card panel"><div class="section-title">${icon('cpu')} Pamięć i Java</div>
-        <div class="setting"><div class="col"><b>RAM dla tej instancji</b><span>0 = jak w ustawieniach launchera</span></div></div>
+        <div class="setting"><div class="col"><b>RAM dla tej instancji</b><span id="memhint">0 = automatycznie</span></div></div>
         <div class="row" style="padding-bottom:12px"><input type="range" class="slider" id="mem" min="0" max="${maxMem}" step="512" value="${i.memoryMb || 0}" style="flex:1"><div class="value-pill" id="memv"></div></div>
-        <div class="field"><label>Dodatkowe argumenty JVM</label><input class="input" id="jvm" value="${esc(i.jvmArgs || '')}" placeholder="np. -XX:+UseZGC"></div></div>
+        <div class="field"><label>Wydajność JVM</label><div id="ijvm"></div><div class="muted" style="font-size:12px;margin-top:6px" id="ijvmd"></div></div>
+        <div class="field"><label>Dodatkowe argumenty JVM</label><input class="input" id="jvm" value="${esc(i.jvmArgs || '')}" placeholder="np. -XX:+UseZGC"><div class="muted" style="font-size:12px;margin-top:6px">Twoje argumenty mają pierwszeństwo przed ustawieniami launchera (np. własne -Xmx albo GC).</div></div></div>
+      <div class="card panel"><div class="section-title">${icon('zap')} Wydajność</div>
+        ${isModded(i) ? `<div class="setting"><div class="col"><b>Mody wydajności</b><span>${perfOn(i) ? `Włączone${(i.perfAdded || []).length ? ` • dodane przez launcher: ${(i.perfAdded || []).map(o => esc(o.slug)).join(', ')}` : ''}` : 'Wyłączone'}</span></div>
+          <button class="btn sm" id="optimize">${icon('zap')} Optymalizuj</button></div>
+          ${(i.perfAdded || []).length ? `<div class="setting"><div class="col"><b>Usuń mody dodane przez launcher</b><span>Pliki paczki zostają nietknięte</span></div><button class="btn ghost sm" id="perfrm">${icon('trash')} Usuń</button></div>` : ''}` : '<div class="muted" style="font-size:13px;margin:6px 0 10px">Mody wydajności wymagają loadera (Fabric, Quilt, Forge, NeoForge).</div>'}
+        <div class="field" style="margin-top:8px"><label>Profil grafiki</label><div id="oprof"></div><div class="muted" style="font-size:12px;margin-top:6px" id="oprofd"></div></div></div>
       <div class="card panel"><div class="section-title">${icon('monitor')} Okno i serwer</div>
         <div class="setting"><div class="col"><b>Rozdzielczość</b><span>0 = domyślna</span></div>
           <input class="input" id="w" value="${i.width || 0}" style="width:80px"> × <input class="input" id="h" value="${i.height || 0}" style="width:80px"></div>
@@ -367,8 +502,35 @@ Pages.instance = (root, { id, tab: startTab }) => {
     </div>`;
     stagger($('.grid', page));
     const r = $('#mem', page);
-    const upd = () => { $('#memv', page).textContent = +r.value ? (r.value / 1024).toFixed(1) + ' GB' : 'Domyślnie'; sliderFill(r); };
+    let memInfo = null;
+    const upd = () => {
+      const auto = memInfo ? ` (${(memInfo.autoMb / 1024).toFixed(1)} GB)` : '';
+      const glob = App.state.settings.memoryMb;
+      $('#memv', page).textContent = +r.value ? (r.value / 1024).toFixed(1) + ' GB' : glob ? `Jak launcher (${(glob / 1024).toFixed(1)} GB)` : 'Automatycznie' + auto;
+      sliderFill(r);
+    };
     r.oninput = upd; upd();
+    nore.instances.memoryInfo(i.id).then((mi) => {
+      memInfo = mi;
+      if (!alive || !$('#memhint', page)) return;
+      $('#memhint', page).textContent = `0 = ${App.state.settings.memoryMb ? 'jak w ustawieniach launchera' : 'automatycznie'} • mody: ${mi.mods} • automatycznie wyszłoby ${(mi.autoMb / 1024).toFixed(1)} GB (maks. ${(mi.maxMb / 1024).toFixed(1)} GB na tym komputerze)`;
+      upd();
+    }).catch(() => {});
+    const modes = [{ value: '', label: 'Jak w launcherze' }, ...JVM_MODES.map(({ value, label }) => ({ value, label }))];
+    const jdesc = (v) => { $('#ijvmd', page).textContent = v ? JVM_MODES.find(x => x.value === v).desc : `Ustawienie launchera: ${JVM_MODES.find(x => x.value === (App.state.settings.jvmMode || 'auto')).label}.`; };
+    $('#ijvm', page).appendChild(segmented(modes, i.jvmMode || '', (v) => { jdesc(v); save({ jvmMode: v }); }));
+    jdesc(i.jvmMode || '');
+    const pdesc = (v) => { $('#oprofd', page).textContent = PROFILE_DESC[v] + (v ? ' Zapisywane raz – zmiany w grze nie są potem nadpisywane.' : ''); };
+    $('#oprof', page).appendChild(segmented(OPTION_PROFILES, i.optionsProfile || '', async (v) => {
+      pdesc(v);
+      try { await nore.instances.optionsProfile(i.id, v); await App.refresh(); toast('Profil grafiki', OPTION_PROFILES.find(x => x.value === v).label, 'success', 1800); } catch (e) { errorToast(e); }
+    }));
+    pdesc(i.optionsProfile || '');
+    if ($('#optimize', page)) $('#optimize', page).onclick = async () => { if (await optimizeModal(inst())) renderTab(); };
+    if ($('#perfrm', page)) $('#perfrm', page).onclick = async () => {
+      if (!(await confirmModal('Usunąć mody wydajności?', 'Launcher usunie tylko pliki, które sam dodał, i wyłączy Mody wydajności w tej instancji.', { ok: 'Usuń', danger: true }))) return;
+      try { const res = await nore.perf.remove(i.id); toast('Usunięto', res.removed.join(', ') || 'Brak plików', 'success'); await App.refresh(); renderTab(); } catch (e) { errorToast(e); }
+    };
     const save = async (patch) => { await nore.instances.update(i.id, patch); await App.refresh(); toast('Zapisano', '', 'success', 1500); };
     r.onchange = () => save({ memoryMb: +r.value });
     $('#jvm', page).onchange = (e) => save({ jvmArgs: e.target.value.trim() });

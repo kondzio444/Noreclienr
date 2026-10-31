@@ -478,15 +478,26 @@ function microsoftLoginModal(done) {
 
 // ================================================================== SETTINGS
 
+/** Settings → Wydajność JVM (jvm.js). The player's own JVM arguments always win over these. */
+const JVM_MODES = [
+  { value: 'auto', label: 'Automatycznie', desc: 'Zalecane: zoptymalizowany G1 z krótkimi przerwami GC – mniej przycięć na serwerach. Twoje argumenty JVM mają pierwszeństwo.' },
+  { value: 'g1', label: 'G1 zoptymalizowany', desc: 'G1 dostrojony pod klienta (MaxGCPauseMillis, G1NewSizePercent, G1ReservePercent…). Działa na każdej Javie.' },
+  { value: 'zgc', label: 'ZGC', desc: 'Generational ZGC: prawie zerowe przerwy przy dużej ilości RAM. Wymaga Javy 21+ (Minecraft 1.20.5+), na starszej Javie użyje G1.' },
+  { value: 'custom', label: 'Własne', desc: 'Tylko pamięć i Twoje własne argumenty JVM – launcher nie dodaje flag GC.' },
+];
+
 Pages.settings = (root) => {
   const s = App.state.settings;
-  const maxMem = Math.max(4096, App.info.totalMemMb - 1024);
+  const maxMem = Math.max(4096, App.info.totalMemMb - 2048);
   root.innerHTML = `<div class="page-head"><div><h2>Ustawienia</h2><p>Wydajność, Java, okno gry, wygląd i zachowanie launchera.</p></div></div>
     <div class="grid cols-2 stagger settings-base">
       <div class="card panel">
         <div class="section-title">${icon('cpu')} Wydajność</div>
-        <div class="setting"><div class="col"><b>Pamięć RAM</b><span>Twój komputer: ${(App.info.totalMemMb / 1024).toFixed(1)} GB</span></div></div>
-        <div class="row" style="padding-bottom:12px"><input type="range" class="slider" id="mem" min="1024" max="${maxMem}" step="512" value="${s.memoryMb}" style="flex:1"><div class="value-pill" id="memv"></div></div>
+        <div class="setting"><div class="col"><b>Pamięć RAM</b><span>Twój komputer: ${(App.info.totalMemMb / 1024).toFixed(1)} GB • Automatycznie: vanilla 2 GB, małe paczki 3–4 GB, duże 6–8 GB (zawsze zostaje min. 2 GB dla systemu)</span></div></div>
+        <div class="row" style="padding-bottom:12px"><input type="range" class="slider" id="mem" min="0" max="${maxMem}" step="512" value="${s.memoryMb || 0}" style="flex:1"><div class="value-pill" id="memv"></div></div>
+        <div class="setting"><div class="col"><b>Wydajność JVM</b><span id="jvmdesc"></span></div></div>
+        <div class="row" style="padding-bottom:10px" id="jvmmode"></div>
+        <div class="setting"><div class="col"><b>Lżejszy launcher podczas gry</b><span>Wstrzymuje animacje i efekty launchera, rzadziej sprawdza aktualizacje i oddaje grze procesor</span></div><label class="switch"><input type="checkbox" id="quiet" ${s.lightWhilePlaying !== false ? 'checked' : ''}><i></i></label></div>
         <div class="setting"><div class="col"><b>Równoległe pobieranie</b><span>Liczba plików pobieranych jednocześnie</span></div>
           <input type="range" class="slider" id="conc" min="4" max="32" step="1" value="${s.concurrency}" style="width:140px"><div class="value-pill" id="concv"></div></div>
         <div class="setting"><div class="col"><b>Animacje</b><span>Pełne: naklejki przyklejają się sprężyście. Oszczędne: tylko przenikanie. Wyłączone: bez ruchu.</span></div></div>
@@ -529,10 +540,17 @@ Pages.settings = (root) => {
     </div>`;
   const save = async (patch) => { App.state.settings = await nore.setSettings(patch); };
   const mem = $('#mem', root), conc = $('#conc', root);
-  const upd = () => { $('#memv', root).textContent = (mem.value / 1024).toFixed(1) + ' GB'; $('#concv', root).textContent = conc.value; sliderFill(mem); sliderFill(conc); };
+  const upd = () => { $('#memv', root).textContent = +mem.value ? (mem.value / 1024).toFixed(1) + ' GB' : 'Automatycznie'; $('#concv', root).textContent = conc.value; sliderFill(mem); sliderFill(conc); };
   mem.oninput = conc.oninput = upd; upd();
   mem.onchange = () => save({ memoryMb: +mem.value });
   conc.onchange = () => save({ concurrency: +conc.value });
+  const jvmDesc = (v) => { $('#jvmdesc', root).textContent = JVM_MODES.find(x => x.value === v).desc; };
+  $('#jvmmode', root).appendChild(segmented(JVM_MODES.map(({ value, label }) => ({ value, label })), s.jvmMode || 'auto', (v) => {
+    jvmDesc(v);
+    save({ jvmMode: v }).then(() => toast('Wydajność JVM', JVM_MODES.find(x => x.value === v).label + ' – od następnego uruchomienia gry', 'success'));
+  }));
+  jvmDesc(s.jvmMode || 'auto');
+  $('#quiet', root).onchange = (e) => save({ lightWhilePlaying: e.target.checked });
   $('#anim', root).appendChild(segmented([{ value: 'full', label: 'Pełne' }, { value: 'reduced', label: 'Oszczędne' }, { value: 'off', label: 'Wyłączone' }], motionMode(s), async (v) => {
     await save({ motion: v, animations: v !== 'off' });
     applyMotionSetting(App.state.settings);
@@ -557,7 +575,7 @@ Pages.settings = (root) => {
     const st = await nore.update.check().catch(() => null);
     $('#updstate', root).textContent = updateText(st || App.update);
   };
-  $('#after', root).appendChild(segmented([{ value: 'hide', label: 'Ukryj' }, { value: 'keep', label: 'Zostaw' }, { value: 'close', label: 'Zamknij' }], s.afterLaunch, (v) => save({ afterLaunch: v })));
+  $('#after', root).appendChild(segmented([{ value: 'hide', label: 'Ukryj' }, { value: 'minimize', label: 'Minimalizuj' }, { value: 'keep', label: 'Zostaw' }, { value: 'close', label: 'Zamknij' }], s.afterLaunch, (v) => save({ afterLaunch: v })));
   $('#pickjava', root).onclick = async () => {
     const r = await nore.pickJava();
     if (!r) return;
