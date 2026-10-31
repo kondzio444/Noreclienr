@@ -19,7 +19,7 @@ const store = require('./store');
 const API = process.env.NORE_CF_API || 'https://api.curseforge.com';
 const PROXY = process.env.NORE_CF_PROXY || 'https://noreclient.pl/api/v1/cf';
 const GAME = 432; // Minecraft
-const CLASS = { mod: 6, modpack: 4471, resourcepack: 12, shader: 6552, datapack: 6945 };
+const CLASS = { mod: 6, modpack: 4471, resourcepack: 12, shader: 6552, datapack: 6945, plugin: 5 };
 const CLASS_KIND = Object.fromEntries(Object.entries(CLASS).map(([k, v]) => [v, k]));
 const LOADER_TYPE = { forge: 1, fabric: 4, quilt: 5, neoforge: 6 };
 const LOADER_NAME = { 1: 'forge', 4: 'fabric', 5: 'quilt', 6: 'neoforge' };
@@ -222,7 +222,7 @@ async function install({ projectId, kind, gameVersion, loader, targetDir, versio
   onStatus && onStatus(`Pobieranie ${file.fileName}`);
   await net.download(fileUrl(file), path.join(targetDir, file.fileName), { sha1: sha1Of(file), size: file.fileLength });
   const out = [file.fileName];
-  if (kind === 'mod') {
+  if (kind === 'mod' || kind === 'plugin') {
     for (const d of file.dependencies || []) {
       if (d.relationType !== 3) continue;
       if (await hasProject(targetDir, d.modId, ctx)) continue;
@@ -323,7 +323,7 @@ async function checkUpdates(dir, kind, gameVersion, loader, types = ['release', 
       const list = await files(info.projectId, { gameVersion, loader: kind === 'mod' ? loader : null });
       const best = list.find(f => types.includes(RELEASE[f.releaseType] || 'release') && (f.gameVersions || []).includes(gameVersion));
       if (!best || String(best.id) === info.versionId || Date.parse(best.fileDate) <= Date.parse((list.find(f => String(f.id) === info.versionId) || {}).fileDate || 0)) continue;
-      out.push({ oldFile: file, newFile: best.fileName, url: fileUrl(best), sha1: sha1Of(best), size: best.fileLength, version: best.displayName, type: RELEASE[best.releaseType], projectId: info.projectId, source: 'curseforge' });
+      out.push({ oldFile: file, newFile: best.fileName, url: fileUrl(best), sha1: sha1Of(best), size: best.fileLength, version: best.displayName, type: RELEASE[best.releaseType], projectId: info.projectId, versionId: String(best.id), source: 'curseforge' });
     } catch { /* project gone */ }
   }
   return out;
@@ -532,7 +532,25 @@ async function downloadPack(projectId, fileId, cacheDir) {
   };
 }
 
+/** Changelog of a file as plain text (CurseForge returns HTML). */
+async function changelog(projectId, fileId) {
+  const j = await call(`/v1/mods/${rawId(projectId)}/files/${Number(fileId)}/changelog`).catch(() => ({ data: '' }));
+  return htmlToText(j.data || '');
+}
+
+function htmlToText(html) {
+  return String(html).replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|li|h\d)>/gi, '\n').replace(/<li[^>]*>/gi, '• ').replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n').trim();
+}
+
+/** One file record (raw API shape). */
+async function fileInfo(projectId, fileId) {
+  return (await call(`/v1/mods/${rawId(projectId)}/files/${Number(fileId)}`)).data;
+}
+
 module.exports = {
+  changelog, htmlToText, fileInfo, fileUrl, sha1Of, call, RELEASE, isMcVersion,
   CLASS, isCf, rawId, available, testKey, setKey, NoKeyError, search, categories, details, project, files, install,
   fingerprint, identify, checkUpdates, readManifest, loaderOf, installPackInto, downloadPack, websiteDownload, guessFolder,
   toIndex, packVersions, encrypt, key, manifestTasks, serverOnly,

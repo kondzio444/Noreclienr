@@ -254,7 +254,7 @@ async function identify(dir, exts) {
     const p = pmap[v.project_id] || {};
     out[byHash[hash]] = {
       projectId: v.project_id, version: v.version_number, versionId: v.id, title: p.title, icon: p.icon_url, slug: p.slug, description: p.description,
-      gameVersions: v.game_versions || [], loaders: v.loaders || [],
+      gameVersions: v.game_versions || [], loaders: v.loaders || [], clientSide: p.client_side || null, serverSide: p.server_side || null, source: 'modrinth',
     };
   }
   return out;
