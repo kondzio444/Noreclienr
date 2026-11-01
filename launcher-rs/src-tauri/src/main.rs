@@ -7,6 +7,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod cleanup;
 mod splash;
 mod updater;
 
@@ -239,7 +240,10 @@ fn main() {
                 if let Err(e) = open_main(&h2) {
                     log::error!("Nie udało się otworzyć okna launchera: {e}");
                     h2.exit(1);
+                    return;
                 }
+                // after the move from the Electron launcher: offer once to remove it (Windows)
+                cleanup::offer(h2.clone(), c2.clone());
             });
             core.start_background();
             updater.schedule();

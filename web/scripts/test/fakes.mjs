@@ -19,11 +19,20 @@ export const RELEASES = [
       asset(1, 'NoreLauncher-Setup-1.5.0.exe', 90_000_000, 120),
       asset(2, 'NoreLauncher-1.5.0.AppImage', 110_000_000, 30),
       asset(3, 'NoreLauncher-1.5.0.dmg', 100_000_000, 15),
-      asset(4, 'NoreLauncher-1.5.0-mac.zip', 99_000_000, 5),
+      // the Tauri launcher's macOS update archive (in Electron-era releases: NoreLauncher-1.5.0-mac.zip)
+      asset(4, 'NoreLauncher-1.5.0.app.tar.gz', 99_000_000, 5),
       asset(5, 'noreclient-fabric-1.21.8.jar', 2_000_000, 40),
-      // electron-updater feed files (no downloads, so API v1 counters are unchanged)
+      // electron-updater feed files of the Electron bridge (no downloads, so API v1 counters are unchanged)
       asset(6, 'latest.yml', 350, 0),
-      asset(7, 'NoreLauncher-Setup-1.5.0.exe.blockmap', 90_000, 0),
+      asset(7, 'NoreLauncher-Bridge-Setup-1.5.0.exe.blockmap', 90_000, 0),
+      // since the move to the Rust launcher: the Electron bridge build, the .deb, minisign signatures and the Tauri feed
+      asset(20, 'NoreLauncher-Bridge-Setup-1.5.0.exe', 95_000_000, 0),
+      asset(21, 'NoreLauncher-Bridge-1.5.0.AppImage', 115_000_000, 0),
+      asset(22, 'NoreLauncher-Bridge-1.5.0-mac.zip', 98_000_000, 0),
+      asset(23, 'NoreLauncher-1.5.0_amd64.deb', 60_000_000, 0),
+      asset(24, 'NoreLauncher-Setup-1.5.0.exe.sig', 420, 0),
+      asset(25, 'NoreLauncher-1.5.0_amd64.deb.sig', 420, 0),
+      asset(26, 'latest.json', 1200, 0),
     ],
   },
   { tag_name: 'v1.6.0-beta.1', name: 'draft', draft: true, prerelease: true, published_at: null, body: '', html_url: '', assets: [] },
@@ -34,7 +43,17 @@ export const RELEASES = [
   },
 ];
 
-export const LATEST_YML = 'version: 1.5.0\nfiles:\n  - url: NoreLauncher-Setup-1.5.0.exe\n    sha512: abc\n    size: 90000000\npath: NoreLauncher-Setup-1.5.0.exe\nsha512: abc\nreleaseDate: 2026-10-20T12:00:00.000Z\n';
+export const LATEST_YML = 'version: 1.5.0\nfiles:\n  - url: NoreLauncher-Bridge-Setup-1.5.0.exe\n    sha512: abc\n    size: 95000000\npath: NoreLauncher-Bridge-Setup-1.5.0.exe\nsha512: abc\nreleaseDate: 2026-10-20T12:00:00.000Z\n';
+
+const GH = 'https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/';
+/** latest.json of the Tauri updater in release 1.5.0 (launcher-rs/scripts/latest-json.js). */
+export const LATEST_JSON = JSON.stringify({
+  version: '1.5.0', notes: 'Nowości w 1.5.0', pub_date: '2026-10-20T12:00:00Z',
+  platforms: {
+    'windows-x86_64': { signature: 'c2lnLXdpbg==', url: GH + 'NoreLauncher-Setup-1.5.0.exe', size: 90000000, sha256: '1'.padStart(64, '0') },
+    'linux-x86_64-deb': { signature: 'c2lnLWRlYg==', url: GH + 'NoreLauncher-1.5.0_amd64.deb', size: 60000000, sha256: '23'.padStart(64, '0') },
+  },
+});
 
 export const DISCORD_USERS = {
   'code-alice': { token: 'tok-alice', user: { id: '111111111111111111', username: 'alice', global_name: 'Alice', avatar: 'abc' } },
@@ -129,6 +148,7 @@ export function startHttpFakes(port) {
         const a = RELEASES.flatMap(r => r.assets).find(x => String(x.id) === am[1]);
         if (!a || req.headers.accept !== 'application/octet-stream') return send(res, 404, { message: 'Not Found' });
         if (a.name.endsWith('.yml')) { res.writeHead(200, { 'Content-Type': 'application/octet-stream' }); return res.end(LATEST_YML); }
+        if (a.name === 'latest.json') { res.writeHead(200, { 'Content-Type': 'application/octet-stream' }); return res.end(LATEST_JSON); }
         res.writeHead(302, { Location: `https://objects.githubusercontent.example/signed/${a.id}/${a.name}?sig=x` }); return res.end();
       }
       if (gh === '') return send(res, 200, { full_name: 'kondzio444/Noreclienr', private: false, default_branch: 'main', html_url: 'https://github.com/kondzio444/Noreclienr', pushed_at: '2026-10-29T10:00:00Z', open_issues_count: 3, stargazers_count: 42 });

@@ -2,10 +2,10 @@
   "name": "nore-launcher-rs",
   "private": true,
   "version": "1.4.5",
-  "description": "Nore Launcher w Rust (Tauri) – faza 1, nie jest jeszcze wydawany.",
+  "description": "Nore Launcher (Rust / Tauri) – wydawany launcher Nore.",
   "license": "Apache-2.0",
   "scripts": {
-    "test": "node --test compat/compat.test.js",
+    "test": "node --test compat/compat.test.js scripts/latest-json.test.js",
     "tauri": "tauri",
     "dev": "tauri dev",
     "build": "tauri build"

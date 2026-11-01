@@ -56,8 +56,51 @@
     body.classList.add('opened');
   }
 
+  /** The one-time move to the new (Rust) Nore Launcher – launcher/src/main/migrate.js. */
+  function renderMigrate(s) {
+    $('skip').textContent = s.state === 'migrate-manual' ? 'Zamknij' : 'Później';
+    $('close').hidden = !s.canPostpone;
+    switch (s.state) {
+      case 'migrate':
+        mode(); buttons({ skip: s.canPostpone }); next(s.next); progress(0); title('Nowy Nore Launcher');
+        status('Przenosimy Nore Launcher na nową, szybszą wersję…', 'wait'); meta();
+        $('hint').textContent = 'Konta, instancje i ustawienia zostają';
+        break;
+      case 'downloading': {
+        mode('progress'); progress(s.percent); buttons({ skip: s.canPostpone }); next(s.next); title('Nowy Nore Launcher');
+        status('Pobieram nowy Nore Launcher', 'wait');
+        const left = s.speed && s.size && s.bytes != null ? (s.size - s.bytes) / s.speed : null;
+        meta(s.size && s.bytes != null ? `${mb(s.bytes)} z ${mb(s.size)}` : `${Math.round(s.percent || 0)}%`, s.speed ? `${mb(s.speed)}/s${left != null ? ' · ' + secs(left) : ''}` : '');
+        $('hint').textContent = 'Potem sprawdzę podpis i sumę SHA-256';
+        break;
+      }
+      case 'verifying':
+        mode('progress'); progress(100); buttons(); next(s.next);
+        status('Sprawdzam podpis i sumę SHA-256…', 'wait'); meta();
+        break;
+      case 'installing':
+        mode('progress', 'done'); buttons(); next(s.next);
+        open(s.next, 'Przenoszę');
+        status('Nowy launcher uruchomi się za chwilę', 'ready'); meta();
+        $('hint').textContent = 'Twoje dane zostają na miejscu';
+        break;
+      case 'migrate-manual':
+        mode('done'); buttons({ skip: true }); next(s.next); title('Jeszcze jeden krok');
+        status(s.platform === 'mac' ? 'Przeciągnij Nore Launcher z otwartego okna do Aplikacji' : 'Pobierz nowy Nore Launcher (AppImage lub .deb) z noreclient.pl', 'ready'); meta();
+        $('hint').textContent = 'noreclient.pl';
+        break;
+      case 'migrate-error':
+        mode('error'); buttons(); next(null);
+        status('Nie udało się teraz – spróbuję przy następnym uruchomieniu', 'error'); meta(s.message ? String(s.message).slice(0, 60) : '');
+        break;
+      default:
+        break;
+    }
+  }
+
   function render(s) {
     if (s.version) $('ver').textContent = s.version;
+    if (s.migrate) { renderMigrate(s); return; }
     switch (s.state) {
       case 'checking':
       case 'idle':

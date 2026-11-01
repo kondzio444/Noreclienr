@@ -8,7 +8,7 @@
   const { $, $$, api, esc, num, plural, reduced } = N;
 
   // ------------------------------------------------------------------ download: the visitor's system, counted redirects (API v2)
-  const OS_LABEL = { win: 'Windows', linux: 'Linux', mac: 'macOS', 'mac-zip': 'macOS (ZIP)' };
+  const OS_LABEL = { win: 'Windows', linux: 'Linux', 'linux-deb': 'Linux (.deb)', mac: 'macOS', 'mac-zip': 'macOS (archiwum)' };
   const ua = navigator.userAgent;
   const os = /Mac/.test(ua) && !/iPhone|iPad/.test(ua) ? 'mac' : /Linux/.test(ua) && !/Android/.test(ua) ? 'linux' : 'win';
   const heroBtn = $('#dl-hero');

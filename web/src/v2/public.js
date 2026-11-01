@@ -10,8 +10,11 @@ import { botStore } from './store.js';
 import { counters } from './counters.js';
 import { SCHEMA } from './bot.js';
 
-export const PLATFORM_IDS = { win: 'win', linux: 'linux', mac: 'mac', 'mac-zip': 'macZip' };
-const PLATFORM_NAMES = { win: 'Windows', linux: 'Linux (AppImage)', mac: 'macOS (DMG)', 'mac-zip': 'macOS (ZIP)' };
+/** Download id → installer key of a release (`assets`, or `extra` for files API v1 does not list). */
+export const PLATFORM_IDS = { win: 'win', linux: 'linux', 'linux-deb': 'deb', mac: 'mac', 'mac-zip': 'macZip' };
+const PLATFORM_NAMES = { win: 'Windows', linux: 'Linux (AppImage)', 'linux-deb': 'Linux (.deb)', mac: 'macOS (DMG)', 'mac-zip': 'macOS (archiwum)' };
+/** The installer of a release for a download id, or undefined. */
+const platformAsset = (r, id) => (r.assets || {})[PLATFORM_IDS[id]] || (r.extra || {})[PLATFORM_IDS[id]];
 const NAME = /^[A-Za-z0-9_]{2,16}$/;
 
 /** Runs `p` with a time limit; resolves to { ok, value | error, ms }. */
@@ -106,10 +109,10 @@ async function clickCounts(env) {
 export async function downloads(env, ctx) {
   const [{ data, state }, clicks] = await Promise.all([releases(env, ctx), clickCounts(env)]);
   const latest = data[0];
-  const github = { win: 0, linux: 0, mac: 0, 'mac-zip': 0 };
-  for (const r of data) for (const [id, k] of Object.entries(PLATFORM_IDS)) if (r.assets[k]) github[id] += r.assets[k].downloads;
-  const platforms = Object.entries(PLATFORM_IDS).map(([id, k]) => {
-    const a = latest.assets[k];
+  const github = Object.fromEntries(Object.keys(PLATFORM_IDS).map(id => [id, 0]));
+  for (const r of data) for (const id of Object.keys(PLATFORM_IDS)) { const a = platformAsset(r, id); if (a) github[id] += a.downloads; }
+  const platforms = Object.keys(PLATFORM_IDS).map((id) => {
+    const a = platformAsset(latest, id);
     return {
       id, name: PLATFORM_NAMES[id], available: !!a, href: `/api/v2/downloads/${id}`,
       file: a ? a.name : null, size: a ? a.size : null, digest: a ? a.digest : null, url: a ? a.url : null,
@@ -131,7 +134,7 @@ export async function downloads(env, ctx) {
 /** 302 to the installer; counts the click in the background. */
 export async function downloadRedirect(request, env, ctx, id) {
   const { data } = await releases(env, ctx);
-  const a = data[0].assets[PLATFORM_IDS[id]];
+  const a = platformAsset(data[0], id);
   if (!a) throw new ApiError(404, 'no_file', `Najnowsze wydanie nie ma pliku dla ${PLATFORM_NAMES[id]}`);
   const c = counters(env);
   if (c && request.method === 'GET') ctx.waitUntil(c.hit(['download', `download:${id}`]).catch(() => {}));
@@ -225,6 +228,7 @@ export async function stats(env, ctx) {
     for (const r of rel) {
       d.total += r.downloads;
       for (const k of ['win', 'linux', 'mac']) if (r.assets[k]) d[k] += r.assets[k].downloads;
+      if (r.extra && r.extra.deb) d.linux += r.extra.deb.downloads;
       if (r.assets.macZip) d.mac += r.assets.macZip.downloads;
       for (const m of r.mods) d.mods += m.downloads;
     }
@@ -234,7 +238,7 @@ export async function stats(env, ctx) {
     releases: rel ? rel.length : null,
     latest: rel && rel[0] ? { version: rel[0].version, downloads: rel[0].downloads } : null,
     downloads: downloadsOut,
-    redirects: clicks ? { total: clicks.totals.download || 0, win: clicks.totals['download:win'] || 0, linux: clicks.totals['download:linux'] || 0, mac: clicks.totals['download:mac'] || 0, 'mac-zip': clicks.totals['download:mac-zip'] || 0, daily: clicks.daily } : null,
+    redirects: clicks ? { total: clicks.totals.download || 0, win: clicks.totals['download:win'] || 0, linux: clicks.totals['download:linux'] || 0, 'linux-deb': clicks.totals['download:linux-deb'] || 0, mac: clicks.totals['download:mac'] || 0, 'mac-zip': clicks.totals['download:mac-zip'] || 0, daily: clicks.daily } : null,
     hub: hub.ok ? hub.value : null,
     online: hub.ok ? hub.value.online : null,
     known: hub.ok ? hub.value.known : null,

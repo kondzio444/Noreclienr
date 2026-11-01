@@ -47,11 +47,23 @@
     "resources": {
       "../../launcher/resources/mods/": "nore/mods/"
     },
-    "licenseFile": "../../launcher/build/license.txt"
+    "licenseFile": "../../launcher/build/license.txt",
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "deb": {
+        "section": "games"
+      },
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    }
   },
   "plugins": {
     "updater": {
-      "pubkey": "",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyRkQyNDgwREFCQTFEODUKUldTRkhicmFnQ1Q5MGh1ODR4UFBSU29aREQySUxqVmZVcTNLMXhGZDVHMk1UdU4wN2pOSDhZWFMK",
       "endpoints": [
         "https://noreclient.pl/api/v2/updates/feed/latest.json"
       ],

@@ -30,6 +30,7 @@ const net = require('./net');
 const servers = require('./servers');
 const discord = require('./discord');
 const updater = require('./updater');
+const migrate = require('./migrate');
 const serverContent = require('./server-content');
 const serverNet = require('./server-net');
 const serverTunnel = require('./server-tunnel');
@@ -237,8 +238,38 @@ function runSplash() {
   });
 }
 
+// ------------------------------------------------------------------ move to the new launcher (Rust / Tauri)
+
+/** The Nore Updater window in "migrate" mode for migrate.js: post(state), onSkip(fn), close(). */
+function migrateWindow() {
+  const w = new BrowserWindow({
+    width: 400, height: 480, frame: false, resizable: false, maximizable: false, fullscreenable: false,
+    show: false, center: true, backgroundColor: '#291c3d', title: 'Nore Updater',
+    icon: nativeImage.createFromPath(ICON),
+    webPreferences: { preload: path.join(__dirname, '..', 'updater-preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+  });
+  w.webContents.on('will-navigate', (e) => e.preventDefault());
+  w.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  w.loadFile(path.join(__dirname, '..', 'renderer', 'updater.html'));
+  let last = null;
+  let skip = () => {};
+  const onSkip = (e) => { if (!w.isDestroyed() && e.sender === w.webContents) skip(); };
+  ipcMain.on('splash:skip', onSkip);
+  const ready = new Promise((resolve) => { setTimeout(resolve, 5000); w.once('ready-to-show', () => { w.show(); if (last) w.webContents.send('splash:state', last); setTimeout(resolve, 900); }); });
+  const waitClosed = new Promise((resolve) => w.once('closed', () => { ipcMain.removeListener('splash:skip', onSkip); resolve(); }));
+  return {
+    ready, waitClosed,
+    post: (st) => { last = { version: app.getVersion(), ...st }; if (!w.isDestroyed()) w.webContents.send('splash:state', last); },
+    onSkip: (fn) => { skip = fn; },
+    close: () => { if (!w.isDestroyed()) w.destroy(); },
+  };
+}
+
 app.whenReady().then(async () => {
   store.load();
+  // the one-time move to the Rust launcher: when it took over, this launcher only quits (data stays)
+  const movedOn = await migrate.maybeMigrate({ app, store, shell, paths, openWindow: migrateWindow }).catch(() => false);
+  if (movedOn) { app.quit(); return; }
   // the friends voice chat needs the microphone; nothing else may ask for devices
   session.defaultSession.setPermissionRequestHandler((wc, permission, done, details) => {
     if (permission === 'notifications') return done(true);

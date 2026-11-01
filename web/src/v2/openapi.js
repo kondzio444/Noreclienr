@@ -82,11 +82,11 @@ export function openapi() {
         tags: ['public'], summary: 'Pliki najnowszego wydania i liczniki',
         responses: { 200: ok('Pobrania', {
           version: s, published: s, prerelease: b, mods: arr(ref('Asset')),
-          platforms: arr(obj({ id: { enum: ['win', 'linux', 'mac', 'mac-zip'] }, name: s, available: b, href: s, file: ns, size: ni, digest: ns, url: ns, downloads: obj({ latest: i, allReleases: i, redirects: ni }) })),
+          platforms: arr(obj({ id: { enum: ['win', 'linux', 'linux-deb', 'mac', 'mac-zip'] }, name: s, available: b, href: s, file: ns, size: ni, digest: ns, url: ns, downloads: obj({ latest: i, allReleases: i, redirects: ni }) })),
           totals: obj({ github: i, redirects: ni }), daily: { type: ['array', 'null'], items: obj({ day: s, n: i }) }, note: s,
         }), ...NOT_MODIFIED, ...pick(404, 502) },
       } },
-      '/api/v2/downloads/{platform}': { get: { tags: ['public'], summary: 'Przekierowanie do instalatora (liczone)', parameters: [p('platform', { enum: ['win', 'linux', 'mac', 'mac-zip'] })], responses: { 302: { description: 'Do pliku w GitHub Releases' }, ...pick(404, 502) } } },
+      '/api/v2/downloads/{platform}': { get: { tags: ['public'], summary: 'Przekierowanie do instalatora (liczone)', parameters: [p('platform', { enum: ['win', 'linux', 'linux-deb', 'mac', 'mac-zip'] })], responses: { 302: { description: 'Do pliku w GitHub Releases' }, ...pick(404, 502) } } },
       '/api/v2/events': { get: {
         tags: ['public'], summary: 'Wydarzenia z odliczaniem',
         responses: { 200: ok('Wydarzenia', { now: s, active: arr(s), flags: obj({ halloween: b, winter: b }), next: { type: ['object', 'null'], properties: { id: s, countdown: ref('Countdown') } }, events: arr(ref('Event')) }), ...NOT_MODIFIED },
@@ -189,7 +189,7 @@ function adminPaths() {
     '/api/v2/client/config': { get: { tags: ['public'], summary: 'Ustawienia z serwera dla launchera i moda', parameters: [target(['launcher', 'mod'])], responses: { 200: ok('Ustawienia', { target: s, maintenance: obj({ enabled: b, message: s }), minLauncherVersion: ns, latestLauncherVersion: ns, killSwitch: obj({ modules: arr(s) }), features: { type: 'object', additionalProperties: b }, announcements: arr(announcement) }), ...pick(400) } } },
     '/api/v2/blacklist/check': { get: { tags: ['public'], summary: 'Czy ktoś jest na czarnej liście', parameters: [q('name', s), q('uuid', s), q('noreId', s), q('discord', s)], responses: { 200: ok('Wynik', { blocked: b, matches: arr(obj({ kind: s, reason: s, expires: ns })) }), ...pick(400) } } },
     '/api/v2/files/{version}/{name}': { get: { tags: ['public'], summary: 'Plik wydania (302; przy prywatnym repozytorium podpisany link GitHub)', parameters: [p('version', s), p('name', s)], responses: { 302: { description: 'Do pliku' }, ...pick(404, 502) } } },
-    '/api/v2/updates/feed/{name}': { get: { tags: ['public'], summary: 'Kanał electron-updater (generic): latest*.yml jako tekst, pliki jako 302', parameters: [p('name', s)], responses: { 200: { description: 'latest.yml' }, 302: { description: 'Do pliku' }, ...pick(404, 502) } } },
+    '/api/v2/updates/feed/{name}': { get: { tags: ['public'], summary: 'Kanały aktualizacji: latest.json (Tauri updater) i latest*.yml (electron-updater) jako tekst, pliki jako 302', parameters: [p('name', s)], responses: { 200: { description: 'latest.json / latest.yml' }, 204: { description: 'Brak latest.json w wydaniach (Tauri: brak aktualizacji)' }, 302: { description: 'Do pliku' }, ...pick(404, 502) } } },
     '/api/v2/bot/admin': { get: { tags: ['bot'], security: botSec, summary: 'Czarna lista (Discord), oczekujące akcje i ogłoszenia dla Discorda', responses: { 200: ok('Dane', { blacklist: obj({ discord: arr(s) }), actions: arr({ type: 'object' }), announcements: arr(announcement) }), ...pick(401, 503) } } },
     '/api/v2/bot/actions/{id}': { post: { tags: ['bot'], security: botSec, summary: 'Bot zgłasza wykonanie akcji', parameters: [p('id', i)], requestBody: { required: true, content: { 'application/json': { schema: obj({ ok: b, result: {} }, ['ok']) } } }, responses: { 200: ok('Zapisano', { action: { type: 'object' } }), ...pick(400, 401, 404, 409) } } },
     '/api/v2/admin/me': a('Kto jest zalogowany i co jest skonfigurowane'),
