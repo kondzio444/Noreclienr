@@ -18,7 +18,7 @@ import * as domains from './domains.js';
 /** Admin handlers answer a body, or { status, body } for 201. */
 const adminOut = (r) => (r && typeof r === 'object' && 'status' in r && 'body' in r ? { status: r.status, body: r.body, priv: true } : { body: r, priv: true });
 
-const PLATFORM = '(win|linux|mac|mac-zip)';
+const PLATFORM = '(win|linux|linux-deb|mac|mac-zip)';
 
 /** [methods, regexp, kind, handler(ctx) → { body, maxAge, swr, state, status, headers } | Response] */
 const ROUTES = [
@@ -71,7 +71,7 @@ export const ENDPOINTS_V2 = [
   ['GET', '/api/v2/releases/latest', 'Najnowsze wydanie'],
   ['GET', '/api/v2/releases/{version}', 'Jedno wydanie'],
   ['GET', '/api/v2/downloads', 'Pliki do pobrania na każdą platformę i liczniki'],
-  ['GET', '/api/v2/downloads/{win|linux|mac|mac-zip}', 'Przekierowanie do instalatora (liczone)'],
+  ['GET', '/api/v2/downloads/{win|linux|linux-deb|mac|mac-zip}', 'Przekierowanie do instalatora (liczone)'],
   ['GET', '/api/v2/events', 'Wydarzenia z odliczaniem (Halloween, zima)'],
   ['GET', '/api/v2/news?limit=20&tag=Launcher', 'Aktualności'],
   ['GET', '/api/v2/platforms', 'Obsługiwane wersje Minecraft, loadery i platformy'],
@@ -86,7 +86,8 @@ export const ENDPOINTS_V2 = [
   ['GET', '/api/v2/client/config?target=launcher', 'Ustawienia z serwera dla launchera i moda: przerwa techniczna, minimalna wersja, wyłączone moduły, ogłoszenia'],
   ['GET', '/api/v2/blacklist/check?name=Steve', 'Czy gracz / Nore ID / konto Discord jest na czarnej liście'],
   ['GET', '/api/v2/files/{version}/{name}', 'Plik wydania (przekierowanie, działa też przy prywatnym repozytorium)'],
-  ['GET', '/api/v2/updates/feed/latest.yml', 'Kanał aktualizacji launchera dla electron-updater (generic)'],
+  ['GET', '/api/v2/updates/feed/latest.json', 'Kanał aktualizacji Nore Launcher (Tauri updater)'],
+  ['GET', '/api/v2/updates/feed/latest.yml', 'Kanał aktualizacji starego launchera (electron-updater, most do nowego)'],
   ['GET', '/api/v2/domains', 'Domeny Nore (nazwa.noreclient.pl): zasady, limity, czy usługa działa'],
   ['GET', '/api/v2/domains/{name}', 'Domeny Nore: czy nazwa jest wolna + dokąd wskazuje zajęta'],
   ['POST', '/api/v2/domains/{name}', 'Domeny Nore: załóż nazwę (podpis Nore ID)'],

@@ -67,21 +67,21 @@ export async function fetchReleases(env) {
   const out = list.filter(r => !r.draft).map(shapeRelease);
   if (privateReleases(env)) {
     for (const r of out) {
-      for (const a of [...Object.values(r.assets), ...r.mods]) a.url = fileUrl(env, r.version, a.name);
+      for (const a of [...Object.values(r.assets), ...Object.values(r.extra), ...r.mods]) a.url = fileUrl(env, r.version, a.name);
     }
   }
   return out;
 }
 
-/** Every file of a release (also latest.yml, blockmaps) – kept beside the release, not shown in API v1. */
+/** Every file of a release (also latest.yml, blockmaps, .sig) – kept beside the release, not shown in API v1. */
 function releaseFiles(r) {
-  return (r.assets || []).map(a => ({ id: a.id, name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null }));
+  return (r.assets || []).map(a => ({ id: a.id, name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 }));
 }
 
-/** A release as API v1 shows it (without the internal file list). */
+/** A release as API v1 shows it (without the internal file list and the extra installers). */
 export function v1Release(r) {
-  if (!r || !r.files) return r;
-  const { files, ...rest } = r;
+  if (!r || (!r.files && !r.extra)) return r;
+  const { files, extra, ...rest } = r;
   return rest;
 }
 
@@ -106,12 +106,32 @@ export async function assetText(env, file) {
   return res.text();
 }
 
+/**
+ * The installer of each platform in a release, in order of preference. Since the move to the Rust
+ * launcher the release's installers are the Tauri ones (NoreLauncher-Setup-<v>.exe, NoreLauncher-<v>.AppImage
+ * / _amd64.deb, NoreLauncher-<v>.dmg / .app.tar.gz); the Electron build of the same release is only the
+ * bridge for old installs (NoreLauncher-Bridge-…) and is offered only when a release has no Tauri file
+ * for that platform. Older releases (Electron only) used the same names without "Bridge".
+ */
 export const ASSET_PATTERNS = {
-  win: /NoreLauncher-Setup-.*\.exe$/i,
-  linux: /NoreLauncher-.*\.AppImage$/i,
-  mac: /NoreLauncher-.*\.dmg$/i,
-  macZip: /NoreLauncher-.*-mac\.zip$|NoreLauncher-.*\.zip$/i,
+  win: [/^NoreLauncher-Setup-.*\.exe$/i, /^NoreLauncher-Bridge-Setup-.*\.exe$/i],
+  linux: [/^NoreLauncher-(?!Bridge-).*\.AppImage$/i, /^NoreLauncher-Bridge-.*\.AppImage$/i],
+  mac: [/^NoreLauncher-(?!Bridge-).*\.dmg$/i, /^NoreLauncher-Bridge-.*\.dmg$/i],
+  macZip: [/^NoreLauncher-(?!Bridge-).*\.app\.tar\.gz$/i, /^NoreLauncher-(?!Bridge-).*\.zip$/i, /^NoreLauncher-Bridge-.*\.zip$/i],
 };
+/** Installers outside API v1's `assets` (its shape stays as it was): the Debian package of the Tauri launcher. */
+export const EXTRA_PATTERNS = {
+  deb: [/^NoreLauncher-(?!Bridge-).*\.deb$/i],
+};
+
+const assetView = (a) => ({ name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 });
+function pick(list, patterns) {
+  for (const re of patterns) {
+    const a = list.find(x => re.test(x.name));
+    if (a) return a;
+  }
+  return null;
+}
 
 export function cmpVersion(a, b) {
   const pa = String(a).replace(/^v/, '').split(/[.-]/).map(n => parseInt(n, 10) || 0);
@@ -123,13 +143,17 @@ export function cmpVersion(a, b) {
 }
 
 export function shapeRelease(r) {
+  const list = r.assets || [];
+  const downloads = list.reduce((n, a) => n + (a.download_count || 0), 0);
   const assets = {};
-  let downloads = 0;
-  for (const a of r.assets || []) {
-    downloads += a.download_count || 0;
-    for (const [k, re] of Object.entries(ASSET_PATTERNS)) {
-      if (!assets[k] && re.test(a.name)) assets[k] = { name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 };
-    }
+  for (const [k, patterns] of Object.entries(ASSET_PATTERNS)) {
+    const a = pick(list, patterns);
+    if (a) assets[k] = assetView(a);
+  }
+  const extra = {};
+  for (const [k, patterns] of Object.entries(EXTRA_PATTERNS)) {
+    const a = pick(list, patterns);
+    if (a) extra[k] = assetView(a);
   }
   const mods = (r.assets || []).filter(a => /^noreclient-.*\.jar$/i.test(a.name))
     .map(a => ({ name: a.name, size: a.size, url: a.browser_download_url, digest: a.digest || null, downloads: a.download_count || 0 }));
@@ -143,6 +167,7 @@ export function shapeRelease(r) {
     downloads,
     assets,
     mods,
+    extra,
     files: releaseFiles(r),
   };
 }

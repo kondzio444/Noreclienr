@@ -108,6 +108,14 @@ private: set `GITHUB_TOKEN` (fine-grained, *Contents: read* on the repository) a
   release: `latest.yml`, `latest-linux.yml`, `latest-mac.yml` as text, installers and blockmaps as
   302. Nore Launcher 1.5+ uses this feed (`launcher/src/main/updater.js`) and keeps its own
   fallback (Nore API → installer download with SHA-256 check).
+* `GET /api/v2/updates/feed/latest.json` is the Tauri updater feed of the Rust launcher
+  (`launcher-rs/`): the `latest.json` of the newest stable release that has one, as JSON (204 when
+  no release has one – the updater reports "no update"). With private releases its installer links
+  are rewritten to `/api/v2/files/…`. Since the move to the Rust launcher `latest*.yml` only serve the
+  Electron *bridge* build (`NoreLauncher-Bridge-…`), which installs the Tauri launcher once.
+* Downloads (`/api/v1/download/:platform`, `/api/v2/downloads/:platform`, `/api/v1/updates/launcher`)
+  point at the Tauri installers; `/api/v2/downloads/linux-deb` is the Debian package. A release
+  without a Tauri file for a platform falls back to its bridge build.
 
 Launchers older than this change only know github.com links: their fallback refuses
 `noreclient.pl/api/v2/files/…` links, so publish one release with this launcher **before** making

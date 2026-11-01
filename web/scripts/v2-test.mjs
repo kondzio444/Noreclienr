@@ -112,15 +112,22 @@ try {
   r = await get('/api/v2/downloads');
   const win = r.json.platforms.find(p => p.id === 'win');
   assert.equal(win.file, 'NoreLauncher-Setup-1.5.0.exe'); assert.equal(win.downloads.latest, 120); assert.equal(win.downloads.allReleases, 420); assert.equal(win.downloads.redirects, 0);
-  assert.equal(r.json.platforms.find(p => p.id === 'mac-zip').available, true);
+  assert.equal(r.json.platforms.find(p => p.id === 'mac-zip').file, 'NoreLauncher-1.5.0.app.tar.gz');
+  // the Tauri installers – never the Electron bridge build of the same release
+  assert.equal(r.json.platforms.find(p => p.id === 'linux').file, 'NoreLauncher-1.5.0.AppImage');
+  const deb = r.json.platforms.find(p => p.id === 'linux-deb');
+  assert.equal(deb.available, true); assert.equal(deb.file, 'NoreLauncher-1.5.0_amd64.deb'); assert.equal(deb.name, 'Linux (.deb)');
+  assert.ok(!r.json.platforms.some(p => /Bridge/.test(p.file || '')));
+  r = await get('/api/v2/downloads/linux-deb'); assert.equal(r.status, 302); assert.match(r.headers.get('location'), /NoreLauncher-1\.5\.0_amd64\.deb$/);
+  r = await get('/api/v2/releases/latest'); assert.equal(r.json.release.assets.win.name, 'NoreLauncher-Setup-1.5.0.exe'); assert.equal(r.json.release.extra, undefined);
   r = await get('/api/v2/downloads/win');
   assert.equal(r.status, 302); assert.match(r.headers.get('location'), /NoreLauncher-Setup-1\.5\.0\.exe$/);
   await get('/api/v2/downloads/linux'); await get('/api/v2/downloads/win');
   let clicks;
-  for (let k = 0; k < 20; k++) { clicks = (await get('/api/v2/stats')).json.redirects; if (clicks.total === 3) break; await sleep(150); }
-  assert.equal(clicks.win, 2); assert.equal(clicks.linux, 1); assert.equal(clicks.daily.at(-1).n, 3);
+  for (let k = 0; k < 20; k++) { clicks = (await get('/api/v2/stats')).json.redirects; if (clicks.total === 4) break; await sleep(150); }
+  assert.equal(clicks.win, 2); assert.equal(clicks.linux, 1); assert.equal(clicks['linux-deb'], 1); assert.equal(clicks.daily.at(-1).n, 4);
   r = await get('/api/v2/downloads/xbox'); assert.equal(r.status, 404);
-  step('downloads: per-platform files, 302 redirects counted (win 2, linux 1, today 3)');
+  step('downloads: Tauri installers per platform (+ .deb, no bridge files), 302 redirects counted (win 2, linux 1, deb 1, today 4)');
 
   r = await get('/api/v2/events');
   assert.equal(r.json.flags.halloween, true); assert.ok(r.json.active.includes('halloween'));
@@ -552,13 +559,18 @@ try {
   step(`overview (server, hub, bot, downloads, counts), client, releases + sync, source (GitHub), audit log with ${actions.length} entries`);
 
   // release files through the Worker (also for a private repository)
-  r = await get('/api/v2/updates/feed/latest.yml'); assert.equal(r.status, 200); assert.match(r.text, /^version: 1\.5\.0/); assert.match(r.headers.get('content-type'), /yaml/);
-  r = await get('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe'); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), 'https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe');
-  r = await get('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe.blockmap'); assert.equal(r.status, 302);
+  r = await get('/api/v2/updates/feed/latest.yml'); assert.equal(r.status, 200); assert.match(r.text, /^version: 1\.5\.0/); assert.match(r.text, /path: NoreLauncher-Bridge-Setup-1\.5\.0\.exe/); assert.match(r.headers.get('content-type'), /yaml/);
+  r = await get('/api/v2/updates/feed/NoreLauncher-Bridge-Setup-1.5.0.exe'); assert.equal(r.status, 302); assert.equal(r.headers.get('location'), 'https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Bridge-Setup-1.5.0.exe');
+  r = await get('/api/v2/updates/feed/NoreLauncher-Bridge-Setup-1.5.0.exe.blockmap'); assert.equal(r.status, 302);
+  // the Tauri updater feed: latest.json served as JSON from the release asset
+  r = await get('/api/v2/updates/feed/latest.json'); assert.equal(r.status, 200); assert.match(r.headers.get('content-type'), /application\/json/);
+  assert.equal(r.json.version, '1.5.0'); assert.equal(r.json.platforms['windows-x86_64'].url, 'https://github.com/kondzio444/Noreclienr/releases/download/v1.5.0/NoreLauncher-Setup-1.5.0.exe');
+  assert.equal(r.headers.get('x-nore-release'), '1.5.0');
+  r = await get('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe.sig'); assert.equal(r.status, 302); assert.match(r.headers.get('location'), /NoreLauncher-Setup-1\.5\.0\.exe\.sig$/);
   r = await get('/api/v2/files/v1.4.0/NoreLauncher-Setup-1.4.0.exe'); assert.equal(r.status, 302); assert.match(r.headers.get('location'), /v1\.4\.0\/NoreLauncher-Setup-1\.4\.0\.exe$/);
   r = await get('/api/v2/files/v1.4.0/nope.exe'); assert.equal(r.status, 404);
   r = await get('/api/v2/updates/feed/evil.yml'); assert.equal(r.status, 404);
-  step('updates feed for electron-updater (latest.yml as text, files as 302) and /files/:version/:name');
+  step('updates feeds: latest.json (Tauri) as JSON, latest.yml (Electron bridge) as text, files as 302, /files/:version/:name');
 
   r = await req('POST', '/api/v2/auth/logout', { cookie: alice });
   assert.equal(r.status, 200); assert.match(r.headers.get('set-cookie'), /__Host-nore_s=; .*Max-Age=0/);
@@ -779,8 +791,15 @@ try {
   assert.equal(pres.status, 302); assert.equal(pres.headers.get('location'), 'https://objects.githubusercontent.example/signed/1/NoreLauncher-Setup-1.5.0.exe?sig=x');
   pres = await pget('/api/v1/download/linux'); assert.equal(pres.status, 302); assert.match(pres.headers.get('location'), /signed\/2\/NoreLauncher-1\.5\.0\.AppImage/);
   pres = await pget('/api/v2/files/v1.5.0/noreclient-fabric-1.21.8.jar'); assert.equal(pres.status, 302); assert.match(pres.headers.get('location'), /signed\/5\//);
-  pres = await pget('/api/v2/updates/feed/latest.yml'); assert.equal(pres.status, 200); assert.match(await pres.text(), /path: NoreLauncher-Setup-1\.5\.0\.exe/);
+  pres = await pget('/api/v2/updates/feed/latest.yml'); assert.equal(pres.status, 200); assert.match(await pres.text(), /path: NoreLauncher-Bridge-Setup-1\.5\.0\.exe/);
   pres = await pget('/api/v2/updates/feed/NoreLauncher-Setup-1.5.0.exe'); assert.match(pres.headers.get('location'), /signed\/1\//);
+  // latest.json: the installer links point at the Worker, so the Tauri updater works with a private repository
+  pres = await pget('/api/v2/updates/feed/latest.json'); assert.equal(pres.status, 200);
+  const pfeed = await pres.json();
+  assert.equal(pfeed.platforms['windows-x86_64'].url, 'https://noreclient.pl/api/v2/files/v1.5.0/NoreLauncher-Setup-1.5.0.exe');
+  assert.equal(pfeed.platforms['linux-x86_64-deb'].url, 'https://noreclient.pl/api/v2/files/v1.5.0/NoreLauncher-1.5.0_amd64.deb');
+  assert.equal(pfeed.platforms['windows-x86_64'].signature, 'c2lnLXdpbg==');
+  pres = await pget('/api/v2/downloads/linux-deb'); assert.match(pres.headers.get('location'), /signed\/23\/NoreLauncher-1\.5\.0_amd64\.deb/);
   assert.equal(fakes.calls.assetAuth.at(-1), 'Bearer gh-test-token');
   pr = await (await pget('/api/v1/updates/launcher?platform=win&current=1.4.0')).json(); assert.match(pr.download.url, /^https:\/\/noreclient\.pl\/api\/v2\/files\//);
   step('private repository: file links point at the Worker, downloads and the update feed redirect to signed GitHub URLs (token sent)');
