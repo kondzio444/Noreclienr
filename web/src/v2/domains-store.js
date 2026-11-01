@@ -41,7 +41,7 @@ export class NoreDomains extends DurableObject {
   serial(fn) {
     const run = this.queue.then(fn, fn);
     this.queue = run.catch(() => {});
-    return run.catch(e => fail(e.status || 500, e.code || 'internal', e.status ? e.message : 'Błąd serwera domen – spróbuj za chwilę'));
+    return run.catch(e => (e.status ? null : console.error('nore domains', e && e.stack || e), fail(e.status || 500, e.code || 'internal', e.status ? e.message : 'Błąd serwera domen – spróbuj za chwilę')));
   }
 
   dns() { return new CloudflareDns(this.env); }
