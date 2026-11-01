@@ -178,6 +178,17 @@ fn open_main(handle: &AppHandle) -> tauri::Result<()> {
         .initialization_script(COMPAT)
         .on_navigation(move |url| allow_navigation(&nav, url))
         .build()?;
+    // development builds only: NORE_DEV_CLICK="<css selector>;…" clicks through the UI for headless screenshots
+    #[cfg(debug_assertions)]
+    if let Ok(sel) = std::env::var("NORE_DEV_CLICK") {
+        let w = window.clone();
+        tauri::async_runtime::spawn(async move {
+            for s in sel.split(';').filter(|s| !s.is_empty()) {
+                tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+                let _ = w.eval(format!("document.querySelector({}).click()", serde_json::to_string(s).unwrap_or_default()));
+            }
+        });
+    }
     let events = handle.clone();
     let shown = window.clone();
     window.on_window_event(move |e| {
