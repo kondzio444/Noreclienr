@@ -10,7 +10,7 @@ import { LANGUAGES, LANGUAGE_NAMES, t } from '../i18n/index.js';
 import { MODULE_NAMES } from '../config/schema-source.js';
 import { clip } from '../lib/template.js';
 
-const TOGGLE_MODULES = MODULE_NAMES.filter(m => !['general', 'community', 'server', 'actions'].includes(m));
+const TOGGLE_MODULES = MODULE_NAMES.filter(m => !['general', 'community', 'server', 'actions', 'builder'].includes(m));
 
 export function showValue(node, value) {
   if (value === '' || value === null || value === undefined || (Array.isArray(value) && !value.length)) return '—';

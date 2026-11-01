@@ -1082,7 +1082,8 @@
         "opt": {
           "name": "Nazwa",
           "image": "Obraz",
-          "url": "Adres obrazu"
+          "url": "Adres obrazu",
+          "animation": "Animacja (dla animowanej emotki)"
         }
       },
       "delete": {
@@ -1100,6 +1101,22 @@
       },
       "list": {
         "desc": "Lista emoji"
+      },
+      "generate": {
+        "desc": "Wygeneruj emotkę z opisu (AI) – zwykłą albo animowaną",
+        "opt": {
+          "prompt": "Co ma przedstawiać emotka",
+          "name": "Nazwa emotki",
+          "animation": "Animacja (dla animowanej emotki)"
+        }
+      },
+      "roleicon": {
+        "desc": "Ustaw ikonę roli – z opisu (AI) albo z obrazka",
+        "opt": {
+          "role": "Rola",
+          "prompt": "Co ma przedstawiać ikona",
+          "image": "Albo obrazek"
+        }
       }
     },
     "sticker": {
@@ -1310,7 +1327,13 @@
           "size": "Rozmiar",
           "content": "Wyślij regulamin, poradniki i panele",
           "settings": "Zastosuj ustawienia serwera",
-          "prune": "Usuń kanały/role spoza szablonu (niebezpieczne)"
+          "prune": "Usuń kanały/role spoza szablonu (niebezpieczne)",
+          "font": "Czcionka nazw",
+          "separator": "Separator po emoji",
+          "palette": "Kolory ról",
+          "category_style": "Wygląd kategorii",
+          "role_style": "Wygląd ról",
+          "emoji": "Emoji w nazwach kanałów"
         }
       },
       "repair": {
@@ -1318,7 +1341,13 @@
         "opt": {
           "template": "Szablon",
           "language": "Język",
-          "size": "Rozmiar"
+          "size": "Rozmiar",
+          "font": "Czcionka nazw",
+          "separator": "Separator po emoji",
+          "palette": "Kolory ról",
+          "category_style": "Wygląd kategorii",
+          "role_style": "Wygląd ról",
+          "emoji": "Emoji w nazwach kanałów"
         }
       },
       "preview": {
@@ -1326,7 +1355,13 @@
         "opt": {
           "template": "Szablon",
           "language": "Język",
-          "size": "Rozmiar"
+          "size": "Rozmiar",
+          "font": "Czcionka nazw",
+          "separator": "Separator po emoji",
+          "palette": "Kolory ról",
+          "category_style": "Wygląd kategorii",
+          "role_style": "Wygląd ról",
+          "emoji": "Emoji w nazwach kanałów"
         }
       },
       "status": {
@@ -2313,6 +2348,54 @@
       "cancelled": "Zatrzymana",
       "failed": "Nieudana",
       "interrupted": "Przerwana"
+    },
+    "look": "Wygląd",
+    "font": {
+      "plain": "Zwykła",
+      "bold": "𝐏𝐨𝐠𝐫𝐮𝐛𝐢𝐨𝐧𝐚",
+      "sans": "𝗕𝗲𝘇𝘀𝗲𝗿𝘆𝗳𝗼𝘄𝗮",
+      "italic": "𝘒𝘶𝘳𝘴𝘺𝘸𝘢",
+      "smallcaps": "ᴋᴀᴘɪᴛᴀʟɪᴋɪ",
+      "script": "𝓞𝓭𝓻𝓮̨𝓬𝔃𝓷𝓪",
+      "double": "𝔻𝕨𝕦𝕝𝕚𝕟𝕚𝕠𝕨𝕒",
+      "mono": "𝙼𝚘𝚗𝚘",
+      "wide": "Ｓｚｅｒｏｋａ"
+    },
+    "sep": {
+      "bar": "┃ kreska",
+      "dot": "・ kropka",
+      "line": "│ linia",
+      "arrow": "» strzałka",
+      "thin": "﹒ mała kropka",
+      "colon": "꞉ dwukropek",
+      "bullet": "• punktor",
+      "none": "bez separatora"
+    },
+    "palette": {
+      "template": "Kolory szablonu",
+      "nore": "Nore (fiolet)",
+      "neon": "Neon",
+      "pastel": "Pastele",
+      "minecraft": "Minecraft (§ kolory)",
+      "ocean": "Ocean",
+      "sunset": "Zachód słońca",
+      "halloween": "Halloween",
+      "mono": "Czerń i biel"
+    },
+    "catstyle": {
+      "plain": "🚪 ┃ NAZWA",
+      "lines": "━━ NAZWA ━━",
+      "brackets": "『 NAZWA 』",
+      "arrows": "» NAZWA «",
+      "stars": "✦ NAZWA ✦",
+      "dots": "・NAZWA・"
+    },
+    "rolestyle": {
+      "icon": "👑 Nazwa",
+      "brackets": "『 Nazwa 』",
+      "dot": "• Nazwa",
+      "arrow": "» Nazwa",
+      "plain": "Nazwa"
     }
   },
   "panel": {
@@ -2443,6 +2526,53 @@
         "small": "Mały",
         "medium": "Średni",
         "full": "Pełny"
+      },
+      "fonts": {
+        "plain": "Zwykła",
+        "bold": "𝐏𝐨𝐠𝐫𝐮𝐛𝐢𝐨𝐧𝐚",
+        "sans": "𝗕𝗲𝘇𝘀𝗲𝗿𝘆𝗳𝗼𝘄𝗮",
+        "italic": "𝘒𝘶𝘳𝘴𝘺𝘸𝘢",
+        "smallcaps": "ᴋᴀᴘɪᴛᴀʟɪᴋɪ",
+        "script": "𝓞𝓭𝓻𝓮̨𝓬𝔃𝓷𝓪",
+        "double": "𝔻𝕨𝕦𝕝𝕚𝕟𝕚𝕠𝕨𝕒",
+        "mono": "𝙼𝚘𝚗𝚘",
+        "wide": "Ｓｚｅｒｏｋａ"
+      },
+      "separators": {
+        "bar": "┃ kreska",
+        "dot": "・ kropka",
+        "line": "│ linia",
+        "arrow": "» strzałka",
+        "thin": "﹒ mała kropka",
+        "colon": "꞉ dwukropek",
+        "bullet": "• punktor",
+        "none": "bez separatora"
+      },
+      "palettes": {
+        "template": "Kolory szablonu",
+        "nore": "Nore (fiolet)",
+        "neon": "Neon",
+        "pastel": "Pastele",
+        "minecraft": "Minecraft (§ kolory)",
+        "ocean": "Ocean",
+        "sunset": "Zachód słońca",
+        "halloween": "Halloween",
+        "mono": "Czerń i biel"
+      },
+      "categoryStyles": {
+        "plain": "🚪 ┃ NAZWA",
+        "lines": "━━ NAZWA ━━",
+        "brackets": "『 NAZWA 』",
+        "arrows": "» NAZWA «",
+        "stars": "✦ NAZWA ✦",
+        "dots": "・NAZWA・"
+      },
+      "roleStyles": {
+        "icon": "👑 Nazwa",
+        "brackets": "『 Nazwa 』",
+        "dot": "• Nazwa",
+        "arrow": "» Nazwa",
+        "plain": "Nazwa"
       }
     },
     "general": {
@@ -2887,6 +3017,54 @@
     "utility": {
       "_label": "Narzędzia",
       "_help": "Pomoc, informacje, awatary, embedy."
+    },
+    "builder": {
+      "_label": "Kreator – wygląd",
+      "_help": "Jak kreator nazywa kategorie, kanały i role oraz jakie kolory dostają role. Działa przy /builder start, /builder repair i akcji „Zbuduj serwer” w zakładce Akcje.",
+      "style": {
+        "_label": "Wygląd serwera",
+        "_help": "Podgląd nazw zmienia się na żywo. Na istniejącym serwerze uruchom /builder repair, żeby przemianować kanały i role.",
+        "font": "Czcionka nazw",
+        "separator": "Separator po emoji",
+        "emoji": "Emoji w nazwach kategorii i kanałów",
+        "category": "Wygląd kategorii",
+        "upper": "Kategorie wielkimi literami",
+        "role": "Wygląd ról",
+        "palette": "Kolory ról",
+        "gradient": "Gradient ról",
+        "gradient_help": "Dwukolorowe role, gdy serwer ma odblokowane ulepszone kolory ról (boosty)."
+      }
     }
+  },
+  "emoji": {
+    "anim": {
+      "none": "Bez animacji",
+      "spin": "Obrót",
+      "bounce": "Podskok",
+      "pulse": "Pulsowanie",
+      "shake": "Trzęsienie",
+      "wiggle": "Kiwanie",
+      "glow": "Błysk"
+    },
+    "created": "Gotowe: {emoji} `:{name}:`",
+    "no_slots": "Brak wolnych miejsc na emotki {kind} – usuń jakąś albo zdobądź wyższy poziom boostów.",
+    "kind_still": "Zwykłe",
+    "kind_animated": "Animowane",
+    "no_key": "Generowanie emotek przez AI jest wyłączone: brak OPENAI_API_KEY w pliku .env bota.",
+    "no_canvas": "Animowane emotki wymagają pakietu @napi-rs/canvas (npm install w katalogu bota).",
+    "too_big": "Obrazek jest za duży (emotka może mieć najwyżej 256 KB).",
+    "blocked": "OpenAI odrzucił ten opis (zasady treści) – opisz to inaczej.",
+    "download_failed": "Nie udało się pobrać obrazka.",
+    "invalid": "Discord nie przyjął emotki: {error}",
+    "failed": "Nie udało się: {error}",
+    "not_image": "To nie jest obrazek.",
+    "no_role_icons": "Ikony ról wymagają 2. poziomu boostów serwera.",
+    "role_not_editable": "Ta rola jest wyżej niż rola bota – przesuń rolę bota wyżej.",
+    "need_prompt_or_image": "Podaj opis (prompt) albo obrazek.",
+    "role_icon_set": "Ikona roli {role} ustawiona.",
+    "list_title": "Emotki serwera",
+    "footer_ai": "Nowe emotki: /emoji generate (AI, też animowane) albo /emoji add",
+    "footer_ai_still": "Nowe emotki: /emoji generate (AI) albo /emoji add – animacje po zainstalowaniu @napi-rs/canvas",
+    "footer_no_ai": "Nowe emotki: /emoji add (AI po dodaniu OPENAI_API_KEY)"
   }
 }

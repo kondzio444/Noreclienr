@@ -174,3 +174,12 @@ select.inp { appearance: none; cursor: pointer; background-image: none; padding-
   .save .grow { flex-basis: 100%; }
   .save small { display: none; }
 }
+
+/* builder look preview (Kreator – wygląd) */
+.bprev{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;padding:14px;border-radius:12px;background:#1e1f22;color:#dbdee1;font:14px/1.45 "gg sans","Noto Sans",system-ui,sans-serif}
+.bprev b{display:block;margin-bottom:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#949ba4}
+.bp-cat{margin-top:8px;font-size:12px;font-weight:700;color:#949ba4;letter-spacing:.02em}
+.bp-ch{padding:3px 8px;border-radius:4px;color:#949ba4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bp-ch:hover{background:#2e3035;color:#dbdee1}
+.bp-role{display:flex;align-items:center;gap:8px;padding:2px 0;font-weight:600}
+.bp-role i{flex:none;width:12px;height:12px;border-radius:50%}

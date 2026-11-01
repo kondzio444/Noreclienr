@@ -19,7 +19,7 @@ export const TEXT_TYPES = new Set(['text', 'announcement', 'forum']);
 
 /** Comparable form of a name: lowercase, no emoji/separators/dashes. */
 export function normName(n) {
-  return String(n || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '')
+  return String(n || '').normalize('NFKD').toLowerCase().replace(/[̀-ͯ]/g, '')
     .replace(/[^\p{L}\p{N}]+/gu, '');
 }
 
@@ -98,7 +98,7 @@ export function planLayout(desired, current, { map = {}, update = false, prune =
     if (!ex) { ops.push({ op: 'role.create', key: r.key, data: r }); summary.create.roles++; continue; }
     usedRoles.add(ex.id);
     nextMap[`r:${r.key}`] = ex.id;
-    const changed = update && (ex.color !== colorNum(r.color) || !!ex.hoist !== !!r.hoist || !!ex.mentionable !== !!r.mentionable || (Array.isArray(r.permissions) && !sameList(ex.permissions, r.permissions)));
+    const changed = update && (ex.name !== r.name || ex.color !== colorNum(r.color) || !!ex.hoist !== !!r.hoist || !!ex.mentionable !== !!r.mentionable || (Array.isArray(r.permissions) && !sameList(ex.permissions, r.permissions)));
     if (changed) { ops.push({ op: 'role.update', key: r.key, id: ex.id, data: r }); summary.update.roles++; } else summary.keep.roles++;
   }
   if ((desired.roles || []).length) ops.push({ op: 'role.positions', keys: desired.roles.map(r => r.key) });
@@ -112,7 +112,7 @@ export function planLayout(desired, current, { map = {}, update = false, prune =
     usedChannels.add(ex.id);
     nextMap[`c:${c.key}`] = ex.id;
     if (c.type === 'category') catId[c.key] = ex.id;
-    const changed = update && ((c.topic || '') !== (ex.topic || '') || (c.slowmode || 0) !== (ex.slowmode || 0) || !!c.nsfw !== !!ex.nsfw || (c.parent && (ex.parentId || null) !== (parentId || null)) || (c.overwrites?.length && !ex.overwritesMatch));
+    const changed = update && (ex.name !== c.name || (c.topic || '') !== (ex.topic || '') || (c.slowmode || 0) !== (ex.slowmode || 0) || !!c.nsfw !== !!ex.nsfw || (c.parent && (ex.parentId || null) !== (parentId || null)) || (c.overwrites?.length && !ex.overwritesMatch));
     if (changed) { ops.push({ op: 'channel.update', key: c.key, id: ex.id, data: c }); summary.update.channels++; } else summary.keep.channels++;
   }
   if ((desired.channels || []).length) ops.push({ op: 'channel.positions', keys: desired.channels.map(c => c.key) });

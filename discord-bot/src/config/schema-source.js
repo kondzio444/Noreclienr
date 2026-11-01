@@ -457,6 +457,20 @@ const modules = {
     }, [], { maxItems: 20, help: true }),
   }),
 
+  // look of the server the builder makes (panel → Kreator; /builder start can override per run)
+  builder: f.group({
+    style: f.group({
+      font: f.select(['plain', 'bold', 'sans', 'italic', 'smallcaps', 'script', 'double', 'mono', 'wide'], 'plain', { ...set('fonts') }),
+      separator: f.select(['bar', 'dot', 'line', 'arrow', 'thin', 'colon', 'bullet', 'none'], 'bar', { ...set('separators') }),
+      emoji: f.toggle(true),
+      category: f.select(['plain', 'lines', 'brackets', 'arrows', 'stars', 'dots'], 'plain', { ...set('categoryStyles') }),
+      upper: f.toggle(true),
+      role: f.select(['icon', 'brackets', 'dot', 'arrow', 'plain'], 'icon', { ...set('roleStyles') }),
+      palette: f.select(['template', 'nore', 'neon', 'pastel', 'minecraft', 'ocean', 'sunset', 'halloween', 'mono'], 'template', { ...set('palettes') }),
+      gradient: f.toggle(true, { help: true }),
+    }, { help: true }),
+  }),
+
   utility: f.group({ enabled: f.toggle(true, { key: 'common.enabled' }) }),
 };
 

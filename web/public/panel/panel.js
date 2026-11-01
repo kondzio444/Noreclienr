@@ -315,7 +315,7 @@
     const id = `g${ptr.replace(/[^a-z0-9]/gi, '_')}`;
     return `<fieldset class="group${hasEnabled && !value.enabled ? ' off' : ''}" data-group="${ptr}"><legend><span id="${id}">${esc(tr(s['x-i18n'], humanize(key)))}</span>${hasEnabled ? `<button type="button" class="switch" role="switch" aria-checked="${!!value.enabled}" aria-labelledby="${id}" data-ptr="${ptr}/enabled" data-kind="toggle"></button>` : ''}</legend>
       ${s['x-i18n-help'] ? `<p class="help soft">${esc(tr(s['x-i18n-help'], ''))}</p>` : ''}
-      ${Object.entries(props).filter(([k]) => !(hasEnabled && k === 'enabled')).map(([k, ps]) => field(ptrJoin(ptr, k), k, ps, value[k])).join('')}${errAt(ptr)}</fieldset>`;
+      ${Object.entries(props).filter(([k]) => !(hasEnabled && k === 'enabled')).map(([k, ps]) => field(ptrJoin(ptr, k), k, ps, value[k])).join('')}${ptr === '/builder/style' ? `<div class="bprev" id="bprev" aria-live="polite">${builderPreview(value)}</div>` : ''}${errAt(ptr)}</fieldset>`;
   }
   const optLabel = (s, e) => (s['x-i18n-options'] && s['x-i18n-options'][e] ? tr(s['x-i18n-options'][e], String(e)) : e === '' ? u('notSet') : String(e));
 
@@ -494,9 +494,69 @@
     for (const k of ptrParts(p)) { s = deref(s, schema); s = /^\d+$/.test(k) && s.items ? s.items : (s.properties || {})[k]; if (!s) return {}; }
     return deref(s, schema);
   }
+  // ------------------------------------------------------------------ builder look preview (mirrors discord-bot/src/lib/style.js)
+  const BP_SEP = { bar: '┃', dot: '・', line: '│', arrow: '»', thin: '﹒', colon: '꞉', bullet: '•', none: '' };
+  const BP_MATH = { bold: [0x1d400, 0x1d41a, 0x1d7ce], sans: [0x1d5d4, 0x1d5ee, 0x1d7ec], italic: [0x1d608, 0x1d622, 0], script: [0x1d4d0, 0x1d4ea, 0], double: [0x1d538, 0x1d552, 0x1d7d8], mono: [0x1d670, 0x1d68a, 0x1d7f6] };
+  const BP_HOLES = { C: 0x2102, H: 0x210d, N: 0x2115, P: 0x2119, Q: 0x211a, R: 0x211d, Z: 0x2124 };
+  const BP_SMALL = 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ';
+  const BP_PAL = {
+    nore: ['#ff2e88', '#f72585', '#d63aff', '#b5179e', '#9d5cff', '#8a4dff', '#7209b7', '#6a4cff', '#5a5cff', '#4361ee', '#4895ef', '#4cc9f0'],
+    neon: ['#ff0054', '#ff0099', '#ff00ff', '#cc00ff', '#9900ff', '#6600ff', '#3300ff', '#0066ff', '#00a2ff', '#00d9ff', '#00ffcc', '#00ff88'],
+    pastel: ['#ffadad', '#ffc2a8', '#ffd6a5', '#fdffb6', '#e4f1c5', '#caffbf', '#b5f2d3', '#9bf6ff', '#a0d2ff', '#a0c4ff', '#b8b8ff', '#bdb2ff'],
+    minecraft: ['#aa0000', '#ff5555', '#ffaa00', '#ffff55', '#00aa00', '#55ff55', '#55ffff', '#00aaaa', '#5555ff', '#0000aa', '#ff55ff', '#aa00aa'],
+    ocean: ['#03045e', '#023e8a', '#0077b6', '#0096c7', '#00b4d8', '#48cae4', '#90e0ef', '#2ec4b6', '#20a39e', '#1b998b', '#3ddc97', '#7bdff2'],
+    sunset: ['#d00000', '#dc2f02', '#e85d04', '#f48c06', '#faa307', '#ffba08', '#ff7b00', '#ff8800', '#ff9500', '#ffa200', '#ffaa00', '#ffb700'],
+    halloween: ['#ff6a00', '#ff7f11', '#ff9500', '#ffaa33', '#9d4edd', '#7b2cbf', '#5a189a', '#3c096c', '#8ac926', '#6a994e', '#ffbe0b', '#f48c06'],
+    mono: ['#ffffff', '#f1f1f1', '#e3e3e3', '#d5d5d5', '#c7c7c7', '#b9b9b9', '#ababab', '#9d9d9d', '#8f8f8f', '#818181', '#737373', '#656565'],
+  };
+  function bpFont(text, font) {
+    if (!font || font === 'plain') return text;
+    return [...String(text).normalize('NFD')].map((ch) => {
+      const c = ch.codePointAt(0), up = c >= 65 && c <= 90, lo = c >= 97 && c <= 122, dg = c >= 48 && c <= 57;
+      if (!up && !lo && !dg) return ch;
+      if (font === 'smallcaps') return up || lo ? BP_SMALL[up ? c - 65 : c - 97] : ch;
+      if (font === 'wide') return String.fromCodePoint(c + 0xfee0);
+      const m = BP_MATH[font]; if (!m) return ch;
+      if (font === 'double' && up && BP_HOLES[ch]) return String.fromCodePoint(BP_HOLES[ch]);
+      if (up) return String.fromCodePoint(m[0] + c - 65);
+      if (lo) return String.fromCodePoint(m[1] + c - 97);
+      return m[2] ? String.fromCodePoint(m[2] + c - 48) : ch;
+    }).join('');
+  }
+  function builderPreview(st) {
+    st = st || {};
+    const pl = lang === 'pl';
+    const sep = st.separator in BP_SEP ? BP_SEP[st.separator] : '┃';
+    const emo = st.emoji !== false, upper = st.upper !== false, font = st.font || 'plain';
+    const cat = (e, l) => {
+      const t = bpFont(upper ? l.toUpperCase() : l, font), em = emo ? e : '';
+      switch (st.category) {
+        case 'lines': return `━━ ${em ? em + ' ' : ''}${t} ━━`;
+        case 'brackets': return `${em ? em + ' ' : ''}『 ${t} 』`;
+        case 'arrows': return `${em ? em + ' ' : ''}» ${t} «`;
+        case 'stars': return `✦ ${em ? em + ' ' : ''}${t} ✦`;
+        case 'dots': return `${em ? em + ' ' : ''}・${t}・`;
+        default: return em ? `${em} ${sep ? sep + ' ' : ''}${t}` : t;
+      }
+    };
+    const ch = (e, l, voice) => { const t = bpFont(voice ? l : l.toLowerCase().replace(/\s+/g, '-'), font); return !emo ? t : voice ? `${e} ${sep ? sep + ' ' : ''}${t}` : `${e}${sep}${t}`; };
+    const role = (i, l) => { const t = bpFont(l, font); return st.role === 'brackets' ? `『 ${t} 』` : st.role === 'dot' ? `• ${t}` : st.role === 'arrow' ? `» ${t}` : st.role === 'plain' ? t : `${i} ${t}`; };
+    const tplColors = ['#ff2e4d', '#ff4d6d', '#ff8243', '#ff9f43', '#ffb84d', '#3d7eff', '#54a0ff', '#74b4ff', '#2bcbba', '#48dbfb', '#7bed9f', '#e74c3c'];
+    const pal = BP_PAL[st.palette] || tplColors;
+    const roles = [['👑', pl ? 'Właściciel' : 'Owner'], ['💠', pl ? 'Współwłaściciel' : 'Co-Owner'], ['⚜️', 'Head Admin'], ['🛡️', pl ? 'S.Admin' : 'Sr. Admin'], ['🔰', 'Admin'], ['⚔️', pl ? 'S.Mod' : 'Sr. Mod'], ['🔨', 'Moderator'], ['🗡️', pl ? 'T.Mod' : 'Trial Mod'], ['✨', pl ? 'S.Helper' : 'Sr. Helper'], ['🤝', 'Helper'], ['🌱', pl ? 'T.Helper' : 'Trial Helper'], ['⛏️', pl ? 'Admin MC' : 'MC Admin']];
+    const grad = (c) => { if (st.gradient === false) return c; const n = parseInt(c.slice(1), 16), mix = (v) => Math.round(v + (255 - v) * 0.35); return `linear-gradient(90deg, ${c}, rgb(${mix(n >> 16 & 255)},${mix(n >> 8 & 255)},${mix(n & 255)}))`; };
+    return `<div class="bp-col"><b>${esc(pl ? 'Kanały' : 'Channels')}</b>
+        <div class="bp-cat">${esc(cat('🚪', pl ? 'Zacznij tutaj' : 'Start here'))}</div>
+        <div class="bp-ch"># ${esc(ch('📜', pl ? 'Regulamin' : 'Rules'))}</div><div class="bp-ch"># ${esc(ch('📢', pl ? 'Ogłoszenia' : 'Announcements'))}</div>
+        <div class="bp-cat">${esc(cat('💬', pl ? 'Społeczność' : 'Community'))}</div>
+        <div class="bp-ch"># ${esc(ch('💬', pl ? 'Ogólny' : 'General'))}</div><div class="bp-ch">🔊 ${esc(ch('🏠', pl ? 'Poczekalnia' : 'Lobby', true))}</div></div>
+      <div class="bp-col"><b>${esc(pl ? 'Role ekipy' : 'Staff roles')}</b>${roles.map(([i, l], n) => `<div class="bp-role"><i style="background:${grad(pal[n % pal.length])}"></i><span style="color:${pal[n % pal.length]}">${esc(role(i, l))}</span></div>`).join('')}</div>`;
+  }
+
   function changed(repaint) {
     if (repaint) { const y = scrollY; paintModule(); scrollTo(0, y); }
     paintSave(); refreshTabs();
+    const bp = $('#bprev'); if (bp) bp.innerHTML = builderPreview(getAt(config, '/builder/style') || {});
   }
 
   // ------------------------------------------------------------------ errors from the server (JSON pointers)

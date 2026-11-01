@@ -34,5 +34,8 @@ export function env() {
     twitchClientId: str('TWITCH_CLIENT_ID'),
     twitchClientSecret: str('TWITCH_CLIENT_SECRET'),
     rssBridgeUrl: str('RSS_BRIDGE_URL').replace(/\/+$/, ''),
+    // custom emoji / role icons from text (OpenAI image model); empty = /emoji generate off
+    openaiKey: str('OPENAI_API_KEY'),
+    openaiImageModel: str('OPENAI_IMAGE_MODEL', 'gpt-image-1'),
   };
 }

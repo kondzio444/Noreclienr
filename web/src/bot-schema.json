@@ -3468,6 +3468,166 @@
       "x-i18n": "panel.actions._label",
       "x-i18n-help": "panel.actions._help"
     },
+    "builder": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "font": {
+              "type": "string",
+              "enum": [
+                "plain",
+                "bold",
+                "sans",
+                "italic",
+                "smallcaps",
+                "script",
+                "double",
+                "mono",
+                "wide"
+              ],
+              "default": "plain",
+              "x-ui": "select",
+              "x-i18n": "panel.builder.style.font",
+              "x-i18n-options": {
+                "plain": "panel.options.fonts.plain",
+                "bold": "panel.options.fonts.bold",
+                "sans": "panel.options.fonts.sans",
+                "italic": "panel.options.fonts.italic",
+                "smallcaps": "panel.options.fonts.smallcaps",
+                "script": "panel.options.fonts.script",
+                "double": "panel.options.fonts.double",
+                "mono": "panel.options.fonts.mono",
+                "wide": "panel.options.fonts.wide"
+              }
+            },
+            "separator": {
+              "type": "string",
+              "enum": [
+                "bar",
+                "dot",
+                "line",
+                "arrow",
+                "thin",
+                "colon",
+                "bullet",
+                "none"
+              ],
+              "default": "bar",
+              "x-ui": "select",
+              "x-i18n": "panel.builder.style.separator",
+              "x-i18n-options": {
+                "bar": "panel.options.separators.bar",
+                "dot": "panel.options.separators.dot",
+                "line": "panel.options.separators.line",
+                "arrow": "panel.options.separators.arrow",
+                "thin": "panel.options.separators.thin",
+                "colon": "panel.options.separators.colon",
+                "bullet": "panel.options.separators.bullet",
+                "none": "panel.options.separators.none"
+              }
+            },
+            "emoji": {
+              "type": "boolean",
+              "default": true,
+              "x-ui": "toggle",
+              "x-i18n": "panel.builder.style.emoji"
+            },
+            "category": {
+              "type": "string",
+              "enum": [
+                "plain",
+                "lines",
+                "brackets",
+                "arrows",
+                "stars",
+                "dots"
+              ],
+              "default": "plain",
+              "x-ui": "select",
+              "x-i18n": "panel.builder.style.category",
+              "x-i18n-options": {
+                "plain": "panel.options.categoryStyles.plain",
+                "lines": "panel.options.categoryStyles.lines",
+                "brackets": "panel.options.categoryStyles.brackets",
+                "arrows": "panel.options.categoryStyles.arrows",
+                "stars": "panel.options.categoryStyles.stars",
+                "dots": "panel.options.categoryStyles.dots"
+              }
+            },
+            "upper": {
+              "type": "boolean",
+              "default": true,
+              "x-ui": "toggle",
+              "x-i18n": "panel.builder.style.upper"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "icon",
+                "brackets",
+                "dot",
+                "arrow",
+                "plain"
+              ],
+              "default": "icon",
+              "x-ui": "select",
+              "x-i18n": "panel.builder.style.role",
+              "x-i18n-options": {
+                "icon": "panel.options.roleStyles.icon",
+                "brackets": "panel.options.roleStyles.brackets",
+                "dot": "panel.options.roleStyles.dot",
+                "arrow": "panel.options.roleStyles.arrow",
+                "plain": "panel.options.roleStyles.plain"
+              }
+            },
+            "palette": {
+              "type": "string",
+              "enum": [
+                "template",
+                "nore",
+                "neon",
+                "pastel",
+                "minecraft",
+                "ocean",
+                "sunset",
+                "halloween",
+                "mono"
+              ],
+              "default": "template",
+              "x-ui": "select",
+              "x-i18n": "panel.builder.style.palette",
+              "x-i18n-options": {
+                "template": "panel.options.palettes.template",
+                "nore": "panel.options.palettes.nore",
+                "neon": "panel.options.palettes.neon",
+                "pastel": "panel.options.palettes.pastel",
+                "minecraft": "panel.options.palettes.minecraft",
+                "ocean": "panel.options.palettes.ocean",
+                "sunset": "panel.options.palettes.sunset",
+                "halloween": "panel.options.palettes.halloween",
+                "mono": "panel.options.palettes.mono"
+              }
+            },
+            "gradient": {
+              "type": "boolean",
+              "default": true,
+              "x-ui": "toggle",
+              "x-i18n-help": "panel.builder.style.gradient_help",
+              "x-i18n": "panel.builder.style.gradient"
+            }
+          },
+          "x-i18n-help": "panel.builder.style._help",
+          "x-i18n": "panel.builder.style._label"
+        }
+      },
+      "x-module": true,
+      "x-i18n": "panel.builder._label",
+      "x-i18n-help": "panel.builder._help"
+    },
     "utility": {
       "type": "object",
       "additionalProperties": false,

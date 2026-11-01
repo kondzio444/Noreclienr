@@ -7,6 +7,13 @@ import { JobQueue } from './queue.js';
 import { bitsOf } from '../lib/permissions.js';
 import { colorInt } from '../lib/template.js';
 
+/** Role colours: a gradient only where the server has enhanced role colours (boost level). */
+function roleColors(guild, r) {
+  const primaryColor = r.color ? colorInt(r.color, 0) : 0;
+  if (r.color2 && primaryColor && guild.features?.includes('ENHANCED_ROLE_COLORS')) return { primaryColor, secondaryColor: colorInt(r.color2, primaryColor) };
+  return { primaryColor };
+}
+
 export const TYPE = { text: ChannelType.GuildText, voice: ChannelType.GuildVoice, category: ChannelType.GuildCategory, announcement: ChannelType.GuildAnnouncement, forum: ChannelType.GuildForum, stage: ChannelType.GuildStageVoice };
 export const TYPE_NAME = Object.fromEntries(Object.entries(TYPE).map(([k, v]) => [v, k]));
 
@@ -81,7 +88,7 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
       switch (op.op) {
         case 'role.create': {
           const r = op.data;
-          const role = await guild.roles.create({ name: r.name, colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), unicodeEmoji: roleIcons && r.icon ? r.icon : undefined, reason });
+          const role = await guild.roles.create({ name: r.name, colors: roleColors(guild, r), hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), unicodeEmoji: roleIcons && r.icon ? r.icon : undefined, reason });
           map[`r:${op.key}`] = role.id;
           break;
         }
@@ -89,7 +96,7 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
           const role = guild.roles.cache.get(op.id);
           if (!role?.editable) break;
           const r = op.data;
-          await role.edit({ colors: { primaryColor: r.color ? colorInt(r.color, 0) : 0 }, hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), reason });
+          await role.edit({ name: r.name, colors: roleColors(guild, r), hoist: !!r.hoist, mentionable: !!r.mentionable, permissions: grantable(toBits(r.permissions)), reason });
           break;
         }
         case 'role.positions': {
@@ -120,7 +127,7 @@ export function runOps(bot, guild, ops, { map, startAt = 0, onProgress, onCheckp
           if (!ch?.manageable) break;
           const c = op.data;
           const parent = c.parent ? map[`c:${c.parent}`] : undefined;
-          const data = { reason };
+          const data = { reason, name: c.name };
           if (c.type !== 'category' && c.type !== 'voice' && c.type !== 'stage') { data.topic = c.topic || null; data.nsfw = !!c.nsfw; data.rateLimitPerUser = c.slowmode || 0; }
           if (parent && parent !== ch.parentId) data.parent = parent;
           if (c.overwrites?.length) data.permissionOverwrites = overwrites(guild, map, c.overwrites);

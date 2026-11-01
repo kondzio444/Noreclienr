@@ -1082,7 +1082,8 @@
         "opt": {
           "name": "Name",
           "image": "Image",
-          "url": "Image URL"
+          "url": "Image URL",
+          "animation": "Animation (for an animated emoji)"
         }
       },
       "delete": {
@@ -1100,6 +1101,22 @@
       },
       "list": {
         "desc": "List emojis"
+      },
+      "generate": {
+        "desc": "Generate an emoji from a description (AI) – still or animated",
+        "opt": {
+          "prompt": "What the emoji shows",
+          "name": "Emoji name",
+          "animation": "Animation (for an animated emoji)"
+        }
+      },
+      "roleicon": {
+        "desc": "Set a role icon – from a description (AI) or a picture",
+        "opt": {
+          "role": "Role",
+          "prompt": "What the icon shows",
+          "image": "Or a picture"
+        }
       }
     },
     "sticker": {
@@ -1310,7 +1327,13 @@
           "size": "Size",
           "content": "Post rules, guides and panels",
           "settings": "Apply server settings",
-          "prune": "Delete channels/roles not in the template (danger)"
+          "prune": "Delete channels/roles not in the template (danger)",
+          "font": "Font of the names",
+          "separator": "Separator after the emoji",
+          "palette": "Role colours",
+          "category_style": "Category look",
+          "role_style": "Role look",
+          "emoji": "Emoji in channel names"
         }
       },
       "repair": {
@@ -1318,7 +1341,13 @@
         "opt": {
           "template": "Template",
           "language": "Language",
-          "size": "Size"
+          "size": "Size",
+          "font": "Font of the names",
+          "separator": "Separator after the emoji",
+          "palette": "Role colours",
+          "category_style": "Category look",
+          "role_style": "Role look",
+          "emoji": "Emoji in channel names"
         }
       },
       "preview": {
@@ -1326,7 +1355,13 @@
         "opt": {
           "template": "Template",
           "language": "Language",
-          "size": "Size"
+          "size": "Size",
+          "font": "Font of the names",
+          "separator": "Separator after the emoji",
+          "palette": "Role colours",
+          "category_style": "Category look",
+          "role_style": "Role look",
+          "emoji": "Emoji in channel names"
         }
       },
       "status": {
@@ -2291,6 +2326,54 @@
       "cancelled": "Stopped",
       "failed": "Failed",
       "interrupted": "Interrupted"
+    },
+    "look": "Look",
+    "font": {
+      "plain": "Plain",
+      "bold": "𝐁𝐨𝐥𝐝",
+      "sans": "𝗦𝗮𝗻𝘀 𝗯𝗼𝗹𝗱",
+      "italic": "𝘐𝘵𝘢𝘭𝘪𝘤",
+      "smallcaps": "ꜱᴍᴀʟʟ ᴄᴀᴘꜱ",
+      "script": "𝓢𝓬𝓻𝓲𝓹𝓽",
+      "double": "𝔻𝕠𝕦𝕓𝕝𝕖",
+      "mono": "𝙼𝚘𝚗𝚘",
+      "wide": "Ｗｉｄｅ"
+    },
+    "sep": {
+      "bar": "┃ bar",
+      "dot": "・ dot",
+      "line": "│ line",
+      "arrow": "» arrow",
+      "thin": "﹒ small dot",
+      "colon": "꞉ colon",
+      "bullet": "• bullet",
+      "none": "no separator"
+    },
+    "palette": {
+      "template": "Template colours",
+      "nore": "Nore (purple)",
+      "neon": "Neon",
+      "pastel": "Pastel",
+      "minecraft": "Minecraft (§ colours)",
+      "ocean": "Ocean",
+      "sunset": "Sunset",
+      "halloween": "Halloween",
+      "mono": "Black & white"
+    },
+    "catstyle": {
+      "plain": "🚪 ┃ NAME",
+      "lines": "━━ NAME ━━",
+      "brackets": "『 NAME 』",
+      "arrows": "» NAME «",
+      "stars": "✦ NAME ✦",
+      "dots": "・NAME・"
+    },
+    "rolestyle": {
+      "icon": "👑 Name",
+      "brackets": "『 Name 』",
+      "dot": "• Name",
+      "arrow": "» Name",
+      "plain": "Name"
     }
   },
   "panel": {
@@ -2421,6 +2504,53 @@
         "small": "Small",
         "medium": "Medium",
         "full": "Full"
+      },
+      "fonts": {
+        "plain": "Plain",
+        "bold": "𝐁𝐨𝐥𝐝",
+        "sans": "𝗦𝗮𝗻𝘀 𝗯𝗼𝗹𝗱",
+        "italic": "𝘐𝘵𝘢𝘭𝘪𝘤",
+        "smallcaps": "ꜱᴍᴀʟʟ ᴄᴀᴘꜱ",
+        "script": "𝓢𝓬𝓻𝓲𝓹𝓽",
+        "double": "𝔻𝕠𝕦𝕓𝕝𝕖",
+        "mono": "𝙼𝚘𝚗𝚘",
+        "wide": "Ｗｉｄｅ"
+      },
+      "separators": {
+        "bar": "┃ bar",
+        "dot": "・ dot",
+        "line": "│ line",
+        "arrow": "» arrow",
+        "thin": "﹒ small dot",
+        "colon": "꞉ colon",
+        "bullet": "• bullet",
+        "none": "no separator"
+      },
+      "palettes": {
+        "template": "Template colours",
+        "nore": "Nore (purple)",
+        "neon": "Neon",
+        "pastel": "Pastel",
+        "minecraft": "Minecraft (§ colours)",
+        "ocean": "Ocean",
+        "sunset": "Sunset",
+        "halloween": "Halloween",
+        "mono": "Black & white"
+      },
+      "categoryStyles": {
+        "plain": "🚪 ┃ NAME",
+        "lines": "━━ NAME ━━",
+        "brackets": "『 NAME 』",
+        "arrows": "» NAME «",
+        "stars": "✦ NAME ✦",
+        "dots": "・NAME・"
+      },
+      "roleStyles": {
+        "icon": "👑 Name",
+        "brackets": "『 Name 』",
+        "dot": "• Name",
+        "arrow": "» Name",
+        "plain": "Name"
       }
     },
     "general": {
@@ -2865,6 +2995,54 @@
     "utility": {
       "_label": "Utility",
       "_help": "Help, info, avatars, embeds."
+    },
+    "builder": {
+      "_label": "Builder – look",
+      "_help": "How the builder names categories, channels and roles and which colours the roles get. Used by /builder start, /builder repair and the \"Build server\" action.",
+      "style": {
+        "_label": "Server look",
+        "_help": "The name preview updates live. On an existing server run /builder repair to rename channels and roles.",
+        "font": "Font of the names",
+        "separator": "Separator after the emoji",
+        "emoji": "Emoji in category and channel names",
+        "category": "Category look",
+        "upper": "Category names in capitals",
+        "role": "Role look",
+        "palette": "Role colours",
+        "gradient": "Role gradients",
+        "gradient_help": "Two-colour roles when the server has enhanced role colours (boosts)."
+      }
     }
+  },
+  "emoji": {
+    "anim": {
+      "none": "No animation",
+      "spin": "Spin",
+      "bounce": "Bounce",
+      "pulse": "Pulse",
+      "shake": "Shake",
+      "wiggle": "Wiggle",
+      "glow": "Glow"
+    },
+    "created": "Done: {emoji} `:{name}:`",
+    "no_slots": "No free {kind} emoji slots – remove one or reach a higher boost level.",
+    "kind_still": "Still",
+    "kind_animated": "Animated",
+    "no_key": "AI emoji are off: OPENAI_API_KEY is missing in the bot's .env.",
+    "no_canvas": "Animated emoji need the @napi-rs/canvas package (npm install in the bot folder).",
+    "too_big": "The picture is too big (an emoji may be at most 256 KB).",
+    "blocked": "OpenAI rejected this description (content rules) – describe it differently.",
+    "download_failed": "Could not download the picture.",
+    "invalid": "Discord did not accept the emoji: {error}",
+    "failed": "Failed: {error}",
+    "not_image": "That is not a picture.",
+    "no_role_icons": "Role icons need boost level 2.",
+    "role_not_editable": "That role is above the bot's role – move the bot's role higher.",
+    "need_prompt_or_image": "Give a description (prompt) or a picture.",
+    "role_icon_set": "Icon of {role} set.",
+    "list_title": "Server emoji",
+    "footer_ai": "New emoji: /emoji generate (AI, animated too) or /emoji add",
+    "footer_ai_still": "New emoji: /emoji generate (AI) or /emoji add – animations after installing @napi-rs/canvas",
+    "footer_no_ai": "New emoji: /emoji add (AI after adding OPENAI_API_KEY)"
   }
 }

@@ -16,10 +16,10 @@ import path from 'node:path';
 import { ROOT } from './env.js';
 import { slug } from './layout.js';
 import { LANGUAGE_NAMES } from '../i18n/index.js';
+import { normalizeStyle, categoryName, channelName, roleName, separatorName, paletteColors, gradientEnd } from './style.js';
 
 export const SIZES = ['small', 'medium', 'full'];
 const rank = (s) => SIZES.indexOf(s || 'small');
-const SEP = '┃';
 
 const FLAGS = { pl: '🇵🇱', en: '🇬🇧' };
 export const BUILTIN_LISTS = {
@@ -62,7 +62,8 @@ function expand(item, lists) {
 /**
  * @returns {{ layout, roles: Map, channels: Map, content:[{channelKey, kind}], panels:[{channelKey, panel}], binds:[{path, ref}], menus, levels, settings, stats }}
  */
-export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
+export function compileTemplate(tpl, { t, size = 'full', vars = {}, style = {} }) {
+  const st = normalizeStyle(style);
   const lists = tpl.lists || {};
   const sets = tpl.permissionSets || {};
   const R = rank(size);
@@ -74,9 +75,9 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
     if (rank(r.size) > R) continue;
     for (const { key, vars: v, entry } of expand(r, lists)) {
       let name;
-      if (r.separator) name = `▬▬▬ ${tv(`tpl.role.${r.key}`, v).toUpperCase()} ▬▬▬`;
-      else if (r.each && !r.nameKey) name = `${v.emoji ? v.emoji + ' ' : ''}${tv(`tpl.role.${r.key.replace(/_?\{id\}/, '')}`, v)}`;
-      else name = `${r.icon && !r.noPrefix ? r.icon + ' ' : ''}${tv(r.nameKey || `tpl.role.${r.key}`, v)}`;
+      if (r.separator) name = separatorName(tv(`tpl.role.${r.key}`, v), st);
+      else if (r.each && !r.nameKey) name = roleName(v.emoji, tv(`tpl.role.${r.key.replace(/_?\{id\}/, '')}`, v), st);
+      else name = roleName(r.icon, tv(r.nameKey || `tpl.role.${r.key}`, v), st, { prefix: !r.noPrefix });
       const role = {
         key, name: name.slice(0, 100), color: r.separator ? null : (entry?.color || r.color || null), hoist: !!r.hoist && !r.separator, mentionable: !!r.mentionable,
         permissions: r.separator ? [] : Array.isArray(r.perms) ? r.perms : (sets[r.perms || 'none'] || []), icon: r.icon || v.emoji || null,
@@ -129,7 +130,7 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
     if (rank(c.size) > R) continue;
     for (const { key: rawCatKey, vars: cv } of expand(c, lists)) {
       const catKey = `cat_${rawCatKey}`; // categories and channels share one key space
-      const catName = `${cv.emoji || c.emoji} ${SEP} ${tv(`tpl.cat.${c.key.replace(/_?\{id\}/, '')}`, cv).toUpperCase()}`;
+      const catName = categoryName(cv.emoji || c.emoji, tv(`tpl.cat.${c.key.replace(/_?\{id\}/, '')}`, cv), st);
       const catOver = access(c.access);
       for (const k of groupKeys('muted')) catOver.push({ target: k, allow: [], deny: ['SendMessages', 'AddReactions', 'Speak', 'SendMessagesInThreads', 'CreatePublicThreads'] });
       channels.push({ key: catKey, name: catName.slice(0, 100), type: 'category', parent: null, overwrites: mergeOverwrites(catOver) });
@@ -142,7 +143,7 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
           const baseName = tv(ch.name || `tpl.ch.${ch.key.replace(/_?\{id\}/, '')}`, allVars);
           const emoji = v.emoji && ch.each ? v.emoji : ch.emoji;
           const isVoice = ch.type === 'voice' || ch.type === 'stage';
-          const name = isVoice ? `${emoji} ${SEP} ${baseName}` : slug(`${emoji}${SEP}${baseName}`);
+          const name = isVoice ? channelName(emoji, baseName, { voice: true }, st) : slug(channelName(emoji, baseName, {}, st));
           const topicKey = ch.topic || `tpl.topic.${ch.key.replace(/_?\{id\}/, '')}`;
           const topic = isVoice || ch.type === 'category' ? '' : tv(topicKey, allVars);
           const out = {
@@ -170,6 +171,11 @@ export function compileTemplate(tpl, { t, size = 'full', vars = {} }) {
     if (b.refsChannels) { b.refsChannels = b.refsChannels.filter(x => channels.some(c => c.key === x.channel)); if (!b.refsChannels.length) continue; }
     binds.push(b);
   }
+  // palette: recolours the roles (staff ladder top → bottom, then the other coloured roles)
+  const colors = paletteColors(roles, groupKeys('staff'), st);
+  for (const r of roles) if (colors.has(r.key)) r.color = colors.get(r.key);
+  // gradient (staff roles, applied only where the server has enhanced role colours)
+  if (st.gradient) for (const k of groupKeys('staff')) { const r = roles.find(x => x.key === k); if (r?.color) r.color2 = gradientEnd(r.color); }
   return { layout: { roles, channels }, content, panels, binds, menus, levels, settings: tpl.settings || {}, groups: Object.fromEntries(Object.keys(tpl.groups || {}).map(g => [g, groupKeys(g)])) };
 }
 

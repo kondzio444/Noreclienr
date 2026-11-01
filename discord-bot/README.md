@@ -143,15 +143,16 @@ odtwarza brakujące elementy i poprawia tematy, tryb powolny i uprawnienia istni
 
 | Szablon | Mały | Średni | Pełny |
 |---|---|---|---|
-| `mc-server` – serwer Minecraft **MC.noreclient.pl** | 30 ról, 49 kanałów | 50 ról, 118 kanałów | 64 role, 210 kanałów |
-| `nore-client` – społeczność Nore Client | 34 role, 57 kanałów | 45 ról, 115 kanałów | 50 ról, 158 kanałów |
+| `mc-server` – serwer Minecraft **MC.noreclient.pl** | 35 ról, 49 kanałów | 61 ról, 118 kanałów | 66 ról, 210 kanałów |
+| `nore-client` – społeczność Nore Client | 34 role, 57 kanałów | 51 ról, 115 kanałów | 61 ról, 158 kanałów |
 | `gaming` – społeczność graczy | 24 role, 22 kanały | 34 role, 77 kanałów | 34 role, 92 kanały |
 | `support` – tylko pomoc | 8 ról, 15 kanałów | 9 ról, 25 kanałów | 9 ról, 28 kanałów |
 
 (Liczby kanałów razem z kategoriami; dokładne wartości pokazują `/builder templates` i `npm run dry-run`.)
 
-Szablony zawierają m.in. hierarchię ekipy (Właściciel, Zarząd, Administrator, Developer, Moderator,
-Pomocnik, Okres próbny…), role wyróżnień (Partner, Twórca, YouTuber, Streamer, Beta tester, Booster,
+Szablony zawierają m.in. stopniowaną hierarchię ekipy (Właściciel, Współwłaściciel, Manager, Head Admin,
+S.Admin, Admin, Developer, S.Mod, Moderator, T.Mod, S.Helper, Helper, T.Helper), osobną ekipę serwera
+Minecraft (Admin MC, Moderator MC, Helper MC, Budowniczy), role wyróżnień (Partner, Twórca, YouTuber, Streamer, Beta tester, Booster,
 VIP…), rangi z gry synchronizowane pluginem, role za poziomy, role pingów, języków i trybów gry,
 separatory, kolory i ikony ról (od 2. poziomu boostów); sekcję ekipy widoczną tylko dla ekipy (czaty,
 logi, podania, zgłoszenia, lista zadań, głosowe); współprace z formularzem i kanałem reklam partnerów;
@@ -159,6 +160,36 @@ tickety, propozycje (forum z tagami statusów), weryfikację, tablicę statusu, 
 gotowe wiadomości (regulamin, zacznij tutaj, FAQ, jak dołączyć, linki, opis ról, program partnerski,
 rekrutacja, program twórców, beta, boosty, poradnik ekipy…) i ustawienia (weryfikacja, filtr, Community,
 automatyczna publikacja). Każdy moduł bota jest od razu podpięty do utworzonych kanałów i ról.
+
+### Wygląd (czcionki, separatory, kolory)
+
+Wygląd ustawisz w panelu na stronie (**Kreator – wygląd**, z podglądem na żywo) albo w samej komendzie
+(`/builder start|repair|preview font:… separator:… palette:… category_style:… role_style:… emoji:…`):
+
+* **czcionka** nazw: zwykła, 𝐩𝐨𝐠𝐫𝐮𝐛𝐢𝐨𝐧𝐚, 𝗯𝗲𝘇𝘀𝗲𝗿𝘆𝗳𝗼𝘄𝗮, 𝘬𝘶𝘳𝘴𝘺𝘸𝘢, ᴋᴀᴘɪᴛᴀʟɪᴋɪ, 𝓸𝓭𝓻𝓮̨𝓬𝔃𝓷𝓪, 𝕕𝕨𝕦𝕝𝕚𝕟𝕚𝕠𝕨𝕒, 𝚖𝚘𝚗𝚘, ｓｚｅｒｏｋａ
+  (polskie znaki zostają),
+* **separator** po emoji: `┃` `・` `│` `»` `﹒` `꞉` `•` albo bez; emoji w nazwach można wyłączyć,
+* **kategorie**: `🚪 ┃ NAZWA`, `━━ NAZWA ━━`, `『 NAZWA 』`, `» NAZWA «`, `✦ NAZWA ✦`, `・NAZWA・`,
+* **role**: `👑 Nazwa`, `『 Nazwa 』`, `• Nazwa`, `» Nazwa`, `Nazwa`,
+* **kolory ról** (paleta przechodzi po drabince ekipy od góry): szablon, Nore, Neon, Pastele,
+  Minecraft (kolory §), Ocean, Zachód słońca, Halloween, czerń i biel; **gradienty** ról ekipy na
+  serwerach z ulepszonymi kolorami ról (boosty).
+
+Na zbudowanym już serwerze `/builder repair` przemianowuje kanały i role na nowy wygląd (nic nie usuwa).
+Kanały i role spoza szablonu usuwa tylko `/builder start prune:true` – z podglądem, potwierdzeniem w
+Discordzie i kopią zapasową przed budową.
+
+### Emotki i ikony ról z AI
+
+* `/emoji generate prompt:… name:… animation:…` – emotka narysowana przez AI (OpenAI, model GPT
+  Image), zwykła albo animowana (obrót, podskok, pulsowanie, trzęsienie, kiwanie, błysk),
+* `/emoji add image:… animation:…` – z obrazka; zwykły obrazek może też zostać animowany,
+* `/emoji roleicon role:… prompt:… | image:…` – ikona roli (2. poziom boostów),
+* `/emoji list|delete|rename` jak dotąd.
+
+Wymaga `OPENAI_API_KEY` w `.env` (każdy obrazek płatny po stronie OpenAI; komenda tylko dla osób z
+uprawnieniem *Zarządzanie wyrażeniami*, z odstępem 20 s). Animacje i przycinanie do 128×128 robi pakiet
+`@napi-rs/canvas` (instaluje się z `npm install`); bez niego działają tylko zwykłe emotki z AI.
 
 ### Szablony kreatora
 

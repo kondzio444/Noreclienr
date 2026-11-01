@@ -18,6 +18,7 @@ import { opt } from '../../core/commands.js';
 import { EPHEMERAL, row, button, okEmbed, errEmbed, embed, COLORS, bar } from '../../core/ui.js';
 import { loadTemplates, compileTemplate, templateStats, SIZES } from '../../lib/templates.js';
 import { planLayout, diffLines, validateLayout } from '../../lib/layout.js';
+import { FONTS, SEPARATORS, CATEGORY_STYLES, ROLE_STYLES, PALETTES, normalizeStyle, categoryName, channelName, roleName } from '../../lib/style.js';
 import { snapshotForPlan, runOps } from '../../core/layout-exec.js';
 import { translator, LANGUAGES, LANGUAGE_NAMES, has } from '../../i18n/index.js';
 import { formatDuration, ts } from '../../lib/duration.js';
@@ -47,13 +48,48 @@ function vars(bot, guild, tpl) {
   return { server: guild.name, website: bot.env.noreApi, address: tpl.address || bot.cfg(guild.id).minecraft.address || 'MC.noreclient.pl' };
 }
 
+/** Look of the names and colours: the panel's builder.style, then the command's options. */
+export function resolveStyle(bot, guildId, ctx = null) {
+  const base = bot.cfg(guildId).builder?.style || {};
+  const o = {};
+  if (ctx) {
+    for (const [k, opt] of [['font', 'font'], ['separator', 'separator'], ['palette', 'palette'], ['category', 'category_style'], ['role', 'role_style']]) {
+      const v = ctx.str(opt);
+      if (v) o[k] = v;
+    }
+    const e = ctx.bool('emoji');
+    if (e !== null && e !== undefined) o.emoji = e;
+  }
+  return normalizeStyle({ ...base, ...o });
+}
+
+const STYLE_OPTIONS = () => [
+  opt.string('font', false, { choices: { values: FONTS, key: (v) => `builder.font.${v}` } }),
+  opt.string('separator', false, { choices: { values: Object.keys(SEPARATORS), key: (v) => `builder.sep.${v}` } }),
+  opt.string('palette', false, { choices: { values: Object.keys(PALETTES), key: (v) => `builder.palette.${v}` } }),
+  opt.string('category_style', false, { choices: { values: CATEGORY_STYLES, key: (v) => `builder.catstyle.${v}` } }),
+  opt.string('role_style', false, { choices: { values: ROLE_STYLES, key: (v) => `builder.rolestyle.${v}` } }),
+  opt.bool('emoji'),
+];
+
+/** A few sample names in the chosen look (preview embed). */
+export function styleSample(t, style) {
+  return [
+    categoryName('🚪', t('tpl.cat.start'), style),
+    `#${channelName('💬', t('tpl.ch.general'), {}, style).replace(/\s+/g, '-')}`,
+    `🔊 ${channelName('🏠', t('tpl.ch.lobby'), { voice: true }, style)}`,
+    `@${roleName('🛡️', t('tpl.role.senior_admin'), style)}`,
+    `@${roleName('🤝', t('tpl.role.helper'), style)}`,
+  ].join('\n');
+}
+
 /** Builds the plan (layout ops + builder ops) for a template; nothing is changed yet. */
-export function buildPlan(bot, guild, { template, lang, size, content = true, settings = true, update = false, prune = false, protect = [] }) {
+export function buildPlan(bot, guild, { template, lang, size, content = true, settings = true, update = false, prune = false, protect = [], style = {} }) {
   const tpl = templates()[template];
   if (!tpl) throw new Error(`unknown template ${template}`);
   const t = translator(lang);
   const v = vars(bot, guild, tpl);
-  const compiled = compileTemplate(tpl, { t, size, vars: v });
+  const compiled = compileTemplate(tpl, { t, size, vars: v, style });
   const problems = validateLayout(compiled.layout);
   const st = state(bot, guild.id);
   const plan = planLayout(compiled.layout, snapshotForPlan(guild, protect), { map: st.map, update, prune });
@@ -298,6 +334,7 @@ function previewEmbed(t, job, plan) {
       { name: t('builder.opt_content'), value: job.content ? '✅' : '❌', inline: true },
       { name: t('builder.opt_settings'), value: job.settings ? '✅' : '❌', inline: true },
       { name: t('builder.opt_prune'), value: job.prune ? '⚠️ ✅' : '❌', inline: true },
+      { name: t('builder.look'), value: clip(styleSample(t, job.style || {}), 1000), inline: false },
       { name: t('builder.steps'), value: String(job.ops.length), inline: true },
       { name: t('builder.estimate'), value: `~${formatDuration(job.ops.length * 1300)}`, inline: true },
     )
@@ -340,6 +377,7 @@ export default {
           opt.string('language', false, { choices: { values: LANGUAGES, names: LANGUAGE_NAMES } }),
           opt.string('size', false, { choices: { values: SIZES, key: (v) => `panel.options.sizes.${v}` } }),
           opt.bool('content'), opt.bool('settings'), opt.bool('prune'),
+          ...STYLE_OPTIONS(),
         ],
         async run(ctx) { return startFlow(ctx, { update: false }); },
       },
@@ -348,6 +386,7 @@ export default {
           opt.string('template', true, { choices: { values: TEMPLATE_IDS, key: (v) => `tpl.meta.${v}.name` } }),
           opt.string('language', false, { choices: { values: LANGUAGES, names: LANGUAGE_NAMES } }),
           opt.string('size', false, { choices: { values: SIZES, key: (v) => `panel.options.sizes.${v}` } }),
+          ...STYLE_OPTIONS(),
         ],
         async run(ctx) { return startFlow(ctx, { update: true }); },
       },
@@ -356,9 +395,10 @@ export default {
           opt.string('template', true, { choices: { values: TEMPLATE_IDS, key: (v) => `tpl.meta.${v}.name` } }),
           opt.string('language', false, { choices: { values: LANGUAGES, names: LANGUAGE_NAMES } }),
           opt.string('size', false, { choices: { values: SIZES, key: (v) => `panel.options.sizes.${v}` } }),
+          ...STYLE_OPTIONS(),
         ],
         async run(ctx) {
-          const opts = { template: ctx.str('template'), lang: ctx.str('language') || ctx.cfg.general.language, size: ctx.str('size') || 'full', content: true, settings: true, update: false, prune: false, protect: [ctx.i.channelId] };
+          const opts = { template: ctx.str('template'), lang: ctx.str('language') || ctx.cfg.general.language, size: ctx.str('size') || 'full', content: true, settings: true, update: false, prune: false, protect: [ctx.i.channelId], style: resolveStyle(ctx.bot, ctx.guild.id, ctx) };
           const plan = buildPlan(ctx.bot, ctx.guild, opts);
           return ctx.reply({ embeds: [previewEmbed(ctx.t, { ...opts, ops: plan.ops }, plan)], flags: EPHEMERAL });
         },
@@ -418,7 +458,7 @@ async function startFlow(ctx, { update }) {
   if (running.has(ctx.guild.id)) return ctx.fail('builder.already_running');
   const opts = {
     template: ctx.str('template'), lang: ctx.str('language') || ctx.cfg.general.language, size: ctx.str('size') || 'full',
-    content: ctx.bool('content') ?? true, settings: ctx.bool('settings') ?? !update, update, prune: !!ctx.bool('prune'), protect: [ctx.i.channelId],
+    content: ctx.bool('content') ?? true, settings: ctx.bool('settings') ?? !update, update, prune: !!ctx.bool('prune'), protect: [ctx.i.channelId], style: resolveStyle(ctx.bot, ctx.guild.id, ctx),
   };
   await ctx.defer();
   const { job, plan } = newJob(ctx.bot, ctx.guild, ctx, opts);
@@ -430,7 +470,7 @@ async function startFlow(ctx, { update }) {
 
 /** Used by config-driven actions (panel): builds without the Discord confirmation (never prunes). */
 export async function runFromAction(bot, guild, { template, size, lang, update }) {
-  const opts = { template, size, lang: lang || bot.cfg(guild.id).general.language, content: true, settings: !update, update: !!update, prune: false, protect: [] };
+  const opts = { template, size, lang: lang || bot.cfg(guild.id).general.language, content: true, settings: !update, update: !!update, prune: false, protect: [], style: resolveStyle(bot, guild.id) };
   const { job } = newJob(bot, guild, null, opts);
   createBackup(bot, guild, { label: `before builder ${template} (panel)` });
   job.progressChannel = bot.cfg(guild.id).moderation.logChannel || null;

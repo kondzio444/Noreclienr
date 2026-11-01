@@ -17,6 +17,7 @@ import { EPHEMERAL, okEmbed, confirm, embed, COLORS, chunk } from '../core/ui.js
 import { parseDuration, ts } from '../lib/duration.js';
 import { clip, colorInt } from '../lib/template.js';
 import { has } from '../i18n/index.js';
+import { aiEmojiSubs, animOpt, download, createEmoji, explain } from './emoji-ai.js';
 
 const CH_TYPES = { text: ChannelType.GuildText, voice: ChannelType.GuildVoice, category: ChannelType.GuildCategory, announcement: ChannelType.GuildAnnouncement, forum: ChannelType.GuildForum, stage: ChannelType.GuildStageVoice };
 export const VERIFICATION = { none: GuildVerificationLevel.None, low: GuildVerificationLevel.Low, medium: GuildVerificationLevel.Medium, high: GuildVerificationLevel.High, very_high: GuildVerificationLevel.VeryHigh };
@@ -332,11 +333,16 @@ export default {
       name: 'emoji', category: 'server', perms: ['ManageGuildExpressions'], botPerms: ['ManageGuildExpressions'], botPermsScope: 'guild',
       subs: {
         add: {
-          options: [opt.string('name', true, { min: 2, max: 32 }), opt.attachment('image'), opt.string('url', false, { max: 500 })],
+          options: [opt.string('name', true, { min: 2, max: 32 }), opt.attachment('image'), opt.string('url', false, { max: 500 }), animOpt()],
           async run(ctx) {
             await ctx.defer();
             const url = await imageFrom(ctx);
             if (!url) return ctx.reply({ content: ctx.t('conf.need_image') });
+            // animation: a still picture becomes an animated GIF emoji
+            const anim = ctx.str('animation');
+            if (anim && anim !== 'none') {
+              try { return await createEmoji(ctx, await download(url), 'png', ctx.str('name'), anim); } catch (err) { return explain(ctx, err); }
+            }
             const e = await ctx.guild.emojis.create({ attachment: url, name: ctx.str('name').replace(/[^\w]/g, '_') });
             return done(ctx, 'conf.emoji_added', { emoji: `${e}` }, 'emoji.add', { name: e.name });
           },
@@ -357,6 +363,7 @@ export default {
           autocomplete: (ctx) => ctx.guild.emojis.cache.first(25).map(e => ({ name: e.name, value: e.id })),
           async run(ctx) { const e = ctx.guild.emojis.cache.get(ctx.str('emoji')); if (!e) return ctx.fail('conf.not_found'); await e.setName(ctx.str('name').replace(/[^\w]/g, '_')); return done(ctx, 'conf.saved', {}, 'emoji.rename', { name: e.name }); },
         },
+        ...aiEmojiSubs,
         list: {
           async run(ctx) {
             const list = ctx.guild.emojis.cache.map(e => `${e} \`:${e.name}:\``);
