@@ -90,15 +90,20 @@ konto → RAM → instalacja gry z pierścieniem postępu.
 
 ### Budowanie launchera
 
+Wydawany Nore Launcher jest napisany w Rust (Tauri, `launcher-rs/`, interfejs wspólny z `launcher/src/renderer`).
+Stary launcher Electron (`launcher/`) jest budowany już tylko jako jednorazowy „most”, który przenosi
+dotychczasowe instalacje na nową wersję (szczegóły i lista sekretów: `launcher-rs/PORTING.md`).
+
 ```bash
 ./gradlew build                 # najpierw mod (trafi do instalatora)
-cd launcher
-npm install
-npm start                       # uruchomienie w trybie deweloperskim
-npm test                        # testy rdzenia
-npm run dist:win                # instalator Windows -> launcher/dist/NoreLauncher-Setup-1.0.0.exe
-npm run dist:linux              # AppImage
-npm run dist:mac                # DMG (na macOS)
+cd launcher-rs
+npm ci && npm test
+cargo test --workspace
+npx tauri build --bundles nsis  # Windows -> NoreLauncher-Setup (NSIS); Linux: --bundles appimage,deb; macOS: --bundles app,dmg
+
+cd ../launcher                  # most (Electron)
+npm install && npm test
+npm run dist:win                # launcher/dist/NoreLauncher-Bridge-Setup-1.0.0.exe
 ```
 
 Na Linuksie do budowania `.exe` potrzebny jest Wine (`wine64` + `wine32`). Najprościej użyć GitHub Actions —
