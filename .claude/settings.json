@@ -1,20 +1,32 @@
 {
   "extraKnownMarketplaces": {
-    "ui-ux-pro-max-skill": {
+    "nore-pinned": {
       "source": {
-        "source": "github",
-        "repo": "nextlevelbuilder/ui-ux-pro-max-skill"
-      }
-    },
-    "addy-web-quality-skills": {
-      "source": {
-        "source": "github",
-        "repo": "addyosmani/web-quality-skills"
+        "source": "settings",
+        "name": "nore-pinned",
+        "plugins": [
+          {
+            "name": "ui-ux-pro-max",
+            "source": {
+              "source": "github",
+              "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+              "sha": "3a13158ff1f32156cbe144108de48eda2ecaed9a"
+            }
+          },
+          {
+            "name": "web-quality-skills",
+            "source": {
+              "source": "github",
+              "repo": "addyosmani/web-quality-skills",
+              "sha": "afa8da942115f2961fdbfa80807ea0b232ff6c00"
+            }
+          }
+        ]
       }
     }
   },
   "enabledPlugins": {
-    "ui-ux-pro-max@ui-ux-pro-max-skill": true,
-    "web-quality-skills@addy-web-quality-skills": true
+    "ui-ux-pro-max@nore-pinned": true,
+    "web-quality-skills@nore-pinned": true
   }
 }
