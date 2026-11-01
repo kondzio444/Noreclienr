@@ -646,6 +646,9 @@ impl App {
         if provider.is_empty() || provider == "none" {
             return Err(msg("Najpierw ustaw domenę."));
         }
+        if provider == "nore" {
+            return self.apply_nore_domain(srv, ip).await;
+        }
         let ip = match ip {
             Some(i) => i,
             None => server_net::public_ip(&self.env).await?,
@@ -730,11 +733,18 @@ impl App {
             }
         }
         let d = &srv["domain"];
-        if d.truthy_of("auto") && d.str_of("provider").is_some_and(|p| !p.is_empty() && p != "manual" && p != "none") {
+        let tunnel_on = srv.pointer("/tunnel/enabled") == Some(&json!(true));
+        let nore = d.str_of("provider") == Some("nore") && d.str_of("name").is_some_and(|n| !n.is_empty());
+        // a Nore domain on a tunnelled server points at the tunnel – set once the tunnel is up
+        let nore_tunnel = nore && tunnel_on;
+        let auto = d.str_of("provider").is_some_and(|p| !p.is_empty() && p != "manual" && p != "none")
+            && if d.str_of("provider") == Some("nore") { nore && d.get("auto") != Some(&json!(false)) } else { d.truthy_of("auto") };
+        if auto && !nore_tunnel {
             let me = self.clone();
             let id2 = id.clone();
             let h = tokio::spawn(async move {
                 let mut last: Option<String> = None;
+                let mut last_at = 0i64;
                 let mut first = true;
                 loop {
                     if !me.rt_is(&id2, gen) {
@@ -742,7 +752,9 @@ impl App {
                     }
                     let r = async {
                         let ip = server_net::public_ip(&me.env).await?;
-                        if !first && Some(&ip) == last.as_ref() {
+                        // a Nore domain also needs a refresh at least once a day, or it expires after 60 days
+                        let stale = nore && now_ms() - last_at > 24 * 3600 * 1000;
+                        if !first && Some(&ip) == last.as_ref() && !stale {
                             return Ok(None);
                         }
                         let s = me.server_raw(&id2).unwrap_or(json!({}));
@@ -752,12 +764,17 @@ impl App {
                     .await;
                     match r {
                         Ok(Some((r, ip))) => {
-                            me.server_log(
-                                &id2,
-                                &format!("[Launcher] Domena {} → {ip}{}", r.string_or("host", ""), if first { "" } else { " (zmiana IP)" }),
-                                "cmd",
-                            );
+                            let changed = !first && Some(&ip) != last.as_ref();
+                            if first || changed {
+                                let shown = r.str_of("ip").map(String::from).unwrap_or(ip.clone());
+                                me.server_log(
+                                    &id2,
+                                    &format!("[Launcher] Domena {} → {shown}{}", r.string_or("host", ""), if changed { " (zmiana IP)" } else { "" }),
+                                    "cmd",
+                                );
+                            }
                             last = Some(ip);
+                            last_at = now_ms();
                         }
                         Ok(None) => {}
                         Err(e) if first => me.server_log(&id2, &format!("[Launcher] Domena: {e}"), "err"),
@@ -769,9 +786,16 @@ impl App {
             });
             self.add_timer(&id, gen, h);
         }
-        if srv.pointer("/tunnel/enabled") == Some(&json!(true)) {
-            if let Err(e) = self.start_tunnel(&srv, gen).await {
-                self.server_log(&id, &format!("[Launcher] Tunel playit.gg: {e}"), "err");
+        if tunnel_on {
+            match self.start_tunnel(&srv, gen).await {
+                Err(e) => self.server_log(&id, &format!("[Launcher] Tunel playit.gg: {e}"), "err"),
+                Ok(()) if nore_tunnel && d.get("auto") != Some(&json!(false)) && self.rt_is(&id, gen) => {
+                    match self.server_apply_domain(&self.server_raw(&id).unwrap_or(srv.clone()), None).await {
+                        Ok(r) => self.server_log(&id, &format!("[Launcher] Domena {} → tunel {}", r.string_or("host", ""), r.string_or("ip", "")), "cmd"),
+                        Err(e) => self.server_log(&id, &format!("[Launcher] Domena: {e}"), "err"),
+                    }
+                }
+                Ok(()) => {}
             }
         }
     }

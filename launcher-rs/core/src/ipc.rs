@@ -140,6 +140,7 @@ pub const CHANNELS: &[(&str, Status)] = {
         ("servers:checkReachable", Ported),
         ("servers:upnp", Ported),
         ("servers:applyDomain", Ported),
+        ("servers:noreDomain", Ported),
         ("servers:dnsRecords", Ported),
         ("servers:contentSources", Ported),
         ("servers:blocked", Ported),
@@ -361,6 +362,7 @@ pub struct App {
     pub(crate) updates_timer: Mutex<Option<tokio::task::JoinHandle<()>>>,
     pub(crate) bridge: crate::chat_bridge::Bridge,
     discord: std::sync::OnceLock<crate::discord::Discord>,
+    pub(crate) domains_queue: tokio::sync::Mutex<()>,
     /// what the first start imported from the Electron launcher
     pub imported: Option<store::ImportReport>,
 }
@@ -454,6 +456,7 @@ impl App {
             updates_timer: Mutex::new(None),
             bridge: crate::chat_bridge::Bridge::default(),
             discord: std::sync::OnceLock::new(),
+            domains_queue: tokio::sync::Mutex::new(()),
             imported,
         });
         app.instances().ensure_default()?;
@@ -1740,6 +1743,45 @@ mod tests {
         assert_eq!(app.invoke("state:get", vec![]).await.unwrap()["servers"].as_array().unwrap().len(), 1);
         app.invoke("servers:remove", vec![json!(id)]).await.unwrap();
         assert_eq!(app.invoke("servers:list", vec![]).await.unwrap(), json!([]));
+    }
+
+    /// Official Nore domain: signed claim (verified like the worker), stored as provider "nore", released on remove.
+    #[tokio::test]
+    async fn nore_domain_claim_and_release() {
+        use crate::testutil::{serve, Reply};
+        let srv = serve(vec![
+            Reply::json(r#"{"ok":true,"name":"mojserwer","valid":true,"available":true}"#),
+            Reply::json_status(
+                201,
+                r#"{"ok":true,"created":true,"domain":{"name":"mojserwer","fqdn":"mojserwer.noreclient.pl","expiresAt":"2027-01-01T00:00:00.000Z"}}"#,
+            ),
+            Reply::json(r#"{"ok":true,"released":"mojserwer"}"#),
+        ])
+        .await;
+        std::env::set_var("NORE_API", srv.url(""));
+        let dir = tempfile::tempdir().unwrap();
+        let app = app(dir.path());
+        app.invoke("accounts:offline", vec![json!("Gracz")]).await.unwrap();
+        let bad = app.invoke("servers:noreDomain", vec![json!("check"), json!("a_b")]).await.unwrap();
+        assert_eq!((bad["valid"].clone(), bad["reason"].clone()), (json!(false), json!("invalid")));
+        assert_eq!(srv.hits(), 0, "invalid names are answered locally");
+        assert_eq!(app.invoke("servers:noreDomain", vec![json!("check"), json!("MojSerwer")]).await.unwrap()["available"], true);
+        let s = app.invoke("servers:create", vec![json!({ "name": "D", "mcVersion": "1.21.1", "type": "paper", "eula": true })]).await.unwrap();
+        let id = s["id"].clone();
+        // tunnel on: the target is the tunnel, no public IP lookup
+        app.invoke("servers:update", vec![id.clone(), json!({ "tunnel": { "enabled": true, "address": "abc.joinmc.link:4567" } })]).await.unwrap();
+        let r = app.invoke("servers:noreDomain", vec![json!("claim"), id.clone(), json!("mojserwer")]).await.unwrap();
+        assert_eq!(r["server"]["domain"]["provider"], "nore");
+        assert_eq!(r["server"]["domain"]["name"], "mojserwer");
+        let seen = srv.seen();
+        assert_eq!((seen[1].method.as_str(), seen[1].path.as_str()), ("POST", "/api/v2/domains/mojserwer"));
+        let body: Value = serde_json::from_str(&seen[1].body).unwrap();
+        assert_eq!(body["target"], json!({ "address": "abc.joinmc.link", "port": 4567 }));
+        let canon = crate::nore_domains::canonical("claim", "mojserwer", body["hex"].as_str().unwrap(), body["ts"].as_i64().unwrap(), Some(&body["target"]));
+        assert!(chat::verify(body["hex"].as_str().unwrap(), body["pub"].as_str().unwrap(), &canon, body["sig"].as_str().unwrap()));
+        app.invoke("servers:remove", vec![id, json!({ "releaseDomain": true })]).await.unwrap();
+        assert_eq!(srv.seen()[2].method, "DELETE");
+        std::env::remove_var("NORE_API");
     }
 
     /// The local chat bridge: token and Host checks, state, contacts and the long poll.

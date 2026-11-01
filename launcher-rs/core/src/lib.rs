@@ -31,6 +31,7 @@ pub mod modpacks;
 pub mod modrinth;
 pub mod nbt;
 pub mod net;
+pub mod nore_domains;
 pub mod notices;
 pub mod official;
 pub mod oscrypt;

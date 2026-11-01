@@ -1,6 +1,9 @@
 'use strict';
 /* Servers 2.0: list + server panel (overview, console, players, add-ons, worlds, network & domain, settings). */
 
+/** The address players type: a Nore domain is stored as the bare name. */
+const noreHost = (d) => (d && d.provider === 'nore' && d.name && !d.name.includes('.') ? `${d.name}.noreclient.pl` : (d && d.name) || '');
+
 const ENGINES = [
   { value: 'paper', label: 'Paper', hint: 'Szybki, pluginy', color: '#4da3ff' },
   { value: 'purpur', label: 'Purpur', hint: 'Paper + więcej opcji', color: '#b67cff' },
@@ -95,7 +98,7 @@ Pages.servers = (root) => {
           <div class="srv2-text"><h3>${esc(s.name)}</h3>
             <div class="motd srv2-motd">${Motd.html(motd)}</div>
             <div class="row" style="gap:5px;margin-top:6px;flex-wrap:wrap"><span class="tag eng">${esc(e.label)}</span><span class="tag offline">${esc(s.mcVersion)}</span><span class="tag offline">:${s.port}</span>
-              ${s.domain && s.domain.name ? `<span class="tag offline">${esc(s.domain.name)}</span>` : ''}</div></div>
+              ${s.domain && s.domain.name ? `<span class="tag offline">${esc(noreHost(s.domain))}</span>` : ''}</div></div>
           <div class="srv2-right">
             <div class="srv2-sig ${live ? 'on' : ''}" title="${SRV_STATE[s.state] || s.state}"><i></i><i></i><i></i><i></i><i></i></div>
             <div class="srv2-count">${live ? `${s.players.length}<span>/${s.props['max-players']}</span>` : `${(s.memoryMb / 1024).toFixed(1)} GB`}</div>
@@ -131,7 +134,7 @@ Pages.servers = (root) => {
           if (a.dataset.a === 'stop') await nore.servers.stop(id);
           if (a.dataset.a === 'open') go('server', { id });
           if (a.dataset.a === 'join') joinServer(s);
-          if (a.dataset.a === 'copy') copyText(s.domain && s.domain.name ? s.domain.name : `${netInfo && netInfo.publicIp ? netInfo.publicIp : 'localhost'}:${s.port}`, 'Skopiowano adres');
+          if (a.dataset.a === 'copy') copyText(s.domain && s.domain.name ? noreHost(s.domain) : `${netInfo && netInfo.publicIp ? netInfo.publicIp : 'localhost'}:${s.port}`, 'Skopiowano adres');
         } catch (err) { errorToast(err); }
       };
     });
@@ -315,7 +318,7 @@ Pages.server = (root, { id, tab: startTab }) => {
       ['W sieci domowej (LAN)', `${lan}:${s.port}`, 'wifi'],
       ['Z internetu', net.publicIp ? `${net.publicIp}${s.port === 25565 ? '' : ':' + s.port}` : 'brak połączenia', 'globe'],
     ];
-    if (s.domain && s.domain.name) addrs.push(['Domena', s.domain.name + (s.port === 25565 || s.domain.provider === 'cloudflare' ? '' : ':' + s.port), 'link']);
+    if (s.domain && s.domain.name) addrs.push(['Domena', noreHost(s.domain) + (s.port === 25565 || ['cloudflare', 'nore'].includes(s.domain.provider) ? '' : ':' + s.port), 'link']);
     t.innerHTML = `<div class="grid" style="grid-template-columns:repeat(5,1fr);gap:12px">
         <div class="card stat srv2-stat"><span>Status</span><b id="st-state">${SRV_STATE[s.state]}</b></div>
         <div class="card stat srv2-stat"><span>Gracze</span><b id="st-players">${s.players.length} / ${s.props['max-players']}</b></div>
@@ -706,14 +709,15 @@ Pages.server = (root, { id, tab: startTab }) => {
     const net = await nore.servers.netInfo().catch(() => ({ lan: [], publicIp: null }));
     if (!alive || tab !== 'network') return;
     const d = s.domain || { provider: 'none', name: '', auto: true };
-    let provider = d.provider || 'none';
+    // the free official Nore domain is the first choice for a server without a domain
+    let provider = s.domain && s.domain.provider ? s.domain.provider : 'nore';
     const lanIp = ((net.lan || []).find(a => !a.virtual) || net.lan[0] || {}).address;
     const tunnelOn = !!(s.tunnel && s.tunnel.enabled);
     const addr = (v, label, ic, note) => v ? `<div class="addr card" data-cp="${esc(v)}" title="Kopiuj">${icon(ic)}<div><span>${label}</span><b>${esc(v)}</b>${note ? `<small>${note}</small>` : ''}</div>${icon('copy')}</div>` : '';
     t.innerHTML = `<div class="addr-grid">
         ${addr(lanIp && `${lanIp}${s.port !== 25565 ? ':' + s.port : ''}`, 'W tej samej sieci (LAN)', 'wifi', 'Domownicy, ta sama sieć Wi-Fi')}
         ${addr(net.publicIp && `${net.publicIp}${s.port !== 25565 ? ':' + s.port : ''}`, 'Z internetu (IP)', 'globe', 'Wymaga otwartego portu')}
-        ${addr(d.name && d.provider !== 'none' ? d.name + (s.port !== 25565 && !['cloudflare', 'manual'].includes(d.provider) ? ':' + s.port : '') : '', 'Domena', 'link', 'Zawsze aktualne IP')}
+        ${addr(d.name && d.provider !== 'none' ? noreHost(d) + (s.port !== 25565 && !['cloudflare', 'manual', 'nore'].includes(d.provider) ? ':' + s.port : '') : '', d.provider === 'nore' ? 'Domena Nore' : 'Domena', 'link', 'Zawsze aktualne IP')}
         ${addr(tunnelOn && s.tunnel.address, 'Tunel playit.gg', 'zap', 'Działa nawet przy CGNAT')}
       </div>
       <div class="card panel" style="margin-top:16px"><div class="row"><div class="section-title" style="flex:1">${icon('activity')} Diagnostyka połączenia</div>
@@ -739,10 +743,10 @@ Pages.server = (root, { id, tab: startTab }) => {
           <div id="tunnelbox"></div></div>
         <div class="card panel"><div class="section-title">${icon('search')} Test z internetu</div>
           <p class="muted" style="font-size:13px;margin:8px 0 12px">Zewnętrzny serwer (mcsrvstat.us) łączy się tak jak znajomi.</p>
-          <div class="row" style="gap:8px"><input class="input" id="chkhost" value="${esc((tunnelOn && s.tunnel.address) || d.name || net.publicIp || '')}" style="flex:1"><button class="btn sm" id="chk">${icon('search')} Sprawdź</button></div>
+          <div class="row" style="gap:8px"><input class="input" id="chkhost" value="${esc((tunnelOn && s.tunnel.address) || noreHost(d) || net.publicIp || '')}" style="flex:1"><button class="btn sm" id="chk">${icon('search')} Sprawdź</button></div>
           <div id="chkres" style="margin-top:12px"></div></div></div>
       <div class="card panel"><div class="section-title">${icon('link')} Własna domena</div>
-        <p class="muted" style="font-size:13px;margin:8px 0 12px">Zamiast IP znajomi wpiszą np. <b>mojserwer.duckdns.org</b> albo <b>mc.twojadomena.pl</b>. Launcher aktualizuje IP przy starcie i co 10 minut, gdy serwer działa.</p>
+        <p class="muted" style="font-size:13px;margin:8px 0 12px">Zamiast IP znajomi wpiszą np. <b>mojserwer.noreclient.pl</b> – za darmo od Nore – albo własną domenę. Launcher aktualizuje IP przy starcie i co 10 minut, gdy serwer działa.</p>
         <div id="prov"></div><div id="pform" style="margin-top:14px"></div></div></div>`;
     $$('.addr[data-cp]', t).forEach(a => a.onclick = () => copyText(a.dataset.cp, 'Skopiowano adres'));
 
@@ -848,7 +852,7 @@ Pages.server = (root, { id, tab: startTab }) => {
       try {
         const host = $('#chkhost', t).value.trim();
         const tunnelHost = tunnelOn && host === s.tunnel.address;
-        const r = await nore.servers.checkReachable(host, /:\d+$/.test(host) || tunnelHost || (d.provider === 'cloudflare' && host === d.name) ? null : s.port);
+        const r = await nore.servers.checkReachable(host, /:\d+$/.test(host) || tunnelHost || (['cloudflare', 'nore'].includes(d.provider) && host === noreHost(d)) ? null : s.port);
         res.innerHTML = r.online
           ? `<div class="check ok">${icon('check')} <div><b>Działa! Znajomi mogą dołączyć.</b><span>${esc(r.version || '')} • ${r.players ? `${r.players.online}/${r.players.max} graczy` : ''}${r.srv ? ' • rekord SRV OK' : ''}</span></div></div>`
           : `<div class="check bad">${icon('x')} <div><b>Serwer nie odpowiada z internetu.</b><span>${s.state !== 'running' ? 'Najpierw uruchom serwer. ' : ''}Uruchom „Diagnostykę połączenia” powyżej – pokaże, co blokuje.${r.cached ? ' Wynik z pamięci podręcznej (do 5 min).' : ''}</span></div></div>`;
@@ -856,7 +860,7 @@ Pages.server = (root, { id, tab: startTab }) => {
     };
 
     // ---- domain
-    const PROVIDERS = [{ value: 'none', label: 'Brak' }, { value: 'duckdns', label: 'DuckDNS' }, { value: 'noip', label: 'No-IP' }, { value: 'dynu', label: 'Dynu' }, { value: 'cloudflare', label: 'Cloudflare' }, { value: 'manual', label: 'Inna' }];
+    const PROVIDERS = [{ value: 'nore', label: 'Nore (darmowa)' }, { value: 'none', label: 'Brak' }, { value: 'duckdns', label: 'DuckDNS' }, { value: 'noip', label: 'No-IP' }, { value: 'dynu', label: 'Dynu' }, { value: 'cloudflare', label: 'Cloudflare' }, { value: 'manual', label: 'Inna' }];
     const HELP = {
       duckdns: `<ol class="steps"><li>Zaloguj się na <a href="#" data-url="https://www.duckdns.org">duckdns.org</a> (Google/GitHub, za darmo).</li><li>Dodaj subdomenę, skopiuj <b>token</b> z góry strony.</li><li>Wpisz je poniżej i kliknij „Zapisz i zastosuj”.</li></ol>`,
       noip: `<ol class="steps"><li>Załóż darmowe konto na <a href="#" data-url="https://www.noip.com/sign-up">noip.com</a> i utwórz hosta (np. mojserwer.ddns.net).</li><li>Wpisz pełną nazwę hosta, e-mail/login i hasło (albo „DDNS Key”).</li><li>Darmowy host trzeba potwierdzać co 30 dni w mailu od No-IP.</li></ol>`,
@@ -867,6 +871,7 @@ Pages.server = (root, { id, tab: startTab }) => {
     $('#prov', t).appendChild(segmented(PROVIDERS, provider, (v) => { provider = v; form(); }));
     async function form() {
       const f = $('#pform', t);
+      if (provider === 'nore') return noreForm(f);
       if (provider === 'none') {
         f.innerHTML = '<div class="muted" style="font-size:13px">Bez domeny znajomi łączą się przez publiczne IP i port (albo adres tunelu).</div>';
         if (s.domain && s.domain.provider !== 'none') { await nore.servers.update(id, { domain: { provider: 'none', name: '', auto: false, token: null } }); s.domain = null; }
@@ -922,6 +927,78 @@ Pages.server = (root, { id, tab: startTab }) => {
           form().then(() => { showRecords(r.host); setTimeout(() => $('#dcheck', f) && checkDns(), 1500); });
         } catch (err) { errorToast(err, 'Domena'); }
         b.disabled = false;
+      };
+    }
+    // ---- official Nore domain: <name>.noreclient.pl (docs/domains.md)
+    function noreForm(f) {
+      const mine = d.provider === 'nore' && d.name;
+      const head = `<div class="col" style="gap:4px;margin-bottom:10px"><b>Nore – nazwa.noreclient.pl (darmowa, oficjalna)</b>
+        <span class="muted" style="font-size:13px">Darmowy adres od Nore dla Twojego serwera. Launcher ustawia go na Twoje publiczne IP – albo na tunel playit.gg, gdy jest włączony – przy każdym starcie serwera, a port dopisuje sam (rekord SRV). Do 3 nazw na Nore ID; nazwa wygasa po 60 dniach bez uruchomienia serwera.</span></div>`;
+      if (mine) {
+        const host = noreHost(d);
+        const until = d.expiresAt ? new Date(d.expiresAt).toLocaleDateString('pl-PL') : null;
+        f.innerHTML = `${head}
+          <div class="addr card" data-cpn="${esc(host)}" title="Kopiuj">${icon('link')}<div><span>Adres dla znajomych</span><b>${esc(host)}</b><small>${d.lastIp ? `Wskazuje na ${esc(d.lastIp)}` : 'Ustawi się przy starcie serwera'}${until ? ` • ważna do ${esc(until)} (odnawia się przy starcie)` : ''}</small></div>${icon('copy')}</div>
+          <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm" id="napply">${icon('refresh')} Zaktualizuj teraz</button>
+            <button class="btn ghost sm" id="dcheck">${icon('search')} Sprawdź DNS</button><button class="btn ghost sm" id="nrel">${icon('x')} Zwolnij nazwę</button></div>
+          <div id="dnsres" style="margin-top:10px"></div>`;
+        $('[data-cpn]', f).onclick = () => copyText(host, 'Skopiowano adres');
+        $('#napply', f).onclick = async (e) => {
+          const b = e.currentTarget; b.disabled = true;
+          try { const r = await nore.servers.applyDomain(id); toast('Domena Nore', `${r.host} → ${r.ip}`, 'success'); s = await nore.servers.list().then(l => l.find(x => x.id === id) || s); Object.assign(d, s.domain || {}); noreForm(f); } catch (err) { errorToast(err, 'Domena Nore'); }
+          b.disabled = false;
+        };
+        $('#dcheck', f).onclick = async () => {
+          const box = $('#dnsres', f);
+          box.innerHTML = `<div class="muted" style="font-size:12.5px">${icon('refresh', 'spin')} Sprawdzanie DNS…</div>`;
+          try {
+            const r = await nore.servers.dnsCheck(id);
+            const ok = r.a.length > 0;
+            box.innerHTML = `<div class="check ${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'x')}<div><b>${esc(r.host)} → ${ok ? esc(r.a.join(', ')) : 'brak rekordu'}</b>
+              <span>${ok ? 'Domena działa.' : 'Rekord jeszcze się nie rozszedł (do kilku minut) – albo kliknij „Zaktualizuj teraz”.'}${r.srv ? ` • SRV → ${esc(r.srv.target)}:${r.srv.port}` : ''}</span></div></div>`;
+          } catch (err) { box.innerHTML = `<div class="check bad">${icon('x')}<div><b>Nie udało się sprawdzić DNS</b><span>${esc(err.message)}</span></div></div>`; }
+        };
+        $('#nrel', f).onclick = async () => {
+          if (!(await confirmModal('Zwolnić nazwę?', `${host} przestanie działać, a nazwę będzie mógł zająć ktoś inny.`, { ok: 'Zwolnij', danger: true }))) return;
+          try { const r = await nore.servers.noreDomain('release', id); s = r.server; d.provider = 'nore'; d.name = ''; toast('Zwolniono', host, 'success'); noreForm(f); } catch (err) { errorToast(err, 'Domena Nore'); }
+        };
+        return;
+      }
+      f.innerHTML = `${head}
+        <div class="field"><label>Nazwa</label><div class="row" style="gap:6px"><input class="input" id="nname" maxlength="32" placeholder="mojserwer" autocomplete="off" spellcheck="false" style="flex:1"><span class="muted">.noreclient.pl</span></div></div>
+        <div id="nstat" class="muted" style="font-size:12.5px;min-height:18px">3–32 znaki: małe litery, cyfry i myślnik.</div>
+        <div class="row" style="gap:8px;margin-top:10px"><button class="btn sm" id="nclaim" disabled>${icon('check')} Zajmij nazwę</button></div>`;
+      const input = $('#nname', f), stat = $('#nstat', f), btn = $('#nclaim', f);
+      let seq = 0, timer = null, okName = null;
+      const show = (cls, text) => { stat.className = cls; stat.style.fontSize = '12.5px'; stat.innerHTML = text; };
+      input.oninput = () => {
+        const v = input.value.trim().toLowerCase();
+        if (input.value !== v && /^[a-z0-9-]*$/.test(v)) input.value = v;
+        okName = null; btn.disabled = true; clearTimeout(timer);
+        if (!v) return show('muted', '3–32 znaki: małe litery, cyfry i myślnik.');
+        show('muted', `${icon('refresh', 'spin')} Sprawdzanie ${esc(v)}.noreclient.pl…`);
+        const my = ++seq;
+        timer = setTimeout(async () => {
+          try {
+            const r = await nore.servers.noreDomain('check', v);
+            if (my !== seq) return;
+            if (r.available) { okName = r.name; btn.disabled = false; show('ok-text', `${icon('check')} <b>${esc(r.fqdn)}</b> jest wolna`); }
+            else show('err-text', `${icon('x')} ${esc(r.message || 'Ta nazwa jest zajęta.')}`);
+          } catch (err) { if (my === seq) show('err-text', `${icon('x')} ${esc(err.message)}`); }
+        }, 350);
+      };
+      input.onkeydown = (e) => { if (e.key === 'Enter' && okName) btn.click(); };
+      btn.onclick = async () => {
+        if (!okName) return;
+        btn.disabled = true;
+        try {
+          const r = await nore.servers.noreDomain('claim', id, okName);
+          s = r.server; Object.assign(d, s.domain);
+          toast('Domena Nore gotowa', `Znajomi wpiszą ${r.domain.fqdn}`, 'success', 6000);
+          copyText(r.domain.fqdn, 'Skopiowano adres');
+          $('#chkhost', t).value = r.domain.fqdn;
+          noreForm(f);
+        } catch (err) { errorToast(err, 'Domena Nore'); btn.disabled = false; }
       };
     }
     form();
@@ -1029,7 +1106,11 @@ Pages.server = (root, { id, tab: startTab }) => {
     $('#scfg', t).onclick = () => ConfigEditor.open({ serverId: id, kind: s.type === 'velocity' || s.type === 'bungeecord' || ['paper', 'purpur', 'folia'].includes(s.type) ? 'plugin' : 'mod' }, { title: s.name });
     $('#sdel', t).onclick = async () => {
       if (!(await confirmModal('Usunąć serwer?', `„${s.name}” zostanie usunięty razem ze światem i kopiami.`, { ok: 'Usuń', danger: true }))) return;
-      try { await nore.servers.remove(id); go('servers'); } catch (e) { errorToast(e); }
+      let releaseDomain = false;
+      if (s.domain && s.domain.provider === 'nore' && s.domain.name) {
+        releaseDomain = await confirmModal('Zwolnić domenę Nore?', `${noreHost(s.domain)} przestanie działać i ktoś inny będzie mógł zająć tę nazwę. Wybierz „Zostaw”, jeśli chcesz jej użyć dla innego serwera.`, { ok: 'Zwolnij', cancel: 'Zostaw' });
+      }
+      try { await nore.servers.remove(id, { releaseDomain }); go('servers'); } catch (e) { errorToast(e); }
     };
     if (proxy) return;
     // MOTD with live preview

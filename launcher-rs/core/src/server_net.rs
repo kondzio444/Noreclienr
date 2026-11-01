@@ -812,7 +812,9 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
                 format!("DNS: {} – kliknij „Zapisz i zastosuj” w sekcji domeny.", d.str_of("error").unwrap_or("brak rekordu A")),
                 Some("domain"),
             );
-        } else if pubip.as_ref().is_some_and(|p| !a.contains(p)) {
+        } else if pubip.as_ref().is_some_and(|p| !a.contains(p))
+            && !(domain.str_of("provider") == Some("nore") && tunnel.str_of("address").is_some_and(|s| !s.is_empty()))
+        {
             add(
                 "dns",
                 "warn",

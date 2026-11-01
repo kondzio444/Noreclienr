@@ -963,7 +963,11 @@ impl App {
             "servers:list" => self.servers_list(),
             "servers:create" => self.server_create(&arg(a, 0))?,
             "servers:update" => self.server_update(&arg_str(a, 0), &arg(a, 1))?,
-            "servers:remove" => self.server_remove(&arg_str(a, 0)).await?,
+            "servers:remove" => {
+                self.release_domain_on_remove(&arg_str(a, 0), &arg(a, 1)).await?;
+                self.server_remove(&arg_str(a, 0)).await?
+            }
+            "servers:noreDomain" => self.nore_domain(&arg_str(a, 0), &a[1.min(a.len())..]).await?,
             "servers:start" | "servers:reinstall" => {
                 let id = arg_str(a, 0);
                 let p = self.server_progress_fn(&id);

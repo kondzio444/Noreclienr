@@ -53,6 +53,7 @@ export async function status(request, env) {
     counters: clicks.ok ? { status: 'ok', ms: clicks.ms } : { status: 'down', ms: clicks.ms, error: clicks.error },
     panelLogin: { status: env.DISCORD_CLIENT_ID && env.DISCORD_CLIENT_SECRET && String(env.SESSION_KEY || '').length >= 32 ? 'ok' : 'disabled' },
     serverPing: { status: 'ok', rateLimit: env.SLP_LIMIT ? 'binding' : 'isolate' },
+    domains: { status: env.DOMAINS && env.CF_DNS_TOKEN && env.CF_ZONE_ID ? 'ok' : 'disabled', zone: String(env.DOMAINS_ZONE || 'noreclient.pl') },
   };
   const bad = Object.values(components).filter(c => c.status === 'down' || c.status === 'error').length;
   return {

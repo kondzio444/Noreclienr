@@ -25,6 +25,7 @@ import { adminStore, FLAG_DEFAULTS } from './admin-store.js';
 import { validate, applyDefaults, effectiveConfig } from './schema.js';
 import { hubCall } from '../hub.js';
 import { cachedPing } from './slp.js';
+import { adminDomains } from './domains.js';
 import * as pub from './public.js';
 import { readCache, writeCache, releases, sync, REPO, githubApi, githubHeaders, cmpVersion, privateReleases } from '../data.js';
 
@@ -303,6 +304,9 @@ export async function adminRoute(request, url, env, ctx, rest) {
   const audit = (action, target, data) => A.audit(actor, action, target, data, ip);
   const route = (method, re) => { if (m !== method) return null; const x = re.exec(rest); return x; };
   let x;
+
+  // ------------------------------------------------ Nore domains (src/v2/domains.js, docs/domains.md)
+  if (/^domains(\/|$)/.test(rest)) return adminDomains({ request, env, m, q, rest, actor, audit });
 
   if ((x = route('GET', /^me$/))) {
     return { actor, features: { token: String(env.ADMIN_TOKEN || '').length >= 32, discordAdmins: adminIds(env).length, github: !!env.GITHUB_TOKEN, privateReleases: privateReleases(env), mcServer: MC_SERVER(env) } };

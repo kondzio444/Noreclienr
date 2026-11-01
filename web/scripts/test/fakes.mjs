@@ -1,5 +1,6 @@
 // Fake upstreams for the web tests: GitHub releases, Discord (OAuth2 + REST), DNS-over-HTTPS and
-// Minecraft servers (modern status protocol, legacy 0xFE only, and one that never answers).
+// Minecraft servers (modern status protocol, legacy 0xFE only, and one that never answers) and the
+// Cloudflare DNS API (zone records for the official Nore domains).
 import http from 'node:http';
 import net from 'node:net';
 
@@ -49,7 +50,68 @@ export const GUILDS = {
   'tok-bob': [{ id: '900000000000000001', name: 'Nore Polska', icon: 'i1', owner: false, permissions: '0' }],
 };
 
+export const CF_TOKEN = 'cf-test-token-0123456789';
+export const CF_ZONE = 'zone0123456789abcdef';
+
+/** Cloudflare DNS records API (v4) on one zone; records the mutating calls. */
+function fakeCloudflare() {
+  let next = 1;
+  const records = new Map();
+  const calls = [];
+  const add = (r) => { const id = `rec${String(next++).padStart(6, '0')}`; const rec = { id, ttl: 1, proxied: false, comment: null, ...r, created_on: new Date().toISOString() }; records.set(id, rec); return rec; };
+  // what is already in the zone and must never be touched
+  const seed = [
+    add({ type: 'A', name: 'noreclient.pl', content: '192.0.2.1', proxied: true }),
+    add({ type: 'AAAA', name: 'mc.noreclient.pl', content: '100::', proxied: true, comment: 'Worker custom domain' }),
+    add({ type: 'AAAA', name: 'www.noreclient.pl', content: '100::', proxied: true }),
+    add({ type: 'A', name: 'manual.noreclient.pl', content: '198.51.100.7' }),
+    add({ type: 'TXT', name: '_minecraft._tcp.legacy.noreclient.pl', content: 'x' }),
+  ].map(r => ({ ...r }));
+  function handle(req, u, body, send) {
+    if (req.headers.authorization !== `Bearer ${CF_TOKEN}`) return send(403, { success: false, errors: [{ code: 10000, message: 'Authentication error' }], result: null });
+    const m = /^\/cf\/zones\/([^/]+)\/dns_records(?:\/([^/]+))?$/.exec(u.pathname);
+    if (!m || m[1] !== CF_ZONE) return send(404, { success: false, errors: [{ code: 7003, message: 'Could not route' }], result: null });
+    const id = m[2];
+    const out = (status, result) => send(status, { success: true, errors: [], messages: [], result });
+    const missing = () => send(404, { success: false, errors: [{ code: 81044, message: 'Record does not exist.' }], result: null });
+    let b = null;
+    if (body) { try { b = JSON.parse(body); } catch { return send(400, { success: false, errors: [{ code: 9207, message: 'bad json' }] }); } }
+    const valid = (r) => {
+      if (!['A', 'AAAA', 'CNAME', 'SRV', 'TXT'].includes(r.type) || !r.name) return 'type/name';
+      if (r.type === 'SRV' ? !(r.data && r.data.port && r.data.target) : !r.content) return 'content';
+      if (r.type !== 'SRV' && r.proxied !== false) return 'proxied must be false';
+      // CNAME may not share its name with any other record
+      const same = [...records.values()].filter(x => x.name === r.name && x.id !== r.id);
+      if (r.type === 'CNAME' ? same.length : same.some(x => x.type === 'CNAME')) return 'conflict with CNAME';
+      return null;
+    };
+    if (req.method === 'GET' && !id) {
+      const list = [...records.values()].filter(r => (!u.searchParams.get('name') || r.name === u.searchParams.get('name')) && (!u.searchParams.get('type') || r.type === u.searchParams.get('type')));
+      return out(200, list);
+    }
+    if (req.method === 'GET') return records.has(id) ? out(200, records.get(id)) : missing();
+    calls.push({ method: req.method, id: id || null, body: b });
+    if (req.method === 'POST' && !id) {
+      const why = valid(b);
+      if (why) return send(400, { success: false, errors: [{ code: 81057, message: why }], result: null });
+      return out(200, add(b));
+    }
+    if (!records.has(id)) return missing();
+    if (req.method === 'DELETE') { records.delete(id); return out(200, { id }); }
+    if (req.method === 'PATCH' || req.method === 'PUT') {
+      const rec = { ...records.get(id), ...b, id };
+      const why = valid(rec);
+      if (why) return send(400, { success: false, errors: [{ code: 81057, message: why }], result: null });
+      records.set(id, rec);
+      return out(200, rec);
+    }
+    return send(405, { success: false, errors: [{ code: 10405, message: 'method' }] });
+  }
+  return { records, calls, seed, handle, byName: (name) => [...records.values()].filter(r => r.name === name) };
+}
+
 export function startHttpFakes(port) {
+  const cf = fakeCloudflare();
   const calls = { token: 0, me: 0, guilds: 0, github: 0, doh: 0, lastToken: null, assetAuth: [], ghPaths: [] };
   const dns = new Map(); // `${name}|${type}` → answers [{ type, data }]
   const send = (res, status, body, headers = {}) => { res.writeHead(status, { 'Content-Type': 'application/json', ...headers }); res.end(JSON.stringify(body)); };
@@ -89,6 +151,7 @@ export function startHttpFakes(port) {
     const who = Object.values(DISCORD_USERS).find(x => x.token === auth);
     if (u.pathname === '/discord/users/@me') { calls.me++; return who ? send(res, 200, who.user) : send(res, 401, { message: '401: Unauthorized' }); }
     if (u.pathname === '/discord/users/@me/guilds') { calls.guilds++; return who ? send(res, 200, GUILDS[auth]) : send(res, 401, { message: '401: Unauthorized' }); }
+    if (u.pathname.startsWith('/cf/')) return cf.handle(req, u, body, (status, b) => send(res, status, b));
     if (u.pathname === '/doh') {
       calls.doh++;
       const name = (u.searchParams.get('name') || '').replace(/\.$/, '').toLowerCase();
@@ -99,7 +162,7 @@ export function startHttpFakes(port) {
     }
     send(res, 404, { message: 'fake: no route ' + u.pathname });
   });
-  return new Promise(r => server.listen(port, '127.0.0.1', () => r({ server, calls, dns })));
+  return new Promise(r => server.listen(port, '127.0.0.1', () => r({ server, calls, dns, cf })));
 }
 
 // ---------------------------------------------------------------- Minecraft

@@ -61,6 +61,9 @@ npx wrangler secret put DISCORD_CLIENT_SECRET
 npx wrangler secret put ADMIN_TOKEN           # ≥ 32 random chars: openssl rand -base64 48
 npx wrangler secret put ADMIN_DISCORD_IDS     # Discord user IDs allowed in with their panel login, comma separated
 # private repository: GITHUB_TOKEN (Contents: read) + RELEASES_PRIVATE=true → links go through /api/v2/files/…
+# official Nore domains <name>.noreclient.pl (docs/domains.md):
+npx wrangler secret put CF_DNS_TOKEN          # API token: Zone → DNS → Edit, Zone Resources: Include → Specific zone → noreclient.pl
+npx wrangler secret put CF_ZONE_ID            # zone id of noreclient.pl (dashboard → Overview → API)
 ```
 
 In the Discord developer portal add the OAuth2 redirects
