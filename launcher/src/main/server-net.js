@@ -416,16 +416,58 @@ async function firewallAllow(port) {
 
 // ------------------------------------------------------------------ domains
 
-/** Resolves through public resolvers so a stale local cache does not hide a fresh record. */
+/** The hostname players type: Nore and DuckDNS keep only the label (`dawidek`), the rest the full name. */
+function domainHost(domain) {
+  const name = String((domain && domain.name) || '').trim().toLowerCase().replace(/\.$/, '');
+  const zone = { nore: 'noreclient.pl', duckdns: 'duckdns.org' }[domain && domain.provider];
+  if (!zone || !name) return name;
+  return name.endsWith(`.${zone}`) ? name : `${name}.${zone}`;
+}
+
+/** One DNS-over-HTTPS query (JSON API): Cloudflare, then Google. null when neither answers. */
+async function dohQuery(name, type) {
+  for (const base of ['https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve']) {
+    try {
+      const r = await fetch(`${base}?name=${encodeURIComponent(name)}&type=${type}`, { headers: { accept: 'application/dns-json' }, signal: AbortSignal.timeout(5000) });
+      if (r.ok) return await r.json();
+    } catch { /* next resolver */ }
+  }
+  return null;
+}
+
+/**
+ * Resolves through public resolvers so a stale local cache does not hide a fresh record: DNS over
+ * HTTPS first (plain DNS to 1.1.1.1 / 8.8.8.8 is blocked or hijacked on many home networks and
+ * antivirus suites), then plain public DNS, then the system resolver. `error` says why nothing came back.
+ */
 async function dnsCheck(host, port) {
-  const r = new dns.promises.Resolver({ timeout: 4000, tries: 2 });
-  r.setServers(['1.1.1.1', '8.8.8.8']);
   const out = { host, a: [], srv: null };
-  try { out.a = await r.resolve4(host); } catch (e) { out.error = e.code === 'ENOTFOUND' || e.code === 'ENODATA' ? 'brak rekordu A' : e.code || e.message; }
-  try {
-    const srv = await r.resolveSrv(`_minecraft._tcp.${host}`);
-    if (srv[0]) out.srv = { target: srv[0].name, port: srv[0].port };
-  } catch { /* no SRV */ }
+  const doh = await dohQuery(host, 'A');
+  if (doh) {
+    out.a = (doh.Answer || []).filter(x => x.type === 1).map(x => x.data);
+    if (!out.a.length) out.error = doh.Status === 3 ? 'brak rekordu A' : 'brak rekordu A (odpowiedź DNS bez adresu)';
+    const srv = await dohQuery(`_minecraft._tcp.${host}`, 'SRV');
+    const rec = srv && (srv.Answer || []).find(x => x.type === 33);
+    if (rec) {
+      const [, , p, target] = String(rec.data).trim().split(/\s+/);
+      out.srv = { target: String(target || '').replace(/\.$/, ''), port: Number(p) };
+    }
+  }
+  if (!out.a.length) {
+    const r = new dns.promises.Resolver({ timeout: 4000, tries: 2 });
+    r.setServers(['1.1.1.1', '8.8.8.8']);
+    for (const resolve4 of [(h) => r.resolve4(h), (h) => dns.promises.resolve4(h)]) {
+      try { out.a = await resolve4(host); if (out.a.length) { delete out.error; break; } } catch (e) {
+        if (!out.error) out.error = e.code === 'ENOTFOUND' || e.code === 'ENODATA' ? 'brak rekordu A' : `DNS: ${e.code || e.message}`;
+      }
+    }
+    if (!out.srv) {
+      try {
+        const srv = await r.resolveSrv(`_minecraft._tcp.${host}`);
+        if (srv[0]) out.srv = { target: srv[0].name, port: srv[0].port };
+      } catch { /* no SRV */ }
+    }
+  }
   if (out.srv && port && out.srv.port !== Number(port)) out.srvWrongPort = true;
   return out;
 }
@@ -570,10 +612,10 @@ async function diagnose({ port, running, domain, tunnel }) {
   }
 
   if (domain && domain.name && domain.provider && domain.provider !== 'none') {
-    const d = await dnsCheck(domain.name, port).catch((e) => ({ error: e.message, a: [] }));
-    if (!d.a.length) add('dns', 'bad', `Domena ${domain.name}`, `DNS: ${d.error || 'brak rekordu A'} – kliknij „Zapisz i zastosuj” w sekcji domeny.`, 'domain');
-    else if (pub && !d.a.includes(pub) && !(domain.provider === 'nore' && tunnel && tunnel.address)) add('dns', 'warn', `Domena ${domain.name}`, `Wskazuje na ${d.a.join(', ')}, a Twoje IP to ${pub} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).`, 'domain');
-    else add('dns', 'ok', `Domena ${domain.name}`, `Wskazuje na ${d.a.join(', ')}${d.srv ? ` • SRV → port ${d.srv.port}` : ''}.`);
+    const d = await dnsCheck(domainHost(domain), port).catch((e) => ({ error: e.message, a: [] }));
+    if (!d.a.length) add('dns', 'bad', `Domena ${domainHost(domain)}`, `DNS: ${d.error || 'brak rekordu A'} – kliknij „Zapisz i zastosuj” w sekcji domeny.`, 'domain');
+    else if (pub && !d.a.includes(pub) && !(domain.provider === 'nore' && tunnel && tunnel.address)) add('dns', 'warn', `Domena ${domainHost(domain)}`, `Wskazuje na ${d.a.join(', ')}, a Twoje IP to ${pub} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).`, 'domain');
+    else add('dns', 'ok', `Domena ${domainHost(domain)}`, `Wskazuje na ${d.a.join(', ')}${d.srv ? ` • SRV → port ${d.srv.port}` : ''}.`);
   }
 
   if (tunnel && tunnel.address) add('tunnel', 'ok', 'Tunel playit.gg', `Znajomi mogą łączyć się przez ${tunnel.address}.`);
@@ -588,6 +630,6 @@ async function diagnose({ port, running, domain, tunnel }) {
 
 module.exports = {
   lanAddresses, publicIp, defaultGateway, checkReachable, portOpen, isPrivateIp, upnpOpen, upnpClose, routerInfo,
-  firewallStatus, firewallAllow, dnsCheck, duckdnsUpdate, dyndnsUpdate, cloudflareUpdate, updateDomain, manualRecords, diagnose,
+  firewallStatus, firewallAllow, dnsCheck, domainHost, duckdnsUpdate, dyndnsUpdate, cloudflareUpdate, updateDomain, manualRecords, diagnose,
   DYNDNS, _internal: { natpmpMap, natpmpExternal, gatewayServices, testLocations },
 };

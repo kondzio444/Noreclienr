@@ -525,29 +525,98 @@ pub async fn firewall_allow(port: u16) -> Result<bool> {
 
 // ------------------------------------------------------------------ domains
 
-/// Resolves through public resolvers so a stale local cache does not hide a fresh record.
-pub async fn dns_check(host: &str, port: u16) -> Value {
-    use hickory_resolver::config::{NameServerConfigGroup, ResolverConfig, ResolverOpts};
-    let mut opts = ResolverOpts::default();
-    opts.timeout = Duration::from_secs(4);
-    opts.attempts = 2;
-    let cfg =
-        ResolverConfig::from_parts(None, vec![], NameServerConfigGroup::from_ips_clear(&["1.1.1.1".parse().unwrap(), "8.8.8.8".parse().unwrap()], 53, true));
-    let r = hickory_resolver::TokioAsyncResolver::tokio(cfg, opts);
-    let mut out = json!({ "host": host, "a": [], "srv": null });
-    match r.ipv4_lookup(format!("{host}.")).await {
-        Ok(l) => out["a"] = json!(l.iter().map(|a| a.to_string()).collect::<Vec<_>>()),
-        Err(e) => {
-            out["error"] = json!(if matches!(e.kind(), hickory_resolver::error::ResolveErrorKind::NoRecordsFound { .. }) {
-                "brak rekordu A".to_string()
-            } else {
-                e.to_string()
-            });
+/// The hostname players type: Nore and DuckDNS keep only the label (`dawidek`), the rest the full name.
+pub fn domain_host(domain: &Value) -> String {
+    let name = domain.str_of("name").unwrap_or("").trim().trim_end_matches('.').to_lowercase();
+    let zone = match domain.str_of("provider") {
+        Some("nore") => "noreclient.pl",
+        Some("duckdns") => "duckdns.org",
+        _ => return name,
+    };
+    if name.is_empty() || name.ends_with(&format!(".{zone}")) {
+        name
+    } else {
+        format!("{name}.{zone}")
+    }
+}
+
+/// One DNS-over-HTTPS query (JSON API): Cloudflare, then Google. None when neither answers.
+async fn doh_query(env: &Env, name: &str, kind: &str) -> Option<Value> {
+    for base in ["https://cloudflare-dns.com/dns-query", "https://dns.google/resolve"] {
+        let url = format!("{base}?name={}&type={kind}", urlencoding::encode(name));
+        let req = env.net.client().get(&url).header("accept", "application/dns-json").timeout(Duration::from_secs(5));
+        if let Ok(res) = req.send().await {
+            if res.status().is_success() {
+                if let Ok(j) = res.json::<Value>().await {
+                    return Some(j);
+                }
+            }
         }
     }
-    if let Ok(srv) = r.srv_lookup(format!("_minecraft._tcp.{host}.")).await {
-        if let Some(s) = srv.iter().next() {
-            out["srv"] = json!({ "target": s.target().to_utf8().trim_end_matches('.'), "port": s.port() });
+    None
+}
+
+/// Resolves through public resolvers so a stale local cache does not hide a fresh record: DNS over
+/// HTTPS first (plain DNS to 1.1.1.1 / 8.8.8.8 is blocked or hijacked on many home networks and
+/// antivirus suites), then plain public DNS, then the system resolver. `error` says why nothing came back.
+pub async fn dns_check(env: &Env, host: &str, port: u16) -> Value {
+    use hickory_resolver::config::{NameServerConfigGroup, ResolverConfig, ResolverOpts};
+    let mut out = json!({ "host": host, "a": [], "srv": null });
+    let answers = |j: &Value, t: u64| -> Vec<String> {
+        j["Answer"].as_array().into_iter().flatten().filter(|x| x["type"].as_u64() == Some(t)).filter_map(|x| x["data"].as_str().map(String::from)).collect()
+    };
+    if let Some(j) = doh_query(env, host, "A").await {
+        let a = answers(&j, 1);
+        if a.is_empty() {
+            out["error"] = json!("brak rekordu A");
+        }
+        out["a"] = json!(a);
+        if let Some(srv) = doh_query(env, &format!("_minecraft._tcp.{host}"), "SRV").await {
+            if let Some(rec) = answers(&srv, 33).first() {
+                let parts: Vec<&str> = rec.split_whitespace().collect();
+                if parts.len() == 4 {
+                    out["srv"] = json!({ "target": parts[3].trim_end_matches('.'), "port": parts[2].parse::<u64>().unwrap_or(0) });
+                }
+            }
+        }
+    }
+    if out["a"].as_array().is_none_or(|a| a.is_empty()) {
+        let mut opts = ResolverOpts::default();
+        opts.timeout = Duration::from_secs(4);
+        opts.attempts = 2;
+        let cfg = ResolverConfig::from_parts(
+            None,
+            vec![],
+            NameServerConfigGroup::from_ips_clear(&["1.1.1.1".parse().unwrap(), "8.8.8.8".parse().unwrap()], 53, true),
+        );
+        let r = hickory_resolver::TokioAsyncResolver::tokio(cfg, opts);
+        match r.ipv4_lookup(format!("{host}.")).await {
+            Ok(l) => {
+                out["a"] = json!(l.iter().map(|a| a.to_string()).collect::<Vec<_>>());
+                out.as_object_mut().map(|o| o.remove("error"));
+            }
+            Err(e) => {
+                // last resort: the system resolver
+                let sys: Vec<String> =
+                    tokio::net::lookup_host((host, 0)).await.map(|it| it.filter(|a| a.is_ipv4()).map(|a| a.ip().to_string()).collect()).unwrap_or_default();
+                if !sys.is_empty() {
+                    out["a"] = json!(sys);
+                    out.as_object_mut().map(|o| o.remove("error"));
+                } else if out.get("error").is_none() {
+                    out["error"] = json!(if matches!(e.kind(), hickory_resolver::error::ResolveErrorKind::NoRecordsFound { .. }) {
+                        "brak rekordu A".to_string()
+                    } else {
+                        format!("DNS: {e}")
+                    });
+                }
+            }
+        }
+        if out["srv"].is_null() {
+            if let Ok(srv) = r.srv_lookup(format!("_minecraft._tcp.{host}.")).await {
+                if let Some(s) = srv.iter().next() {
+                    out["srv"] = json!({ "target": s.target().to_utf8().trim_end_matches('.'), "port": s.port() });
+                }
+            }
         }
     }
     if out["srv"].is_object() && port != 0 && out["srv"]["port"].as_u64() != Some(port as u64) {
@@ -801,8 +870,10 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
             );
         }
     }
-    if let Some(name) = domain.str_of("name").filter(|n| !n.is_empty() && domain.str_of("provider").is_some_and(|p| !p.is_empty() && p != "none")) {
-        let d = dns_check(name, port).await;
+    if domain.str_of("name").is_some_and(|n| !n.is_empty()) && domain.str_of("provider").is_some_and(|p| !p.is_empty() && p != "none") {
+        let host = domain_host(domain);
+        let name = host.as_str();
+        let d = dns_check(env, name, port).await;
         let a: Vec<String> = d["a"].as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect();
         if a.is_empty() {
             add(
@@ -863,6 +934,14 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn domain_host_adds_the_zone_for_nore_and_duckdns() {
+        assert_eq!(super::domain_host(&serde_json::json!({ "provider": "nore", "name": "dawidek" })), "dawidek.noreclient.pl");
+        assert_eq!(super::domain_host(&serde_json::json!({ "provider": "nore", "name": "Dawidek.noreclient.pl" })), "dawidek.noreclient.pl");
+        assert_eq!(super::domain_host(&serde_json::json!({ "provider": "duckdns", "name": "x" })), "x.duckdns.org");
+        assert_eq!(super::domain_host(&serde_json::json!({ "provider": "cloudflare", "name": "mc.example.pl" })), "mc.example.pl");
+    }
+
     use super::*;
 
     #[test]

@@ -954,7 +954,7 @@ Pages.server = (root, { id, tab: startTab }) => {
           try {
             const r = await nore.servers.dnsCheck(id);
             const ok = r.a.length > 0;
-            box.innerHTML = `<div class="check ${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'x')}<div><b>${esc(r.host)} → ${ok ? esc(r.a.join(', ')) : 'brak rekordu'}</b>
+            box.innerHTML = `<div class="check ${ok ? 'ok' : 'bad'}">${icon(ok ? 'check' : 'x')}<div><b>${esc(r.host)} → ${ok ? esc(r.a.join(', ')) : esc(r.error || 'brak rekordu')}</b>
               <span>${ok ? 'Domena działa.' : 'Rekord jeszcze się nie rozszedł (do kilku minut) – albo kliknij „Zaktualizuj teraz”.'}${r.srv ? ` • SRV → ${esc(r.srv.target)}:${r.srv.port}` : ''}</span></div></div>`;
           } catch (err) { box.innerHTML = `<div class="check bad">${icon('x')}<div><b>Nie udało się sprawdzić DNS</b><span>${esc(err.message)}</span></div></div>`; }
         };

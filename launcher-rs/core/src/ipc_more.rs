@@ -1203,8 +1203,9 @@ impl App {
             "servers:firewall" => json!(server_net::firewall_allow(self.server_require(&arg_str(a, 0))?["port"].as_u64().unwrap_or(25565) as u16).await?),
             "servers:dnsCheck" => {
                 let srv = self.server_require(&arg_str(a, 0))?;
-                let name = srv.pointer("/domain/name").and_then(Value::as_str).filter(|s| !s.is_empty()).ok_or_else(|| msg("Najpierw ustaw domenę."))?;
-                server_net::dns_check(name, srv["port"].as_u64().unwrap_or(25565) as u16).await
+                srv.pointer("/domain/name").and_then(Value::as_str).filter(|s| !s.is_empty()).ok_or_else(|| msg("Najpierw ustaw domenę."))?;
+                let host = server_net::domain_host(&srv["domain"]);
+                server_net::dns_check(&self.env, &host, srv["port"].as_u64().unwrap_or(25565) as u16).await
             }
             "servers:applyDomain" => {
                 let srv = self.server_raw(&arg_str(a, 0)).ok_or_else(|| msg("Nie znaleziono serwera."))?;

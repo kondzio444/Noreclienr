@@ -1574,7 +1574,7 @@ ipcMain.handle('servers:firewall', (e, id) => serverNet.firewallAllow(servers.ge
 ipcMain.handle('servers:dnsCheck', (e, id) => {
   const srv = servers.get(id);
   if (!srv.domain || !srv.domain.name) throw new Error('Najpierw ustaw domenę.');
-  return serverNet.dnsCheck(srv.domain.name, srv.port);
+  return serverNet.dnsCheck(serverNet.domainHost(srv.domain), srv.port);
 });
 ipcMain.handle('servers:applyDomain', (e, id) => servers.applyDomain(servers.raw(id)));
 // official <name>.noreclient.pl (docs/domains.md): check(name), claim(id, name), release(id), mine()
