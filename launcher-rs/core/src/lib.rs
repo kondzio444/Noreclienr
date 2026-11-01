@@ -24,6 +24,7 @@ pub mod java;
 pub mod js;
 pub mod jvm;
 pub mod launch;
+pub mod legacy;
 pub mod loaders;
 pub mod mod_manager;
 pub mod mod_meta;

@@ -2,8 +2,10 @@
 //! (`/api/v2/updates/feed/latest.json`). The state machine and its JSON are those of the Electron
 //! updater (updater.js), so the renderer's update banner works unchanged.
 //!
-//! Signatures are mandatory in the Tauri updater: the public key is compiled in from
-//! `NORE_UPDATER_PUBKEY` (the private key stays a CI secret). Builds without it report `dev`.
+//! Signatures are mandatory in the Tauri updater: the public minisign key is compiled in –
+//! [`DEFAULT_PUBKEY`] (committed, it is public), or `NORE_UPDATER_PUBKEY` at build time when set
+//! (CI: `vars.NORE_UPDATER_PUBKEY`). The private key stays a CI secret. Debug builds report `dev`
+//! (`NORE_UPDATER_TEST=1` turns the updater on there).
 
 use async_trait::async_trait;
 use nore_core::error::{msg, Result};
@@ -14,6 +16,18 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 use tauri_plugin_updater::{Update, UpdaterExt};
+
+/// The public key of the Nore updater signing key (minisign key id D2FD2480DABA1D85).
+pub const DEFAULT_PUBKEY: &str =
+    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQyRkQyNDgwREFCQTFEODUKUldTRkhicmFnQ1Q5MGh1ODR4UFBSU29aREQySUxqVmZVcTNLMXhGZDVHMk1UdU4wN2pOSDhZWFMK";
+
+/// The key this build checks updates with, or None (debug builds without NORE_UPDATER_TEST).
+fn pubkey() -> Option<&'static str> {
+    if cfg!(debug_assertions) && std::env::var_os("NORE_UPDATER_TEST").is_none() {
+        return None;
+    }
+    Some(option_env!("NORE_UPDATER_PUBKEY").map(str::trim).filter(|k| !k.is_empty()).unwrap_or(DEFAULT_PUBKEY))
+}
 
 pub struct TauriUpdater {
     app: AppHandle,
@@ -26,7 +40,7 @@ pub struct TauriUpdater {
 
 impl TauriUpdater {
     pub fn new(app: AppHandle, auto: bool) -> Arc<Self> {
-        let pubkey = option_env!("NORE_UPDATER_PUBKEY").filter(|k| !k.is_empty());
+        let pubkey = pubkey();
         let version = app.package_info().version.to_string();
         let state = if pubkey.is_some() { "idle" } else { "dev" };
         Arc::new(Self {

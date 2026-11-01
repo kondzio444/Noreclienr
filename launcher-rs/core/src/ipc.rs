@@ -300,6 +300,21 @@ fn built_in_ms_client_id() -> Option<String> {
     std::env::var("NORE_MS_CLIENT_ID").ok().filter(|s| !s.is_empty()).or_else(|| option_env!("NORE_MS_CLIENT_ID").map(String::from).filter(|s| !s.is_empty()))
 }
 
+/// `noreRelease` of launcher/package.json (shared with the Electron launcher): the release shown before the build number.
+static NORE_RELEASE: LazyLock<Option<String>> = LazyLock::new(|| {
+    serde_json::from_str::<Value>(include_str!("../../../launcher/package.json")).ok().and_then(|p| p.get("noreRelease")?.as_str().map(String::from))
+});
+
+/// "1.4.5 · Build 1432" for CI builds (patch ≥ 1000), else the plain version.
+pub fn display_version(version: &str, release: Option<&str>) -> String {
+    let patch: u64 = version.split('.').nth(2).and_then(|p| p.parse().ok()).unwrap_or(0);
+    if patch < 1000 {
+        return version.to_string();
+    }
+    let release = release.map(String::from).unwrap_or_else(|| version.split('.').take(2).collect::<Vec<_>>().join("."));
+    format!("{release} · Build {patch}")
+}
+
 static GUID: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").unwrap());
 static VISIBLE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"Backend library|Setting user|LWJGL").unwrap());
 static LOADER_STAGE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(Instalowanie|Pobieranie) (Fabric|Quilt|Forge|NeoForge)").unwrap());
@@ -525,15 +540,10 @@ impl App {
         Arc::new(move |p| e.emit(channel, p))
     }
 
-    /// "1.4.5 · Build 1432" for CI builds (patch ≥ 1000), else the plain version.
+    /// "1.4.5 · Build 1432" for CI builds (patch ≥ 1000), else the plain version – like Electron's
+    /// `displayVersion()` (the release name is `noreRelease` of launcher/package.json).
     pub fn display_version(&self) -> String {
-        let patch: u64 = self.version.split('.').nth(2).and_then(|p| p.parse().ok()).unwrap_or(0);
-        if patch >= 1000 {
-            let release = self.version.split('.').take(2).collect::<Vec<_>>().join(".");
-            format!("{release} · Build {patch}")
-        } else {
-            self.version.clone()
-        }
+        display_version(&self.version, NORE_RELEASE.as_deref())
     }
 
     pub(crate) fn running_id(&self) -> Option<String> {
@@ -1862,6 +1872,16 @@ mod tests {
         assert!(app.invoke("game:launch", vec![json!("missing")]).await.is_err());
         // the busy flag is released after a failure
         assert!(app.invoke("game:prepare", vec![json!("missing")]).await.unwrap_err().to_string().contains("Nie znaleziono"));
+    }
+
+    #[test]
+    fn display_version_like_electron() {
+        assert_eq!(display_version("1.4.1500", Some("1.4.5")), "1.4.5 · Build 1500");
+        assert_eq!(display_version("1.4.1500", None), "1.4 · Build 1500");
+        assert_eq!(display_version("1.4.5", Some("1.4.5")), "1.4.5");
+        // the release name comes from launcher/package.json
+        assert_eq!(NORE_RELEASE.as_deref(), serde_json::from_str::<Value>(include_str!("../../../launcher/package.json")).unwrap()["noreRelease"].as_str());
+        assert!(NORE_RELEASE.is_some());
     }
 
     #[test]
