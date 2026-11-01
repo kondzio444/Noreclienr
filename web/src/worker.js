@@ -33,12 +33,14 @@ import { HubError, readHello, readNames, hubCall } from './hub.js';
 import { launcherConfig, curseforge } from './launcher.js';
 import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView, v1Release, assetLocation } from './data.js';
 import { handleV2 } from './v2/index.js';
+import { cronCleanup } from './v2/domains.js';
 import { siteOf, wwwRedirect, mcAsset, effectiveUrl, MC_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
 export { NoreBot } from './v2/store.js';
 export { NoreCounters } from './v2/counters.js';
 export { NoreAdmin } from './v2/admin-store.js';
+export { NoreDomains } from './v2/domains-store.js';
 
 const API_VERSION = '1.3.0';
 
@@ -290,8 +292,10 @@ export default {
     return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
   },
 
-  // Cron Trigger (wrangler.jsonc "triggers"): refreshes the release data in the background
+  // Cron Trigger (wrangler.jsonc "triggers"): refreshes the release data in the background and
+  // removes Nore domains nobody refreshed for DOMAINS_EXPIRY_DAYS (at most once an hour)
   async scheduled(event, env, ctx) {
     ctx.waitUntil(sync(env));
+    ctx.waitUntil(cronCleanup(env).catch(e => console.error('domains cleanup', e && e.stack || e)));
   },
 };

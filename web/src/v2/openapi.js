@@ -214,5 +214,32 @@ function adminPaths() {
     '/api/v2/admin/server': a('Stan serwera Minecraft (domyślnie mc.noreclient.pl)'),
     '/api/v2/admin/source': a('Kod źródłowy: commity, gałęzie, wydania, CI, pull requesty (GitHub API)'),
     '/api/v2/admin/audit': a('Dziennik działań administratorów'),
+    '/api/v2/admin/domains': a('Domeny Nore: lista i wyszukiwanie (?q=&limit=), rekord oficjalny, limity'),
+    '/api/v2/admin/domains/{name}': merge(a('Domena: właściciel, cel, rekordy DNS', 'get', { parameters: [p('name', s)] }), a('Odbierz domenę (reason, reserve: true = zablokuj nazwę)', 'delete', { parameters: [p('name', s)] })),
+    '/api/v2/admin/domains/{name}/transfer': a('Przekaż domenę innemu Nore ID (noreId)', 'post', { parameters: [p('name', s)] }),
+    '/api/v2/admin/domains/reserved': merge(a('Zarezerwowane nazwy (wbudowane + dodane)'), a('Zarezerwuj nazwę (name, reason)', 'post')),
+    '/api/v2/admin/domains/reserved/{name}': a('Zwolnij rezerwację', 'delete', { parameters: [p('name', s)] }),
+    '/api/v2/admin/domains/official': merge(a('Oficjalny serwer Nore MC: SRV _minecraft._tcp.mc.noreclient.pl'), a('Ustaw cel (host: IP albo nazwa, port) – strona mc.noreclient.pl zostaje bez zmian', 'put'), a('Usuń rekord SRV', 'delete')),
+    '/api/v2/admin/domains/cleanup': a('Usuń teraz domeny nieodświeżane od DOMAINS_EXPIRY_DAYS dni', 'post'),
+    ...domainPaths(),
+  };
+}
+
+/** Official Nore domains <name>.noreclient.pl (docs/domains.md). */
+function domainPaths() {
+  const name = p('name', { type: 'string', pattern: '^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$' }, 'Nazwa (3–32 znaki: a–z, 0–9, myślnik)');
+  const target = obj({ address: { ...s, description: 'Publiczne IPv4 / IPv6 (rekord A / AAAA), nazwa hosta np. tunelu playit.gg (CNAME) albo "auto" (IP nadawcy)' }, port: { ...i, default: 25565, description: 'Inny niż 25565 → rekord SRV _minecraft._tcp.<nazwa>' } }, ['address']);
+  const sig = { hex: { ...s, description: 'Nore ID: pierwsze 20 znaków hex z sha256(pub)' }, pub: { ...s, description: 'Klucz publiczny P-256 (SPKI DER, base64)' }, ts: { ...i, description: 'Czas w ms (±5 min, rosnący dla danego Nore ID)' }, sig: { ...s, description: 'ECDSA P-256 / SHA-256 (DER, base64) nad nore-domains/1|<op>|<name>|<hex>|<ts>|sha256hex(JSON.stringify(target ?? null))' } };
+  const body = (withTarget, required = false) => ({ required: true, content: { 'application/json': { schema: obj(withTarget ? { ...sig, target } : sig, ['hex', 'pub', 'ts', 'sig', ...(required ? ['target'] : [])]) } } });
+  const domain = obj({ name: s, fqdn: s, address: s, target: { type: ['object', 'null'], properties: { type: { enum: ['A', 'AAAA', 'CNAME'] }, address: s, port: i } }, srv: b, state: { enum: ['pending', 'active', 'error'] }, createdAt: s, updatedAt: s, refreshedAt: s, expiresAt: s });
+  return {
+    '/api/v2/domains': { get: { tags: ['public'], summary: 'Domeny Nore: zasady, limity, czy usługa działa', responses: { 200: ok('Info', { zone: s, enabled: b, limits: obj({ minLength: i, maxLength: i, perNoreId: i, expiryDays: i }), rules: s, signature: s }) } } },
+    '/api/v2/domains/{name}': {
+      get: { tags: ['public'], summary: 'Czy nazwa jest wolna (sprawdzanie podczas pisania) i dokąd wskazuje zajęta', parameters: [name], responses: { 200: ok('Wynik', { name: s, fqdn: s, enabled: b, valid: b, available: b, reason: { type: ['string', 'null'], enum: [null, 'invalid', 'reserved', 'blocked_word', 'impersonation', 'taken'] }, message: ns, domain: { anyOf: [domain, { type: 'null' }] } }) } },
+      post: { tags: ['public'], summary: 'Załóż nazwę (op claim; opcjonalnie od razu z celem). Najwyżej 3 na Nore ID', parameters: [name], requestBody: body(true), responses: { 201: ok('Założono', { created: b, domain }), 200: ok('Już Twoja (odświeżono)', { created: b, domain }), ...pick(400, 401, 403, 409, 429, 502, 503) } },
+      put: { tags: ['public'], summary: 'Wskaż cel (op update) – odświeża też ważność (wygasa po 60 dniach bez odświeżenia)', parameters: [name], requestBody: body(true, true), responses: { 200: ok('Zapisano', { changed: b, domain }), ...pick(400, 401, 403, 404, 409, 429, 502, 503) } },
+      delete: { tags: ['public'], summary: 'Zwolnij nazwę (op release)', parameters: [name], requestBody: body(false), responses: { 200: ok('Zwolniono', { released: s }), ...pick(400, 401, 403, 404, 502, 503) } },
+    },
+    '/api/v2/domains/@mine': { post: { tags: ['public'], summary: 'Moje nazwy (op mine, name pusty)', requestBody: body(false), responses: { 200: ok('Lista', { count: i, max: i, domains: arr(domain) }), ...pick(400, 401, 429) } } },
   };
 }
