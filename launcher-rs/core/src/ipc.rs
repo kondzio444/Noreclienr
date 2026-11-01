@@ -94,89 +94,89 @@ pub const CHANNELS: &[(&str, Status)] = {
         ("game:launch", Ported),
         ("game:prepare", Ported),
         ("game:kill", Ported),
-        ("servers:list", Stub),
-        ("servers:create", Pending),
-        ("servers:update", Pending),
-        ("servers:remove", Pending),
-        ("servers:start", Pending),
-        ("servers:stop", Pending),
-        ("servers:command", Pending),
-        ("servers:logs", Pending),
-        ("servers:folder", Pending),
-        ("servers:restart", Pending),
-        ("servers:stats", Pending),
-        ("servers:properties", Pending),
-        ("servers:players", Pending),
-        ("servers:playerList", Pending),
-        ("servers:backup", Pending),
-        ("servers:backups", Pending),
-        ("servers:restoreBackup", Pending),
-        ("servers:deleteBackup", Pending),
-        ("servers:resetWorld", Pending),
-        ("servers:reinstall", Pending),
-        ("servers:setIcon", Pending),
-        ("servers:icon", Pending),
-        ("servers:contentKinds", Pending),
-        ("servers:contentSearch", Pending),
-        ("servers:contentInstall", Pending),
-        ("servers:contentList", Pending),
-        ("servers:contentToggle", Pending),
-        ("servers:contentRemove", Pending),
-        ("servers:contentAddFiles", Pending),
-        ("servers:contentUpdates", Pending),
-        ("servers:contentApplyUpdates", Pending),
-        ("servers:contentAddPaths", Pending),
-        ("servers:modpackVersions", Pending),
-        ("servers:modpackUpdate", Pending),
-        ("servers:modpackApply", Pending),
-        ("servers:loaderVersions", Pending),
-        ("servers:diagnose", Pending),
-        ("servers:firewall", Pending),
-        ("servers:dnsCheck", Pending),
-        ("servers:tunnelLink", Pending),
-        ("servers:tunnelUnlink", Pending),
-        ("servers:tunnel", Pending),
-        ("servers:netInfo", Pending),
-        ("servers:checkReachable", Pending),
-        ("servers:upnp", Pending),
-        ("servers:applyDomain", Pending),
-        ("servers:dnsRecords", Pending),
-        ("servers:contentSources", Pending),
-        ("servers:blocked", Pending),
-        ("servers:resolveBlocked", Pending),
-        ("servers:propertiesForm", Pending),
-        ("servers:saveProperties", Pending),
-        ("servers:complete", Pending),
-        ("servers:jvmPreview", Pending),
-        ("servers:motdPreview", Pending),
-        ("mods:list", Pending),
-        ("mods:identify", Pending),
-        ("mods:toggle", Pending),
-        ("mods:bulk", Pending),
-        ("mods:pin", Pending),
-        ("mods:saveProfile", Pending),
-        ("mods:applyProfile", Pending),
-        ("mods:deleteProfile", Pending),
-        ("mods:modlist", Pending),
-        ("mods:saveModlist", Pending),
-        ("mods:exportPack", Pending),
-        ("mods:changelog", Pending),
-        ("mods:configs", Pending),
-        ("mods:readConfig", Pending),
-        ("mods:saveConfig", Pending),
-        ("content:search", Pending),
-        ("content:project", Pending),
-        ("content:details", Pending),
-        ("content:identify", Pending),
-        ("content:categories", Pending),
-        ("content:install", Pending),
-        ("content:installed", Pending),
-        ("content:toggle", Pending),
-        ("content:updates", Pending),
-        ("content:applyUpdates", Pending),
-        ("content:delete", Pending),
-        ("content:updatesState", Stub),
-        ("content:checkAll", Pending),
+        ("servers:list", Ported),
+        ("servers:create", Ported),
+        ("servers:update", Ported),
+        ("servers:remove", Ported),
+        ("servers:start", Ported),
+        ("servers:stop", Ported),
+        ("servers:command", Ported),
+        ("servers:logs", Ported),
+        ("servers:folder", Ported),
+        ("servers:restart", Ported),
+        ("servers:stats", Ported),
+        ("servers:properties", Ported),
+        ("servers:players", Ported),
+        ("servers:playerList", Ported),
+        ("servers:backup", Ported),
+        ("servers:backups", Ported),
+        ("servers:restoreBackup", Ported),
+        ("servers:deleteBackup", Ported),
+        ("servers:resetWorld", Ported),
+        ("servers:reinstall", Ported),
+        ("servers:setIcon", Ported),
+        ("servers:icon", Ported),
+        ("servers:contentKinds", Ported),
+        ("servers:contentSearch", Ported),
+        ("servers:contentInstall", Ported),
+        ("servers:contentList", Ported),
+        ("servers:contentToggle", Ported),
+        ("servers:contentRemove", Ported),
+        ("servers:contentAddFiles", Ported),
+        ("servers:contentUpdates", Ported),
+        ("servers:contentApplyUpdates", Ported),
+        ("servers:contentAddPaths", Ported),
+        ("servers:modpackVersions", Ported),
+        ("servers:modpackUpdate", Ported),
+        ("servers:modpackApply", Ported),
+        ("servers:loaderVersions", Ported),
+        ("servers:diagnose", Ported),
+        ("servers:firewall", Ported),
+        ("servers:dnsCheck", Ported),
+        ("servers:tunnelLink", Ported),
+        ("servers:tunnelUnlink", Ported),
+        ("servers:tunnel", Ported),
+        ("servers:netInfo", Ported),
+        ("servers:checkReachable", Ported),
+        ("servers:upnp", Ported),
+        ("servers:applyDomain", Ported),
+        ("servers:dnsRecords", Ported),
+        ("servers:contentSources", Ported),
+        ("servers:blocked", Ported),
+        ("servers:resolveBlocked", Ported),
+        ("servers:propertiesForm", Ported),
+        ("servers:saveProperties", Ported),
+        ("servers:complete", Ported),
+        ("servers:jvmPreview", Ported),
+        ("servers:motdPreview", Ported),
+        ("mods:list", Ported),
+        ("mods:identify", Ported),
+        ("mods:toggle", Ported),
+        ("mods:bulk", Ported),
+        ("mods:pin", Ported),
+        ("mods:saveProfile", Ported),
+        ("mods:applyProfile", Ported),
+        ("mods:deleteProfile", Ported),
+        ("mods:modlist", Ported),
+        ("mods:saveModlist", Ported),
+        ("mods:exportPack", Ported),
+        ("mods:changelog", Ported),
+        ("mods:configs", Ported),
+        ("mods:readConfig", Ported),
+        ("mods:saveConfig", Ported),
+        ("content:search", Ported),
+        ("content:project", Ported),
+        ("content:details", Ported),
+        ("content:identify", Ported),
+        ("content:categories", Ported),
+        ("content:install", Ported),
+        ("content:installed", Ported),
+        ("content:toggle", Ported),
+        ("content:updates", Ported),
+        ("content:applyUpdates", Ported),
+        ("content:delete", Ported),
+        ("content:updatesState", Ported),
+        ("content:checkAll", Ported),
         ("chat:identity", Ported),
         ("chat:contacts", Ported),
         ("chat:add", Ported),
@@ -192,35 +192,35 @@ pub const CHANNELS: &[(&str, Status)] = {
         ("chat:read", Ported),
         ("chat:clear", Ported),
         ("chat:attention", Ported),
-        ("chat:presence", Stub),
-        ("curseforge:status", Pending),
-        ("curseforge:setKey", Pending),
-        ("modpacks:install", Pending),
-        ("modpacks:import", Pending),
-        ("modpacks:checkUpdate", Pending),
-        ("modpacks:update", Pending),
-        ("modpacks:versions", Pending),
-        ("modpacks:importInstance", Pending),
-        ("modpacks:blocked", Pending),
-        ("modpacks:resolveBlocked", Pending),
-        ("perf:preview", Pending),
-        ("perf:apply", Pending),
-        ("perf:remove", Pending),
-        ("perf:decline", Pending),
+        ("chat:presence", Ported),
+        ("curseforge:status", Ported),
+        ("curseforge:setKey", Ported),
+        ("modpacks:install", Ported),
+        ("modpacks:import", Ported),
+        ("modpacks:checkUpdate", Ported),
+        ("modpacks:update", Ported),
+        ("modpacks:versions", Ported),
+        ("modpacks:importInstance", Ported),
+        ("modpacks:blocked", Ported),
+        ("modpacks:resolveBlocked", Ported),
+        ("perf:preview", Ported),
+        ("perf:apply", Ported),
+        ("perf:remove", Ported),
+        ("perf:decline", Ported),
         ("loaders:versions", Ported),
         ("bg:custom", Ported),
         ("bg:pick", Ported),
-        ("doctor:check", Pending),
-        ("doctor:fix", Pending),
+        ("doctor:check", Ported),
+        ("doctor:fix", Ported),
         ("friends:list", Ported),
         ("friends:add", Ported),
         ("friends:remove", Ported),
-        ("gallery:list", Pending),
-        ("gallery:full", Pending),
-        ("gallery:copy", Pending),
-        ("gallery:reveal", Pending),
-        ("gallery:open", Pending),
-        ("gallery:delete", Pending),
+        ("gallery:list", Ported),
+        ("gallery:full", Ported),
+        ("gallery:copy", Ported),
+        ("gallery:reveal", Ported),
+        ("gallery:open", Ported),
+        ("gallery:delete", Ported),
         ("notices:get", Ported),
         ("update:state", Ported),
         ("update:check", Ported),
@@ -252,6 +252,26 @@ pub trait Shell: Send + Sync {
         true
     }
     fn quit(&self);
+    /// A save dialog – None when cancelled.
+    async fn save_file(&self, _title: &str, _default_name: &str, _filter_name: &str, _extensions: &[&str]) -> Option<PathBuf> {
+        None
+    }
+    /// A folder picker – None when cancelled.
+    async fn pick_folder(&self, _title: &str) -> Option<PathBuf> {
+        None
+    }
+    /// A multi-file picker – empty when cancelled.
+    async fn pick_files(&self, _title: &str, _filter_name: &str, _extensions: &[&str]) -> Vec<PathBuf> {
+        vec![]
+    }
+    /// Shows the file in the system file manager.
+    fn reveal(&self, path: &Path) -> Result<()> {
+        self.open_path(path.parent().unwrap_or(path))
+    }
+    /// Puts an RGBA image on the clipboard.
+    fn copy_image(&self, _width: u32, _height: u32, _rgba: Vec<u8>) -> Result<()> {
+        Err(msg("Schowek nie jest dostępny."))
+    }
 }
 
 /// A shell without a window (tests, `nore-cli`).
@@ -319,19 +339,28 @@ pub struct App {
     pub secrets: Secrets,
     pub mods: NoreMods,
     pub version: String,
-    emitter: Arc<dyn Emitter>,
-    shell: Arc<dyn Shell>,
+    pub(crate) emitter: Arc<dyn Emitter>,
+    pub(crate) shell: Arc<dyn Shell>,
     updater: Arc<dyn Updater>,
     auth: Auth,
-    chat: Chat,
+    pub(crate) chat: Chat,
     hub: Hub,
     notices: Notices,
     official: official::Status,
-    busy: AtomicBool,
+    pub(crate) busy: AtomicBool,
     game: Mutex<Option<Game>>,
     hub_player: Mutex<Option<Player>>,
     ms_logins: Mutex<HashMap<String, CancellationToken>>,
     refreshing: tokio::sync::Mutex<()>,
+    pub(crate) servers_rt: Mutex<HashMap<String, crate::servers::ServerRt>>,
+    pub(crate) server_restarts: Mutex<HashMap<String, Vec<i64>>>,
+    pub(crate) server_gen: std::sync::atomic::AtomicU64,
+    pub(crate) playit_claim: Mutex<Option<String>>,
+    pub(crate) content_updates: Mutex<serde_json::Map<String, Value>>,
+    pub(crate) updates_running: tokio::sync::Mutex<()>,
+    pub(crate) updates_timer: Mutex<Option<tokio::task::JoinHandle<()>>>,
+    pub(crate) bridge: crate::chat_bridge::Bridge,
+    discord: std::sync::OnceLock<crate::discord::Discord>,
     /// what the first start imported from the Electron launcher
     pub imported: Option<store::ImportReport>,
 }
@@ -346,11 +375,11 @@ impl Drop for BusyGuard<'_> {
     }
 }
 
-fn arg(args: &[Value], i: usize) -> Value {
+pub(crate) fn arg(args: &[Value], i: usize) -> Value {
     args.get(i).cloned().unwrap_or(Value::Null)
 }
 
-fn arg_str(args: &[Value], i: usize) -> String {
+pub(crate) fn arg_str(args: &[Value], i: usize) -> String {
     match args.get(i) {
         Some(Value::String(s)) => s.clone(),
         Some(Value::Number(n)) => n.to_string(),
@@ -416,6 +445,15 @@ impl App {
             hub_player: Mutex::new(None),
             ms_logins: Mutex::new(HashMap::new()),
             refreshing: tokio::sync::Mutex::new(()),
+            servers_rt: Mutex::new(HashMap::new()),
+            server_restarts: Mutex::new(HashMap::new()),
+            server_gen: std::sync::atomic::AtomicU64::new(0),
+            playit_claim: Mutex::new(None),
+            content_updates: Mutex::new(serde_json::Map::new()),
+            updates_running: tokio::sync::Mutex::new(()),
+            updates_timer: Mutex::new(None),
+            bridge: crate::chat_bridge::Bridge::default(),
+            discord: std::sync::OnceLock::new(),
             imported,
         });
         app.instances().ensure_default()?;
@@ -424,6 +462,13 @@ impl App {
 
     /// Background work after the window is up: Nore MC in servers.dat, announcements polling.
     pub fn start_background(self: &Arc<Self>) {
+        let bridge = self.clone();
+        tokio::spawn(async move {
+            bridge.start_chat_bridge().await;
+        });
+        self.apply_discord();
+        self.discord_activity(Some(&launcher_activity()));
+        self.schedule_update_checks(std::time::Duration::from_secs(15));
         let me = self.clone();
         tokio::spawn(async move {
             for i in me.instances().list().into_iter().filter(|i| i.truthy_of("noreClient")) {
@@ -449,15 +494,27 @@ impl App {
         Instances { store: &self.store, paths: &self.env.paths, mods: &self.mods }
     }
 
-    fn emit(&self, channel: &str, payload: Value) {
+    /// Discord Rich Presence with the application id from the settings.
+    fn apply_discord(&self) {
+        let id = self.store.read(|d| d.pointer("/settings/discordAppId").and_then(Value::as_str).filter(|s| !s.is_empty()).map(String::from)).unwrap_or_else(|| store::DISCORD_APP_ID.into());
+        self.discord.get_or_init(crate::discord::Discord::start).set_client_id(&id);
+    }
+
+    fn discord_activity(&self, a: Option<&Value>) {
+        if let Some(d) = self.discord.get() {
+            d.set_activity(a);
+        }
+    }
+
+    pub(crate) fn emit(&self, channel: &str, payload: Value) {
         self.emitter.emit(channel, payload);
     }
 
-    fn log(&self, line: impl Into<String>, stream: &str) {
+    pub(crate) fn log(&self, line: impl Into<String>, stream: &str) {
         self.emit("log", json!({ "line": line.into(), "stream": stream }));
     }
 
-    fn progress_fn(&self, channel: &'static str) -> ProgressFn {
+    pub(crate) fn progress_fn(&self, channel: &'static str) -> ProgressFn {
         let e = self.emitter.clone();
         Arc::new(move |p| e.emit(channel, p))
     }
@@ -473,7 +530,7 @@ impl App {
         }
     }
 
-    fn running_id(&self) -> Option<String> {
+    pub(crate) fn running_id(&self) -> Option<String> {
         self.game.lock().unwrap_or_else(|e| e.into_inner()).as_ref().map(|g| g.instance_id.clone())
     }
 
@@ -802,7 +859,14 @@ impl App {
             }
             "chat:decline" => chat::decline_request(&self.store, &arg_str(a, 0), truthy(&arg(a, 1)))?,
             "chat:history" => chat::history(&self.store, &arg_str(a, 0)),
-            "chat:put" => chat::put_message(&self.store, &arg_str(a, 0), &arg(a, 1))?,
+            "chat:put" => {
+                let m = arg(a, 1);
+                let saved = chat::put_message(&self.store, &arg_str(a, 0), &m)?;
+                if crate::js::truthy(&saved) && !m.truthy_of("mine") && m.truthy_of("text") {
+                    self.bridge_message(&arg_str(a, 0), &saved);
+                }
+                saved
+            }
             "chat:read" => chat::mark_read(&self.store, &arg_str(a, 0))?,
             "chat:clear" => chat::clear_history(&self.store, &arg_str(a, 0))?,
             "chat:attention" => {
@@ -811,7 +875,10 @@ impl App {
                 }
                 json!(true)
             }
-            "chat:presence" => json!(true),
+            "chat:presence" => {
+                self.bridge_set_presence(&arg(a, 0));
+                json!(true)
+            }
             "friends:list" => json!(friends::list(&self.store, &self.game_dirs()).await?),
             "friends:add" => friends::add(&self.store, &self.game_dirs(), &arg_str(a, 0)).await?,
             "friends:remove" => friends::remove(&self.store, &self.game_dirs(), &arg_str(a, 0)).await?,
@@ -825,16 +892,17 @@ impl App {
                 if self.running_id().is_some() {
                     return Err(msg("Zamknij grę przed instalacją aktualizacji."));
                 }
+                self.servers_stop_all();
                 self.updater.install().await?
             }
             "bg:custom" => self.custom_background().await,
             "bg:pick" => self.pick_background().await?,
             "net:check" => json!(self.env.net.get_json::<Value>("https://api.modrinth.com/").await.is_ok()),
 
-            // ------------------------------------------------------------ not ported yet
-            "servers:list" => json!([]),
-            "content:updatesState" => json!({}),
             other => {
+                if let Some(v) = self.invoke_more(other, a).await? {
+                    return Ok(v);
+                }
                 return Err(match status_of(other) {
                     Some(_) => Error::Pending(other.to_string()),
                     None => msg(format!("Nieznany kanał: {other}")),
@@ -854,11 +922,11 @@ impl App {
                 "selectedInstance": d["selectedInstance"],
             })
         });
-        assign(&mut s, &json!({ "instances": self.instances().list(), "running": running, "noreVersions": self.mods.versions(), "servers": [] }));
+        assign(&mut s, &json!({ "instances": self.instances().list(), "running": running, "noreVersions": self.mods.versions(), "servers": self.servers_list() }));
         s
     }
 
-    fn set_settings(&self, patch: &Value) -> Result<Value> {
+    fn set_settings(self: &Arc<Self>, patch: &Value) -> Result<Value> {
         let mut patch = patch.clone();
         if !patch.is_object() {
             return Ok(self.store.settings());
@@ -874,10 +942,16 @@ impl App {
         if patch.get("hubPresence").is_some() {
             self.refresh_hub();
         }
+        if patch.get("discordRpc").is_some() || patch.get("discordAppId").is_some() {
+            self.apply_discord();
+        }
+        if patch.get("updateChannel").is_some() || patch.get("notifyContentUpdates").is_some() {
+            self.schedule_update_checks(std::time::Duration::from_millis(1500));
+        }
         Ok(settings)
     }
 
-    fn take_busy(&self) -> Result<()> {
+    pub(crate) fn take_busy(&self) -> Result<()> {
         if self.busy.swap(true, Ordering::SeqCst) {
             return Err(msg("Trwa już przygotowywanie gry."));
         }
@@ -1193,6 +1267,36 @@ impl App {
             }
             self.instances().update(&id, &json!({ "packInstalled": true }))?;
         }
+        // performance mods (Sodium, Lithium, Krypton...): only what the instance does not have yet
+        if self.instances().get(&id).is_some_and(|i| crate::perf::enabled_for(&i)) {
+            let e = self.emitter.clone();
+            let log = move |line: String| e.emit("log", json!({ "line": line, "stream": "out" }));
+            if let Err(e) = crate::perf::ensure(&self.env, &self.instances(), &id, false, &*progress, &log).await {
+                self.log(format!("[Launcher] Mody wydajności: {e} – gram bez zmian."), "err");
+            }
+        }
+        if inst.truthy_of("autoUpdateMods") && loader != "vanilla" {
+            progress(json!({ "stage": "Aktualizacja modów", "step": "nore" }));
+            let r: Result<()> = async {
+                let ups = modrinth::check_updates(&self.env, &mods_dir, "mod", &mc, &loader, &settings.string_or("updateChannel", "all")).await?;
+                let pins = inst["modPins"].as_array().cloned().unwrap_or_default();
+                let ups = if pins.is_empty() {
+                    ups
+                } else {
+                    crate::mod_manager::without_pinned(ups, &pins, |f| crate::mod_manager::mod_key(f, crate::mod_meta::read_jar(&mods_dir.join(f)).as_ref()))
+                };
+                if !ups.is_empty() {
+                    modrinth::apply_updates(&self.env, &mods_dir, &ups, Some(&game_dir)).await?;
+                    crate::modpacks::remap_pack_files(&self.instances(), &inst, &mods_dir, &ups);
+                    self.log(format!("[Launcher] Zaktualizowano mody: {}", ups.iter().map(|u| u.string_or("newFile", "")).collect::<Vec<_>>().join(", ")), "out");
+                }
+                Ok(())
+            }
+            .await;
+            if let Err(e) = r {
+                self.log(format!("[Launcher] Aktualizacja modów nie powiodła się: {e}"), "err");
+            }
+        }
         // the Java this Minecraft version needs: the player's own one when it fits, otherwise Mojang's
         let need = jvm::required_java(&mc, Some(&installed.version));
         let component = installed.version.pointer("/javaVersion/component").and_then(Value::as_str).map(String::from);
@@ -1268,6 +1372,21 @@ impl App {
             }
         }
         friends::sync(&self.store, &self.game_dirs()).await;
+
+        // automatic repair before the start: duplicate mods, mods for another loader
+        if base.get("autoRepair") != Some(&json!(false)) {
+            let found = crate::doctor::preflight(&inst).await;
+            if !found.is_empty() {
+                let fixed = crate::doctor::apply(&self.env, &self.instances(), &inst, &found).await;
+                for p in &fixed {
+                    self.log(format!("[Naprawa] {}: {}", p.string_or("title", ""), crate::config_edit::js_string(&p["result"])), "out");
+                }
+                self.emit("doctor:report", json!({ "instanceId": instance_id, "phase": "preflight", "problems": fixed }));
+            }
+        }
+        if inst.truthy_of("noreClient") {
+            settings["chatBridge"] = json!(self.start_chat_bridge().await);
+        }
 
         progress(json!({ "stage": "Uruchamianie gry" }));
         tokio::fs::create_dir_all(&game_dir).await?;
@@ -1346,12 +1465,12 @@ impl App {
             app.emit("game:state", json!({ "running": null, "code": if killed { 0 } else { code } }));
             app.shell.window("show");
             app.shell.window("focus");
+            app.discord_activity(Some(&launcher_activity()));
             if !killed && code != 0 {
-                let lines = tail.lock().map(|t| t.len()).unwrap_or(0);
-                app.log(
-                    format!("[Naprawa] Gra zakończyła się kodem {code} ({lines} linii logu). Automatyczna naprawa – w przygotowaniu w wersji Rust."),
-                    "out",
-                );
+                let lines: Vec<String> = tail.lock().map(|t| t.iter().rev().take(3000).rev().cloned().collect()).unwrap_or_default();
+                let app2 = app.clone();
+                let id2 = exit_id.clone();
+                tokio::spawn(async move { app2.crash_repair(&id2, lines, code).await });
             }
         });
         let handle = launch::spawn(&cmd, on_log, on_exit)?;
@@ -1360,6 +1479,12 @@ impl App {
         if inst.truthy_of("noreClient") {
             *self.hub_player.lock().unwrap_or_else(|e| e.into_inner()) = Player::from_account(&account);
             self.refresh_hub();
+        }
+        // Nore Client shows its own, richer presence from inside the game
+        if inst.str_of("modpack") == Some("nore") {
+            self.discord_activity(None);
+        } else {
+            self.discord_activity(Some(&json!({ "details": format!("Gra w Minecraft {}", inst.string_or("mcVersion", "")), "state": inst["name"], "start": started / 1000 })));
         }
         self.instances().update(&id, &json!({ "lastPlayed": now_ms() }))?;
         self.emit("game:state", json!({ "running": id, "phase": "starting" }));
@@ -1386,6 +1511,24 @@ impl App {
         }
     }
 
+    /// After a crash: find the cause in the log and (if enabled) fix it automatically.
+    async fn crash_repair(self: &Arc<Self>, id: &str, lines: Vec<String>, code: i32) {
+        let Some(inst) = self.instances().get(id) else { return };
+        let problems = crate::doctor::analyze_log(&self.instances(), &inst, &lines).await;
+        let auto = self.store.settings().get("autoRepair") != Some(&json!(false));
+        let result = if auto && !problems.is_empty() { crate::doctor::apply(&self.env, &self.instances(), &inst, &problems).await } else { problems };
+        for p in &result {
+            let r = p.get("result").filter(|v| crate::js::truthy(v)).map(|r| format!(": {}", crate::config_edit::js_string(r))).unwrap_or_default();
+            self.log(format!("[Naprawa] {}{r}", p.string_or("title", "")), "out");
+        }
+        self.emit("doctor:report", json!({ "instanceId": id, "phase": "crash", "code": code, "applied": auto, "problems": result }));
+    }
+
+    /// Running servers get "stop" and the launcher waits until they saved their worlds.
+    pub async fn shutdown_servers(self: &Arc<Self>) {
+        self.servers_stop_all_and_wait(std::time::Duration::from_secs(25)).await;
+    }
+
     /// Stops the game when the launcher quits.
     pub fn shutdown(&self) {
         if let Some(g) = self.game.lock().unwrap_or_else(|e| e.into_inner()).as_mut() {
@@ -1393,6 +1536,10 @@ impl App {
         }
         self.hub.game_stopped();
     }
+}
+
+fn launcher_activity() -> Value {
+    json!({ "details": "W launcherze", "state": "Wybiera, w co zagrać" })
 }
 
 async fn count(dir: &Path, f: impl Fn(&str) -> bool) -> usize {
@@ -1483,29 +1630,128 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn pending_channels_answer_in_polish_and_ported_ones_do_not() {
+    async fn every_channel_is_ported_and_answers() {
         let dir = tempfile::tempdir().unwrap();
         let app = app(dir.path());
-        let e = app.invoke("servers:start", vec![json!("x")]).await.unwrap_err();
-        assert_eq!(e.to_string(), "Funkcja w przygotowaniu w wersji Rust (servers:start).");
+        assert!(CHANNELS.iter().all(|(_, st)| *st == Status::Ported), "phase 2 ports every channel");
+        assert_eq!(Error::Pending("x:y".into()).to_string(), "Funkcja w przygotowaniu w wersji Rust (x:y).");
         assert!(app.invoke("nope:nope", vec![]).await.unwrap_err().to_string().starts_with("Nieznany kanał"));
         assert_eq!(app.invoke("servers:list", vec![]).await.unwrap(), json!([]));
-        // ported channels never answer "pending", whatever the arguments
-        for (ch, st) in CHANNELS {
-            if *st == Status::Pending
-                || ch.starts_with("versions:")
+        assert_eq!(app.invoke("servers:start", vec![json!("x")]).await.unwrap_err().to_string(), "Nie znaleziono serwera.");
+        // offline channels answer without "pending" or "unknown", whatever the arguments
+        let network = ["content:", "curseforge:setKey", "modpacks:", "servers:netInfo", "servers:diagnose", "servers:dnsRecords", "servers:tunnelLink", "servers:upnp", "doctor:check", "perf:", "mods:changelog", "mods:identify"];
+        for (ch, _) in CHANNELS {
+            if ch.starts_with("versions:")
                 || ch.starts_with("loaders:")
                 || ch.starts_with("game:")
                 || *ch == "net:check"
                 || *ch == "official:status"
                 || ch.starts_with("accounts:ms")
+                || network.iter().any(|n| ch.starts_with(n))
             {
                 continue;
             }
-            if let Err(Error::Pending(_)) = app.invoke(ch, vec![]).await {
-                panic!("{ch} is marked ported but answers pending");
+            match app.invoke(ch, vec![]).await {
+                Err(Error::Pending(_)) => panic!("{ch} answers pending"),
+                Err(e) if e.to_string().starts_with("Nieznany kanał") => panic!("{ch} is not routed"),
+                _ => {}
             }
         }
+    }
+
+    /// A Paper server through the whole lifecycle without Java: create, settings, properties, backups.
+    #[tokio::test]
+    async fn server_records_properties_and_backups() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = app(dir.path());
+        let s = app.invoke("servers:create", vec![json!({ "name": "Mój Serwer", "mcVersion": "1.21.1", "type": "paper", "eula": true })]).await.unwrap();
+        let id = s["id"].as_str().unwrap().to_string();
+        assert!(id.starts_with("m-j-serwer-"), "{id}");
+        assert_eq!(s["state"], "stopped");
+        assert_eq!(s["props"]["motd"], "Serwer Nore");
+        assert!(app.invoke("servers:create", vec![json!({ "type": "spigot" })]).await.is_err());
+        let u = app.invoke("servers:update", vec![json!(id), json!({ "props": { "pvp": false }, "schedule": { "restartAt": "4:00" }, "domain": { "provider": "duckdns", "name": "x", "token": "sekret" } })]).await.unwrap();
+        assert_eq!(u["props"]["pvp"], false);
+        assert_eq!(u["props"]["motd"], "Serwer Nore");
+        assert_eq!(u["schedule"]["restartAt"], "04:00");
+        assert_eq!(u["domain"]["hasToken"], true);
+        assert!(u["domain"].get("token").is_none(), "the token never goes to the renderer");
+        let raw = app.server_raw(&id).unwrap();
+        assert!(raw["domain"]["token"].as_str().unwrap().starts_with("rs:"));
+        assert_eq!(app.decrypt_token(&raw["domain"]["token"]).as_deref(), Some("sekret"));
+        // the domain settings without a token keep the stored one
+        app.invoke("servers:update", vec![json!(id), json!({ "domain": { "provider": "duckdns", "name": "y" } })]).await.unwrap();
+        assert_eq!(app.decrypt_token(&app.server_raw(&id).unwrap()["domain"]["token"]).as_deref(), Some("sekret"));
+        let form = app.invoke("servers:propertiesForm", vec![json!(id)]).await.unwrap();
+        assert_eq!(form["values"]["pvp"], "false");
+        let saved = app.invoke("servers:saveProperties", vec![json!(id), json!({ "view-distance": "99", "motd": "&aHej" })]).await.unwrap();
+        assert_eq!(saved["errors"].as_array().unwrap().len(), 1);
+        assert_eq!(saved["server"]["props"]["view-distance"], 32);
+        assert_eq!(saved["server"]["props"]["motd"], "§aHej");
+        let jvm = app.invoke("servers:jvmPreview", vec![json!(id), json!({ "memoryMb": 4096 })]).await.unwrap();
+        assert!(jvm.as_str().unwrap().contains("-Xmx4096M"));
+        assert!(app.invoke("servers:backup", vec![json!(id)]).await.unwrap_err().to_string().contains("Świat jeszcze nie istnieje"));
+        let world = app.server_dir(&id).join("world");
+        std::fs::create_dir_all(world.join("region")).unwrap();
+        std::fs::write(world.join("level.dat"), b"lvl").unwrap();
+        std::fs::write(world.join("session.lock"), b"x").unwrap();
+        let f = app.invoke("servers:backup", vec![json!(id)]).await.unwrap();
+        assert!(f.as_str().unwrap().starts_with("manual-"));
+        assert_eq!(app.invoke("servers:backups", vec![json!(id)]).await.unwrap().as_array().unwrap().len(), 1);
+        std::fs::write(world.join("level.dat"), b"changed").unwrap();
+        app.invoke("servers:restoreBackup", vec![json!(id), f.clone()]).await.unwrap();
+        assert_eq!(std::fs::read(world.join("level.dat")).unwrap(), b"lvl");
+        assert!(!world.join("session.lock").exists());
+        app.invoke("servers:playerList", vec![json!(id), json!("ops"), json!("add"), json!("Steve")]).await.unwrap();
+        let p = app.invoke("servers:players", vec![json!(id)]).await.unwrap();
+        assert_eq!(p["ops"][0]["name"], "Steve");
+        assert_eq!(p["ops"][0]["level"], 4);
+        assert!(app.invoke("servers:playerList", vec![json!(id), json!("ops"), json!("add"), json!("a b")]).await.is_err());
+        let c = app.invoke("servers:complete", vec![json!(id), json!("gamem"), json!([])]).await.unwrap();
+        assert_eq!(c[0]["value"], "gamemode");
+        assert_eq!(app.invoke("servers:contentKinds", vec![json!(id)]).await.unwrap(), json!(["plugin", "datapack"]));
+        app.invoke("servers:resetWorld", vec![json!(id), json!("123")]).await.unwrap();
+        assert!(!world.exists());
+        assert_eq!(app.server_raw(&id).unwrap()["props"]["level-seed"], "123");
+        assert_eq!(app.invoke("state:get", vec![]).await.unwrap()["servers"].as_array().unwrap().len(), 1);
+        app.invoke("servers:remove", vec![json!(id)]).await.unwrap();
+        assert_eq!(app.invoke("servers:list", vec![]).await.unwrap(), json!([]));
+    }
+
+    /// The local chat bridge: token and Host checks, state, contacts and the long poll.
+    #[tokio::test]
+    async fn chat_bridge_routes() {
+        let dir = tempfile::tempdir().unwrap();
+        let app = app(dir.path());
+        app.invoke("accounts:offline", vec![json!("Gracz")]).await.unwrap();
+        let addr = app.start_chat_bridge().await.unwrap();
+        let (port, token) = addr.split_once(':').unwrap();
+        let c = reqwest::Client::builder().no_proxy().build().unwrap();
+        let url = |p: &str| format!("http://127.0.0.1:{port}{p}");
+        assert_eq!(c.get(url("/v1/state")).send().await.unwrap().status(), 401);
+        assert_eq!(c.get(url("/v1/state")).header("x-nore-token", token).header("host", "evil.example").send().await.unwrap().status(), 403);
+        let st: Value = c.get(url("/v1/state")).header("x-nore-token", token).send().await.unwrap().json().await.unwrap();
+        assert_eq!(st["me"]["name"], "Gracz");
+        assert_eq!(st["contacts"], json!([]));
+        let r = c.post(url("/v1/contacts/add")).header("x-nore-token", token).json(&json!({ "hex": "0123456789abcdef0123", "name": "Kumpel" })).send().await.unwrap();
+        assert_eq!(r.status(), 200);
+        assert_eq!(r.json::<Value>().await.unwrap()["contact"]["name"], "Kumpel");
+        let r = c.post(url("/v1/send")).header("x-nore-token", token).json(&json!({ "hex": "0123456789abcdef0123", "text": "  hej  " })).send().await.unwrap();
+        assert_eq!(r.status(), 202);
+        app.invoke("chat:presence", vec![json!({ "0123456789abcdef0123": { "online": true, "status": "online", "detail": "W grze" } })]).await.unwrap();
+        let ev: Value = c.get(url("/v1/events?since=0")).header("x-nore-token", token).send().await.unwrap().json().await.unwrap();
+        assert_eq!(ev["events"][0]["type"], "online");
+        assert_eq!(ev["events"][0]["name"], "Kumpel");
+        let seq = ev["seq"].as_u64().unwrap();
+        let app2 = app.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+            app2.invoke("chat:put", vec![json!("0123456789abcdef0123"), json!({ "text": "cześć", "mine": false, "ts": 1 })]).await.unwrap();
+        });
+        let ev: Value = c.get(url(&format!("/v1/events?since={seq}"))).header("x-nore-token", token).send().await.unwrap().json().await.unwrap();
+        assert_eq!(ev["events"][0]["type"], "message");
+        assert_eq!(ev["events"][0]["text"], "cześć");
+        assert_eq!(c.get(url("/v1/nope")).header("x-nore-token", token).send().await.unwrap().status(), 404);
     }
 
     #[tokio::test]

@@ -197,95 +197,95 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 
 #### servers
 
-- [~] `servers:list`
-- [ ] `servers:create`
-- [ ] `servers:update`
-- [ ] `servers:remove`
-- [ ] `servers:start`
-- [ ] `servers:stop`
-- [ ] `servers:command`
-- [ ] `servers:logs`
-- [ ] `servers:folder`
-- [ ] `servers:restart`
-- [ ] `servers:stats`
-- [ ] `servers:properties`
-- [ ] `servers:players`
-- [ ] `servers:playerList`
-- [ ] `servers:backup`
-- [ ] `servers:backups`
-- [ ] `servers:restoreBackup`
-- [ ] `servers:deleteBackup`
-- [ ] `servers:resetWorld`
-- [ ] `servers:reinstall`
-- [ ] `servers:setIcon`
-- [ ] `servers:icon`
-- [ ] `servers:contentKinds`
-- [ ] `servers:contentSearch`
-- [ ] `servers:contentInstall`
-- [ ] `servers:contentList`
-- [ ] `servers:contentToggle`
-- [ ] `servers:contentRemove`
-- [ ] `servers:contentAddFiles`
-- [ ] `servers:contentUpdates`
-- [ ] `servers:contentApplyUpdates`
-- [ ] `servers:contentAddPaths`
-- [ ] `servers:modpackVersions`
-- [ ] `servers:modpackUpdate`
-- [ ] `servers:modpackApply`
-- [ ] `servers:loaderVersions`
-- [ ] `servers:diagnose`
-- [ ] `servers:firewall`
-- [ ] `servers:dnsCheck`
-- [ ] `servers:tunnelLink`
-- [ ] `servers:tunnelUnlink`
-- [ ] `servers:tunnel`
-- [ ] `servers:netInfo`
-- [ ] `servers:checkReachable`
-- [ ] `servers:upnp`
-- [ ] `servers:applyDomain`
-- [ ] `servers:dnsRecords`
-- [ ] `servers:contentSources`
-- [ ] `servers:blocked`
-- [ ] `servers:resolveBlocked`
-- [ ] `servers:propertiesForm`
-- [ ] `servers:saveProperties`
-- [ ] `servers:complete`
-- [ ] `servers:jvmPreview`
-- [ ] `servers:motdPreview`
+- [x] `servers:list`
+- [x] `servers:create`
+- [x] `servers:update`
+- [x] `servers:remove`
+- [x] `servers:start`
+- [x] `servers:stop`
+- [x] `servers:command`
+- [x] `servers:logs`
+- [x] `servers:folder`
+- [x] `servers:restart`
+- [x] `servers:stats`
+- [x] `servers:properties`
+- [x] `servers:players`
+- [x] `servers:playerList`
+- [x] `servers:backup`
+- [x] `servers:backups`
+- [x] `servers:restoreBackup`
+- [x] `servers:deleteBackup`
+- [x] `servers:resetWorld`
+- [x] `servers:reinstall`
+- [x] `servers:setIcon`
+- [x] `servers:icon`
+- [x] `servers:contentKinds`
+- [x] `servers:contentSearch`
+- [x] `servers:contentInstall`
+- [x] `servers:contentList`
+- [x] `servers:contentToggle`
+- [x] `servers:contentRemove`
+- [x] `servers:contentAddFiles`
+- [x] `servers:contentUpdates`
+- [x] `servers:contentApplyUpdates`
+- [x] `servers:contentAddPaths`
+- [x] `servers:modpackVersions`
+- [x] `servers:modpackUpdate`
+- [x] `servers:modpackApply`
+- [x] `servers:loaderVersions`
+- [x] `servers:diagnose`
+- [x] `servers:firewall`
+- [x] `servers:dnsCheck`
+- [x] `servers:tunnelLink`
+- [x] `servers:tunnelUnlink`
+- [x] `servers:tunnel`
+- [x] `servers:netInfo`
+- [x] `servers:checkReachable`
+- [x] `servers:upnp`
+- [x] `servers:applyDomain`
+- [x] `servers:dnsRecords`
+- [x] `servers:contentSources`
+- [x] `servers:blocked`
+- [x] `servers:resolveBlocked`
+- [x] `servers:propertiesForm`
+- [x] `servers:saveProperties`
+- [x] `servers:complete`
+- [x] `servers:jvmPreview`
+- [x] `servers:motdPreview`
 
 #### mods
 
-- [ ] `mods:list`
-- [ ] `mods:identify`
-- [ ] `mods:toggle`
-- [ ] `mods:bulk`
-- [ ] `mods:pin`
-- [ ] `mods:saveProfile`
-- [ ] `mods:applyProfile`
-- [ ] `mods:deleteProfile`
-- [ ] `mods:modlist`
-- [ ] `mods:saveModlist`
-- [ ] `mods:exportPack`
-- [ ] `mods:changelog`
-- [ ] `mods:configs`
-- [ ] `mods:readConfig`
-- [ ] `mods:saveConfig`
+- [x] `mods:list`
+- [x] `mods:identify`
+- [x] `mods:toggle`
+- [x] `mods:bulk`
+- [x] `mods:pin`
+- [x] `mods:saveProfile`
+- [x] `mods:applyProfile`
+- [x] `mods:deleteProfile`
+- [x] `mods:modlist`
+- [x] `mods:saveModlist`
+- [x] `mods:exportPack`
+- [x] `mods:changelog`
+- [x] `mods:configs`
+- [x] `mods:readConfig`
+- [x] `mods:saveConfig`
 
 #### content
 
-- [ ] `content:search`
-- [ ] `content:project`
-- [ ] `content:details`
-- [ ] `content:identify`
-- [ ] `content:categories`
-- [ ] `content:install`
-- [ ] `content:installed`
-- [ ] `content:toggle`
-- [ ] `content:updates`
-- [ ] `content:applyUpdates`
-- [ ] `content:delete`
-- [~] `content:updatesState`
-- [ ] `content:checkAll`
+- [x] `content:search`
+- [x] `content:project`
+- [x] `content:details`
+- [x] `content:identify`
+- [x] `content:categories`
+- [x] `content:install`
+- [x] `content:installed`
+- [x] `content:toggle`
+- [x] `content:updates`
+- [x] `content:applyUpdates`
+- [x] `content:delete`
+- [x] `content:updatesState`
+- [x] `content:checkAll`
 
 #### chat
 
@@ -304,30 +304,30 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 - [x] `chat:read`
 - [x] `chat:clear`
 - [x] `chat:attention`
-- [~] `chat:presence`
+- [x] `chat:presence`
 
 #### curseforge
 
-- [ ] `curseforge:status`
-- [ ] `curseforge:setKey`
+- [x] `curseforge:status`
+- [x] `curseforge:setKey`
 
 #### modpacks
 
-- [ ] `modpacks:install`
-- [ ] `modpacks:import`
-- [ ] `modpacks:checkUpdate`
-- [ ] `modpacks:update`
-- [ ] `modpacks:versions`
-- [ ] `modpacks:importInstance`
-- [ ] `modpacks:blocked`
-- [ ] `modpacks:resolveBlocked`
+- [x] `modpacks:install`
+- [x] `modpacks:import`
+- [x] `modpacks:checkUpdate`
+- [x] `modpacks:update`
+- [x] `modpacks:versions`
+- [x] `modpacks:importInstance`
+- [x] `modpacks:blocked`
+- [x] `modpacks:resolveBlocked`
 
 #### perf
 
-- [ ] `perf:preview`
-- [ ] `perf:apply`
-- [ ] `perf:remove`
-- [ ] `perf:decline`
+- [x] `perf:preview`
+- [x] `perf:apply`
+- [x] `perf:remove`
+- [x] `perf:decline`
 
 #### loaders
 
@@ -340,8 +340,8 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 
 #### doctor
 
-- [ ] `doctor:check`
-- [ ] `doctor:fix`
+- [x] `doctor:check`
+- [x] `doctor:fix`
 
 #### friends
 
@@ -351,12 +351,12 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 
 #### gallery
 
-- [ ] `gallery:list`
-- [ ] `gallery:full`
-- [ ] `gallery:copy`
-- [ ] `gallery:reveal`
-- [ ] `gallery:open`
-- [ ] `gallery:delete`
+- [x] `gallery:list`
+- [x] `gallery:full`
+- [x] `gallery:copy`
+- [x] `gallery:reveal`
+- [x] `gallery:open`
+- [x] `gallery:delete`
 
 #### notices
 
