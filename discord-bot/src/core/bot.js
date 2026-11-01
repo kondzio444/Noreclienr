@@ -126,6 +126,9 @@ export class Bot {
       icon: guild.iconURL({ size: 128 }) || null,
       channels: guild.channels.cache.filter(c => !c.isThread()).map(c => ({ id: c.id, name: c.name, type: CHANNEL_TYPE_NAMES[c.type] || String(c.type), parentId: c.parentId || null, position: c.rawPosition })),
       roles: guild.roles.cache.filter(r => r.id !== guild.id).map(r => ({ id: r.id, name: r.name, color: r.color, position: r.position, managed: r.managed })),
+      // panel dashboard numbers
+      memberCount: guild.memberCount || 0, boostTier: guild.premiumTier || 0, boosts: guild.premiumSubscriptionCount || 0,
+      emojis: guild.emojis?.cache?.size || 0, stickers: guild.stickers?.cache?.size || 0,
     };
   }
 

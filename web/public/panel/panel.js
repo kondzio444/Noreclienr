@@ -26,6 +26,15 @@
       loginErr: { cancelled: 'Logowanie zostało anulowane.', expired: 'Logowanie wygasło. Zacznij od nowa.', state: 'Coś poszło nie tak przy logowaniu. Zacznij od nowa.', token: 'Discord nie przyjął logowania. Spróbuj jeszcze raz.', scope: 'Potrzebujemy zgody na listę serwerów.', user: 'Nie udało się pobrać konta Discord.', code: 'Brak kodu logowania od Discorda.' },
       ev: { action_result: 'Akcja', panel_config_saved: 'Zapis w panelu', bot_config_saved: 'Zmiana z bota', member_join: 'Nowa osoba', member_leave: 'Ktoś wyszedł', ticket_open: 'Ticket otwarty', mod_action: 'Moderacja', builder_finished: 'Kreator skończył', builder_start: 'Kreator ruszył', backup_create: 'Kopia zapasowa', suggestion_new: 'Nowa propozycja', application_new: 'Nowe podanie' },
       ago: (s) => N.ago(s),
+      overview: 'Przegląd', builderPage: 'Kreator serwera', eventsPage: 'Dziennik zdarzeń', legal: 'Informacje', terms: 'Regulamin', privacy: 'Prywatność', site: 'Strona Nore', support: 'Wsparcie',
+      grp: { general: 'Ogólne', moderation: 'Moderacja', community: 'Społeczność', nore: 'Nore i Minecraft', automation: 'Automatyzacja', server: 'Serwer', other: 'Inne' },
+      stMembers: 'Członkowie', stChannels: 'Kanały', stRoles: 'Role', stBoosts: 'Boosty', stEmoji: 'Emotki', stVersion: 'Wersja ustawień', stModules: 'Włączone moduły', botOnline: 'Bot działa', botStale: 'Bot dawno się nie zgłosił', botOff: 'Bot jeszcze się nie zgłosił',
+      modulesTitle: 'Moduły', modulesHint: 'Włącz albo wyłącz moduł jednym kliknięciem, szczegóły po kliknięciu nazwy.', quick: 'Szybkie akcje', qPanels: 'Wyślij panele (tickety, weryfikacja, role)', qBackup: 'Zrób kopię zapasową', qDiscovery: 'Sprawdź wymagania Discovery', qServer: 'Zastosuj ustawienia serwera',
+      queued: 'Zlecono botowi – wynik pojawi się w dzienniku.', settings: 'Ustawienia', searchMods: 'Szukaj ustawień',
+      bTemplate: 'Szablon', bSize: 'Rozmiar', bLang: 'Język kanałów i ról', bLook: 'Wygląd', bBuild: 'Zbuduj serwer', bRepair: 'Napraw i zastosuj wygląd', bWarn: 'Przed budową bot robi kopię zapasową. Budowa z panelu niczego nie usuwa – kanały spoza szablonu usuniesz tylko komendą /builder start prune:true na Discordzie.', bJobs: 'Ostatnie zlecenia', bNone: 'Jeszcze nic nie zlecono.', bUnsaved: 'Najpierw zapisz albo cofnij zmiany.',
+      sizes: { small: 'Mały', medium: 'Średni', full: 'Pełny' }, langAuto: 'Język serwera',
+      tpl: { 'nore-client': ['Nore Client', 'Społeczność klienta: aktualizacje, pomoc, beta, twórcy, ekipa z pełną drabinką stopni.'], 'mc-server': ['Serwer Minecraft', 'MC.noreclient.pl: tryby gry, rangi z gry, ekipa serwera MC, status na żywo, tickety.'], gaming: ['Społeczność graczy', 'Gry, poziomy, eventy, konkursy i kanały głosowe.'], support: ['Tylko pomoc', 'Mały serwer wsparcia: tickety, FAQ, statusy i aktualizacje.'] },
+      evAll: 'Wszystkie', evFilter: 'Filtr', more: 'Więcej',
     },
     en: {
       brand: 'Bot panel', loading: 'Loading the panel…', loginTitle: 'Nore Bot panel', loginText: 'Sign in with Discord. You will see the servers where you have the “Manage Server” permission.', login: 'Sign in with Discord',
@@ -40,6 +49,15 @@
       loginErr: { cancelled: 'Sign-in was cancelled.', expired: 'Sign-in expired. Start again.', state: 'Something went wrong while signing in. Start again.', token: 'Discord did not accept the sign-in. Try again.', scope: 'We need permission to see your server list.', user: 'Could not load your Discord account.', code: 'Discord sent no sign-in code.' },
       ev: { action_result: 'Action', panel_config_saved: 'Saved in the panel', bot_config_saved: 'Changed by the bot', member_join: 'New member', member_leave: 'Member left', ticket_open: 'Ticket opened', mod_action: 'Moderation', builder_finished: 'Builder finished', builder_start: 'Builder started', backup_create: 'Backup', suggestion_new: 'New suggestion', application_new: 'New application' },
       ago: (iso) => { const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; },
+      overview: 'Overview', builderPage: 'Server builder', eventsPage: 'Event log', legal: 'Information', terms: 'Terms', privacy: 'Privacy', site: 'Nore website', support: 'Support',
+      grp: { general: 'General', moderation: 'Moderation', community: 'Community', nore: 'Nore & Minecraft', automation: 'Automation', server: 'Server', other: 'Other' },
+      stMembers: 'Members', stChannels: 'Channels', stRoles: 'Roles', stBoosts: 'Boosts', stEmoji: 'Emoji', stVersion: 'Settings version', stModules: 'Modules on', botOnline: 'Bot is online', botStale: 'Bot has not reported for a while', botOff: 'The bot has not reported yet',
+      modulesTitle: 'Modules', modulesHint: 'Turn a module on or off with one click, open it for the details.', quick: 'Quick actions', qPanels: 'Post panels (tickets, verification, roles)', qBackup: 'Make a backup', qDiscovery: 'Check Discovery requirements', qServer: 'Apply server settings',
+      queued: 'Sent to the bot – the result appears in the log.', settings: 'Settings', searchMods: 'Search settings',
+      bTemplate: 'Template', bSize: 'Size', bLang: 'Language of channels and roles', bLook: 'Look', bBuild: 'Build the server', bRepair: 'Repair and apply the look', bWarn: 'The bot makes a backup before building. Building from the panel never deletes anything – channels outside the template are removed only by /builder start prune:true on Discord.', bJobs: 'Recent jobs', bNone: 'Nothing requested yet.', bUnsaved: 'Save or undo your changes first.',
+      sizes: { small: 'Small', medium: 'Medium', full: 'Full' }, langAuto: 'Server language',
+      tpl: { 'nore-client': ['Nore Client', 'Client community: updates, support, beta, creators, staff with the full rank ladder.'], 'mc-server': ['Minecraft server', 'MC.noreclient.pl: game modes, in-game ranks, MC staff, live status, tickets.'], gaming: ['Gaming community', 'Games, levels, events, giveaways and voice channels.'], support: ['Support only', 'A small support server: tickets, FAQ, status and updates.'] },
+      evAll: 'All', evFilter: 'Filter', more: 'More',
     },
   };
   const LANGS = ['pl', 'en'];
@@ -113,8 +131,22 @@
 
   // ------------------------------------------------------------------ state
   let schema = null, me = null, guild = null, original = null, config = null, version = 0, current = '', errors = new Map(), focusPreview = null, pollTimer = 0;
-  const route = () => { const m = location.pathname.match(/^\/panel\/(\d{17,20})\/?$/); return m ? m[1] : null; };
+  // panel.noreclient.pl/<guild>/<page>; on the main site (tests, old links) the same under /panel
+  const BASE = /^panel\./i.test(location.hostname) ? '' : '/panel';
+  const HOME = BASE || '/';
+  const routeMatch = () => location.pathname.slice(BASE.length).match(/^\/(\d{17,20})(?:\/([a-zA-Z][a-zA-Z0-9_-]{0,40}))?\/?$/);
+  const route = () => { const m = routeMatch(); return m ? m[1] : null; };
+  const routePage = () => { const m = routeMatch(); return (m && m[2]) || (location.hash.slice(1) || null); };
   const go = (path, replace) => { if (location.pathname !== path) history[replace ? 'replaceState' : 'pushState']({}, '', path); render(); };
+  const SPECIAL = ['overview', 'builder', 'events'];
+  const GROUPS = {
+    general: ['general', 'utility', 'logging'],
+    moderation: ['moderation', 'automod', 'verification'],
+    community: ['welcome', 'goodbye', 'autorole', 'roles', 'leveling', 'tickets', 'suggestions', 'applications', 'giveaways', 'polls', 'starboard', 'boosts'],
+    nore: ['nore', 'minecraft', 'status', 'social'],
+    automation: ['customCommands', 'scheduled', 'reminders', 'stats'],
+    server: ['server', 'community', 'actions'],
+  };
   addEventListener('popstate', () => render());
 
   // ------------------------------------------------------------------ header: language switch + user
@@ -127,7 +159,7 @@
       const name = me.user.globalName || me.user.username;
       box.innerHTML = `${me.user.avatarUrl ? `<img src="${esc(me.user.avatarUrl)}" alt="">` : ''}<span>${esc(name)}</span><button type="button" id="logout">${esc(u('logout'))}</button>`;
       box.hidden = false;
-      $('#logout').addEventListener('click', async () => { try { await call('POST', 'auth/logout'); } catch { /* already gone */ } me = null; box.hidden = true; go('/panel'); });
+      $('#logout').addEventListener('click', async () => { try { await call('POST', 'auth/logout'); } catch { /* already gone */ } me = null; box.hidden = true; go(HOME); });
       fixIcons(box);
     } else box.hidden = true;
   }
@@ -147,18 +179,18 @@
   function screen(html) { app.innerHTML = html; N.entrances(app); fixIcons(app); }
   function showError(e, { backToList = true } = {}) {
     const text = e.status === 401 ? u('err401') : e.status === 403 ? u('err403') : e.status === 404 && e.body.code === 'bot_not_present' ? u('err404bot') : e.message || u('errNet');
-    screen(`<section class="center"><h1>${esc(text)}</h1>${e.body && e.body.inviteUrl ? `<a class="pill" href="${esc(e.body.inviteUrl)}">${esc(u('invite'))}</a>` : ''}<div class="chips"><button type="button" class="btn" id="retry">${esc(u('retry'))}</button>${backToList ? `<a class="btn" href="/panel" id="back">${esc(u('back'))}</a>` : ''}</div></section>`);
+    screen(`<section class="center"><h1>${esc(text)}</h1>${e.body && e.body.inviteUrl ? `<a class="pill" href="${esc(e.body.inviteUrl)}">${esc(u('invite'))}</a>` : ''}<div class="chips"><button type="button" class="btn" id="retry">${esc(u('retry'))}</button>${backToList ? `<a class="btn" href="${HOME}" id="back">${esc(u('back'))}</a>` : ''}</div></section>`);
     $('#retry').addEventListener('click', () => render());
-    const b = $('#back'); if (b) b.addEventListener('click', (ev) => { ev.preventDefault(); go('/panel'); });
+    const b = $('#back'); if (b) b.addEventListener('click', (ev) => { ev.preventDefault(); go(HOME); });
   }
   function showLogin(disabled) {
     const q = new URLSearchParams(location.search);
     const code = q.get('login');
     const msg = code ? (u('loginErr')[code] || u('loginErr').state) : '';
-    const next = location.pathname.startsWith('/panel') ? location.pathname : '/panel';
+    const next = location.pathname || HOME;
     screen(`<section class="center"><div class="login rv rv-stick"><img src="/assets/album/logo-sticker-256.png" alt="" width="88" height="88"><h1>${esc(u('loginTitle'))}</h1><p>${esc(u('loginText'))}</p>
       ${disabled ? `<p class="err-line"><i class="dot error"></i>${esc(u('loginDisabled'))}</p>` : `<a class="pill lg" href="/api/v2/auth/discord/login?next=${encodeURIComponent(next)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>${esc(u('login'))}</a>`}
-      ${msg ? `<p class="err-line"><i class="dot error"></i>${esc(msg)}</p>` : ''}</div></section>`);
+      ${msg ? `<p class="err-line"><i class="dot error"></i>${esc(msg)}</p>` : ''}<p class="fine">${lang === 'en' ? 'By signing in you accept the' : 'Logując się, akceptujesz'} <a href="${BASE ? 'https://panel.noreclient.pl' : ''}/terms">${lang === 'en' ? 'Terms' : 'Regulamin'}</a> ${lang === 'en' ? 'and the' : 'i'} <a href="${BASE ? 'https://panel.noreclient.pl' : ''}/privacy">${lang === 'en' ? 'Privacy policy' : 'Politykę prywatności'}</a>.</p></div></section>`);
   }
   const initials = (name) => esc(String(name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase());
   function showPicker() {
@@ -172,13 +204,13 @@
         const icon = `<span class="gi">${g.iconUrl ? `<img src="${esc(g.iconUrl)}" alt="">` : initials(g.name)}</span>`;
         if (!g.manageable) return `<li class="g off" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm off"></i>${esc(u('noPerm'))}</small></div></li>`;
         if (!g.botPresent) return `<li class="g" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm wait"></i>${esc(u('botMissing'))}</small></div>${g.inviteUrl ? `<a class="pill sm quiet" href="${esc(g.inviteUrl)}">${esc(u('invite'))}</a>` : ''}</li>`;
-        return `<li><a class="g" href="/panel/${esc(g.id)}" data-gid="${esc(g.id)}" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm ready"></i>${esc(u('botHere'))}</small></div><span class="pill sm">${esc(u('open'))}</span></a></li>`;
+        return `<li><a class="g" href="${BASE}/${esc(g.id)}" data-gid="${esc(g.id)}" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm ready"></i>${esc(u('botHere'))}</small></div><span class="pill sm">${esc(u('open'))}</span></a></li>`;
       }).join('') : `<li class="empty">${esc(u('noGuilds'))}</li>`;
       fixIcons($('#guilds'));
     };
     paint();
     $('#find').addEventListener('input', (e) => paint(e.target.value));
-    $('#guilds').addEventListener('click', (e) => { const a = e.target.closest('a[data-gid]'); if (a) { e.preventDefault(); go(`/panel/${a.dataset.gid}`); } });
+    $('#guilds').addEventListener('click', (e) => { const a = e.target.closest('a[data-gid]'); if (a) { e.preventDefault(); go(`${BASE}/${a.dataset.gid}`); } });
   }
 
   async function render() {
@@ -205,7 +237,8 @@
     }
     original = clone(guild.config); config = clone(guild.config); version = guild.version; errors = new Map();
     const mods = modules();
-    if (!mods.some(([k]) => k === current)) current = (location.hash.slice(1) && mods.some(([k]) => k === location.hash.slice(1))) ? location.hash.slice(1) : mods[0][0];
+    const want = routePage();
+    current = want && (SPECIAL.includes(want) || mods.some(([k]) => k === want)) ? want : (SPECIAL.includes(current) || mods.some(([k]) => k === current) ? current : 'overview');
     paintEditor();
     schedulePoll();
   }
@@ -219,30 +252,103 @@
     if (v && typeof v.enabled === 'boolean') return `<i class="dot sm ${v.enabled ? 'ready' : 'off'}"></i>`;
     return '';
   }
+  // stroke icons (the launcher's set), never emoji
+  const ICONS = {
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+    layers: '<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.8 3.5 6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+    message: '<path d="M4 5h16v11H9l-5 4z"/>',
+    sparkles: '<path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    check: '<path d="m5 12 5 5 9-10"/>',
+    box: '<path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/>',
+    crown: '<path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 12H5z"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.9-3.5L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 3.5L20 15"/><path d="M20 20v-5h-5"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+    heart: '<path d="M12 20s-7-4.4-9.3-8.8A5.2 5.2 0 0 1 12 6.4a5.2 5.2 0 0 1 9.3 4.8C19 15.6 12 20 12 20z"/>',
+    plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
+    terminal: '<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m7 10 3 2-3 2M13 15h4"/>',
+    archive: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+    hammer: '<path d="m15 12-8.5 8.5a2.1 2.1 0 0 1-3-3L12 9"/><path d="m17.6 15 4.4-4.4-6.6-6.6L11 8.4z"/>',
+    ticket: '<path d="M3 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 1 0-4V6H3z"/><path d="M13 6v12" stroke-dasharray="2 2"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v9H5v-9"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+    star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2-6.2 3.2L7 14.2 2 9.3l6.9-1z"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+    chart: '<path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-9"/>',
+    wand: '<path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/>',
+    pickaxe: '<path d="M14.5 9.5 4 20"/><path d="M3 7a15 15 0 0 1 14-4l4 4a15 15 0 0 1-4 14"/>',
+    door: '<path d="M14 3H6v18h8"/><path d="M14 3l5 2v15l-5 1z"/><path d="M11 12h.01"/>',
+    tag: '<path d="M3 12V3h9l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    bulb: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/>',
+    form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    swap: '<path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/>',
+    wave: '<path d="M7 11V6a2 2 0 0 1 4 0v5"/><path d="M11 10V4a2 2 0 0 1 4 0v6"/><path d="M15 10V6a2 2 0 0 1 4 0v8a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3 15a2 2 0 0 1 3-2.6L7 14"/>',
+    pin: '<path d="M12 17v5"/><path d="M9 3h6l-1 7 4 3v2H6v-2l4-3z"/>',
+    save: '<path d="M5 3h11l5 5v13H3V3z"/><path d="M7 3v5h8"/><path d="M7 21v-7h10v7"/>',
+  };
+  const ico = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ICONS.box}</svg>`;
+  const modLabel = (k) => esc(tr(deref(schema.properties[k], schema)['x-i18n'], humanize(k)));
+  const MOD_ICON = { general: 'settings', utility: 'terminal', logging: 'archive', moderation: 'hammer', automod: 'shield', verification: 'check', welcome: 'wave', goodbye: 'door', autorole: 'user', roles: 'tag', leveling: 'chart', tickets: 'ticket', suggestions: 'bulb', applications: 'form', giveaways: 'gift', polls: 'list', starboard: 'star', boosts: 'sparkles', nore: 'zap', minecraft: 'pickaxe', status: 'activity', social: 'link', customCommands: 'message', scheduled: 'clock', reminders: 'bell', stats: 'chart', server: 'server', community: 'globe', actions: 'zap', builder: 'wand' };
+  const modIco = (k) => ico(MOD_ICON[k] || 'box');
+  function navHtml() {
+    const mods = modules().map(([k]) => k);
+    const used = new Set();
+    const link = (k, label, icon) => `<a class="tab" href="${BASE}/${esc(guild.guild.id)}/${esc(k)}" data-mod="${esc(k)}"${k === current ? ' aria-current="page"' : ''}><span class="ti" aria-hidden="true">${icon}</span><span class="tl">${label}</span>${SPECIAL.includes(k) ? '' : moduleDot(k)}</a>`;
+    let html = `<div class="ngrp">${link('overview', esc(u('overview')), ico('home'))}${link('builder', esc(u('builderPage')), ico('wand'))}${link('events', esc(u('eventsPage')), ico('list'))}</div>`;
+    for (const [g, keys] of Object.entries(GROUPS)) {
+      const list = keys.filter((k) => mods.includes(k));
+      list.forEach((k) => used.add(k));
+      if (list.length) html += `<details class="ngrp" open><summary>${esc(u('grp')[g])}</summary>${list.map((k) => link(k, modLabel(k), modIco(k))).join('')}</details>`;
+    }
+    const rest = mods.filter((k) => !used.has(k) && k !== 'builder');
+    if (rest.length) html += `<details class="ngrp" open><summary>${esc(u('grp').other)}</summary>${rest.map((k) => link(k, modLabel(k), modIco(k))).join('')}</details>`;
+    return html;
+  }
   function paintEditor() {
-    const mods = modules();
     const metaAge = guild.metaAt ? (Date.now() - Date.parse(guild.metaAt)) / 1000 : null;
     const botDot = metaAge == null ? 'off' : metaAge < 20 * 60 ? 'ready' : 'wait';
     const g = guild.guild;
     app.innerHTML = `<div class="app">
-      <aside class="rail">
-        <div class="guild" data-name="${esc(g.name)}"><span class="gi">${g.iconUrl ? `<img src="${esc(g.iconUrl)}" alt="">` : initials(g.name)}</span><div><b>${esc(g.name)}</b><small><i class="dot sm ${botDot}"></i>${esc(metaAge == null ? u('botNever') : `${u('botSeen')} ${u('ago', guild.metaAt)}`)} · ${esc(u('version'))} ${version}</small></div></div>
-        <nav aria-label="${esc(u('modules'))}"><p class="grp">${esc(u('modules'))}</p>
-          ${mods.map(([k, s]) => `<a class="tab" href="#${esc(k)}" data-mod="${esc(k)}"${k === current ? ' aria-current="page"' : ''}>${esc(tr(deref(s, schema)['x-i18n'], humanize(k)))}${moduleDot(k)}</a>`).join('')}
-          <p class="grp">${esc(u('server'))}</p><a class="tab" href="/panel" id="change">${esc(u('change'))}</a>
-        </nav>
+      <aside class="rail" id="rail">
+        <a class="guild" href="${HOME}" id="change" data-name="${esc(g.name)}" title="${esc(u('change'))}"><span class="gi">${g.iconUrl ? `<img src="${esc(g.iconUrl)}" alt="">` : initials(g.name)}</span><div><b>${esc(g.name)}</b><small><i class="dot sm ${botDot}"></i>${esc(metaAge == null ? u('botNever') : `${u('botSeen')} ${u('ago', guild.metaAt)}`)}</small></div><span class="swap">${ico('swap')}</span></a>
+        <label class="sr" for="navfind">${esc(u('searchMods'))}</label><input class="navfind" id="navfind" type="search" placeholder="${esc(u('searchMods'))}" autocomplete="off">
+        <nav aria-label="${esc(u('modules'))}" id="nav">${navHtml()}</nav>
+        <footer class="rail-foot"><a href="${BASE ? 'https://panel.noreclient.pl' : ''}/terms">${esc(u('terms'))}</a><a href="${BASE ? 'https://panel.noreclient.pl' : ''}/privacy">${esc(u('privacy'))}</a><a href="https://noreclient.pl">${esc(u('site'))}</a></footer>
       </aside>
       <section class="main" id="main"></section>
     </div>
     <div class="save" id="save" hidden></div>`;
-    $('nav', app).addEventListener('click', (e) => {
-      const a = e.target.closest('a'); if (!a) return;
+    $('#nav').addEventListener('click', (e) => {
+      const a = e.target.closest('a.tab'); if (!a) return;
       e.preventDefault();
-      if (a.id === 'change') { go('/panel'); return; }
-      current = a.dataset.mod; history.replaceState({}, '', `${location.pathname}#${current}`);
+      current = a.dataset.mod; history.pushState({}, '', `${BASE}/${g.id}/${current}`);
       for (const t of $$('.tab[data-mod]')) { if (t === a) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }
+      document.body.classList.remove('nav-open');
       paintModule(); window.scrollTo({ top: 0 });
     });
+    $('#change').addEventListener('click', (e) => { e.preventDefault(); go(HOME); });
+    $('#navfind').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      for (const t of $$('#nav .tab')) t.hidden = !!q && !t.textContent.toLowerCase().includes(q);
+      for (const d of $$('#nav details')) { if (q) d.open = true; d.hidden = !!q && ![...$$('.tab', d)].some((t) => !t.hidden); }
+    });
+    const tg = $('#navtoggle'); if (tg) tg.onclick = () => document.body.classList.toggle('nav-open');
+    $('#main').addEventListener('click', () => document.body.classList.remove('nav-open'));
     paintModule();
     paintSave();
     fixIcons(app);
@@ -250,6 +356,19 @@
   function refreshTabs() { for (const t of $$('.tab[data-mod]')) { const k = t.dataset.mod; const old = $('.dot, .cnt', t); if (old) old.remove(); t.insertAdjacentHTML('beforeend', moduleDot(k)); } }
 
   function paintModule() {
+    if (current === 'overview') return paintOverview();
+    if (current === 'builder') return paintBuilder();
+    if (current === 'events') return paintEventsPage();
+    return paintModuleForm();
+  }
+  function bindMain() {
+    const m = $('#main');
+    m.addEventListener('input', onInput);
+    m.addEventListener('change', onInput);
+    m.addEventListener('click', onClick);
+    m.addEventListener('keydown', onKey);
+  }
+  function paintModuleForm() {
     const s = deref(schema.properties[current], schema);
     const ptr = `/${escPtr(current)}`;
     const value = config[current] || {};
@@ -278,6 +397,100 @@
     paintEvents();
     if (!focusPreview || !focusPreview.startsWith(`${ptr}/`)) { const t = $('#form [data-kind="textarea"]'); focusPreview = t ? t.dataset.ptr : null; }
     if (focusPreview) preview();
+  }
+
+  // ------------------------------------------------------------------ overview, builder and event log pages
+  const metaNum = (k) => (guild.meta && Number.isInteger(guild.meta[k]) ? guild.meta[k] : null);
+  function stat(label, value, sub) { return `<div class="stat"><small>${esc(label)}</small><b>${value == null ? '—' : esc(String(value))}</b>${sub ? `<span>${sub}</span>` : ''}</div>`; }
+  function botState() {
+    const age = guild.metaAt ? (Date.now() - Date.parse(guild.metaAt)) / 1000 : null;
+    return age == null ? ['off', u('botOff')] : age < 20 * 60 ? ['ready', `${u('botOnline')} · ${u('ago', guild.metaAt)}`] : ['wait', `${u('botStale')} · ${u('ago', guild.metaAt)}`];
+  }
+  /** Adds an action to config.actions.queue and saves at once (only when nothing else is unsaved). */
+  async function queueAction(type, extra = {}) {
+    if (changes(original, config).length) { paintSave(`<i class="dot wait"></i><span class="grow">${esc(u('bUnsaved'))}</span>`); setTimeout(() => paintSave(), 3500); return; }
+    const qs = deref(deref(schema.properties.actions, schema).properties.queue, schema);
+    const item = { ...defaultOf(qs.items), ...extra, type, id: `p${Date.now().toString(36)}` };
+    const list = ((config.actions && config.actions.queue) || []).slice();
+    if (qs.maxItems && list.length >= qs.maxItems) list.shift();
+    list.push(item);
+    setAt(config, '/actions/queue', list);
+    await save();
+    paintSave(`<i class="dot ready slap"></i><span class="grow">${esc(u('queued'))}</span>`);
+    setTimeout(() => paintSave(), 3500);
+  }
+  function paintOverview() {
+    const [dot, botText] = botState();
+    const mods = modules().map(([k]) => k).filter((k) => { const v = deref(schema.properties[k], schema).properties || {}; return v.enabled && deref(v.enabled, schema).type === 'boolean'; });
+    const on = mods.filter((k) => config[k] && config[k].enabled).length;
+    const ch = ((guild.meta && guild.meta.channels) || []).filter((c) => chType(c) !== 'category').length;
+    const roles = ((guild.meta && guild.meta.roles) || []).filter((r) => !r.managed).length;
+    const tier = metaNum('boostTier');
+    $('#main').innerHTML = `
+      <div class="head hero"><div><p class="eyebrow"><i class="dot sm ${dot}"></i>${esc(botText)}</p><h1>${esc(guild.guild.name)}</h1><p>${esc(u('stVersion'))} ${version}${guild.updatedBy && guild.updatedBy.name ? ` · ${esc(guild.updatedBy.name)}` : ''}${guild.updatedAt ? ` · ${esc(u('ago', guild.updatedAt))}` : ''}</p></div></div>
+      <div class="stats">${stat(u('stMembers'), metaNum('memberCount'))}${stat(u('stChannels'), ch)}${stat(u('stRoles'), roles)}${stat(u('stBoosts'), metaNum('boosts'), tier != null ? `${lang === 'pl' ? 'poziom' : 'level'} ${tier}` : '')}${stat(u('stEmoji'), metaNum('emojis'))}${stat(u('stModules'), `${on}/${mods.length}`)}</div>
+      <div class="cols wide">
+        <section class="card"><div class="card-h"><h2>${esc(u('modulesTitle'))}</h2><p>${esc(u('modulesHint'))}</p></div>
+          <ul class="modgrid">${mods.map((k) => `<li class="${config[k] && config[k].enabled ? 'on' : ''}"><a href="${BASE}/${esc(guild.guild.id)}/${esc(k)}" data-open="${esc(k)}"><span class="ti">${modIco(k)}</span>${modLabel(k)}</a><button type="button" class="switch sm" role="switch" aria-checked="${!!(config[k] && config[k].enabled)}" aria-label="${modLabel(k)}" data-ptr="/${escPtr(k)}/enabled" data-kind="toggle"></button></li>`).join('')}</ul></section>
+        <aside class="side">
+          <section class="card"><h3>${esc(u('quick'))}</h3><div class="qa">
+            <button type="button" class="btn" data-q="post_panels">${ico('pin')} ${esc(u('qPanels'))}</button>
+            <button type="button" class="btn" data-q="backup_create">${ico('save')} ${esc(u('qBackup'))}</button>
+            <button type="button" class="btn" data-q="apply_server">${ico('server')} ${esc(u('qServer'))}</button>
+            <button type="button" class="btn" data-q="discovery_check">${ico('globe')} ${esc(u('qDiscovery'))}</button>
+            <a class="btn" href="${BASE}/${esc(guild.guild.id)}/builder" data-open="builder">${ico('wand')} ${esc(u('builderPage'))}</a></div></section>
+          <section class="card"><h3>${esc(u('recent'))}</h3><ul class="events" id="events"></ul></section>
+        </aside></div>`;
+    bindMain();
+    $('#main').addEventListener('click', onPageClick);
+    paintEvents();
+  }
+  function onPageClick(e) {
+    const o = e.target.closest('[data-open]');
+    if (o) { e.preventDefault(); const t = $(`.tab[data-mod="${CSS.escape(o.dataset.open)}"]`); if (t) t.click(); return; }
+    const q = e.target.closest('[data-q]');
+    if (q) { e.preventDefault(); queueAction(q.dataset.q); return; }
+    const b = e.target.closest('[data-build]');
+    if (b) {
+      e.preventDefault();
+      const tplEl = $('input[name="btpl"]:checked'), size = $('#bsize'), bl = $('#blang');
+      queueAction(b.dataset.build, { template: tplEl ? tplEl.value : 'nore-client', size: size ? size.value : 'full', language: bl ? bl.value : '' });
+    }
+  }
+  function actionJobs(types) {
+    const list = ((config.actions && config.actions.queue) || []).filter((a) => types.includes(a.type)).slice(-6).reverse();
+    return list.length ? `<ul class="jobs">${list.map((a) => `<li><b>${esc(optLabel(deref(deref(deref(schema.properties.actions, schema).properties.queue, schema).items.properties.type, schema), a.type))}</b> · ${esc((u('tpl')[a.template] || [a.template])[0] || '')} · ${esc((u('sizes')[a.size]) || a.size || '')}${actionState(a)}</li>`).join('')}</ul>` : `<p class="soft">${esc(u('bNone'))}</p>`;
+  }
+  function paintBuilder() {
+    const bs = deref(schema.properties.builder, schema);
+    const look = bs && bs.properties && bs.properties.style ? field('/builder/style', 'style', bs.properties.style, (config.builder && config.builder.style) || {}) : '';
+    const tpls = Object.entries(u('tpl'));
+    $('#main').innerHTML = `
+      <div class="head"><div><h1>${esc(u('builderPage'))}</h1><p>${esc(tr(bs && bs['x-i18n-help'], ''))}</p></div></div>
+      <div class="cols wide"><form class="form" id="form" novalidate>
+        <fieldset class="group"><legend><span>${esc(u('bTemplate'))}</span></legend>
+          <div class="tplgrid">${tpls.map(([id, [name, desc]], i) => `<label class="tpl"><input type="radio" name="btpl" value="${esc(id)}"${i === 0 ? ' checked' : ''}><span><b>${esc(name)}</b><small>${esc(desc)}</small></span></label>`).join('')}</div>
+          <div class="row2"><div class="f"><label class="lbl" for="bsize">${esc(u('bSize'))}</label><div class="sel-wrap"><select class="inp" id="bsize">${['full', 'medium', 'small'].map((z) => `<option value="${z}">${esc(u('sizes')[z])}</option>`).join('')}</select></div></div>
+          <div class="f"><label class="lbl" for="blang">${esc(u('bLang'))}</label><div class="sel-wrap"><select class="inp" id="blang"><option value="">${esc(u('langAuto'))}</option><option value="pl">Polski</option><option value="en">English</option></select></div></div></div>
+        </fieldset>
+        ${look}
+        <div class="buildbar"><button type="button" class="pill" data-build="setup">${ico('wand')} ${esc(u('bBuild'))}</button><button type="button" class="pill ghost" data-build="setup_repair">${ico('layers')} ${esc(u('bRepair'))}</button></div>
+        <p class="help soft">${esc(u('bWarn'))}</p>
+      </form>
+      <aside class="side"><section class="card"><h3>${esc(u('bJobs'))}</h3>${actionJobs(['setup', 'setup_repair'])}</section><section class="card"><h3>${esc(u('recent'))}</h3><ul class="events" id="events"></ul></section></aside></div>`;
+    $('#form').addEventListener('submit', (e) => e.preventDefault());
+    bindMain();
+    $('#main').addEventListener('click', onPageClick);
+    paintEvents();
+  }
+  let evFilter = '';
+  function paintEventsPage() {
+    const types = [...new Set((guild.events || []).map((e) => e.type))];
+    $('#main').innerHTML = `<div class="head"><div><h1>${esc(u('eventsPage'))}</h1></div>
+      <div class="sel-wrap"><label class="sr" for="evf">${esc(u('evFilter'))}</label><select class="inp" id="evf"><option value="">${esc(u('evAll'))}</option>${types.map((t) => `<option value="${esc(t)}"${t === evFilter ? ' selected' : ''}>${esc(u('ev')[t] || humanize(t))}</option>`).join('')}</select></div></div>
+      <section class="card"><ul class="events big" id="events"></ul></section>`;
+    $('#evf').addEventListener('change', (e) => { evFilter = e.target.value; paintEvents(); });
+    paintEvents();
   }
 
   // a field from its schema; the x-ui hint picks the control
@@ -646,8 +859,8 @@
   }
   function paintEvents() {
     const box = $('#events'); if (!box) return;
-    const list = guild.events || [];
-    box.innerHTML = list.length ? list.slice(0, 30).map(evLine).join('') : `<li class="none">${esc(u('noEvents'))}</li>`;
+    const list = (guild.events || []).filter((e) => current !== 'events' || !evFilter || e.type === evFilter);
+    box.innerHTML = list.length ? list.slice(0, current === 'events' ? 200 : 12).map(evLine).join('') : `<li class="none">${esc(u('noEvents'))}</li>`;
   }
   async function refreshEvents() {
     try {
@@ -661,7 +874,7 @@
         return;
       }
       paintEvents();
-      if (current === 'actions') { const y = scrollY; paintModule(); scrollTo(0, y); }
+      if (current === 'actions' || current === 'builder') { const y = scrollY; paintModule(); scrollTo(0, y); }
     } catch { /* keep the old list */ }
   }
   function schedulePoll() {

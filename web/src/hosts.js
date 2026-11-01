@@ -1,14 +1,30 @@
 /*
- * Host routing: one Worker answers noreclient.pl, www.noreclient.pl and mc.noreclient.pl.
+ * Host routing: one Worker answers noreclient.pl, www.noreclient.pl, mc.noreclient.pl and panel.noreclient.pl.
  *   www.<anything>       → 301 to the apex host (same path and query)
  *   mc.noreclient.pl     → static files from public/mc/ (the Minecraft server site); /api/* is the same API
+ *   panel.noreclient.pl  → the bot panel (public/panel/); noreclient.pl/panel/… redirects there
  *   other hosts          → public/ as before; /mc/… there redirects to the mc host
  * TEST_HOST_HEADER names a request header that replaces the host (local tests only: wrangler dev
  * maps every request onto the first route host).
  */
 export const MC_HOST = 'mc.noreclient.pl';
+export const PANEL_HOST = 'panel.noreclient.pl';
 
-export const siteOf = (hostname) => (hostname.toLowerCase() === MC_HOST ? 'mc' : 'main');
+export const siteOf = (hostname) => {
+  const h = hostname.toLowerCase();
+  return h === MC_HOST ? 'mc' : h === PANEL_HOST ? 'panel' : 'main';
+};
+
+/**
+ * A page of panel.noreclient.pl: "/", "/<guildId>", "/<guildId>/<page>" and the legal pages are the
+ * panel app (public/panel/); /panel/… and /assets/… are its files. Returns the asset path or null.
+ */
+export function panelPath(pathname) {
+  if (pathname === '/' || /^\/\d{17,20}(\/[a-z][a-zA-Z0-9_-]{0,40})?\/?$/.test(pathname)) return '/panel/';
+  if (pathname === '/terms' || pathname === '/regulamin') return '/panel/terms';
+  if (pathname === '/privacy' || pathname === '/prywatnosc') return '/panel/privacy';
+  return null;
+}
 
 /** The request URL with the test host applied (only when TEST_HOST_HEADER is set). */
 export function effectiveUrl(request, env) {

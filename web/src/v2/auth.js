@@ -82,9 +82,22 @@ export function cookies(request) {
 const cookie = (name, value, maxAgeS) => `${name}=${value}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${maxAgeS}`;
 const clearCookie = (name) => `${name}=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0`;
 
-/** Only same-site paths ("/panel", "/panel/123?x"), never "//evil" or absolute URLs. */
-export function safeNext(next) {
-  return typeof next === 'string' && /^\/(?![/\\])[\x21-\x7e]{0,300}$/.test(next) ? next : '/panel';
+const PATH_RE = /^\/(?![/\\])[\x21-\x7e]{0,300}$/;
+/** The panel host (panel.noreclient.pl); PANEL_ORIGIN overrides it in tests. */
+export const panelOrigin = (env) => String(env.PANEL_ORIGIN || 'https://panel.noreclient.pl').replace(/\/+$/, '');
+/** The host that owns the Discord redirect URI (noreclient.pl); MAIN_ORIGIN overrides it in tests. */
+const mainOrigin = (env, url) => String(env.MAIN_ORIGIN || (url && new URL(url).hostname === new URL(panelOrigin(env)).hostname ? 'https://noreclient.pl' : url ? new URL(url).origin : 'https://noreclient.pl')).replace(/\/+$/, '');
+
+/**
+ * Only same-site paths ("/panel", "/panel/123?x") or a path on the panel host
+ * ("https://panel.noreclient.pl/123"), never "//evil" or other absolute URLs.
+ */
+export function safeNext(next, env = {}) {
+  if (typeof next !== 'string') return '/panel';
+  if (PATH_RE.test(next)) return next;
+  const po = panelOrigin(env);
+  if (next.startsWith(po + '/') && PATH_RE.test(next.slice(po.length))) return next;
+  return '/panel';
 }
 
 function redirect(location, setCookies = []) {
@@ -100,9 +113,15 @@ const redirectUri = (url) => `${url.origin}/api/v2/auth/discord/callback`;
 
 export async function login(request, url, env) {
   requireOAuth(env);
+  // panel.noreclient.pl: the Discord redirect URI lives on noreclient.pl – log in there, come back with a handoff
+  if (url.origin === panelOrigin(env)) {
+    const back = safeNext(url.searchParams.get('next') || '/', env);
+    const target = back.startsWith('/') ? panelOrigin(env) + back : back;
+    return redirect(`${mainOrigin(env, url)}/api/v2/auth/discord/login?next=${encodeURIComponent(target)}`);
+  }
   const state = randomToken(24);
   const verifier = randomToken(48);
-  const next = safeNext(url.searchParams.get('next'));
+  const next = safeNext(url.searchParams.get('next'), env);
   const redirect_uri = redirectUri(url);
   const value = await sign(env, 'nore-o1', { state, verifier, next, redirectUri: redirect_uri, exp: Date.now() + OAUTH_MS });
   const q = new URLSearchParams({
@@ -130,7 +149,7 @@ async function discordFetch(env, path, init) {
 export async function callback(request, url, env) {
   requireOAuth(env);
   const o = await unsign(env, 'nore-o1', cookies(request)[OAUTH_COOKIE]);
-  const next = safeNext(o && o.next);
+  const next = safeNext(o && o.next, env);
   const q = url.searchParams;
   if (q.get('error')) return loginFailed(request, next, 'cancelled', 'Logowanie przez Discord zostało anulowane');
   if (!o) return loginFailed(request, next, 'expired', 'Sesja logowania wygasła albo jest nieprawidłowa – zacznij od nowa');
@@ -158,7 +177,25 @@ export async function callback(request, url, env) {
   const sid = randomToken(24);
   await store(env).createSession({ sid, user, accessToken: token.access_token, tokenExp, expires });
   const value = await sign(env, 'nore-s1', { sid, uid: user.id, exp: expires });
-  return redirect(next, [cookie(SESSION_COOKIE, value, Math.floor((expires - now) / 1000)), clearCookie(OAUTH_COOKIE)]);
+  const set = [cookie(SESSION_COOKIE, value, Math.floor((expires - now) / 1000)), clearCookie(OAUTH_COOKIE)];
+  // back to the panel host: a one-minute signed handoff sets the same session cookie there
+  const po = panelOrigin(env);
+  if (next.startsWith(po + '/')) {
+    const t = await sign(env, 'nore-h1', { v: value, next: next.slice(po.length), exp: now + 60_000 });
+    return redirect(`${po}/api/v2/auth/handoff?t=${encodeURIComponent(t)}`, set);
+  }
+  return redirect(next, set);
+}
+
+/** GET /auth/handoff?t=… on the panel host: the session from the login on noreclient.pl (valid 60 s). */
+export async function handoff(request, url, env) {
+  sessionKey(env);
+  const h = await unsign(env, 'nore-h1', url.searchParams.get('t'));
+  const next = h && PATH_RE.test(String(h.next)) ? h.next : '/';
+  if (!h) return redirect(`${next}${next.includes('?') ? '&' : '?'}login=expired`);
+  const s = await unsign(env, 'nore-s1', h.v);
+  if (!s) return redirect(`/?login=expired`);
+  return redirect(next, [cookie(SESSION_COOKIE, h.v, Math.max(60, Math.floor((s.exp - Date.now()) / 1000)))]);
 }
 
 /** Cross-site writes are refused: the Origin of a browser request must be one of the Nore sites. */

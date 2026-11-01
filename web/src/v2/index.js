@@ -57,6 +57,7 @@ const ROUTES = [
 
   ['GET', /^\/auth\/discord\/login$/, 'session', ({ request, url, env }) => auth.login(request, url, env)],
   ['GET', /^\/auth\/discord\/callback$/, 'session', ({ request, url, env }) => auth.callback(request, url, env)],
+  ['GET', /^\/auth\/handoff$/, 'session', ({ request, url, env }) => auth.handoff(request, url, env)],
   ['POST', /^\/auth\/logout$/, 'session', ({ request, env }) => auth.logout(request, env).then(r => ({ ...r, priv: true }))],
   ['GET', /^\/me$/, 'session', ({ request, env }) => auth.me(request, env).then(body => ({ body, priv: true }))],
   ['GET', /^\/panel\/guilds\/([^/]+)$/, 'session', ({ request, env, m }) => auth.panelGet(request, env, m[1]).then(body => ({ body, priv: true }))],

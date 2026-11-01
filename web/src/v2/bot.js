@@ -65,7 +65,7 @@ export function cleanMeta(b) {
   const roles = (b.roles || []).filter(r => isObj(r) && SNOWFLAKE.test(r.id)).map(r => ({
     id: r.id, name: str(r.name, 100) || '', color: Number.isInteger(r.color) ? r.color : 0, position: Number.isInteger(r.position) ? r.position : 0, managed: r.managed === true,
   }));
-  return { name: b.name.slice(0, 100), icon: str(b.icon, 200), channels, roles, ...(Number.isInteger(b.memberCount) ? { memberCount: b.memberCount } : {}) };
+  return { name: b.name.slice(0, 100), icon: str(b.icon, 200), channels, roles, ...Object.fromEntries(['memberCount', 'boostTier', 'boosts', 'emojis', 'stickers'].filter(k => Number.isInteger(b[k]) && b[k] >= 0).map(k => [k, b[k]])) };
 }
 
 /**

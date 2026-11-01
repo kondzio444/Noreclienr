@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Panel Nore Bota</title>
-  <meta name="description" content="Panel Nore Bota: ustawienia bota Discord dla Twojego serwera. Logowanie przez Discord.">
-  <meta name="theme-color" content="#141216">
+  <title>Nore Panel</title>
+  <meta name="description" content="Nore Panel: konfiguracja Nore Bota na Twoim serwerze Discord – moduły, kreator serwera z wyglądem, akcje i dziennik zdarzeń. Logowanie przez Discord.">
+  <meta name="theme-color" content="#0c0b0e">
   <meta name="robots" content="noindex">
   <link rel="icon" href="/assets/logo.png">
   <link rel="preload" href="/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
@@ -16,7 +16,9 @@
 <body class="panel">
   <a class="skip" href="#app">Przejdź do panelu</a>
   <header class="bar">
-    <a class="mark" href="/" aria-label="Nore – strona główna"><img src="/assets/album/logo-sticker-256.png" alt="" width="36" height="36">Nore <small data-t="brand">Panel bota</small></a>
+    <button type="button" class="navtoggle" id="navtoggle" aria-label="Menu"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+    <a class="mark" href="/" aria-label="Nore Panel – start"><img src="/assets/album/logo-sticker-256.png" alt="" width="30" height="30">Nore <small data-t="brand">Panel bota</small></a>
+    <nav class="links" aria-label="Nore"><a href="https://noreclient.pl">noreclient.pl</a><a href="https://noreclient.pl/api">API</a></nav>
     <div class="seg lang" role="group" aria-label="Język / Language">
       <button type="button" data-lang="pl" aria-pressed="true">PL</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>
@@ -28,7 +30,7 @@
     <section class="center">
       <img class="spin" src="/assets/album/logo-sticker-256.png" alt="" width="96" height="96">
       <p>Wczytuję panel…</p>
-      <noscript><p>Panel Nore Bota potrzebuje JavaScriptu.</p></noscript>
+      <noscript><p>Nore Panel potrzebuje JavaScriptu.</p></noscript>
     </section>
   </main>
 

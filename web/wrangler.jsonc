@@ -18,7 +18,8 @@
   "routes": [
     { "pattern": "noreclient.pl", "custom_domain": true },
     { "pattern": "www.noreclient.pl", "custom_domain": true },
-    { "pattern": "mc.noreclient.pl", "custom_domain": true }
+    { "pattern": "mc.noreclient.pl", "custom_domain": true },
+    { "pattern": "panel.noreclient.pl", "custom_domain": true }
   ],
   // background refresh of the release data (src/worker.js → scheduled)
   "triggers": { "crons": ["*/15 * * * *"] },

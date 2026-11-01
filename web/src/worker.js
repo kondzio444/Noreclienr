@@ -34,7 +34,7 @@ import { launcherConfig, curseforge } from './launcher.js';
 import { HttpError, readCache, releases, brief, cmpVersion, events, sync, platformsView, v1Release, assetLocation } from './data.js';
 import { handleV2 } from './v2/index.js';
 import { cronCleanup } from './v2/domains.js';
-import { siteOf, wwwRedirect, mcAsset, effectiveUrl, MC_HOST } from './hosts.js';
+import { siteOf, wwwRedirect, mcAsset, effectiveUrl, panelPath, MC_HOST, PANEL_HOST } from './hosts.js';
 
 export { NoreHub } from './hub.js';
 export { NoreBot } from './v2/store.js';
@@ -281,6 +281,17 @@ export default {
       }
     }
     const site = siteOf(url.hostname);
+    // the bot panel lives on panel.noreclient.pl
+    if (site === 'panel') {
+      const p = panelPath(url.pathname);
+      const res = p ? await env.ASSETS.fetch(new Request(`${url.origin}${p}`, request))
+        : (url.pathname.startsWith('/panel/') || url.pathname.startsWith('/assets/')) ? await env.ASSETS.fetch(request)
+        : await env.ASSETS.fetch(new Request(`${url.origin}/panel/404`, request)).then(r => new Response(r.body, { status: 404, headers: r.headers }));
+      return withPageHeaders(res, (res.headers.get('Content-Type') || '').includes('text/html'));
+    }
+    if (site === 'main' && (url.pathname === '/panel' || url.pathname.startsWith('/panel/')) && !/\.(js|css|json|html|png|svg|webp)$/.test(url.pathname) && !env.TEST_HOST_HEADER) {
+      return Response.redirect(`https://${PANEL_HOST}${url.pathname.slice(6) || '/'}${url.search}`, 301);
+    }
     if (site === 'main' && (url.pathname === '/mc' || url.pathname.startsWith('/mc/'))) {
       return Response.redirect(`https://${MC_HOST}${url.pathname.slice(3) || '/'}${url.search}`, 301);
     }

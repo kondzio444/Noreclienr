@@ -769,10 +769,19 @@ try {
   h = await hostGet('noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore/); assert.ok(h.headers['content-security-policy']);
   h = await hostGet('noreclient.pl', '/api'); assert.equal(h.status, 200);
   h = await hostGet('noreclient.pl', '/nope'); assert.equal(h.status, 404);
-  h = await hostGet('noreclient.pl', '/panel/900000000000000001'); assert.equal(h.status, 200); assert.match(h.text, /Panel Nore Bota/);
+  h = await hostGet('noreclient.pl', '/panel/900000000000000001'); assert.equal(h.status, 200); assert.match(h.text, /Nore Panel/);
+  h = await hostGet('panel.noreclient.pl', '/'); assert.equal(h.status, 200); assert.match(h.text, /Nore Panel/); assert.ok(h.headers['content-security-policy']);
+  h = await hostGet('panel.noreclient.pl', '/900000000000000001'); assert.equal(h.status, 200); assert.match(h.text, /panel\.js/);
+  h = await hostGet('panel.noreclient.pl', '/900000000000000001/builder'); assert.equal(h.status, 200); assert.match(h.text, /panel\.js/);
+  h = await hostGet('panel.noreclient.pl', '/terms'); assert.equal(h.status, 200); assert.match(h.text, /Regulamin/);
+  h = await hostGet('panel.noreclient.pl', '/privacy'); assert.equal(h.status, 200); assert.match(h.text, /RODO/);
+  h = await hostGet('panel.noreclient.pl', '/panel/panel.js'); assert.equal(h.status, 200); assert.match(h.headers['content-type'], /javascript/);
+  h = await hostGet('panel.noreclient.pl', '/assets/logo.png'); assert.equal(h.status, 200);
+  h = await hostGet('panel.noreclient.pl', '/nope'); assert.equal(h.status, 404); assert.match(h.text, /Nie ma takiej strony/);
+  h = await hostGet('panel.noreclient.pl', '/api/v2/events'); assert.equal(h.status, 200);
   h = await hostGet('mc.noreclient.pl', '/assets/fonts/onest-latin.woff2'); assert.equal(h.status, 200);
   h = await hostGet('noreclient.pl', '/'); assert.match(h.headers['content-security-policy'], /font-src 'self'/);
-  step('hosts: www → apex, mc host serves public/mc/ (own 404, shared /assets, same API), /mc on main → mc host, main pages unchanged');
+  step('hosts: www → apex, mc host serves public/mc/ (own 404, shared /assets, same API), /mc on main → mc host, panel host serves the panel, legal pages and its 404, main pages unchanged');
 
   // ------------------------------------------------------------ rate limit (last: it uses up this IP's pings)
   let tooMany = 0, retry = null;
