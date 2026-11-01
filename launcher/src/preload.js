@@ -113,6 +113,7 @@ contextBridge.exposeInMainWorld('nore', {
     checkReachable: invoke('servers:checkReachable'),
     upnp: invoke('servers:upnp'),
     applyDomain: invoke('servers:applyDomain'),
+    noreDomain: invoke('servers:noreDomain'),
     dnsRecords: invoke('servers:dnsRecords'),
     contentSources: invoke('servers:contentSources'),
     blocked: invoke('servers:blocked'),

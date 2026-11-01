@@ -1331,7 +1331,7 @@ ipcMain.handle('storage:info', async () => ({
 ipcMain.handle('servers:list', () => servers.list());
 ipcMain.handle('servers:create', (e, opts) => servers.create(opts));
 ipcMain.handle('servers:update', (e, id, patch) => servers.update(id, patch));
-ipcMain.handle('servers:remove', (e, id) => servers.remove(id));
+ipcMain.handle('servers:remove', (e, id, opts) => servers.remove(id, opts));
 ipcMain.handle('servers:start', async (e, id) => {
   try {
     return await servers.start(id, (p) => send('server:progress', { id, ...p }));
@@ -1546,6 +1546,8 @@ ipcMain.handle('servers:dnsCheck', (e, id) => {
   return serverNet.dnsCheck(srv.domain.name, srv.port);
 });
 ipcMain.handle('servers:applyDomain', (e, id) => servers.applyDomain(servers.raw(id)));
+// official <name>.noreclient.pl (docs/domains.md): check(name), claim(id, name), release(id), mine()
+ipcMain.handle('servers:noreDomain', (e, op, ...args) => servers.noreDomain(op, ...args));
 
 // playit.gg: link the agent once (browser), then a tunnel per server
 let playitClaim = null;
