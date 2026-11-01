@@ -13,6 +13,7 @@ import * as auth from './auth.js';
 import { openapi } from './openapi.js';
 import * as admin from './admin.js';
 import { fileRedirect, updateFeed } from './files.js';
+import * as domains from './domains.js';
 
 /** Admin handlers answer a body, or { status, body } for 201. */
 const adminOut = (r) => (r && typeof r === 'object' && 'status' in r && 'body' in r ? { status: r.status, body: r.body, priv: true } : { body: r, priv: true });
@@ -43,6 +44,11 @@ const ROUTES = [
   ['GET', /^\/blacklist\/check$/, 'public', ({ env, q }) => admin.blacklistCheck(env, q).then(body => ({ body, maxAge: 60 }))],
   ['GET', /^\/files\/(v?\d+\.\d+\.\d+[\w.-]{0,40})\/([^/]{1,200})$/, 'public', ({ env, ctx, m }) => fileRedirect(env, ctx, m[1], m[2])],
   ['GET', /^\/updates\/feed\/([^/]{1,200})$/, 'public', ({ env, ctx, m }) => updateFeed(env, ctx, m[1])],
+
+  ['GET', /^\/domains$/, 'public', ({ env }) => ({ body: domains.info(env), maxAge: 300 })],
+  ['POST', /^\/domains\/@mine$/, 'public', ({ request, env }) => domains.mine(request, env).then(body => ({ body, priv: true }))],
+  ['GET', /^\/domains\/([^/@]{1,80})$/, 'public', ({ env, m }) => domains.lookup(env, m[1]).then(body => ({ body, maxAge: 0 }))],
+  ['POST,PUT,DELETE', /^\/domains\/([^/@]{1,80})$/, 'public', ({ request, env, m }) => domains.write(request, env, request.method, m[1]).then(r => ({ ...r, priv: true }))],
 
   ['GET', /^\/bot\/config\.schema\.json$/, 'public', () => ({ body: SCHEMA, raw: true, maxAge: 300 })],
   ['GET', /^\/bot\/admin$/, 'bot', ({ request, env }) => admin.botAdmin(request, env).then(body => ({ body }))],
@@ -81,6 +87,12 @@ export const ENDPOINTS_V2 = [
   ['GET', '/api/v2/blacklist/check?name=Steve', 'Czy gracz / Nore ID / konto Discord jest na czarnej liście'],
   ['GET', '/api/v2/files/{version}/{name}', 'Plik wydania (przekierowanie, działa też przy prywatnym repozytorium)'],
   ['GET', '/api/v2/updates/feed/latest.yml', 'Kanał aktualizacji launchera dla electron-updater (generic)'],
+  ['GET', '/api/v2/domains', 'Domeny Nore (nazwa.noreclient.pl): zasady, limity, czy usługa działa'],
+  ['GET', '/api/v2/domains/{name}', 'Domeny Nore: czy nazwa jest wolna + dokąd wskazuje zajęta'],
+  ['POST', '/api/v2/domains/{name}', 'Domeny Nore: załóż nazwę (podpis Nore ID)'],
+  ['PUT', '/api/v2/domains/{name}', 'Domeny Nore: wskaż IP / host tunelu i port (podpis Nore ID, odświeża ważność)'],
+  ['DELETE', '/api/v2/domains/{name}', 'Domeny Nore: zwolnij nazwę (podpis Nore ID)'],
+  ['POST', '/api/v2/domains/@mine', 'Domeny Nore: moje nazwy (podpis Nore ID)'],
 ];
 
 function index() {

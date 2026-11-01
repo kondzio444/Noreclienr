@@ -112,3 +112,8 @@ private: set `GITHUB_TOKEN` (fine-grained, *Contents: read* on the repository) a
 Launchers older than this change only know github.com links: their fallback refuses
 `noreclient.pl/api/v2/files/…` links, so publish one release with this launcher **before** making
 the repository private.
+
+## Nore domains
+
+The official `<name>.noreclient.pl` domains (list, revoke, transfer, reserved names, the official
+`mc.noreclient.pl` SRV record, expiry) are under `/api/v2/admin/domains/*` – see `docs/domains.md`.

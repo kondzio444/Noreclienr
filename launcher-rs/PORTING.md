@@ -243,6 +243,7 @@ The tests check that this list, `ipc::CHANNELS` and `launcher/src/preload.js` ag
 - [ ] `servers:checkReachable`
 - [ ] `servers:upnp`
 - [ ] `servers:applyDomain`
+- [ ] `servers:noreDomain`
 - [ ] `servers:dnsRecords`
 - [ ] `servers:contentSources`
 - [ ] `servers:blocked`

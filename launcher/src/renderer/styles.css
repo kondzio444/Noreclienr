@@ -1480,3 +1480,8 @@ img[src$="assets/logo.png"] { filter: hue-rotate(var(--logo-hue)) !important; tr
 
 /* Quiet mode while the game runs (ui.js Quiet): nothing moves, nothing takes GPU time from Minecraft */
 body.game-quiet *, body.game-quiet *::before, body.game-quiet *::after { animation-play-state: paused !important; }
+
+/* Nore domain name check (servers → network) */
+.ok-text { color: var(--success); }
+.err-text { color: var(--danger); }
+.ok-text svg, .err-text svg { width: 14px; height: 14px; vertical-align: -2px; }

@@ -19,6 +19,7 @@ const versions = require('./versions');
 const java = require('./java');
 const serverNet = require('./server-net');
 const tunnel = require('./server-tunnel');
+const noreDomains = require('./nore-domains');
 const jvm = require('./jvm');
 const propsLib = require('./server-props');
 const tools = require('./server-tools');
@@ -97,8 +98,13 @@ function update(id, patch) {
   return get(id);
 }
 
-async function remove(id) {
+async function remove(id, opts = {}) {
   if (running.has(id)) throw new Error('Najpierw zatrzymaj serwer.');
+  const s = raw(id);
+  // the free <name>.noreclient.pl goes back to the pool when the player says so
+  if (opts && opts.releaseDomain && s && s.domain && s.domain.provider === 'nore' && s.domain.name) {
+    try { await noreDomains.release(s.domain.name); } catch (e) { if (e.status !== 404 && e.status !== 403) throw new Error(`Nie udało się zwolnić domeny ${s.domain.name}.noreclient.pl: ${e.message}`); }
+  }
   store.update(d => { d.servers = (d.servers || []).filter(x => x.id !== id); });
   await fsp.rm(dir(id), { recursive: true, force: true });
 }
@@ -403,10 +409,64 @@ function log(id, line, stream = 'cmd') {
   emit('server:log', { id, line, stream });
 }
 
-/** Domain → current public IP with the server's provider (DuckDNS / No-IP / Dynu / Cloudflare). */
+/** The playit.gg tunnel address of a server when its tunnel is on (running one first). */
+function tunnelAddressOf(srv) {
+  const rt = running.get(srv.id);
+  if (rt && rt.net && rt.net.tunnel) return rt.net.tunnel;
+  return srv.tunnel && srv.tunnel.enabled && srv.tunnel.address ? srv.tunnel.address : null;
+}
+
+/** Where <name>.noreclient.pl should point: the tunnel host:port, else the public IP and the server port. */
+async function noreTarget(srv, ip) {
+  const tunnelAddress = tunnelAddressOf(srv);
+  return noreDomains.targetFor({ tunnelAddress, publicIp: tunnelAddress ? null : ip || await serverNet.publicIp(), port: srv.port });
+}
+
+/** Official Nore domain: points it at the current target (claims it again when it expired). */
+async function applyNoreDomain(srv, ip) {
+  const d = srv.domain;
+  const target = await noreTarget(srv, ip);
+  let r;
+  try { r = await noreDomains.update(d.name, target); } catch (e) {
+    if (e.status !== 404) throw e;
+    r = await noreDomains.claim(d.name, target);
+  }
+  const shown = target.port !== 25565 ? `${target.address}:${target.port}` : target.address;
+  store.update(x => { const s2 = (x.servers || []).find(v => v.id === srv.id); if (s2 && s2.domain) { s2.domain.lastIp = shown; s2.domain.expiresAt = r.domain.expiresAt; } });
+  return { host: r.domain.fqdn, ip: shown, target, domain: r.domain, records: [] };
+}
+
+/**
+ * Official Nore domains from the UI (IPC servers:noreDomain):
+ *   check(name) · claim(id, name) · release(id) · mine()
+ */
+async function noreDomain(op, ...args) {
+  if (op === 'check') return noreDomains.check(args[0]);
+  if (op === 'mine') return noreDomains.mine();
+  const srv = raw(args[0]);
+  if (!srv) throw new Error('Nie ma takiego serwera.');
+  if (op === 'claim') {
+    const name = noreDomains.normalize(args[1]);
+    const target = await noreTarget(srv).catch(() => undefined);
+    const r = await noreDomains.claim(name, target);
+    update(srv.id, { domain: { provider: 'nore', name, auto: true, token: null, lastIp: target ? target.address : null, expiresAt: r.domain.expiresAt } });
+    return { domain: r.domain, created: r.created, server: get(srv.id) };
+  }
+  if (op === 'release') {
+    const d = srv.domain;
+    if (!d || d.provider !== 'nore' || !d.name) throw new Error('Ten serwer nie ma domeny Nore.');
+    try { await noreDomains.release(d.name); } catch (e) { if (e.status !== 404) throw e; }
+    update(srv.id, { domain: { provider: 'none', name: '', auto: false, token: null } });
+    return { released: d.name, server: get(srv.id) };
+  }
+  throw new Error('Nieznana operacja domeny: ' + op);
+}
+
+/** Domain → current public IP with the server's provider (Nore, DuckDNS / No-IP / Dynu / Cloudflare). */
 async function applyDomain(srv, ip) {
   const d = srv.domain;
   if (!d || !d.provider || d.provider === 'none') throw new Error('Najpierw ustaw domenę.');
+  if (d.provider === 'nore') return applyNoreDomain(srv, ip);
   ip = ip || await serverNet.publicIp();
   if (d.provider === 'manual') return { host: d.name, ip, records: serverNet.manualRecords(d.name, ip, srv.port) };
   const secret = decryptToken(d.token);
@@ -443,19 +503,34 @@ async function prepareNetwork(srv, rt) {
     }
   }
   const d = srv.domain;
-  if (d && d.auto && d.provider && !['manual', 'none'].includes(d.provider)) {
-    let lastIp = null;
+  const tunnelOn = !!(srv.tunnel && srv.tunnel.enabled);
+  // a Nore domain on a tunnelled server points at the tunnel – set once the tunnel is up
+  const noreTunnel = !!(d && d.provider === 'nore' && d.name && tunnelOn);
+  const auto = d && d.provider && !['manual', 'none'].includes(d.provider) && (d.provider === 'nore' ? d.name && d.auto !== false : d.auto);
+  if (auto && !noreTunnel) {
+    let lastIp = null, lastAt = 0;
     const refresh = async (first) => {
       const ip = await serverNet.publicIp();
-      if (!first && ip === lastIp) return;
+      // a Nore domain also needs a refresh at least once a day, or it expires after 60 days
+      const stale = d.provider === 'nore' && Date.now() - lastAt > 24 * 3600000;
+      if (!first && ip === lastIp && !stale) return;
       const r = await applyDomain(raw(srv.id) || srv, ip);
-      lastIp = ip;
-      log(srv.id, `[Launcher] Domena ${r.host} → ${ip}${first ? '' : ' (zmiana IP)'}`);
+      const changed = !first && ip !== lastIp;
+      lastIp = ip; lastAt = Date.now();
+      if (first || changed) log(srv.id, `[Launcher] Domena ${r.host} → ${r.ip || ip}${changed ? ' (zmiana IP)' : ''}`);
     };
     try { await refresh(true); } catch (e) { log(srv.id, `[Launcher] Domena: ${e.message}`, 'err'); }
     every(10 * 60000, () => refresh(false));
   }
-  if (srv.tunnel && srv.tunnel.enabled) startTunnel(srv, rt).catch(e => log(srv.id, `[Launcher] Tunel playit.gg: ${e.message}`, 'err'));
+  if (tunnelOn) {
+    startTunnel(srv, rt).then(async () => {
+      if (!noreTunnel || d.auto === false || running.get(srv.id) !== rt) return;
+      try {
+        const r = await applyDomain(raw(srv.id) || srv);
+        log(srv.id, `[Launcher] Domena ${r.host} → tunel ${r.ip}`);
+      } catch (e) { log(srv.id, `[Launcher] Domena: ${e.message}`, 'err'); }
+    }, e => log(srv.id, `[Launcher] Tunel playit.gg: ${e.message}`, 'err'));
+  }
 }
 
 async function startTunnel(srv, rt) {
@@ -814,6 +889,6 @@ async function resetWorld(id, seed) {
 module.exports = {
   TYPES, DEFAULT_PROPS, setEmitter, list, get, create, update, remove, install, start, stop, restart, command, logs, stopAll, stats,
   readProperties, players, playerList, backup, listBackups, restoreBackup, deleteBackup, resetWorld, decryptToken, encryptToken, raw,
-  loaderVersions, applyDomain, stopAllAndWait, isRunning: (id) => running.has(id), runningCount: () => running.size,
+  loaderVersions, applyDomain, noreDomain, stopAllAndWait, isRunning: (id) => running.has(id), runningCount: () => running.size,
   propertiesForm, saveProperties, complete, PROXIES, jvmArgsFor, dir,
 };

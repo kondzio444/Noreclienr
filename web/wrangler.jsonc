@@ -31,15 +31,23 @@
       // download redirect counters (src/v2/counters.js)
       { "name": "COUNTERS", "class_name": "NoreCounters" },
       // admin data: blacklist, announcements, warns, flags, audit log (src/v2/admin-store.js)
-      { "name": "ADMIN", "class_name": "NoreAdmin" }
+      { "name": "ADMIN", "class_name": "NoreAdmin" },
+      // official Nore domains <name>.noreclient.pl (src/v2/domains-store.js, docs/domains.md);
+      // DNS through the Cloudflare API: secrets CF_DNS_TOKEN + CF_ZONE_ID (Zone → DNS → Edit, this zone only)
+      { "name": "DOMAINS", "class_name": "NoreDomains" }
     ]
   },
   "migrations": [
     { "tag": "hub-v1", "new_sqlite_classes": ["NoreHub"] },
     { "tag": "bot-v1", "new_sqlite_classes": ["NoreBot", "NoreCounters"] },
-    { "tag": "admin-v1", "new_sqlite_classes": ["NoreAdmin"] }
+    { "tag": "admin-v1", "new_sqlite_classes": ["NoreAdmin"] },
+    { "tag": "domains-v1", "new_sqlite_classes": ["NoreDomains"] }
   ],
   // /api/v2/servers/:address – 20 pings per minute per IP
-  "ratelimits": [{ "name": "SLP_LIMIT", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } }],
+  // /api/v2/domains writes (claim / update / release) – 60 per minute per IP (claims: 5 an hour, in NoreDomains)
+  "ratelimits": [
+    { "name": "SLP_LIMIT", "namespace_id": "4201", "simple": { "limit": 20, "period": 60 } },
+    { "name": "DOMAIN_LIMIT", "namespace_id": "4202", "simple": { "limit": 60, "period": 60 } }
+  ],
   "observability": { "enabled": true }
 }

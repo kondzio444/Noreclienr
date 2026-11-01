@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import http from 'node:http';
-import { startHttpFakes, startModernMc, startLegacyMc, startSilentMc, PNG_1PX, MODERN_STATUS } from './test/fakes.mjs';
+import { startHttpFakes, startModernMc, startLegacyMc, startSilentMc, PNG_1PX, MODERN_STATUS, CF_TOKEN, CF_ZONE } from './test/fakes.mjs';
 import { startDev } from './test/dev.mjs';
 import { snapshotV1 } from './test/v1-snapshot.mjs';
 import { allowedOrigin } from '../src/v2/http.js';
@@ -33,6 +33,7 @@ const dev = await startDev({
     GITHUB_API: `http://127.0.0.1:${FAKE}/github`, DISCORD_API: `http://127.0.0.1:${FAKE}/discord`, DOH_URL: `http://127.0.0.1:${FAKE}/doh`,
     SLP_ALLOW_IPS: '127.0.0.1', NORE_BOT_SECRET: BOT_SECRET, SESSION_KEY, DISCORD_CLIENT_ID: 'test-client', DISCORD_CLIENT_SECRET: 'test-client-secret',
     TEST_HOST_HEADER: 'X-Nore-Test-Host', ADMIN_TOKEN, ADMIN_DISCORD_IDS: '111111111111111111, 333333333333333333', ADMIN_MC_SERVER: '127.0.0.1:25599',
+    CF_API: `http://127.0.0.1:${FAKE}/cf`, CF_DNS_TOKEN: CF_TOKEN, CF_ZONE_ID: CF_ZONE, TEST_CLOCK: '1', DOMAINS_CLAIMS_PER_HOUR: '50',
   },
 });
 let priv = null;
@@ -577,6 +578,172 @@ try {
   assert.equal((await get('/api/v2/stats')).json.online, before);
   step('POST /api/v2/presence: game heartbeat counts as online (once per nick), validation, 20 s limit, online:false leaves');
 
+  // ------------------------------------------------------------ Nore domains (<name>.noreclient.pl, fake Cloudflare DNS)
+  {
+    const cf = fakes.cf;
+    const seedBefore = JSON.stringify(cf.seed);
+    const adm = (method, p, body) => req(method, '/api/v2/admin' + p, { body, headers: { Authorization: `Admin ${ADMIN_TOKEN}` } });
+    const ident = () => {
+      const kp = crypto.generateKeyPairSync('ec', { namedCurve: 'P-256' });
+      const pub = kp.publicKey.export({ type: 'spki', format: 'der' }).toString('base64');
+      return { kp, pub, hex: crypto.createHash('sha256').update(Buffer.from(pub, 'base64')).digest('hex').slice(0, 20), ts: Date.now() };
+    };
+    const OPS = { POST: 'claim', PUT: 'update', DELETE: 'release' };
+    const signed = (id, op, name, target, { ts, key, hex } = {}) => {
+      const t = ts ?? Math.max(Date.now(), id.ts + 1);
+      if (ts === undefined) id.ts = t;
+      const digest = crypto.createHash('sha256').update(JSON.stringify(target ?? null)).digest('hex');
+      const sig = crypto.sign('sha256', Buffer.from(`nore-domains/1|${op}|${name}|${hex || id.hex}|${t}|${digest}`), key || id.kp.privateKey).toString('base64');
+      return { hex: hex || id.hex, pub: id.pub, ts: t, sig, ...(target !== undefined ? { target } : {}) };
+    };
+    const dom = (method, name, id, target, o) => req(method, `/api/v2/domains/${name}`, { body: signed(id, OPS[method], name, target, o) });
+    const recs = (name) => cf.byName(name);
+    const alice = ident(), bob = ident(), carol = ident();
+
+    r = await get('/api/v2/domains');
+    assert.equal(r.status, 200); assert.equal(r.json.enabled, true); assert.equal(r.json.zone, 'noreclient.pl'); assert.equal(r.json.limits.perNoreId, 3); assert.equal(r.json.limits.expiryDays, 60);
+    r = await get('/api/v2/domains/Serwer-Ali'); assert.equal(r.json.available, true); assert.equal(r.json.name, 'serwer-ali'); assert.equal(r.json.fqdn, 'serwer-ali.noreclient.pl');
+    for (const [n, reason] of [['www', 'reserved'], ['mc', 'reserved'], ['api', 'reserved'], ['ab', 'invalid'], ['-abc', 'invalid'], ['abc-', 'invalid'], ['a_b_c', 'invalid'], ['żółw', 'invalid'], ['x'.repeat(33), 'invalid'],
+      ['kurwa-serwer', 'blocked_word'], ['fuck3r', 'blocked_word'], ['noreclient-mc', 'impersonation'], ['nore-official', 'impersonation'], ['mojang-pl', 'impersonation'], ['adm1n1strator', 'impersonation']]) {
+      r = await get(`/api/v2/domains/${encodeURIComponent(n)}`);
+      assert.equal(r.status, 200, n); assert.equal(r.json.available, false, n); assert.equal(r.json.reason, reason, n); assert.ok(r.json.message, n);
+    }
+    step('domains: availability while typing – valid, reserved, invalid, profanity and impersonation names (Polish messages)');
+
+    // claim with an IPv4 target → DNS-only A, no SRV for 25565
+    r = await dom('POST', 'serwer-ali', alice, { address: '93.184.216.34', port: 25565 });
+    assert.equal(r.status, 201, r.text); assert.equal(r.json.created, true); assert.equal(r.json.domain.fqdn, 'serwer-ali.noreclient.pl'); assert.equal(r.json.domain.target.type, 'A'); assert.equal(r.json.domain.srv, false);
+    let a = recs('serwer-ali.noreclient.pl');
+    assert.equal(a.length, 1); assert.equal(a[0].type, 'A'); assert.equal(a[0].content, '93.184.216.34'); assert.equal(a[0].proxied, false); assert.equal(a[0].comment, 'nore-domain:serwer-ali'); assert.equal(a[0].ttl, 60);
+    assert.equal(recs('_minecraft._tcp.serwer-ali.noreclient.pl').length, 0);
+    const aId = a[0].id;
+    r = await get('/api/v2/domains/serwer-ali'); assert.equal(r.json.available, false); assert.equal(r.json.reason, 'taken'); assert.equal(r.json.domain.target.address, '93.184.216.34'); assert.equal(r.json.domain.owner, undefined);
+    assert.ok(Math.abs(Date.parse(r.json.domain.expiresAt) - Date.parse(r.json.domain.refreshedAt) - 60 * 86400000) < 1000);
+    r = await dom('POST', 'serwer-ali', bob); assert.equal(r.status, 409); assert.equal(r.json.code, 'taken');
+    r = await dom('POST', 'manual', bob); assert.equal(r.status, 409); assert.equal(r.json.code, 'name_in_use'); // a record Nore did not create
+    r = await dom('POST', 'legacy', bob); assert.equal(r.status, 409); assert.equal(r.json.code, 'name_in_use');
+    r = await dom('POST', 'www', bob); assert.equal(r.status, 409); assert.equal(r.json.code, 'reserved');
+    r = await dom('POST', 'a--b', bob); assert.equal(r.status, 400);
+    step('domains: claim → A record (DNS only, comment nore-domain:<name>, TTL 60), lookup shows the target; taken / foreign record / reserved → 409');
+
+    // signatures
+    const good = signed(alice, 'claim', 'serwer-ali');
+    r = await req('POST', '/api/v2/domains/serwer-ali', { body: good }); assert.equal(r.status, 200, r.text); assert.equal(r.json.created, false);
+    r = await req('POST', '/api/v2/domains/serwer-ali', { body: good }); assert.equal(r.status, 401); assert.equal(r.json.code, 'replay');
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.35' }, { key: bob.kp.privateKey }); assert.equal(r.status, 401); assert.equal(r.json.code, 'bad_signature');
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.35' }, { ts: Date.now() - 10 * 60000 }); assert.equal(r.status, 401); assert.equal(r.json.code, 'bad_clock');
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.35' }, { hex: bob.hex }); assert.equal(r.status, 401); assert.match(r.json.error, /Nore ID/);
+    const tampered = signed(alice, 'update', 'serwer-ali', { address: '93.184.216.35' }); tampered.target.address = '93.184.216.99';
+    r = await req('PUT', '/api/v2/domains/serwer-ali', { body: tampered }); assert.equal(r.status, 401); assert.equal(r.json.code, 'bad_signature');
+    const otherOp = signed(alice, 'release', 'serwer-ali'); // a release signature is not a claim
+    r = await req('POST', '/api/v2/domains/serwer-ali', { body: otherOp }); assert.equal(r.status, 401);
+    r = await req('PUT', '/api/v2/domains/serwer-ali', { body: { hex: alice.hex, ts: Date.now(), target: { address: '93.184.216.35' } } }); assert.equal(r.status, 400); assert.equal(r.json.code, 'bad_signature');
+    assert.equal(recs('serwer-ali.noreclient.pl')[0].content, '93.184.216.34');
+    step('domains: signatures – wrong key, old clock, key not matching the Nore ID, tampered target, other operation, missing sig, replay → 401/400, nothing changed');
+
+    // A + SRV for another port, then a playit.gg tunnel (CNAME + SRV to the tunnel host), then IPv6
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.34', port: 25570 });
+    assert.equal(r.status, 200, r.text); assert.equal(r.json.changed, true); assert.equal(r.json.domain.srv, true);
+    a = recs('serwer-ali.noreclient.pl'); assert.equal(a.length, 1); assert.equal(a[0].id, aId);
+    let srv = recs('_minecraft._tcp.serwer-ali.noreclient.pl');
+    assert.equal(srv.length, 1); assert.deepEqual(srv[0].data, { priority: 0, weight: 5, port: 25570, target: 'serwer-ali.noreclient.pl' }); assert.equal(srv[0].comment, 'nore-domain:serwer-ali');
+    r = await dom('PUT', 'serwer-ali', alice, { address: 'abc-def.joinmc.link', port: 41234 });
+    assert.equal(r.status, 200, r.text); assert.equal(r.json.domain.target.type, 'CNAME');
+    a = recs('serwer-ali.noreclient.pl'); assert.equal(a.length, 1); assert.equal(a[0].type, 'CNAME'); assert.equal(a[0].content, 'abc-def.joinmc.link'); assert.equal(a[0].proxied, false);
+    srv = recs('_minecraft._tcp.serwer-ali.noreclient.pl'); assert.equal(srv.length, 1); assert.deepEqual(srv[0].data, { priority: 0, weight: 5, port: 41234, target: 'abc-def.joinmc.link' });
+    const callsBefore = cf.calls.length;
+    r = await dom('PUT', 'serwer-ali', alice, { address: 'abc-def.joinmc.link', port: 41234 });
+    assert.equal(r.status, 200); assert.equal(r.json.changed, false); assert.equal(cf.calls.length, callsBefore);
+    r = await dom('PUT', 'serwer-ali', alice, { address: '2606:4700:4700::1111', port: 25565 });
+    assert.equal(r.status, 200, r.text);
+    a = recs('serwer-ali.noreclient.pl'); assert.equal(a.length, 1); assert.equal(a[0].type, 'AAAA'); assert.equal(recs('_minecraft._tcp.serwer-ali.noreclient.pl').length, 0);
+    for (const t of [{ address: '192.168.1.5' }, { address: '10.0.0.1', port: 25565 }, { address: '::1' }, { address: 'x.noreclient.pl' }, { address: 'localhost' }, { address: '93.184.216.34', port: 70000 }, { address: '' }, { address: '1.2.3.4', extra: 1 }]) {
+      r = await dom('PUT', 'serwer-ali', alice, t); assert.equal(r.status, 400, JSON.stringify(t));
+    }
+    r = await dom('PUT', 'serwer-ali', bob, { address: '93.184.216.36' }); assert.equal(r.status, 403); assert.equal(r.json.code, 'not_owner');
+    r = await dom('PUT', 'nikt-tego', bob, { address: '93.184.216.36' }); assert.equal(r.status, 404);
+    step('domains: PUT target – A + SRV for port 25570, tunnel host → CNAME + SRV to host:port, unchanged → no DNS calls, IPv6 → AAAA; private / own zone / bad port → 400, not owner → 403');
+
+    // limit per Nore ID, my names, release
+    for (const n of ['ali-dwa', 'ali-trzy']) { r = await dom('POST', n, alice); assert.equal(r.status, 201, r.text); assert.equal(r.json.domain.state, 'pending'); assert.equal(recs(`${n}.noreclient.pl`).length, 0); }
+    r = await dom('POST', 'ali-cztery', alice); assert.equal(r.status, 409); assert.equal(r.json.code, 'limit');
+    r = await req('POST', '/api/v2/domains/@mine', { body: signed(alice, 'mine', '') });
+    assert.equal(r.status, 200, r.text); assert.deepEqual(r.json.domains.map(d => d.name), ['serwer-ali', 'ali-dwa', 'ali-trzy']); assert.equal(r.json.max, 3);
+    r = await dom('DELETE', 'ali-dwa', bob); assert.equal(r.status, 403);
+    r = await dom('DELETE', 'ali-dwa', alice); assert.equal(r.status, 200, r.text); assert.equal(r.json.released, 'ali-dwa');
+    r = await get('/api/v2/domains/ali-dwa'); assert.equal(r.json.available, true);
+    step('domains: at most 3 names per Nore ID, POST /domains/@mine lists them, release frees the name (owner only)');
+
+    // a record changed on Cloudflare by hand is never touched
+    const ours = recs('serwer-ali.noreclient.pl')[0];
+    cf.records.get(ours.id).comment = 'zmienione ręcznie';
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.37' }); assert.equal(r.status, 409); assert.equal(r.json.code, 'foreign_record');
+    assert.equal(cf.records.get(ours.id).content, '2606:4700:4700::1111');
+    cf.records.get(ours.id).comment = 'nore-domain:serwer-ali';
+    r = await dom('PUT', 'serwer-ali', alice, { address: '93.184.216.37' }); assert.equal(r.status, 200, r.text);
+    step('domains: a record edited outside the API → 409 foreign_record, nothing touched; fixed comment → works again');
+
+    // blacklist, admin list / revoke / reserve / transfer
+    r = await adm('POST', '/blacklist', { kind: 'nore_id', value: carol.hex, reason: 'spam domen' }); assert.equal(r.status, 201, r.text);
+    const carolEntry = r.json.id;
+    r = await dom('POST', 'carol-mc', carol, { address: '93.184.216.38' }); assert.equal(r.status, 403); assert.equal(r.json.code, 'blocked');
+    r = await dom('POST', 'bob-serwer', bob, { address: '93.184.216.39', port: 25600 }); assert.equal(r.status, 201, r.text);
+    r = await adm('GET', '/domains?q=bob'); assert.equal(r.status, 200); assert.equal(r.json.count, 1); assert.equal(r.json.domains[0].owner, bob.hex); assert.equal(r.json.domains[0].records.length, 2);
+    r = await adm('GET', '/domains'); assert.equal(r.json.total, 3); assert.equal(r.json.enabled, true);
+    r = await req('GET', '/api/v2/admin/domains'); assert.equal(r.status, 401);
+    r = await adm('GET', '/domains/bob-serwer'); assert.equal(r.json.domain.owner, bob.hex);
+    r = await adm('DELETE', '/domains/bob-serwer', { reason: 'nadużycie', reserve: true }); assert.equal(r.status, 200, r.text); assert.equal(r.json.owner, bob.hex);
+    assert.equal(recs('bob-serwer.noreclient.pl').length, 0); assert.equal(recs('_minecraft._tcp.bob-serwer.noreclient.pl').length, 0);
+    r = await get('/api/v2/domains/bob-serwer'); assert.equal(r.json.reason, 'reserved');
+    r = await dom('POST', 'bob-serwer', bob); assert.equal(r.status, 409); assert.equal(r.json.code, 'reserved');
+    r = await adm('POST', '/domains/reserved', { name: 'turniej', reason: 'wydarzenie Nore' }); assert.equal(r.status, 201);
+    r = await adm('GET', '/domains/reserved'); assert.deepEqual(r.json.reserved.map(x => x.name), ['bob-serwer', 'turniej']); assert.ok(r.json.builtIn.includes('www'));
+    r = await adm('DELETE', '/domains/reserved/bob-serwer'); assert.equal(r.status, 200);
+    r = await get('/api/v2/domains/bob-serwer'); assert.equal(r.json.available, true);
+    r = await adm('POST', '/domains/ali-trzy/transfer', { noreId: 'NORE-' + bob.hex.toUpperCase().match(/.{5}/g).join('-') }); assert.equal(r.status, 200, r.text); assert.equal(r.json.from, alice.hex); assert.equal(r.json.domain.owner, bob.hex);
+    r = await adm('POST', '/domains/ali-trzy/transfer', { noreId: carol.hex }); assert.equal(r.status, 409); assert.equal(r.json.code, 'blocked');
+    r = await dom('PUT', 'ali-trzy', alice, { address: '93.184.216.40' }); assert.equal(r.status, 403);
+    r = await dom('PUT', 'ali-trzy', bob, { address: '93.184.216.40' }); assert.equal(r.status, 200, r.text); assert.equal(recs('ali-trzy.noreclient.pl')[0].content, '93.184.216.40');
+    r = await adm('GET', '/audit?action=domains'); assert.ok(r.json.entries.some(e => e.action === 'domains.revoke' && e.target === 'bob-serwer')); assert.ok(r.json.entries.some(e => e.action === 'domains.transfer'));
+    await adm('DELETE', `/blacklist/${carolEntry}`);
+    step('domains: blacklisted Nore ID cannot claim; admin list / search, revoke (+ reserve), reserved names, transfer (blacklist checked), audit log');
+
+    // official Nore MC record: SRV _minecraft._tcp.mc → host, the website on mc.noreclient.pl untouched
+    r = await adm('GET', '/domains/official'); assert.equal(r.json.official.configured, false);
+    r = await adm('PUT', '/domains/official', { host: 'mc.noreclient.pl' }); assert.equal(r.status, 400);
+    r = await adm('PUT', '/domains/official', { host: '93.184.216.50', port: 25566 }); assert.equal(r.status, 200, r.text);
+    assert.equal(r.json.official.target, 'mc-srv.noreclient.pl');
+    const ms = recs('mc-srv.noreclient.pl'); assert.equal(ms.length, 1); assert.equal(ms[0].type, 'A'); assert.equal(ms[0].content, '93.184.216.50'); assert.equal(ms[0].proxied, false);
+    let osrv = recs('_minecraft._tcp.mc.noreclient.pl'); assert.equal(osrv.length, 1); assert.deepEqual(osrv[0].data, { priority: 0, weight: 5, port: 25566, target: 'mc-srv.noreclient.pl' });
+    r = await adm('PUT', '/domains/official', { host: 'play.nore-host.net', port: 25565 }); assert.equal(r.status, 200, r.text);
+    assert.equal(recs('mc-srv.noreclient.pl').length, 0);
+    osrv = recs('_minecraft._tcp.mc.noreclient.pl'); assert.equal(osrv.length, 1); assert.deepEqual(osrv[0].data, { priority: 0, weight: 5, port: 25565, target: 'play.nore-host.net' });
+    const mcSite = recs('mc.noreclient.pl'); assert.equal(mcSite.length, 1); assert.equal(mcSite[0].comment, 'Worker custom domain');
+    const site = await hostGet('mc.noreclient.pl', '/'); assert.equal(site.status, 200); assert.match(site.text, /Nore MC/);
+    r = await adm('GET', '/domains'); assert.equal(r.json.official.host, 'play.nore-host.net');
+    r = await adm('DELETE', '/domains/official'); assert.equal(r.status, 200); assert.equal(r.json.official.configured, false); assert.equal(recs('_minecraft._tcp.mc.noreclient.pl').length, 0);
+    r = await adm('PUT', '/domains/official', { host: 'play.nore-host.net', port: 25565 }); assert.equal(r.status, 200);
+    step('domains: official Nore MC – SRV _minecraft._tcp.mc → mc-srv A (IP) or the host, switch and clear; mc.noreclient.pl website record untouched');
+
+    // expiry: names not refreshed for 60 days are removed (cron; here with the test clock)
+    r = await adm('POST', '/domains/cleanup', { asOf: Date.now() + 30 * 86400000 }); assert.equal(r.status, 200, r.text); assert.deepEqual(r.json.expired, []);
+    r = await adm('POST', '/domains/cleanup', { asOf: Date.now() + 61 * 86400000 }); assert.equal(r.status, 200, r.text);
+    assert.deepEqual(r.json.expired.sort(), ['ali-trzy', 'serwer-ali']);
+    assert.equal(recs('serwer-ali.noreclient.pl').length, 0); assert.equal(recs('ali-trzy.noreclient.pl').length, 0);
+    r = await get('/api/v2/domains/serwer-ali'); assert.equal(r.json.available, true);
+    assert.equal(recs('_minecraft._tcp.mc.noreclient.pl').length, 1); // the official record never expires
+    // nothing that Nore did not create was ever touched
+    assert.equal(JSON.stringify(cf.seed.map(x => cf.records.get(x.id))), seedBefore);
+    const seedIds = new Set(cf.seed.map(x => x.id));
+    assert.ok(cf.calls.every(c => !seedIds.has(c.id)), 'a call touched a foreign record');
+    assert.ok(cf.calls.filter(c => c.body).every(c => c.body.type === 'SRV' || c.body.proxied === false), 'every record is DNS only');
+    step(`domains: expiry after 60 days without a refresh (DNS removed, official kept); ${cf.calls.length} DNS writes, none on records Nore did not create`);
+
+    r = await get('/api/v2/status'); assert.equal(r.json.components.domains.status, 'ok');
+    r = await get('/api/v2/openapi.json'); for (const p of ['/api/v2/domains', '/api/v2/domains/{name}', '/api/v2/domains/@mine', '/api/v2/admin/domains', '/api/v2/admin/domains/official']) assert.ok(r.json.paths[p], p);
+    step('domains: status component and OpenAPI paths');
+  }
+
   // ------------------------------------------------------------ hosts + site
   let h = await hostGet('www.noreclient.pl', '/api/v1/version?x=1');
   assert.equal(h.status, 301); assert.match(h.headers.location, /^https?:\/\/(noreclient\.pl|127\.0\.0\.1:\d+)\/api\/v1\/version\?x=1$/); // wrangler dev rewrites its own host
@@ -617,6 +784,12 @@ try {
   assert.equal(fakes.calls.assetAuth.at(-1), 'Bearer gh-test-token');
   pr = await (await pget('/api/v1/updates/launcher?platform=win&current=1.4.0')).json(); assert.match(pr.download.url, /^https:\/\/noreclient\.pl\/api\/v2\/files\//);
   step('private repository: file links point at the Worker, downloads and the update feed redirect to signed GitHub URLs (token sent)');
+  // that Worker has no CF_DNS_TOKEN: Nore domains answer 503 with a Polish message, lookups still work
+  let pd = await fetch(priv.base + '/api/v2/domains/serwer-testowy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  assert.equal(pd.status, 503); const pdj = await pd.json(); assert.equal(pdj.code, 'domains_disabled'); assert.match(pdj.error, /Domeny Nore są chwilowo wyłączone/);
+  pd = await (await fetch(priv.base + '/api/v2/domains')).json(); assert.equal(pd.enabled, false);
+  pd = await (await fetch(priv.base + '/api/v2/domains/serwer-testowy')).json(); assert.equal(pd.available, true); assert.equal(pd.enabled, false);
+  step('domains without CF_DNS_TOKEN / CF_ZONE_ID: writes → 503 domains_disabled (Polish), lookups still answer');
 
   console.log(`\nall ${passed} web checks passed`);
 } catch (e) {

@@ -297,11 +297,11 @@ function modal(html, { onClose, dismissable = true } = {}) {
   return { root: back, el: $('.modal', back), close };
 }
 
-function confirmModal(title, text, { ok = 'Potwierdź', danger = false } = {}) {
+function confirmModal(title, text, { ok = 'Potwierdź', danger = false, cancel = 'Anuluj' } = {}) {
   return new Promise((resolve) => {
     let done = false;
     const m = modal(`<h3>${esc(title)}</h3><p class="sub">${esc(text)}</p>
-      <div class="foot"><button class="btn ghost" data-close>Anuluj</button><button class="btn ${danger ? 'danger' : ''}" id="m-ok">${esc(ok)}</button></div>`,
+      <div class="foot"><button class="btn ghost" data-close>${esc(cancel)}</button><button class="btn ${danger ? 'danger' : ''}" id="m-ok">${esc(ok)}</button></div>`,
     { onClose: () => { if (!done) resolve(false); } });
     $('#m-ok', m.el).addEventListener('click', () => { done = true; resolve(true); m.close(); });
   });

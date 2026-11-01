@@ -572,7 +572,7 @@ async function diagnose({ port, running, domain, tunnel }) {
   if (domain && domain.name && domain.provider && domain.provider !== 'none') {
     const d = await dnsCheck(domain.name, port).catch((e) => ({ error: e.message, a: [] }));
     if (!d.a.length) add('dns', 'bad', `Domena ${domain.name}`, `DNS: ${d.error || 'brak rekordu A'} – kliknij „Zapisz i zastosuj” w sekcji domeny.`, 'domain');
-    else if (pub && !d.a.includes(pub)) add('dns', 'warn', `Domena ${domain.name}`, `Wskazuje na ${d.a.join(', ')}, a Twoje IP to ${pub} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).`, 'domain');
+    else if (pub && !d.a.includes(pub) && !(domain.provider === 'nore' && tunnel && tunnel.address)) add('dns', 'warn', `Domena ${domain.name}`, `Wskazuje na ${d.a.join(', ')}, a Twoje IP to ${pub} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).`, 'domain');
     else add('dns', 'ok', `Domena ${domain.name}`, `Wskazuje na ${d.a.join(', ')}${d.srv ? ` • SRV → port ${d.srv.port}` : ''}.`);
   }
 

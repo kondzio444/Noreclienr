@@ -140,6 +140,7 @@ pub const CHANNELS: &[(&str, Status)] = {
         ("servers:checkReachable", Pending),
         ("servers:upnp", Pending),
         ("servers:applyDomain", Pending),
+        ("servers:noreDomain", Pending),
         ("servers:dnsRecords", Pending),
         ("servers:contentSources", Pending),
         ("servers:blocked", Pending),
