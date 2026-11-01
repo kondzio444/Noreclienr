@@ -1,10 +1,10 @@
 # Nore Launcher in Rust – porting checklist
 
 `launcher-rs/` is the Rust rewrite of the Electron launcher (`launcher/`). Phase 1 ported the core
-(game, Java, loaders, accounts, chat identity); **phase 2 ports every remaining IPC channel** – all
-channels below are `[x]`. **The Electron launcher stays the shipping product**: `build.yml` still
-publishes it; the Tauri installer and `latest.json` are only attached to the same release (job
-`tauri`, when the updater signing key is configured). The switch-over is planned below.
+(game, Java, loaders, accounts, chat identity); phase 2 ported every remaining IPC channel – all
+channels below are `[x]`. **Since the switch-over the Rust (Tauri) launcher is the shipping Nore
+Launcher**: `build.yml` builds and publishes it for Windows, Linux and macOS; the Electron launcher is
+only built as the one-time *bridge* that moves old installs over (see "Switch-over").
 
 ## Layout
 
@@ -55,9 +55,13 @@ Linux build dependencies: `libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libay
   committed: the Microsoft client id comes from `NORE_MS_CLIENT_ID` (env / build) or the Nore API,
   like today.
 * **Updates**: `tauri-plugin-updater` reads `https://noreclient.pl/api/v2/updates/feed/latest.json`
-  (the Worker 302-redirects to the release asset). It is active only in builds made with
-  `NORE_UPDATER_PUBKEY` (the matching private key stays a CI secret); other builds report `dev`, like
-  an unpackaged Electron launcher. Releases carry `latest.json` (job `tauri` in build.yml) once the signing key is configured.
+  (the Worker serves the `latest.json` of the newest stable release that has one). The public minisign
+  key is committed as the default (`src-tauri/src/updater.rs` `DEFAULT_PUBKEY`, also in
+  `tauri.conf.json`); `NORE_UPDATER_PUBKEY` at build time (CI: `vars.NORE_UPDATER_PUBKEY`) overrides it.
+  The private key stays a CI secret. Debug builds report `dev` (`NORE_UPDATER_TEST=1` turns the
+  updater on there).
+* **Version**: `app:info` shows "1.4.5 · Build N" like Electron (`noreRelease` of `launcher/package.json`,
+  patch = CI build number).
 
 ## Status legend
 
@@ -124,22 +128,74 @@ Differences that remain:
 * Secrets of the Electron launcher (`enc:` safeStorage values: domain tokens, CurseForge key, playit secret)
   are read through `oscrypt.rs` when present; new values are sealed as `rs:` with the Rust key.
 
-## Switch-over plan (Electron → Tauri)
+## Switch-over (Electron → Tauri) – done
 
-1. **Now**: every release carries the Electron installer + `latest.yml` (Electron auto-update) and – when
-   `TAURI_SIGNING_PRIVATE_KEY` / `NORE_UPDATER_PUBKEY` are set – `NoreLauncher-rs-Setup-<v>.exe`, its `.sig`
-   and `latest.json`. Testers install the Tauri build by hand; it updates itself from `latest.json`.
-2. **Bridge release (Electron)**: one Electron version whose updater, after its normal update check, downloads
-   `NoreLauncher-rs-Setup-<v>.exe` from the same release (checked against the `.sig` / SHA-256 published next
-   to it), runs it with `/S` (current-user NSIS, same `%APPDATA%/.norelauncher` data folder) and quits. Nothing
-   is migrated by hand: on its first start the Rust launcher imports `launcher.json` (settings, accounts with
-   re-sealed Microsoft sessions, instances, friends, servers, chat identity – see "How the Rust launcher
-   relates…"), game files are shared. The Electron app stays installed (Programs list) as a fallback.
-3. **Cleanup release (Tauri)**: the Rust launcher detects the old Electron install
-   (`%LOCALAPPDATA%/Programs/nore-launcher`) and offers to remove it (runs its uninstaller with `/S`; the
-   uninstaller keeps game data). `build.yml` stops building Electron; the `latest.yml` of the last Electron
-   build keeps pointing at the bridge release.
-4. Rollback at any point: Electron reads its own `launcher.json`, which the Rust launcher never writes.
+1. **Release (build.yml)**: the version scheme stays `1.4.<build>` for both launchers. Job `tauri` builds
+   * Windows `NoreLauncher-Setup-<v>.exe` (NSIS, current user, `%LOCALAPPDATA%\Nore Launcher`),
+   * Linux `NoreLauncher-<v>.AppImage` and `NoreLauncher-<v>_amd64.deb` (Ubuntu 22.04 runner),
+   * macOS `NoreLauncher-<v>.dmg` and `NoreLauncher-<v>.app.tar.gz` (universal, ad-hoc signed),
+
+   each with a minisign signature `<file>.sig` when `TAURI_SIGNING_PRIVATE_KEY` is set (the bundler signs
+   the updater artifacts, `tauri signer sign` the rest). Job `release` writes `latest.json`
+   (`scripts/latest-json.js`: every signed installer under its updater targets, plus `size` / `sha256`)
+   and publishes everything in one GitHub release (with the 403 retry). **Without the key** the
+   installers are published unsigned, a `::warning::` says so and `latest.json` is skipped – installed
+   Tauri launchers then simply see no update. The official Nore Client jars are bundled in every build
+   (`prepare-mods.js --require`).
+2. **Bridge (Electron)**: the same release carries an Electron build named `NoreLauncher-Bridge-…` with
+   `latest*.yml`, so existing Electron installs update to it as before. On its next start
+   `launcher/src/main/migrate.js` asks the Nore API (`/api/v2/downloads`, GitHub as a backup) for the
+   Tauri installer of the system, downloads it and checks the exact size, the SHA-256 from the release
+   metadata and the minisign signature (committed public key). The Nore Updater window says
+   "Przenosimy Nore Launcher na nową, szybszą wersję…". Then:
+   * Windows: the NSIS installer runs with `/S /R` (silent, starts the new launcher) and Electron quits;
+   * Linux: the Tauri AppImage replaces the running AppImage in place and starts (the `.deb` is offered on
+     noreclient.pl);
+   * macOS: the `.app` from the DMG replaces "Nore Launcher.app" (old bundle kept until the copy is
+     complete) and starts; without write access the DMG opens and the player drags it over.
+
+   On its first start the Rust launcher imports `launcher.json` (settings, accounts with re-sealed
+   Microsoft sessions, instances, friends, servers, chat identity); game files are shared. Safety: any
+   failure (no Tauri file, network, size / SHA-256 / signature mismatch, installer not starting) leaves
+   Electron running as before and the next start retries; the player may postpone once ("Później");
+   after 3 installs that did not take over the bridge stops trying; `NORE_NO_MIGRATE=1` switches it off.
+   Nothing is deleted. State: `launcher.json` → `rustMigration`. When the Tauri launcher is already
+   installed and has imported the data, starting the old one just hands over to it.
+3. **Cleanup (Tauri, Windows)**: after the import the Rust launcher finds the Electron install (uninstall
+   entry with "Uninstall Nore Launcher.exe", default `%LOCALAPPDATA%\Programs\nore-launcher`) and offers
+   once to remove it (`core/src/legacy.rs`, `src-tauri/src/cleanup.rs`): the uninstaller runs silently,
+   the game folder and settings stay, the desktop shortcut is re-created for the new launcher.
+   State: `launcher-rs.json` → `legacyElectron`.
+4. **Website / API**: `/api/v2/downloads`, `/api/v1/download/:platform`, `/api/v1/updates/launcher` and the
+   home page serve the Tauri installers (`/api/v2/downloads/linux-deb` for the `.deb`); a release without
+   a Tauri file for a platform falls back to its bridge build. `/api/v2/updates/feed/latest.json` serves
+   the Tauri feed (204 when no release has one).
+5. **Rollback**: Electron reads its own `launcher.json`, which the Rust launcher never writes. To stop the
+   move, publish an Electron release without `migrate.js` (or with `decide()` returning `skip`).
+6. **Later**: once (almost) nobody runs Electron any more, drop the `launcher` job; the `latest*.yml` of
+   the last bridge release keep pointing at it.
+
+## Dla właściciela – co trzeba zrobić (PL)
+
+Nowy launcher (Rust / Tauri) jest teraz głównym Nore Launcherem. Żeby wydania były podpisane i żeby
+launcher aktualizował się sam, dodaj w GitHubie (**Settings → Secrets and variables → Actions →
+New repository secret**) dwa sekrety:
+
+| Sekret | Co wpisać |
+|---|---|
+| `TAURI_SIGNING_PRIVATE_KEY` | cała zawartość pliku klucza prywatnego (ten wygenerowany przez `npx tauri signer generate`, para do klucza publicznego `D2FD2480DABA1D85`) |
+| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | hasło do tego klucza |
+
+* Klucz publiczny jest już w repozytorium (jest jawny) – nic więcej nie trzeba ustawiać. Zmienna
+  `NORE_UPDATER_PUBKEY` (Variables) jest potrzebna tylko, jeśli kiedyś zmienisz klucz.
+* Bez tych sekretów wydanie i tak powstanie, ale instalatory będą **niepodpisane** (w logu CI pojawi
+  się ostrzeżenie), nie będzie `latest.json`, więc zainstalowane nowe launchery nie zaktualizują się
+  same, a stary launcher sprawdzi wtedy tylko rozmiar i SHA-256.
+* Klucza prywatnego **nigdy** nie wrzucaj do repozytorium i nie zgub go – bez niego nie da się wydać
+  aktualizacji, którą przyjmą zainstalowane launchery.
+* Gracze nie muszą nic robić: stary launcher zaktualizuje się do wersji „most”, przy następnym
+  uruchomieniu pobierze i zainstaluje nowy launcher, a ten przejmie konta, instancje i ustawienia.
+  Na Windowsie nowy launcher raz zaproponuje usunięcie starej wersji (folder gry zostaje).
 
 ## Channels
 #### app
