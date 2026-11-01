@@ -14,6 +14,11 @@
  * electron-updater reads the Nore API's generic feed (/api/v2/updates/feed, docs/admin-api.md), which
  * redirects to the release files – also when the GitHub repository is private. The fallback accepts
  * the same Worker links (/api/v2/files/…) besides github.com.
+ *
+ * Since the move to the Rust (Tauri) launcher every release still carries an Electron build (the
+ * "bridge", NoreLauncher-Bridge-…, latest*.yml), so electron-updater keeps working; on its next start
+ * the bridge installs the Tauri launcher (migrate.js). The fallback here installs a Tauri installer
+ * the same way (/S /R).
  */
 const { app, shell } = require('electron');
 const fs = require('fs');
@@ -23,6 +28,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 const net = require('./net');
+const migrate = require('./migrate');
 
 const REPO = 'kondzio444/Noreclienr';
 const API = 'https://noreclient.pl/api/v1';
@@ -140,6 +146,9 @@ function newer(a, b) {
 }
 
 function pickAsset(assets) {
+  // since the move to the Rust launcher the release's primary installers are the Tauri ones (migrate.js)
+  const tauri = assets.find(a => migrate.isTauriInstaller(a.name, PLATFORM));
+  if (tauri) return tauri;
   const want = process.platform === 'win32' ? /\.exe$/i : process.platform === 'darwin' ? /\.dmg$/i : /\.AppImage$/i;
   return assets.find(a => want.test(a.name) && !/blockmap/i.test(a.name));
 }
@@ -244,8 +253,10 @@ function install() {
   if (!manual || !manual.file) { if (updater) updater.quitAndInstall(false, true); return; }
   const file = manual.file;
   if (process.platform === 'win32') {
-    // NSIS installer: --updated keeps settings and relaunches the launcher when done
-    spawn(file, ['/S', '--updated', '--force-run'], { detached: true, stdio: 'ignore' }).unref();
+    // NSIS installer: --updated keeps settings and relaunches the launcher when done; the new (Tauri)
+    // launcher's installer starts the launcher with /R (migrate.js)
+    const tauri = migrate.isTauriInstaller(manual.asset.name, 'win');
+    spawn(file, tauri ? ['/S', '/R'] : ['/S', '--updated', '--force-run'], { detached: true, stdio: 'ignore' }).unref();
     app.quit();
   } else if (process.platform === 'linux' && process.env.APPIMAGE) {
     const target = process.env.APPIMAGE;
