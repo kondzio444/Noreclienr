@@ -212,7 +212,12 @@ pub async fn preflight(inst: &Value) -> Vec<Value> {
                 "duplicate",
                 Some(&old.file),
                 format!("Zdublowany mod: {}", keep.name.clone().unwrap_or(id.clone())),
-                format!("Zostaje {}{}, wyłączam starszy {}.", keep.file, if keep.version.is_empty() { String::new() } else { format!(" ({})", keep.version) }, old.file),
+                format!(
+                    "Zostaje {}{}, wyłączam starszy {}.",
+                    keep.file,
+                    if keep.version.is_empty() { String::new() } else { format!(" ({})", keep.version) },
+                    old.file
+                ),
                 json!({ "action": "disable", "file": old.file }),
             ));
         }
@@ -285,17 +290,46 @@ pub async fn analyze_log(insts: &Instances<'_>, inst: &Value, lines: &[String]) 
         if cands.len() >= 2 {
             cands.sort_by(|a, b| newest_first(a, b));
             for old in &cands[1..] {
-                add(&mut problems, problem("module-conflict", Some(&old.file), title.clone(), format!("Dwie kopie tego samego moda. Zostaje {}, wyłączam {}.", cands[0].file, old.file), json!({ "action": "disable", "file": old.file })));
+                add(
+                    &mut problems,
+                    problem(
+                        "module-conflict",
+                        Some(&old.file),
+                        title.clone(),
+                        format!("Dwie kopie tego samego moda. Zostaje {}, wyłączam {}.", cands[0].file, old.file),
+                        json!({ "action": "disable", "file": old.file }),
+                    ),
+                );
             }
         } else if cands.len() == 1 {
-            add(&mut problems, problem("module-conflict", Some(&cands[0].file), title, format!("{} gryzie się z modem, który zawiera go w środku – wyłączam osobną kopię.", cands[0].file), json!({ "action": "disable", "file": cands[0].file })));
+            add(
+                &mut problems,
+                problem(
+                    "module-conflict",
+                    Some(&cands[0].file),
+                    title,
+                    format!("{} gryzie się z modem, który zawiera go w środku – wyłączam osobną kopię.", cands[0].file),
+                    json!({ "action": "disable", "file": cands[0].file }),
+                ),
+            );
         }
     }
-    for c in re!(r"Mod '([^']+)' \(([^)]+)\) \S* ?requires (?:any version|version \S+)(?: or later)? of (?:mod )?'([^']+)' \(([^)]+)\), which is missing").captures_iter(&text) {
+    for c in re!(r"Mod '([^']+)' \(([^)]+)\) \S* ?requires (?:any version|version \S+)(?: or later)? of (?:mod )?'([^']+)' \(([^)]+)\), which is missing")
+        .captures_iter(&text)
+    {
         if LIBRARY_IDS.contains(&&c[4]) {
             continue;
         }
-        add(&mut problems, problem("missing-dep", None, format!("Brakuje moda {}", &c[3]), format!("Wymaga go {} – pobiorę go z Modrinth.", &c[1]), json!({ "action": "install", "id": &c[4] })));
+        add(
+            &mut problems,
+            problem(
+                "missing-dep",
+                None,
+                format!("Brakuje moda {}", &c[3]),
+                format!("Wymaga go {} – pobiorę go z Modrinth.", &c[1]),
+                json!({ "action": "install", "id": &c[4] }),
+            ),
+        );
     }
     for c in re!(r"Mod '([^']+)' \(([^)]+)\) \S* ?requires (?:version \S+|any version)(?: or later)? of (?:mod )?'([^']+)' \(([^)]+)\), but only the wrong version is present").captures_iter(&text) {
         if &c[4] == "minecraft" || &c[4] == "java" {
@@ -309,31 +343,76 @@ pub async fn analyze_log(insts: &Instances<'_>, inst: &Value, lines: &[String]) 
     }
     for c in re!(r"Mod '([^']+)' \(([^)]+)\) \S* ?is incompatible with (?:any version|version \S+) of (?:mod )?'([^']+)' \(([^)]+)\)").captures_iter(&text) {
         if let Some(f) = file_of(find_jars(&mods, &c[2]).first()) {
-            add(&mut problems, problem("incompatible", Some(&f), format!("{} nie działa z {}", &c[1], &c[3]), format!("Wyłączam {f}."), json!({ "action": "disable", "file": f })));
+            add(
+                &mut problems,
+                problem(
+                    "incompatible",
+                    Some(&f),
+                    format!("{} nie działa z {}", &c[1], &c[3]),
+                    format!("Wyłączam {f}."),
+                    json!({ "action": "disable", "file": f }),
+                ),
+            );
         }
     }
     for c in re!(r"Mod ID: '([^']+)', Requested by: '([^']+)', Expected range: '([^']*)', Actual version: '\[?MISSING\]?'").captures_iter(&text) {
         if LIBRARY_IDS.contains(&&c[1]) {
             continue;
         }
-        add(&mut problems, problem("missing-dep", None, format!("Brakuje moda {}", &c[1]), format!("Wymaga go {} – pobiorę go z Modrinth.", &c[2]), json!({ "action": "install", "id": &c[1] })));
+        add(
+            &mut problems,
+            problem(
+                "missing-dep",
+                None,
+                format!("Brakuje moda {}", &c[1]),
+                format!("Wymaga go {} – pobiorę go z Modrinth.", &c[2]),
+                json!({ "action": "install", "id": &c[1] }),
+            ),
+        );
     }
     for c in re!(r"Mod ID: '([^']+)', Requested by: '([^']+)', Expected range: '([^']*)', Actual version: '([^'M][^']*)'").captures_iter(&text) {
         if LIBRARY_IDS.contains(&&c[1]) {
             continue;
         }
         let f = file_of(find_jars(&mods, &c[1]).first());
-        add(&mut problems, problem("dep-version", f.as_deref(), format!("Zła wersja moda {}", &c[1]), format!("{} wymaga {}, jest {} – zaktualizuję.", &c[2], &c[3], &c[4]), json!({ "action": "replace", "file": f, "slug": &c[1] })));
+        add(
+            &mut problems,
+            problem(
+                "dep-version",
+                f.as_deref(),
+                format!("Zła wersja moda {}", &c[1]),
+                format!("{} wymaga {}, jest {} – zaktualizuję.", &c[2], &c[3], &c[4]),
+                json!({ "action": "replace", "file": f, "slug": &c[1] }),
+            ),
+        );
     }
     for c in re!(r"(?is)(?:Duplicate mods found|Found duplicate mods?|DuplicateModsFoundException).{0,400}?\(([a-z0-9_\-]+)\)").captures_iter(&text) {
         let mut jars = find_jars(&mods, &c[1]);
         jars.sort_by(|a, b| newest_first(a, b));
         for old in jars.iter().skip(1) {
-            add(&mut problems, problem("duplicate", Some(&old.file), format!("Zdublowany mod: {}", &c[1]), format!("Wyłączam starszy {}.", old.file), json!({ "action": "disable", "file": old.file })));
+            add(
+                &mut problems,
+                problem(
+                    "duplicate",
+                    Some(&old.file),
+                    format!("Zdublowany mod: {}", &c[1]),
+                    format!("Wyłączam starszy {}.", old.file),
+                    json!({ "action": "disable", "file": old.file }),
+                ),
+            );
         }
     }
     if re!(r"UnsupportedClassVersionError|compiled by a more recent version of the Java Runtime|Unsupported class file major version").is_match(&text) {
-        add(&mut problems, problem("java", None, "Zła wersja Javy".into(), "Mod albo gra wymaga nowszej Javy – przełączam na Javę dobieraną automatycznie.".into(), json!({ "action": "auto-java" })));
+        add(
+            &mut problems,
+            problem(
+                "java",
+                None,
+                "Zła wersja Javy".into(),
+                "Mod albo gra wymaga nowszej Javy – przełączam na Javę dobieraną automatycznie.".into(),
+                json!({ "action": "auto-java" }),
+            ),
+        );
     }
     if text.contains("java.lang.OutOfMemoryError") {
         let (total, _) = jvm::system_memory_mb();
@@ -348,19 +427,46 @@ pub async fn analyze_log(insts: &Instances<'_>, inst: &Value, lines: &[String]) 
         }
         let next = (jvm::max_game_mb(total) as f64).min(cur + 2048.0);
         if next > cur {
-            add(&mut problems, problem("memory", None, "Zabrakło pamięci RAM".into(), format!("Zwiększam pamięć instancji z {:.1} do {:.1} GB.", cur / 1024.0, next / 1024.0), json!({ "action": "memory", "mb": next as i64 })));
+            add(
+                &mut problems,
+                problem(
+                    "memory",
+                    None,
+                    "Zabrakło pamięci RAM".into(),
+                    format!("Zwiększam pamięć instancji z {:.1} do {:.1} GB.", cur / 1024.0, next / 1024.0),
+                    json!({ "action": "memory", "mb": next as i64 }),
+                ),
+            );
         }
     }
-    for c in re!(r"(?i)Mixin apply(?: for mod)? ([a-z0-9_\-]+) failed|from mod ([a-z0-9_\-]+)\] .*?(?:InvalidInjectionException|InvalidMixinException|MixinApplyError)").captures_iter(&text) {
+    for c in re!(
+        r"(?i)Mixin apply(?: for mod)? ([a-z0-9_\-]+) failed|from mod ([a-z0-9_\-]+)\] .*?(?:InvalidInjectionException|InvalidMixinException|MixinApplyError)"
+    )
+    .captures_iter(&text)
+    {
         let id = c.get(1).or(c.get(2)).map(|m| m.as_str()).unwrap_or("");
         if id.is_empty() || id == "noreclient" {
             continue;
         }
         if let Some(j) = find_jars(&mods, id).first() {
-            add(&mut problems, problem("mixin", Some(&j.file), format!("Mod {} nie pasuje do tej wersji gry", j.name.clone().unwrap_or(id.into())), "Pobiorę pasującą wersję albo wyłączę mod.".into(), json!({ "action": "replace", "file": j.file, "slug": id })));
+            add(
+                &mut problems,
+                problem(
+                    "mixin",
+                    Some(&j.file),
+                    format!("Mod {} nie pasuje do tej wersji gry", j.name.clone().unwrap_or(id.into())),
+                    "Pobiorę pasującą wersję albo wyłączę mod.".into(),
+                    json!({ "action": "replace", "file": j.file, "slug": id }),
+                ),
+            );
         }
     }
-    if re!(r"NoClassDefFoundError: net/fabricmc|Mod resolution failed|Incompatible mods found|Missing or unsupported mandatory dependencies|LoadingFailedException").is_match(&text) || problems.is_empty() {
+    if re!(
+        r"NoClassDefFoundError: net/fabricmc|Mod resolution failed|Incompatible mods found|Missing or unsupported mandatory dependencies|LoadingFailedException"
+    )
+    .is_match(&text)
+        || problems.is_empty()
+    {
         for p in preflight(inst).await {
             add(&mut problems, p);
         }
@@ -548,7 +654,15 @@ mod tests {
 
         let mut inst = instance(&d.path().join("c"), "fabric");
         inst["memoryMb"] = json!(2048);
-        let p = analyze_log(&insts, &inst, &["java.lang.UnsupportedClassVersionError: x has been compiled by a more recent version of the Java Runtime".into(), "java.lang.OutOfMemoryError: Java heap space".into()]).await;
+        let p = analyze_log(
+            &insts,
+            &inst,
+            &[
+                "java.lang.UnsupportedClassVersionError: x has been compiled by a more recent version of the Java Runtime".into(),
+                "java.lang.OutOfMemoryError: Java heap space".into(),
+            ],
+        )
+        .await;
         let kinds: Vec<&str> = p.iter().map(|x| x["kind"].as_str().unwrap()).collect();
         assert!(kinds.contains(&"java"));
         if jvm::system_memory_mb().0 > 6000 {

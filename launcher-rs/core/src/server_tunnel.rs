@@ -112,7 +112,8 @@ pub async fn ensure_tunnel(env: &Env, secret: &str, name: &str) -> Result<(Strin
     let out = cli(env, &["tunnels", "prepare", "tcp", "1", "--type", "minecraft-java", "--name", name], Some(secret), Duration::from_secs(60)).await?;
     let id = UUID.find(&out).map(|m| m.as_str().to_string());
     let list = parse_tunnels(&cli(env, &["tunnels", "list"], Some(secret), Duration::from_secs(30)).await?);
-    let t = id.and_then(|id| list.iter().find(|x| x.0 == id).cloned()).or_else(|| list.iter().find(|x| x.1 == "tcp").cloned()).or_else(|| list.first().cloned());
+    let t =
+        id.and_then(|id| list.iter().find(|x| x.0 == id).cloned()).or_else(|| list.iter().find(|x| x.1 == "tcp").cloned()).or_else(|| list.first().cloned());
     t.map(|t| (t.0, t.3)).ok_or_else(|| msg("playit: nie udało się utworzyć tunelu"))
 }
 
@@ -120,7 +121,11 @@ pub async fn ensure_tunnel(env: &Env, secret: &str, name: &str) -> Result<(Strin
 pub async fn run(env: &Env, secret: &str, tunnel_id: &str, port: u16) -> Result<tokio::process::Child> {
     let bin = ensure_binary(env).await?;
     let mut c = tokio::process::Command::new(bin);
-    c.args(["--secret", secret, "-s", "run", &format!("{tunnel_id}=127.0.0.1:{port}")]).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped()).kill_on_drop(true);
+    c.args(["--secret", secret, "-s", "run", &format!("{tunnel_id}=127.0.0.1:{port}")])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
     #[cfg(windows)]
     c.creation_flags(0x0800_0000);
     Ok(c.spawn()?)

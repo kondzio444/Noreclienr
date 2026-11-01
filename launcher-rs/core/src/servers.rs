@@ -20,6 +20,8 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::sync::{mpsc, oneshot, watch};
 use tokio::task::JoinHandle;
 
+static NOISY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)error|failed|warn").unwrap());
+
 pub const TYPES: [&str; 10] = ["vanilla", "paper", "purpur", "folia", "fabric", "quilt", "forge", "neoforge", "velocity", "bungeecord"];
 
 pub fn is_proxy(t: &str) -> bool {
@@ -94,7 +96,9 @@ async fn port_free(port: u16) -> Result<()> {
             drop(l);
             Ok(())
         }
-        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => Err(msg(format!("Port {port} jest zajęty – zatrzymaj inny serwer albo zmień port w ustawieniach serwera."))),
+        Err(e) if e.kind() == std::io::ErrorKind::AddrInUse => {
+            Err(msg(format!("Port {port} jest zajęty – zatrzymaj inny serwer albo zmień port w ustawieniach serwera.")))
+        }
         Err(e) => Err(e.into()),
     }
 }
@@ -198,7 +202,9 @@ impl App {
             if !d["servers"].is_array() {
                 d["servers"] = json!([]);
             }
-            d["servers"].as_array_mut().map(|l| l.push(srv.clone()));
+            if let Some(l) = d["servers"].as_array_mut() {
+                l.push(srv.clone());
+            }
         })?;
         std::fs::create_dir_all(self.server_dir(&id))?;
         self.server_require(&id)
@@ -324,11 +330,16 @@ impl App {
             "neoforge" => {
                 let mut l = neoforge_versions(env, mc).await?;
                 l.reverse();
-                Value::Array(l.into_iter().map(|v| json!({ "stable": !v.to_lowercase().contains("beta") && !v.to_lowercase().contains("alpha"), "version": v })).collect())
+                Value::Array(
+                    l.into_iter()
+                        .map(|v| json!({ "stable": !v.to_lowercase().contains("beta") && !v.to_lowercase().contains("alpha"), "version": v }))
+                        .collect(),
+                )
             }
             "forge" => {
                 let meta: Value = env.net.get_json("https://files.minecraftforge.net/net/minecraftforge/forge/maven-metadata.json").await.unwrap_or(json!({}));
-                let promos: Value = env.net.get_json("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").await.unwrap_or(json!({}));
+                let promos: Value =
+                    env.net.get_json("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").await.unwrap_or(json!({}));
                 let rec = promos.pointer(&format!("/promos/{mc}-recommended")).and_then(Value::as_str).map(String::from);
                 let list: Vec<String> = meta[mc].as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect();
                 Value::Array(
@@ -351,10 +362,16 @@ impl App {
             progress(json!({ "stage": format!("Pobieranie Velocity {version}") }));
             self.env.net.download(&url, &jar, None, size, &|_| {}).await?;
             let major: u32 = version.split('.').next().and_then(|v| v.parse().ok()).unwrap_or(3);
-            self.server_update(id, &json!({ "installedLoader": version, "javaComponent": if major >= 4 { "java-runtime-epsilon" } else { "java-runtime-delta" } }))?;
+            self.server_update(
+                id,
+                &json!({ "installedLoader": version, "javaComponent": if major >= 4 { "java-runtime-epsilon" } else { "java-runtime-delta" } }),
+            )?;
         } else {
             progress(json!({ "stage": "Pobieranie BungeeCord" }));
-            self.env.net.download("https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar", &jar, None, None, &|_| {}).await?;
+            self.env
+                .net
+                .download("https://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar", &jar, None, None, &|_| {})
+                .await?;
             self.server_update(id, &json!({ "installedLoader": "najnowszy" }))?;
         }
         self.server_update(id, &json!({ "installed": true, "launch": { "mode": "jar", "jar": "server.jar" } }))
@@ -371,7 +388,13 @@ impl App {
         let jar = base.join("server.jar");
         let mc = srv.string_or("mcVersion", "");
         let manifest = self.env.manifest(false).await?;
-        let entry = manifest["versions"].as_array().into_iter().flatten().find(|v| v.str_of("id") == Some(&mc)).cloned().ok_or_else(|| msg(format!("Nieznana wersja {mc}")))?;
+        let entry = manifest["versions"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .find(|v| v.str_of("id") == Some(&mc))
+            .cloned()
+            .ok_or_else(|| msg(format!("Nieznana wersja {mc}")))?;
         let vjson: Value = self.env.net.get_json(entry.str_of("url").unwrap_or("")).await?;
         let server_dl = vjson.pointer("/downloads/server").cloned();
         let component = vjson.pointer("/javaVersion/component").and_then(Value::as_str).unwrap_or("jre-legacy").to_string();
@@ -390,37 +413,72 @@ impl App {
                     .get_json(&format!("https://fill.papermc.io/v3/projects/{t}/versions/{}/builds", urlencoding::encode(&mc)))
                     .await
                     .map_err(|_| msg(format!("{name} nie wspiera wersji {mc}")))?;
-                let b = builds.iter().find(|b| b.str_of("channel") == Some("STABLE")).or(builds.first()).ok_or_else(|| msg(format!("Brak buildów dla {mc}")))?;
+                let b =
+                    builds.iter().find(|b| b.str_of("channel") == Some("STABLE")).or(builds.first()).ok_or_else(|| msg(format!("Brak buildów dla {mc}")))?;
                 let f = &b["downloads"]["server:default"];
                 let _ = tokio::fs::remove_file(&jar).await;
                 env.net.download(f.str_of("url").unwrap_or(""), &jar, None, f["size"].as_u64(), &|_| {}).await?;
             }
             "purpur" => {
-                env.net.get_json::<Value>(&format!("https://api.purpurmc.org/v2/purpur/{}", urlencoding::encode(&mc))).await.map_err(|_| msg(format!("Purpur nie wspiera wersji {mc}")))?;
+                env.net
+                    .get_json::<Value>(&format!("https://api.purpurmc.org/v2/purpur/{}", urlencoding::encode(&mc)))
+                    .await
+                    .map_err(|_| msg(format!("Purpur nie wspiera wersji {mc}")))?;
                 let _ = tokio::fs::remove_file(&jar).await;
-                env.net.download(&format!("https://api.purpurmc.org/v2/purpur/{}/latest/download", urlencoding::encode(&mc)), &jar, None, None, &|_| {}).await?;
+                env.net
+                    .download(&format!("https://api.purpurmc.org/v2/purpur/{}/latest/download", urlencoding::encode(&mc)), &jar, None, None, &|_| {})
+                    .await?;
             }
             "fabric" => {
                 let loaders = crate::loaders::versions(env, "fabric", &mc).await.unwrap_or_default();
-                let l = loaders.iter().find(|l| !lv.is_empty() && l.version == lv).or_else(|| loaders.iter().find(|l| l.stable)).or(loaders.first()).cloned().ok_or_else(|| msg(format!("Fabric nie wspiera wersji {mc}")))?;
+                let l = loaders
+                    .iter()
+                    .find(|l| !lv.is_empty() && l.version == lv)
+                    .or_else(|| loaders.iter().find(|l| l.stable))
+                    .or(loaders.first())
+                    .cloned()
+                    .ok_or_else(|| msg(format!("Fabric nie wspiera wersji {mc}")))?;
                 let installers: Vec<Value> = env.net.get_json("https://meta.fabricmc.net/v2/versions/installer").await?;
                 let inst = installers.iter().find(|i| i.truthy_of("stable")).or(installers.first()).ok_or_else(|| msg("Brak instalatora Fabric"))?;
                 let _ = tokio::fs::remove_file(&jar).await;
-                env.net.download(&format!("https://meta.fabricmc.net/v2/versions/loader/{mc}/{}/{}/server/jar", l.version, inst.string_or("version", "")), &jar, None, None, &|_| {}).await?;
+                env.net
+                    .download(
+                        &format!("https://meta.fabricmc.net/v2/versions/loader/{mc}/{}/{}/server/jar", l.version, inst.string_or("version", "")),
+                        &jar,
+                        None,
+                        None,
+                        &|_| {},
+                    )
+                    .await?;
                 self.server_update(id, &json!({ "installedLoader": l.version }))?;
             }
             "quilt" => {
                 let loaders = crate::loaders::versions(env, "quilt", &mc).await.unwrap_or_default();
-                let l = loaders.iter().find(|l| !lv.is_empty() && l.version == lv).or_else(|| loaders.iter().find(|l| l.stable)).or(loaders.first()).cloned().ok_or_else(|| msg(format!("Quilt nie wspiera wersji {mc}")))?;
+                let l = loaders
+                    .iter()
+                    .find(|l| !lv.is_empty() && l.version == lv)
+                    .or_else(|| loaders.iter().find(|l| l.stable))
+                    .or(loaders.first())
+                    .cloned()
+                    .ok_or_else(|| msg(format!("Quilt nie wspiera wersji {mc}")))?;
                 let xml = env.net.get_text("https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/maven-metadata.xml").await?;
                 static REL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<release>([^<]+)</release>").unwrap());
                 static LAT: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<latest>([^<]+)</latest>").unwrap());
                 let iv = REL.captures(&xml).or_else(|| LAT.captures(&xml)).map(|c| c[1].to_string()).ok_or_else(|| msg("Nie znaleziono instalatora Quilt"))?;
                 let installer = base.join("quilt-installer.jar");
-                env.net.download(&format!("https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/{iv}/quilt-installer-{iv}.jar"), &installer, None, None, &|_| {}).await?;
+                env.net
+                    .download(
+                        &format!("https://maven.quiltmc.org/repository/release/org/quiltmc/quilt-installer/{iv}/quilt-installer-{iv}.jar"),
+                        &installer,
+                        None,
+                        None,
+                        &|_| {},
+                    )
+                    .await?;
                 let bin = self.server_java(&srv, &progress).await?;
                 progress(json!({ "stage": format!("Instalowanie Quilt {}", l.version) }));
-                run_installer(&bin, "quilt-installer.jar", &base, &progress, &["install", "server", &mc, &l.version, "--download-server", "--install-dir=."]).await?;
+                run_installer(&bin, "quilt-installer.jar", &base, &progress, &["install", "server", &mc, &l.version, "--download-server", "--install-dir=."])
+                    .await?;
                 let _ = tokio::fs::remove_file(&installer).await;
                 if !base.join("quilt-server-launch.jar").exists() {
                     return Err(msg("Instalator Quilt nie utworzył pliku startowego"));
@@ -434,15 +492,36 @@ impl App {
                     let full = if !lv.is_empty() && matching.contains(&lv) {
                         lv.clone()
                     } else {
-                        matching.iter().filter(|v| !v.to_lowercase().contains("beta") && !v.to_lowercase().contains("alpha")).next_back().cloned().or_else(|| matching.pop()).ok_or_else(|| msg(format!("NeoForge nie wspiera wersji {mc}")))?
+                        matching
+                            .iter()
+                            .rfind(|v| !v.to_lowercase().contains("beta") && !v.to_lowercase().contains("alpha"))
+                            .cloned()
+                            .or_else(|| matching.pop())
+                            .ok_or_else(|| msg(format!("NeoForge nie wspiera wersji {mc}")))?
                     };
-                    (format!("https://maven.neoforged.net/releases/net/neoforged/neoforge/{full}/neoforge-{full}-installer.jar"), format!("net/neoforged/neoforge/{full}"), full)
+                    (
+                        format!("https://maven.neoforged.net/releases/net/neoforged/neoforge/{full}/neoforge-{full}-installer.jar"),
+                        format!("net/neoforged/neoforge/{full}"),
+                        full,
+                    )
                 } else {
                     let promos: Value = env.net.get_json("https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json").await?;
-                    let forge = if !lv.is_empty() { Some(lv.clone()) } else { promos.pointer(&format!("/promos/{mc}-recommended")).or(promos.pointer(&format!("/promos/{mc}-latest"))).and_then(Value::as_str).map(String::from) };
+                    let forge = if !lv.is_empty() {
+                        Some(lv.clone())
+                    } else {
+                        promos
+                            .pointer(&format!("/promos/{mc}-recommended"))
+                            .or(promos.pointer(&format!("/promos/{mc}-latest")))
+                            .and_then(Value::as_str)
+                            .map(String::from)
+                    };
                     let forge = forge.ok_or_else(|| msg(format!("Forge nie wspiera wersji {mc}")))?;
                     let full = format!("{mc}-{forge}");
-                    (format!("https://maven.minecraftforge.net/net/minecraftforge/forge/{full}/forge-{full}-installer.jar"), format!("net/minecraftforge/forge/{full}"), full)
+                    (
+                        format!("https://maven.minecraftforge.net/net/minecraftforge/forge/{full}/forge-{full}-installer.jar"),
+                        format!("net/minecraftforge/forge/{full}"),
+                        full,
+                    )
                 };
                 let installer = base.join("installer.jar");
                 env.net.download(&url, &installer, None, None, &|_| {}).await?;
@@ -458,7 +537,10 @@ impl App {
                     launch = json!({ "mode": "args", "argsFile": rel });
                 } else {
                     static F: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(neo)?forge-.*\.jar$").unwrap());
-                    let cand = util::read_dir_names(&base).into_iter().find(|f| F.is_match(f) && !f.contains("installer")).ok_or_else(|| msg("Nie znaleziono pliku startowego Forge"))?;
+                    let cand = util::read_dir_names(&base)
+                        .into_iter()
+                        .find(|f| F.is_match(f) && !f.contains("installer"))
+                        .ok_or_else(|| msg("Nie znaleziono pliku startowego Forge"))?;
                     launch = json!({ "mode": "jar", "jar": cand });
                 }
             }
@@ -573,7 +655,9 @@ impl App {
             let name = d.string_or("name", "");
             return Ok(json!({ "host": name, "ip": ip, "records": server_net::manual_records(&name, Some(&ip), port) }));
         }
-        let secret = self.decrypt_token(&d["token"]).ok_or_else(|| msg(if provider == "noip" || provider == "dynu" { "Brak hasła do konta." } else { "Brak tokenu API." }))?;
+        let secret = self
+            .decrypt_token(&d["token"])
+            .ok_or_else(|| msg(if provider == "noip" || provider == "dynu" { "Brak hasła do konta." } else { "Brak tokenu API." }))?;
         let host = server_net::update_domain(&self.env, d, &secret, &ip, port).await?;
         let id = srv.string_or("id", "");
         let _ = self.store.update(|x| {
@@ -615,7 +699,11 @@ impl App {
                     self.set_net(&id, gen, "forward", r.clone());
                     let method = if r.str_of("method") == Some("natpmp") { "NAT-PMP" } else { "UPnP" };
                     let ext = r.str_of("external").map(|e| format!(" (IP routera {e})")).unwrap_or_default();
-                    self.server_log(&id, &format!("[Launcher] {method}: otwarto port {port} na routerze {} → {}{ext}", r.string_or("router", ""), r.string_or("client", "")), "cmd");
+                    self.server_log(
+                        &id,
+                        &format!("[Launcher] {method}: otwarto port {port} na routerze {} → {}{ext}", r.string_or("router", ""), r.string_or("client", "")),
+                        "cmd",
+                    );
                     if r.truthy_of("cgnat") {
                         self.server_log(&id, &format!("[Launcher] Uwaga: router ma niepubliczny adres {} (CGNAT) – znajomi z internetu nie połączą się przez IP. Włącz tunel playit.gg w zakładce „Sieć i domena”.", r.string_or("external", "")), "err");
                     }
@@ -664,7 +752,11 @@ impl App {
                     .await;
                     match r {
                         Ok(Some((r, ip))) => {
-                            me.server_log(&id2, &format!("[Launcher] Domena {} → {ip}{}", r.string_or("host", ""), if first { "" } else { " (zmiana IP)" }), "cmd");
+                            me.server_log(
+                                &id2,
+                                &format!("[Launcher] Domena {} → {ip}{}", r.string_or("host", ""), if first { "" } else { " (zmiana IP)" }),
+                                "cmd",
+                            );
                             last = Some(ip);
                         }
                         Ok(None) => {}
@@ -686,7 +778,9 @@ impl App {
 
     async fn start_tunnel(self: &Arc<Self>, srv: &Value, gen: u64) -> Result<()> {
         let id = srv.string_or("id", "");
-        let secret = self.decrypt_token(&self.store.read(|d| d.pointer("/playit/secret").cloned().unwrap_or(Value::Null))).ok_or_else(|| msg("połącz konto playit.gg w zakładce „Sieć i domena”"))?;
+        let secret = self
+            .decrypt_token(&self.store.read(|d| d.pointer("/playit/secret").cloned().unwrap_or(Value::Null)))
+            .ok_or_else(|| msg("połącz konto playit.gg w zakładce „Sieć i domena”"))?;
         let mut t = srv["tunnel"].clone();
         if !truthy(&t["id"]) {
             let name: String = format!("nore-{id}").chars().take(40).collect();
@@ -698,14 +792,20 @@ impl App {
         let port = srv["port"].as_u64().unwrap_or(25565) as u16;
         let mut child = server_tunnel::run(&self.env, &secret, t.str_of("id").unwrap_or(""), port).await?;
         let (tx, rx) = oneshot::channel::<()>();
-        for s in [child.stdout.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>), child.stderr.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>)].into_iter().flatten() {
+        for s in [
+            child.stdout.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+            child.stderr.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+        ]
+        .into_iter()
+        .flatten()
+        {
             let me = self.clone();
             let id2 = id.clone();
             tokio::spawn(async move {
                 let mut lines = BufReader::new(s).lines();
                 while let Ok(Some(l)) = lines.next_line().await {
                     let l = server_tunnel::clean(&l);
-                    if !l.is_empty() && Regex::new(r"(?i)error|failed|warn").map(|r| r.is_match(&l)).unwrap_or(false) {
+                    if !l.is_empty() && NOISY.is_match(&l) {
                         me.server_log(&id2, &format!("[playit] {l}"), "err");
                     }
                 }
@@ -758,11 +858,16 @@ impl App {
                 return Err(msg("Musisz zaakceptować EULA Minecraft, aby uruchomić serwer."));
             }
             let port = srv["port"].as_u64().unwrap_or(25565) as u16;
-            let others: Vec<(String, String)> = self.servers_rt.lock().unwrap_or_else(|e| e.into_inner()).iter().map(|(k, r)| (k.clone(), r.state.clone())).collect();
+            let others: Vec<(String, String)> =
+                self.servers_rt.lock().unwrap_or_else(|e| e.into_inner()).iter().map(|(k, r)| (k.clone(), r.state.clone())).collect();
             for (other, state) in others {
                 if let Some(o) = self.server_raw(&other) {
                     if o["port"].as_u64() == Some(port as u64) {
-                        return Err(msg(format!("Serwer „{}” już używa portu {port}{}.", o.string_or("name", ""), if state == "stopping" { " (właśnie się zatrzymuje)" } else { "" })));
+                        return Err(msg(format!(
+                            "Serwer „{}” już używa portu {port}{}.",
+                            o.string_or("name", ""),
+                            if state == "stopping" { " (właśnie się zatrzymuje)" } else { "" }
+                        )));
                     }
                 }
             }
@@ -775,7 +880,11 @@ impl App {
             let dir = self.server_dir(id);
             if is_proxy(&t) {
                 if !self.write_proxy_port(&srv) && port != (if t == "velocity" { 25565 } else { 25577 }) {
-                    self.server_log(id, &format!("[Launcher] Pierwszy start: proxy utworzy swój plik konfiguracji – port {port} ustawię przy następnym starcie."), "err");
+                    self.server_log(
+                        id,
+                        &format!("[Launcher] Pierwszy start: proxy utworzy swój plik konfiguracji – port {port} ustawię przy następnym starcie."),
+                        "err",
+                    );
                 }
             } else {
                 std::fs::write(dir.join("eula.txt"), "# Zaakceptowano w Nore Launcher (https://aka.ms/MinecraftEULA)\neula=true\n")?;
@@ -1000,7 +1109,10 @@ impl App {
             };
             match n {
                 Some(n) => {
-                    self.emit("server:log", json!({ "id": id, "line": format!("[Launcher] Serwer padł (kod {code}) – restart za 5 s ({n}/3)"), "stream": "err" }));
+                    self.emit(
+                        "server:log",
+                        json!({ "id": id, "line": format!("[Launcher] Serwer padł (kod {code}) – restart za 5 s ({n}/3)"), "stream": "err" }),
+                    );
                     let me = self.clone();
                     let id2 = id.to_string();
                     tokio::spawn(async move {
@@ -1012,7 +1124,10 @@ impl App {
                         }
                     });
                 }
-                None => self.emit("server:log", json!({ "id": id, "line": "[Launcher] Serwer padł 3 razy w 10 minut – automatyczny restart wstrzymany", "stream": "err" })),
+                None => self.emit(
+                    "server:log",
+                    json!({ "id": id, "line": "[Launcher] Serwer padł 3 razy w 10 minut – automatyczny restart wstrzymany", "stream": "err" }),
+                ),
             }
         }
     }
@@ -1114,7 +1229,8 @@ impl App {
     pub fn server_complete(&self, id: &str, text: &str, history: &Value) -> Value {
         let t = self.server_raw(id).map(|s| ty(&s)).unwrap_or_else(|| "paper".into());
         let players = self.servers_rt.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|r| r.players.clone()).unwrap_or_default();
-        let h: Vec<String> = history.as_array().map(|a| a.iter().rev().take(50).rev().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default();
+        let h: Vec<String> =
+            history.as_array().map(|a| a.iter().rev().take(50).rev().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default();
         json!(tools::complete(text, &t, &players, &h))
     }
 
@@ -1181,7 +1297,8 @@ impl App {
 
     /// Stops every server and waits until all saved and exited (or the timeout).
     pub async fn servers_stop_all_and_wait(self: &Arc<Self>, timeout: std::time::Duration) {
-        let rxs: Vec<(String, watch::Receiver<bool>)> = self.servers_rt.lock().unwrap_or_else(|e| e.into_inner()).iter().map(|(k, r)| (k.clone(), r.exited.clone())).collect();
+        let rxs: Vec<(String, watch::Receiver<bool>)> =
+            self.servers_rt.lock().unwrap_or_else(|e| e.into_inner()).iter().map(|(k, r)| (k.clone(), r.exited.clone())).collect();
         if rxs.is_empty() {
             return;
         }
@@ -1219,7 +1336,11 @@ impl App {
     }
 
     fn read_list(&self, id: &str, which: &str) -> Value {
-        list_file(which).and_then(|f| std::fs::read_to_string(self.server_dir(id).join(f)).ok()).and_then(|t| serde_json::from_str(&t).ok()).filter(Value::is_array).unwrap_or(json!([]))
+        list_file(which)
+            .and_then(|f| std::fs::read_to_string(self.server_dir(id).join(f)).ok())
+            .and_then(|t| serde_json::from_str(&t).ok())
+            .filter(Value::is_array)
+            .unwrap_or(json!([]))
     }
 
     pub fn server_players(&self, id: &str) -> Value {
@@ -1245,12 +1366,24 @@ impl App {
             self.server_command(id, &cmd)?;
             return Ok(json!(true));
         }
-        let mut list: Vec<Value> = self.read_list(id, which).as_array().cloned().unwrap_or_default().into_iter().filter(|e| e.str_of("name").map(str::to_lowercase) != Some(name.to_lowercase())).collect();
+        let mut list: Vec<Value> = self
+            .read_list(id, which)
+            .as_array()
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|e| e.str_of("name").map(str::to_lowercase) != Some(name.to_lowercase()))
+            .collect();
         if action == "add" {
             let uuid = if !srv.pointer("/props/online-mode").is_some_and(truthy) {
                 offline_uuid(name)
             } else {
-                let j: Value = self.env.net.get_json(&format!("https://api.mojang.com/users/profiles/minecraft/{}", urlencoding::encode(name))).await.map_err(|_| msg(format!("Nie ma konta premium o nazwie {name}")))?;
+                let j: Value = self
+                    .env
+                    .net
+                    .get_json(&format!("https://api.mojang.com/users/profiles/minecraft/{}", urlencoding::encode(name)))
+                    .await
+                    .map_err(|_| msg(format!("Nie ma konta premium o nazwie {name}")))?;
                 let h = j.string_or("id", "");
                 if h.len() == 32 {
                     format!("{}-{}-{}-{}-{}", &h[0..8], &h[8..12], &h[12..16], &h[16..20], &h[20..])
@@ -1280,7 +1413,8 @@ impl App {
         let srv = self.server_raw(id).ok_or_else(|| msg("Nie znaleziono serwera."))?;
         let base = self.server_dir(id);
         let world = world_name(&srv);
-        let folders: Vec<String> = [world.clone(), format!("{world}_nether"), format!("{world}_the_end")].into_iter().filter(|f| base.join(f).exists()).collect();
+        let folders: Vec<String> =
+            [world.clone(), format!("{world}_nether"), format!("{world}_the_end")].into_iter().filter(|f| base.join(f).exists()).collect();
         if folders.is_empty() {
             return Err(msg("Świat jeszcze nie istnieje – uruchom serwer choć raz."));
         }
@@ -1382,14 +1516,31 @@ impl App {
 async fn neoforge_versions(env: &Env, mc: &str) -> Result<Vec<String>> {
     let all: Value = env.net.get_json("https://maven.neoforged.net/api/maven/versions/releases/net/neoforged/neoforge").await?;
     let p: Vec<&str> = mc.split('.').collect();
-    let prefix = if p.first() == Some(&"1") { format!("{}.{}.", p.get(1).unwrap_or(&"0"), p.get(2).unwrap_or(&"0")) } else { format!("{}.{}.{}.", p[0], p.get(1).unwrap_or(&"0"), p.get(2).unwrap_or(&"0")) };
-    Ok(all["versions"].as_array().into_iter().flatten().filter_map(Value::as_str).filter(|v| v.starts_with(&prefix) && !v.to_lowercase().contains("snapshot")).map(String::from).collect())
+    let prefix = if p.first() == Some(&"1") {
+        format!("{}.{}.", p.get(1).unwrap_or(&"0"), p.get(2).unwrap_or(&"0"))
+    } else {
+        format!("{}.{}.{}.", p[0], p.get(1).unwrap_or(&"0"), p.get(2).unwrap_or(&"0"))
+    };
+    Ok(all["versions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .filter(|v| v.starts_with(&prefix) && !v.to_lowercase().contains("snapshot"))
+        .map(String::from)
+        .collect())
 }
 
 /// Velocity version to install: (version, url, size).
 async fn velocity_build(env: &Env, wanted: Option<&str>) -> Result<(String, String, Option<u64>)> {
     let proj: Value = env.net.get_json("https://fill.papermc.io/v3/projects/velocity").await?;
-    let all: Vec<String> = proj["versions"].as_object().into_iter().flatten().flat_map(|(_, v)| v.as_array().cloned().unwrap_or_default()).filter_map(|v| v.as_str().map(String::from)).collect();
+    let all: Vec<String> = proj["versions"]
+        .as_object()
+        .into_iter()
+        .flatten()
+        .flat_map(|(_, v)| v.as_array().cloned().unwrap_or_default())
+        .filter_map(|v| v.as_str().map(String::from))
+        .collect();
     let order: Vec<String> = match wanted {
         Some(w) => vec![w.to_string()],
         None => {
@@ -1398,7 +1549,8 @@ async fn velocity_build(env: &Env, wanted: Option<&str>) -> Result<(String, Stri
         }
     };
     for v in order.iter().take(6) {
-        let builds: Vec<Value> = env.net.get_json(&format!("https://fill.papermc.io/v3/projects/velocity/versions/{}/builds", urlencoding::encode(v))).await.unwrap_or_default();
+        let builds: Vec<Value> =
+            env.net.get_json(&format!("https://fill.papermc.io/v3/projects/velocity/versions/{}/builds", urlencoding::encode(v))).await.unwrap_or_default();
         let b = builds.iter().find(|x| x.str_of("channel") == Some("STABLE")).or(builds.first());
         if let Some(f) = b.and_then(|b| b.pointer("/downloads/server:default")).filter(|f| f.is_object()) {
             return Ok((v.clone(), f.string_or("url", ""), f["size"].as_u64()));
@@ -1415,7 +1567,13 @@ async fn run_installer(bin: &Path, installer: &str, cwd: &Path, progress: &Progr
     let mut child = c.spawn()?;
     let last = Arc::new(std::sync::Mutex::new(String::new()));
     let mut readers = Vec::new();
-    for s in [child.stdout.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>), child.stderr.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>)].into_iter().flatten() {
+    for s in [
+        child.stdout.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+        child.stderr.take().map(|s| Box::new(s) as Box<dyn tokio::io::AsyncRead + Unpin + Send>),
+    ]
+    .into_iter()
+    .flatten()
+    {
         let (last, progress) = (last.clone(), progress.clone());
         readers.push(tokio::spawn(async move {
             let mut lines = BufReader::new(s).lines();

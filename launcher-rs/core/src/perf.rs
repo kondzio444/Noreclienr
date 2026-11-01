@@ -32,17 +32,116 @@ const FQN: &[&str] = &["fabric", "quilt", "neoforge"];
 const FQ: &[&str] = &["fabric", "quilt"];
 
 pub const CATALOG: &[Entry] = &[
-    Entry { slug: "sodium", title: "Sodium", group: Some("renderer"), ids: &["sodium"], loaders: FQN, conflicts: &[], why: "Nowy silnik renderowania – zwykle kilka razy więcej FPS", pkg: &["me.jellysquid.mods.sodium", "net.caffeinemc.mods.sodium"] },
-    Entry { slug: "embeddium", title: "Embeddium", group: Some("renderer"), ids: &["embeddium", "rubidium"], loaders: &["forge", "neoforge"], conflicts: &[], why: "Sodium dla Forge / NeoForge – dużo więcej FPS", pkg: &["org.embeddedt.embeddium"] },
-    Entry { slug: "lithium", title: "Lithium", group: None, ids: &["lithium"], loaders: FQN, conflicts: &["canary", "radium", "roadrunner"], why: "Szybsza logika gry: mniej lagów z mobami, redstone i chunkami", pkg: &["me.jellysquid.mods.lithium", "net.caffeinemc.mods.lithium"] },
-    Entry { slug: "ferrite-core", title: "FerriteCore", group: None, ids: &["ferritecore"], loaders: ALL, conflicts: &[], why: "Mniejsze zużycie RAM – mniej przycięć od GC", pkg: &["malte0811.ferritecore"] },
-    Entry { slug: "modernfix", title: "ModernFix", group: None, ids: &["modernfix"], loaders: ALL, conflicts: &[], why: "Szybszy start i mniej RAM w dużych paczkach", pkg: &["org.embeddedt.modernfix"] },
-    Entry { slug: "entityculling", title: "EntityCulling", group: None, ids: &["entityculling"], loaders: ALL, conflicts: &["optifine", "vulkanmod"], why: "Nie rysuje mobów i skrzyń za ścianami – więcej FPS na serwerach", pkg: &["dev.tr7zw.entityculling"] },
-    Entry { slug: "immediatelyfast", title: "ImmediatelyFast", group: None, ids: &["immediatelyfast"], loaders: ALL, conflicts: &["optifine", "vulkanmod"], why: "Szybsze rysowanie HUD, tekstu i mobów", pkg: &["net.raphimc.immediatelyfast"] },
-    Entry { slug: "krypton", title: "Krypton", group: None, ids: &["krypton"], loaders: FQ, conflicts: &["viafabricplus", "viafabric", "raknetify", "nochatreports_krypton"], why: "Lżejszy stos sieciowy – mniej lagów na serwerach", pkg: &["me.steinborn.krypton"] },
-    Entry { slug: "moreculling", title: "MoreCulling", group: None, ids: &["moreculling"], loaders: FQ, conflicts: &["optifine", "vulkanmod", "cullleaves"], why: "Pomija niewidoczne ściany bloków i liście", pkg: &["ca.fxco.moreculling"] },
-    Entry { slug: "dynamic-fps", title: "Dynamic FPS", group: None, ids: &["dynamic_fps", "dynamicfps"], loaders: ALL, conflicts: &[], why: "Mniej FPS w tle i na pauzie – chłodniejszy komputer, płynniej w innych programach", pkg: &["dynamic_fps.impl", "juliand665.dynamicfps"] },
-    Entry { slug: "badoptimizations", title: "BadOptimizations", group: None, ids: &["badoptimizations"], loaders: ALL, conflicts: &["optifine"], why: "Drobne optymalizacje świateł, nieba i mgły", pkg: &["me.thosea.badoptimizations"] },
+    Entry {
+        slug: "sodium",
+        title: "Sodium",
+        group: Some("renderer"),
+        ids: &["sodium"],
+        loaders: FQN,
+        conflicts: &[],
+        why: "Nowy silnik renderowania – zwykle kilka razy więcej FPS",
+        pkg: &["me.jellysquid.mods.sodium", "net.caffeinemc.mods.sodium"],
+    },
+    Entry {
+        slug: "embeddium",
+        title: "Embeddium",
+        group: Some("renderer"),
+        ids: &["embeddium", "rubidium"],
+        loaders: &["forge", "neoforge"],
+        conflicts: &[],
+        why: "Sodium dla Forge / NeoForge – dużo więcej FPS",
+        pkg: &["org.embeddedt.embeddium"],
+    },
+    Entry {
+        slug: "lithium",
+        title: "Lithium",
+        group: None,
+        ids: &["lithium"],
+        loaders: FQN,
+        conflicts: &["canary", "radium", "roadrunner"],
+        why: "Szybsza logika gry: mniej lagów z mobami, redstone i chunkami",
+        pkg: &["me.jellysquid.mods.lithium", "net.caffeinemc.mods.lithium"],
+    },
+    Entry {
+        slug: "ferrite-core",
+        title: "FerriteCore",
+        group: None,
+        ids: &["ferritecore"],
+        loaders: ALL,
+        conflicts: &[],
+        why: "Mniejsze zużycie RAM – mniej przycięć od GC",
+        pkg: &["malte0811.ferritecore"],
+    },
+    Entry {
+        slug: "modernfix",
+        title: "ModernFix",
+        group: None,
+        ids: &["modernfix"],
+        loaders: ALL,
+        conflicts: &[],
+        why: "Szybszy start i mniej RAM w dużych paczkach",
+        pkg: &["org.embeddedt.modernfix"],
+    },
+    Entry {
+        slug: "entityculling",
+        title: "EntityCulling",
+        group: None,
+        ids: &["entityculling"],
+        loaders: ALL,
+        conflicts: &["optifine", "vulkanmod"],
+        why: "Nie rysuje mobów i skrzyń za ścianami – więcej FPS na serwerach",
+        pkg: &["dev.tr7zw.entityculling"],
+    },
+    Entry {
+        slug: "immediatelyfast",
+        title: "ImmediatelyFast",
+        group: None,
+        ids: &["immediatelyfast"],
+        loaders: ALL,
+        conflicts: &["optifine", "vulkanmod"],
+        why: "Szybsze rysowanie HUD, tekstu i mobów",
+        pkg: &["net.raphimc.immediatelyfast"],
+    },
+    Entry {
+        slug: "krypton",
+        title: "Krypton",
+        group: None,
+        ids: &["krypton"],
+        loaders: FQ,
+        conflicts: &["viafabricplus", "viafabric", "raknetify", "nochatreports_krypton"],
+        why: "Lżejszy stos sieciowy – mniej lagów na serwerach",
+        pkg: &["me.steinborn.krypton"],
+    },
+    Entry {
+        slug: "moreculling",
+        title: "MoreCulling",
+        group: None,
+        ids: &["moreculling"],
+        loaders: FQ,
+        conflicts: &["optifine", "vulkanmod", "cullleaves"],
+        why: "Pomija niewidoczne ściany bloków i liście",
+        pkg: &["ca.fxco.moreculling"],
+    },
+    Entry {
+        slug: "dynamic-fps",
+        title: "Dynamic FPS",
+        group: None,
+        ids: &["dynamic_fps", "dynamicfps"],
+        loaders: ALL,
+        conflicts: &[],
+        why: "Mniej FPS w tle i na pauzie – chłodniejszy komputer, płynniej w innych programach",
+        pkg: &["dynamic_fps.impl", "juliand665.dynamicfps"],
+    },
+    Entry {
+        slug: "badoptimizations",
+        title: "BadOptimizations",
+        group: None,
+        ids: &["badoptimizations"],
+        loaders: ALL,
+        conflicts: &["optifine"],
+        why: "Drobne optymalizacje świateł, nieba i mgły",
+        pkg: &["me.thosea.badoptimizations"],
+    },
 ];
 
 pub const RENDERERS: [&str; 10] = ["sodium", "embeddium", "rubidium", "magnesium", "xenon", "optifine", "optifabric", "canvas", "vulkanmod", "bendyrenderer"];
@@ -300,7 +399,10 @@ pub async fn scan(mods_dir: &Path) -> Vec<Present> {
 async fn best_version(env: &Env, project: &str, mc: &str, loader: &str) -> Result<Option<Value>> {
     let url = modrinth::with_params(
         &format!("{}/project/{}/version", modrinth::API, urlencoding::encode(project)),
-        &[("game_versions", serde_json::to_string(&[mc]).unwrap_or_default()), ("loaders", serde_json::to_string(&loaders::mod_loaders(loader)).unwrap_or_default())],
+        &[
+            ("game_versions", serde_json::to_string(&[mc]).unwrap_or_default()),
+            ("loaders", serde_json::to_string(&loaders::mod_loaders(loader)).unwrap_or_default()),
+        ],
     );
     let list: Vec<Value> = match env.net.get_json(&url).await {
         Ok(l) => l,
@@ -361,7 +463,17 @@ pub async fn resolve(env: &Env, plan: &Plan, mc: &str, loader: &str, present: &[
 }
 
 #[allow(clippy::too_many_arguments)]
-fn add_deps<'a>(env: &'a Env, v: &'a Value, for_slug: &'a str, depth: u32, mc: &'a str, loader: &'a str, have: &'a HashSet<String>, seen: &'a mut HashSet<String>, r: &'a mut Resolved) -> futures::future::BoxFuture<'a, ()> {
+fn add_deps<'a>(
+    env: &'a Env,
+    v: &'a Value,
+    for_slug: &'a str,
+    depth: u32,
+    mc: &'a str,
+    loader: &'a str,
+    have: &'a HashSet<String>,
+    seen: &'a mut HashSet<String>,
+    r: &'a mut Resolved,
+) -> futures::future::BoxFuture<'a, ()> {
     Box::pin(async move {
         for d in v["dependencies"].as_array().cloned().unwrap_or_default() {
             let Some(pid) = d.str_of("project_id").filter(|_| d.str_of("dependency_type") == Some("required")).map(String::from) else { continue };
@@ -410,7 +522,10 @@ pub fn enabled_for(inst: &Value) -> bool {
 }
 
 pub fn state_key(inst: &Value) -> String {
-    let pack = inst.get("pack").map(|p| p.get("versionId").filter(|v| truthy(v)).or(p.get("version")).map(crate::config_edit::js_string).unwrap_or_default()).unwrap_or_default();
+    let pack = inst
+        .get("pack")
+        .map(|p| p.get("versionId").filter(|v| truthy(v)).or(p.get("version")).map(crate::config_edit::js_string).unwrap_or_default())
+        .unwrap_or_default();
     let pack = if pack == "null" { String::new() } else { pack };
     format!("{CATALOG_VERSION}|{}|{}|{pack}", inst.string_or("mcVersion", ""), inst.string_or("loader", ""))
 }
@@ -433,28 +548,46 @@ pub struct Preview {
 }
 
 fn same_target(inst: &Value) -> bool {
-    inst.pointer("/perfFor/mc").and_then(Value::as_str) == inst.str_of("mcVersion") && inst.pointer("/perfFor/loader").and_then(Value::as_str) == inst.str_of("loader") && inst.get("perfFor").is_some_and(truthy)
+    inst.pointer("/perfFor/mc").and_then(Value::as_str) == inst.str_of("mcVersion")
+        && inst.pointer("/perfFor/loader").and_then(Value::as_str) == inst.str_of("loader")
+        && inst.get("perfFor").is_some_and(truthy)
 }
 
 /// What would change in this instance (the "Optymalizuj" preview and ensure).
 pub async fn preview(env: &Env, inst: &Value) -> Preview {
     let mods_dir = PathBuf::from(inst.string_or("gameDir", "")).join("mods");
     let all = scan(&mods_dir).await;
-    let mut own: Vec<Value> = inst["perfAdded"].as_array().into_iter().flatten().filter(|o| all.iter().any(|m| m.file == o.string_or("file", "") || m.file == format!("{}.disabled", o.string_or("file", "")))).cloned().collect();
+    let mut own: Vec<Value> = inst["perfAdded"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|o| all.iter().any(|m| m.file == o.string_or("file", "") || m.file == format!("{}.disabled", o.string_or("file", ""))))
+        .cloned()
+        .collect();
     let same = same_target(inst);
     let stale = if same { vec![] } else { std::mem::take(&mut own) };
-    let own_files: HashSet<String> = own.iter().chain(stale.iter()).flat_map(|o| [o.string_or("file", ""), format!("{}.disabled", o.string_or("file", ""))]).collect();
+    let own_files: HashSet<String> =
+        own.iter().chain(stale.iter()).flat_map(|o| [o.string_or("file", ""), format!("{}.disabled", o.string_or("file", ""))]).collect();
     let present: Vec<Present> = all.iter().filter(|m| !own_files.contains(&m.file)).cloned().collect();
-    let own_plain: Vec<Own> = own.iter().filter(|o| !o.truthy_of("dep")).map(|o| Own { slug: o.string_or("slug", ""), file: o.string_or("file", "") }).collect();
+    let own_plain: Vec<Own> =
+        own.iter().filter(|o| !o.truthy_of("dep")).map(|o| Own { slug: o.string_or("slug", ""), file: o.string_or("file", "") }).collect();
     let plan = plan_perf_mods(inst.str_of("loader").unwrap_or(""), &present, &own_plain, &strings(&inst["perfBlocked"]), &strings(&inst["perfRemoved"]));
-    let for_resolve: Vec<Present> = all.iter().filter(|m| !own_files.contains(&m.file) || own.iter().any(|o| o.str_of("file") == Some(&m.file))).cloned().collect();
+    let for_resolve: Vec<Present> =
+        all.iter().filter(|m| !own_files.contains(&m.file) || own.iter().any(|o| o.str_of("file") == Some(&m.file))).cloned().collect();
     let r = resolve(env, &plan, inst.str_of("mcVersion").unwrap_or(""), inst.str_of("loader").unwrap_or(""), &for_resolve).await;
     Preview { plan, files: r.files, missing: r.missing, errors: r.errors, own, stale }
 }
 
 /// Brings the performance mods in line with the plan (cheap when nothing changed – no network).
 /// Returns `{ added, removed, skipped, missing }` or None when skipped.
-pub async fn ensure(env: &Env, insts: &Instances<'_>, id: &str, force: bool, progress: &(dyn Fn(Value) + Send + Sync), log: &(dyn Fn(String) + Send + Sync)) -> Result<Option<Value>> {
+pub async fn ensure(
+    env: &Env,
+    insts: &Instances<'_>,
+    id: &str,
+    force: bool,
+    progress: &(dyn Fn(Value) + Send + Sync),
+    log: &(dyn Fn(String) + Send + Sync),
+) -> Result<Option<Value>> {
     let Some(mut inst) = insts.get(id) else { return Ok(None) };
     if !enabled_for(&inst) {
         return Ok(None);
@@ -469,7 +602,8 @@ pub async fn ensure(env: &Env, insts: &Instances<'_>, id: &str, force: bool, pro
     if !force && inst.str_of("perfKey") == Some(&key) && recorded.iter().all(there) {
         return Ok(None);
     }
-    let gone: Vec<String> = if same_target(&inst) { recorded.iter().filter(|o| !o.truthy_of("dep") && !there(o)).map(|o| o.string_or("slug", "")).collect() } else { vec![] };
+    let gone: Vec<String> =
+        if same_target(&inst) { recorded.iter().filter(|o| !o.truthy_of("dep") && !there(o)).map(|o| o.string_or("slug", "")).collect() } else { vec![] };
     if force || !gone.is_empty() {
         let removed_now: Vec<String> = if force {
             vec![]
@@ -512,7 +646,8 @@ pub async fn ensure(env: &Env, insts: &Instances<'_>, id: &str, force: bool, pro
             rm(&o.string_or("file", ""), "zależność usuniętego moda", &mut removed);
         }
     }
-    let keep: Vec<Value> = p.own.iter().filter(|o| !drop_slugs.contains(&o.string_or("slug", "")) && !o.str_of("dep").is_some_and(|d| drop_slugs.contains(d))).cloned().collect();
+    let keep: Vec<Value> =
+        p.own.iter().filter(|o| !drop_slugs.contains(&o.string_or("slug", "")) && !o.str_of("dep").is_some_and(|d| drop_slugs.contains(d))).cloned().collect();
     let mut added: Vec<Value> = Vec::new();
     let mut failed = p.errors;
     for (i, f) in p.files.iter().enumerate() {
@@ -542,7 +677,10 @@ pub async fn ensure(env: &Env, insts: &Instances<'_>, id: &str, force: bool, pro
         log(format!("[Launcher] Dodano mody wydajności: {}", added.iter().map(|a| a.string_or("file", "")).collect::<Vec<_>>().join(", ")));
     }
     if !removed.is_empty() {
-        log(format!("[Launcher] Usunięto mody wydajności: {}", removed.iter().map(|r| format!("{} ({})", r.string_or("file", ""), r.string_or("reason", ""))).collect::<Vec<_>>().join(", ")));
+        log(format!(
+            "[Launcher] Usunięto mody wydajności: {}",
+            removed.iter().map(|r| format!("{} ({})", r.string_or("file", ""), r.string_or("reason", ""))).collect::<Vec<_>>().join(", ")
+        ));
     }
     Ok(Some(json!({ "added": added, "removed": removed, "skipped": p.plan.skip, "missing": p.missing })))
 }
@@ -632,7 +770,13 @@ mod tests {
 
     #[test]
     fn never_duplicate() {
-        let p = plan_perf_mods("fabric", &[m("sodium-fabric-0.6.5.jar", &["sodium"], true)], &own(&[("sodium", "sodium-fabric-0.6.jar"), ("krypton", "krypton-0.2.jar")]), &[], &[]);
+        let p = plan_perf_mods(
+            "fabric",
+            &[m("sodium-fabric-0.6.5.jar", &["sodium"], true)],
+            &own(&[("sodium", "sodium-fabric-0.6.jar"), ("krypton", "krypton-0.2.jar")]),
+            &[],
+            &[],
+        );
         assert_eq!(p.drop.iter().map(|d| d.string_or("file", "")).collect::<Vec<_>>(), vec!["sodium-fabric-0.6.jar"]);
         assert!(p.keep.contains(&"krypton".into()));
         assert!(!slugs(&p.add).contains(&"sodium".into()) && !slugs(&p.add).contains(&"krypton".into()));

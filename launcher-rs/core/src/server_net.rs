@@ -13,7 +13,10 @@ use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::net::UdpSocket;
 
-static VIRTUAL: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)vmware|virtualbox|vbox|hyper-v|vethernet|docker|wsl|tailscale|zerotier|hamachi|radmin|wireguard|nordlynx|tun|tap|utun|loopback|bluetooth").unwrap());
+static VIRTUAL: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)vmware|virtualbox|vbox|hyper-v|vethernet|docker|wsl|tailscale|zerotier|hamachi|radmin|wireguard|nordlynx|tun|tap|utun|loopback|bluetooth")
+        .unwrap()
+});
 
 /// IPv4 addresses of the network cards (virtual adapters last).
 pub fn lan_addresses() -> Vec<Value> {
@@ -58,7 +61,11 @@ pub async fn public_ip(env: &Env) -> Result<String> {
         let Ok(res) = env.net.send_with_retry(|c| c.get(url), 2).await else { continue };
         let Ok(text) = res.text().await else { continue };
         let t = text.trim();
-        let ip = if t.starts_with('{') { serde_json::from_str::<Value>(t).ok().and_then(|j| j.str_of("ip").map(String::from)).unwrap_or_default() } else { t.to_string() };
+        let ip = if t.starts_with('{') {
+            serde_json::from_str::<Value>(t).ok().and_then(|j| j.str_of("ip").map(String::from)).unwrap_or_default()
+        } else {
+            t.to_string()
+        };
         if ip.parse::<Ipv4Addr>().is_ok() {
             return Ok(ip);
         }
@@ -91,9 +98,11 @@ pub async fn default_gateway() -> Option<String> {
             }
         }
     } else if cfg!(windows) {
-        static R: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^\s*0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+)").unwrap());
+        static R: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"(?m)^\s*0\.0\.0\.0\s+0\.0\.0\.0\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+\.\d+\.\d+\.\d+)\s+(\d+)").unwrap());
         let out = run("route", &["print", "-4", "0.0.0.0"]).await;
-        let mut rows: Vec<(String, u32)> = R.captures_iter(&out).filter(|c| !VIRTUAL.is_match(&c[2])).map(|c| (c[1].to_string(), c[3].parse().unwrap_or(9999))).collect();
+        let mut rows: Vec<(String, u32)> =
+            R.captures_iter(&out).filter(|c| !VIRTUAL.is_match(&c[2])).map(|c| (c[1].to_string(), c[3].parse().unwrap_or(9999))).collect();
         rows.sort_by_key(|r| r.1);
         if let Some(r) = rows.first() {
             return Some(r.0.clone());
@@ -145,7 +154,13 @@ pub async fn port_open(host: &str, port: u16) -> bool {
 // ------------------------------------------------------------------ UPnP
 
 fn lan_client() -> reqwest::Client {
-    reqwest::Client::builder().no_proxy().timeout(Duration::from_secs(6)).user_agent("NoreLauncher UPnP/1.1").pool_max_idle_per_host(0).build().unwrap_or_default()
+    reqwest::Client::builder()
+        .no_proxy()
+        .timeout(Duration::from_secs(6))
+        .user_agent("NoreLauncher UPnP/1.1")
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap_or_default()
 }
 
 /// One HTTP request to a router (fresh connection, retried on hang-ups).
@@ -177,7 +192,8 @@ const SEARCH_TARGETS: [&str; 5] = [
     "urn:schemas-upnp-org:service:WANIPConnection:2",
     "urn:schemas-upnp-org:service:WANPPPConnection:1",
 ];
-const WAN_TYPES: [&str; 3] = ["urn:schemas-upnp-org:service:WANIPConnection:2", "urn:schemas-upnp-org:service:WANIPConnection:1", "urn:schemas-upnp-org:service:WANPPPConnection:1"];
+const WAN_TYPES: [&str; 3] =
+    ["urn:schemas-upnp-org:service:WANIPConnection:2", "urn:schemas-upnp-org:service:WANIPConnection:1", "urn:schemas-upnp-org:service:WANPPPConnection:1"];
 
 /// SSDP discovery from every LAN interface: (location, responder).
 async fn discover_gateways(timeout: Duration) -> Vec<String> {
@@ -303,7 +319,9 @@ async fn add_mapping(svc: &Service, port: u16, proto: &str, client: &str, desc: 
     match soap(svc, "AddPortMapping", &args(0)).await {
         Ok(_) => Ok(()),
         Err(e) if e.code == 718 => {
-            let _ = soap(svc, "DeletePortMapping", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", proto.to_string())]).await;
+            let _ =
+                soap(svc, "DeletePortMapping", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", proto.to_string())])
+                    .await;
             soap(svc, "AddPortMapping", &args(0)).await.map(|_| ())
         }
         Err(e) if e.code == 725 => Err(e),
@@ -321,10 +339,14 @@ pub async fn upnp_open(port: u16, desc: &str) -> Result<Value> {
             Ok(()) => {
                 let _ = add_mapping(svc, port, "UDP", &client, desc).await;
                 let external = soap(svc, "GetExternalIPAddress", &[]).await.ok().and_then(|b| tag(&b, "NewExternalIPAddress")).filter(|s| !s.is_empty());
-                let verified = soap(svc, "GetSpecificPortMappingEntry", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", "TCP".into())])
-                    .await
-                    .ok()
-                    .map(|e| tag(&e, "NewInternalClient").as_deref() == Some(client.as_str()));
+                let verified = soap(
+                    svc,
+                    "GetSpecificPortMappingEntry",
+                    &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", "TCP".into())],
+                )
+                .await
+                .ok()
+                .map(|e| tag(&e, "NewInternalClient").as_deref() == Some(client.as_str()));
                 let cgnat = external.as_deref().is_some_and(is_private_ip);
                 return Ok(json!({ "method": "upnp", "router": svc.host, "client": client, "external": external, "verified": verified, "cgnat": cgnat }));
             }
@@ -335,14 +357,18 @@ pub async fn upnp_open(port: u16, desc: &str) -> Result<Value> {
         match natpmp_map(g, port, 7200).await {
             Ok((external, lifetime)) => {
                 let cgnat = external.as_deref().is_some_and(is_private_ip);
-                return Ok(json!({ "method": "natpmp", "router": g, "client": local_address_for(g), "external": external, "lifetime": lifetime, "verified": true, "cgnat": cgnat }));
+                return Ok(
+                    json!({ "method": "natpmp", "router": g, "client": local_address_for(g), "external": external, "lifetime": lifetime, "verified": true, "cgnat": cgnat }),
+                );
             }
             Err(e) => errors.push(format!("NAT-PMP: {e}")),
         }
     }
     if services.is_empty() {
         let g = gateway.map(|g| format!(" ({g})")).unwrap_or_default();
-        return Err(msg(format!("Router{g} nie odpowiada na UPnP ani NAT-PMP. Włącz UPnP w panelu routera albo przekieruj port {port} ręcznie – lub użyj tunelu playit.gg.")));
+        return Err(msg(format!(
+            "Router{g} nie odpowiada na UPnP ani NAT-PMP. Włącz UPnP w panelu routera albo przekieruj port {port} ręcznie – lub użyj tunelu playit.gg."
+        )));
     }
     Err(msg(errors.into_iter().next().unwrap_or_else(|| "Nie udało się otworzyć portu.".into())))
 }
@@ -351,7 +377,8 @@ pub async fn upnp_close(port: u16) -> Result<bool> {
     let (gateway, services) = gateway_services().await;
     for svc in &services {
         for proto in ["TCP", "UDP"] {
-            let _ = soap(svc, "DeletePortMapping", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", proto.into())]).await;
+            let _ =
+                soap(svc, "DeletePortMapping", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", proto.into())]).await;
         }
     }
     if let Some(g) = gateway {
@@ -369,8 +396,12 @@ async fn router_info(port: u16) -> Value {
                 out["external"] = json!(e);
             }
         }
-        if let Ok(e) = soap(svc, "GetSpecificPortMappingEntry", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", "TCP".into())]).await {
-            out["mapping"] = json!({ "client": tag(&e, "NewInternalClient"), "port": tag(&e, "NewInternalPort"), "enabled": tag(&e, "NewEnabled").as_deref() != Some("0") });
+        if let Ok(e) =
+            soap(svc, "GetSpecificPortMappingEntry", &[("NewRemoteHost", String::new()), ("NewExternalPort", port.to_string()), ("NewProtocol", "TCP".into())])
+                .await
+        {
+            out["mapping"] =
+                json!({ "client": tag(&e, "NewInternalClient"), "port": tag(&e, "NewInternalPort"), "enabled": tag(&e, "NewEnabled").as_deref() != Some("0") });
         }
         if !out["external"].is_null() {
             break;
@@ -403,7 +434,11 @@ async fn natpmp_request(gateway: &str, msg_bytes: &[u8], expect_op: u8) -> Resul
             }
             let result = u16::from_be_bytes([buf[2], buf[3]]);
             if result != 0 {
-                let t = ["", "nieobsługiwana wersja", "brak uprawnień", "błąd sieci", "brak zasobów", "nieobsługiwana operacja"].get(result as usize).copied().map(String::from).unwrap_or_else(|| format!("kod {result}"));
+                let t = ["", "nieobsługiwana wersja", "brak uprawnień", "błąd sieci", "brak zasobów", "nieobsługiwana operacja"]
+                    .get(result as usize)
+                    .copied()
+                    .map(String::from)
+                    .unwrap_or_else(|| format!("kod {result}"));
                 return Err(msg(t));
             }
             return Ok(buf[..n].to_vec());
@@ -469,7 +504,10 @@ pub async fn firewall_allow(port: u16) -> Result<bool> {
         ]
         .join("\r\n"),
     )?;
-    let ps = format!("Start-Process -FilePath 'cmd.exe' -ArgumentList '/c \"\"{}\"\"' -Verb RunAs -WindowStyle Hidden -Wait", script.display().to_string().replace('\'', "''"));
+    let ps = format!(
+        "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c \"\"{}\"\"' -Verb RunAs -WindowStyle Hidden -Wait",
+        script.display().to_string().replace('\'', "''")
+    );
     let mut c = tokio::process::Command::new("powershell.exe");
     c.args(["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", &ps]);
     #[cfg(windows)]
@@ -493,13 +531,18 @@ pub async fn dns_check(host: &str, port: u16) -> Value {
     let mut opts = ResolverOpts::default();
     opts.timeout = Duration::from_secs(4);
     opts.attempts = 2;
-    let cfg = ResolverConfig::from_parts(None, vec![], NameServerConfigGroup::from_ips_clear(&["1.1.1.1".parse().unwrap(), "8.8.8.8".parse().unwrap()], 53, true));
+    let cfg =
+        ResolverConfig::from_parts(None, vec![], NameServerConfigGroup::from_ips_clear(&["1.1.1.1".parse().unwrap(), "8.8.8.8".parse().unwrap()], 53, true));
     let r = hickory_resolver::TokioAsyncResolver::tokio(cfg, opts);
     let mut out = json!({ "host": host, "a": [], "srv": null });
     match r.ipv4_lookup(format!("{host}.")).await {
         Ok(l) => out["a"] = json!(l.iter().map(|a| a.to_string()).collect::<Vec<_>>()),
         Err(e) => {
-            out["error"] = json!(if matches!(e.kind(), hickory_resolver::error::ResolveErrorKind::NoRecordsFound { .. }) { "brak rekordu A".to_string() } else { e.to_string() });
+            out["error"] = json!(if matches!(e.kind(), hickory_resolver::error::ResolveErrorKind::NoRecordsFound { .. }) {
+                "brak rekordu A".to_string()
+            } else {
+                e.to_string()
+            });
         }
     }
     if let Ok(srv) = r.srv_lookup(format!("_minecraft._tcp.{host}.")).await {
@@ -515,7 +558,12 @@ pub async fn dns_check(host: &str, port: u16) -> Value {
 
 async fn duckdns_update(env: &Env, sub: &str, token: &str, ip: &str) -> Result<String> {
     let name = sub.trim().trim_end_matches(".duckdns.org").trim().to_string();
-    let url = format!("https://www.duckdns.org/update?domains={}&token={}&ip={}&verbose=true", urlencoding::encode(&name), urlencoding::encode(token), urlencoding::encode(ip));
+    let url = format!(
+        "https://www.duckdns.org/update?domains={}&token={}&ip={}&verbose=true",
+        urlencoding::encode(&name),
+        urlencoding::encode(token),
+        urlencoding::encode(ip)
+    );
     let text = env.net.send_with_retry(|c| c.get(&url), 2).await?.text().await?;
     if !text.trim().starts_with("OK") {
         return Err(msg("DuckDNS odrzucił aktualizację – sprawdź subdomenę (bez .duckdns.org) i token."));
@@ -628,7 +676,8 @@ pub async fn update_domain(env: &Env, domain: &Value, secret: &str, ip: &str, po
 /// DNS records to add by hand at any other provider.
 pub fn manual_records(hostname: &str, ip: Option<&str>, port: u16) -> Value {
     let host = if hostname.is_empty() { "mc.twojadomena.pl" } else { hostname }.trim_end_matches('.').to_string();
-    let mut records = vec![json!({ "type": "A", "name": host, "value": ip.unwrap_or("<twoje publiczne IP>"), "note": "Adres serwera (bez proxy / „DNS only”)" })];
+    let mut records =
+        vec![json!({ "type": "A", "name": host, "value": ip.unwrap_or("<twoje publiczne IP>"), "note": "Adres serwera (bez proxy / „DNS only”)" })];
     if port != 0 && port != 25565 {
         records.push(json!({ "type": "SRV", "name": format!("_minecraft._tcp.{host}"), "value": format!("0 5 {port} {host}"), "note": "Pozwala łączyć się bez wpisywania portu" }));
     }
@@ -638,19 +687,45 @@ pub fn manual_records(hostname: &str, ip: Option<&str>, port: u16) -> Value {
 /// Step-by-step connection check (each step: `{ id, status: ok|warn|bad|skip, title, text, fix }`).
 pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunnel: &Value) -> Value {
     let mut steps: Vec<Value> = Vec::new();
-    let mut add = |id: &str, status: &str, title: String, text: String, fix: Option<&str>| steps.push(json!({ "id": id, "status": status, "title": title, "text": text, "fix": fix }));
+    let mut add = |id: &str, status: &str, title: String, text: String, fix: Option<&str>| {
+        steps.push(json!({ "id": id, "status": status, "title": title, "text": text, "fix": fix }))
+    };
     let lan = lan_addresses();
     let real: Vec<String> = lan.iter().filter(|a| !a.truthy_of("virtual")).map(|a| a.string_or("address", "")).collect();
-    add("lan", if real.is_empty() { "bad" } else { "ok" }, "Sieć lokalna".into(), if real.is_empty() { "Brak połączenia z siecią lokalną.".into() } else { format!("IP w sieci domowej: {}", real.join(", ")) }, None);
+    add(
+        "lan",
+        if real.is_empty() { "bad" } else { "ok" },
+        "Sieć lokalna".into(),
+        if real.is_empty() { "Brak połączenia z siecią lokalną.".into() } else { format!("IP w sieci domowej: {}", real.join(", ")) },
+        None,
+    );
     if running {
         let l = port_open("127.0.0.1", port).await;
-        add("local", if l { "ok" } else { "bad" }, "Serwer na tym komputerze".into(), if l { format!("Serwer nasłuchuje na porcie {port}.") } else { format!("Nic nie odpowiada na porcie {port} – sprawdź konsolę serwera.") }, None);
+        add(
+            "local",
+            if l { "ok" } else { "bad" },
+            "Serwer na tym komputerze".into(),
+            if l { format!("Serwer nasłuchuje na porcie {port}.") } else { format!("Nic nie odpowiada na porcie {port} – sprawdź konsolę serwera.") },
+            None,
+        );
     } else {
-        add("local", "warn", "Serwer na tym komputerze".into(), "Serwer jest wyłączony – uruchom go, aby sprawdzić połączenie z internetu.".into(), Some("start"));
+        add(
+            "local",
+            "warn",
+            "Serwer na tym komputerze".into(),
+            "Serwer jest wyłączony – uruchom go, aby sprawdzić połączenie z internetu.".into(),
+            Some("start"),
+        );
     }
     let (pubip, router) = tokio::join!(public_ip(env), router_info(port));
     let pubip = pubip.ok();
-    add("public", if pubip.is_some() { "ok" } else { "bad" }, "Publiczne IP".into(), pubip.as_ref().map(|p| format!("Twoje IP w internecie: {p}")).unwrap_or_else(|| "Brak połączenia z internetem.".into()), None);
+    add(
+        "public",
+        if pubip.is_some() { "ok" } else { "bad" },
+        "Publiczne IP".into(),
+        pubip.as_ref().map(|p| format!("Twoje IP w internecie: {p}")).unwrap_or_else(|| "Brak połączenia z internetem.".into()),
+        None,
+    );
     let ext = router.str_of("external").map(String::from);
     let gw = router.str_of("gateway").unwrap_or("?").to_string();
     let cgnat = ext.as_deref().is_some_and(is_private_ip) || pubip.as_deref().is_some_and(is_cgnat_ip);
@@ -659,11 +734,21 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
             "router",
             "ok",
             "Router".into(),
-            format!("Brama {gw} obsługuje {}{}.", if router.truthy_of("upnp") { "UPnP" } else { "NAT-PMP" }, ext.as_ref().map(|e| format!(" • IP routera w internecie: {e}")).unwrap_or_default()),
+            format!(
+                "Brama {gw} obsługuje {}{}.",
+                if router.truthy_of("upnp") { "UPnP" } else { "NAT-PMP" },
+                ext.as_ref().map(|e| format!(" • IP routera w internecie: {e}")).unwrap_or_default()
+            ),
             None,
         );
     } else {
-        add("router", "warn", "Router".into(), format!("Brama {gw} nie odpowiada na UPnP ani NAT-PMP – włącz UPnP w panelu routera albo przekieruj port ręcznie."), Some("manual"));
+        add(
+            "router",
+            "warn",
+            "Router".into(),
+            format!("Brama {gw} nie odpowiada na UPnP ani NAT-PMP – włącz UPnP w panelu routera albo przekieruj port ręcznie."),
+            Some("manual"),
+        );
     }
     if cgnat {
         add("cgnat", "bad", "CGNAT / podwójny NAT".into(), format!("Router dostaje adres {}, który nie jest publiczny – dostawca internetu dzieli jedno IP między klientów, więc przekierowanie portu nie zadziała. Użyj tunelu playit.gg albo poproś operatora o publiczne IP.", ext.clone().or(pubip.clone()).unwrap_or_default()), Some("tunnel"));
@@ -683,28 +768,70 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
             "mapping",
             if ok { "ok" } else { "warn" },
             format!("Przekierowanie portu {port}"),
-            if ok { format!("Router przekierowuje port {port} na ten komputer ({lan_ip}).") } else { format!("Port {port} jest przekierowany na {}, a ten komputer ma {lan_ip}.", m.str_of("client").unwrap_or("?")) },
+            if ok {
+                format!("Router przekierowuje port {port} na ten komputer ({lan_ip}).")
+            } else {
+                format!("Port {port} jest przekierowany na {}, a ten komputer ma {lan_ip}.", m.str_of("client").unwrap_or("?"))
+            },
             if ok { None } else { Some("upnp") },
         );
     } else if router.truthy_of("upnp") {
-        add("mapping", "warn", format!("Przekierowanie portu {port}"), "Router nie ma przekierowania tego portu (albo nie pokazuje go przez UPnP).".into(), Some("upnp"));
+        add(
+            "mapping",
+            "warn",
+            format!("Przekierowanie portu {port}"),
+            "Router nie ma przekierowania tego portu (albo nie pokazuje go przez UPnP).".into(),
+            Some("upnp"),
+        );
     }
     if cfg!(windows) {
         let fw = firewall_status(port).await;
         if fw.truthy_of("supported") {
             let rule = fw.truthy_of("rule");
-            add("firewall", if rule { "ok" } else { "warn" }, "Zapora Windows".into(), if rule { format!("Reguła „{}” przepuszcza połączenia.", rule_name(port)) } else { "Brak reguły dla portu serwera – Windows może blokować połączenia z zewnątrz.".into() }, if rule { None } else { Some("firewall") });
+            add(
+                "firewall",
+                if rule { "ok" } else { "warn" },
+                "Zapora Windows".into(),
+                if rule {
+                    format!("Reguła „{}” przepuszcza połączenia.", rule_name(port))
+                } else {
+                    "Brak reguły dla portu serwera – Windows może blokować połączenia z zewnątrz.".into()
+                },
+                if rule { None } else { Some("firewall") },
+            );
         }
     }
     if let Some(name) = domain.str_of("name").filter(|n| !n.is_empty() && domain.str_of("provider").is_some_and(|p| !p.is_empty() && p != "none")) {
         let d = dns_check(name, port).await;
         let a: Vec<String> = d["a"].as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect();
         if a.is_empty() {
-            add("dns", "bad", format!("Domena {name}"), format!("DNS: {} – kliknij „Zapisz i zastosuj” w sekcji domeny.", d.str_of("error").unwrap_or("brak rekordu A")), Some("domain"));
+            add(
+                "dns",
+                "bad",
+                format!("Domena {name}"),
+                format!("DNS: {} – kliknij „Zapisz i zastosuj” w sekcji domeny.", d.str_of("error").unwrap_or("brak rekordu A")),
+                Some("domain"),
+            );
         } else if pubip.as_ref().is_some_and(|p| !a.contains(p)) {
-            add("dns", "warn", format!("Domena {name}"), format!("Wskazuje na {}, a Twoje IP to {} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).", a.join(", "), pubip.clone().unwrap_or_default()), Some("domain"));
+            add(
+                "dns",
+                "warn",
+                format!("Domena {name}"),
+                format!(
+                    "Wskazuje na {}, a Twoje IP to {} – zaktualizuj domenę (zmiana DNS może potrwać kilka minut).",
+                    a.join(", "),
+                    pubip.clone().unwrap_or_default()
+                ),
+                Some("domain"),
+            );
         } else {
-            add("dns", "ok", format!("Domena {name}"), format!("Wskazuje na {}{}.", a.join(", "), d["srv"]["port"].as_u64().map(|p| format!(" • SRV → port {p}")).unwrap_or_default()), None);
+            add(
+                "dns",
+                "ok",
+                format!("Domena {name}"),
+                format!("Wskazuje na {}{}.", a.join(", "), d["srv"]["port"].as_u64().map(|p| format!(" • SRV → port {p}")).unwrap_or_default()),
+                None,
+            );
         }
     }
     if let Some(addr) = tunnel.str_of("address").filter(|s| !s.is_empty()) {
@@ -721,7 +848,10 @@ pub async fn diagnose(env: &Env, port: u16, running: bool, domain: &Value, tunne
                 "internet",
                 if cgnat && has_tunnel { "warn" } else { "bad" },
                 "Test z internetu".into(),
-                format!("Serwer nie odpowiada pod {p}:{port}{}. Wynik może pochodzić z pamięci podręcznej (do 5 min).", if cgnat { " (CGNAT – użyj tunelu)" } else { " – sprawdź kroki powyżej" }),
+                format!(
+                    "Serwer nie odpowiada pod {p}:{port}{}. Wynik może pochodzić z pamięci podręcznej (do 5 min).",
+                    if cgnat { " (CGNAT – użyj tunelu)" } else { " – sprawdź kroki powyżej" }
+                ),
                 Some(if cgnat { "tunnel" } else { "upnp" }),
             );
         }

@@ -140,7 +140,9 @@ impl Discord {
                 let mut ready = false;
                 let mut buf: Vec<u8> = Vec::new();
                 let mut chunk = [0u8; 4096];
-                let push = |current: &Option<Value>| encode(OP_FRAME, &json!({ "cmd": "SET_ACTIVITY", "args": { "pid": std::process::id(), "activity": current }, "nonce": nonce() }));
+                let push = |current: &Option<Value>| {
+                    encode(OP_FRAME, &json!({ "cmd": "SET_ACTIVITY", "args": { "pid": std::process::id(), "activity": current }, "nonce": nonce() }))
+                };
                 'conn: loop {
                     tokio::select! {
                         n = sock.read(&mut chunk) => {

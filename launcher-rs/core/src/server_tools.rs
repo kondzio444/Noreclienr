@@ -53,7 +53,21 @@ pub fn restart_warnings(warn_minutes: i64) -> Vec<(i64, String)> {
     let mut out: Vec<(i64, String)> = [30, 15, 10, 5, 3, 2, 1]
         .into_iter()
         .filter(|m| *m <= warn_minutes)
-        .map(|m| (m * 60000, format!("Restart serwera za {m} {}", if m == 1 { "minutę" } else if m < 5 { "minuty" } else { "minut" })))
+        .map(|m| {
+            (
+                m * 60000,
+                format!(
+                    "Restart serwera za {m} {}",
+                    if m == 1 {
+                        "minutę"
+                    } else if m < 5 {
+                        "minuty"
+                    } else {
+                        "minut"
+                    }
+                ),
+            )
+        })
         .collect();
     if warn_minutes > 0 {
         out.push((10000, "Restart serwera za 10 sekund".into()));
@@ -125,24 +139,96 @@ pub fn is_ready_line(line: &str) -> bool {
 }
 
 const COMMON: &[(&str, &str)] = &[
-    ("help", ""), ("list", ""), ("say", "<wiadomość>"), ("tell", "<gracz> <wiadomość>"), ("msg", "<gracz> <wiadomość>"), ("me", "<akcja>"),
-    ("op", "<gracz>"), ("deop", "<gracz>"), ("kick", "<gracz> [powód]"), ("ban", "<gracz> [powód]"), ("ban-ip", "<ip|gracz>"), ("pardon", "<gracz>"), ("pardon-ip", "<ip>"), ("banlist", ""),
-    ("whitelist", "add|remove|on|off|list|reload"), ("gamemode", "survival|creative|adventure|spectator [gracz]"), ("defaultgamemode", "<tryb>"),
-    ("difficulty", "peaceful|easy|normal|hard"), ("time", "set|add|query day|night|noon|midnight"), ("weather", "clear|rain|thunder [czas]"),
-    ("tp", "<gracz> <cel>"), ("teleport", "<gracz> <cel>"), ("give", "<gracz> <przedmiot> [ilość]"), ("clear", "[gracz] [przedmiot]"), ("kill", "[cel]"),
-    ("effect", "give|clear <gracz> <efekt>"), ("enchant", "<gracz> <zaklęcie> [poziom]"), ("xp", "add|set|query <gracz> <ilość>"), ("experience", "add|set|query <gracz> <ilość>"),
-    ("gamerule", "<reguła> [wartość]"), ("seed", ""), ("setworldspawn", "[x y z]"), ("spawnpoint", "[gracz] [x y z]"), ("worldborder", "set|center|add|get"),
-    ("save-all", "[flush]"), ("save-on", ""), ("save-off", ""), ("stop", ""), ("reload", ""), ("locate", "structure|biome <nazwa>"),
-    ("summon", "<byt> [x y z]"), ("setblock", "<x y z> <blok>"), ("fill", "<od> <do> <blok>"), ("execute", "…"), ("scoreboard", "objectives|players …"),
-    ("team", "add|remove|join|leave …"), ("title", "<gracz> title|subtitle|actionbar <tekst>"), ("tellraw", "<gracz> <json>"), ("playsound", "<dźwięk> <źródło> <gracz>"),
-    ("particle", "<cząsteczka> [x y z]"), ("spreadplayers", "…"), ("forceload", "add|remove|query"), ("datapack", "list|enable|disable"), ("function", "<funkcja>"),
-    ("schedule", "function|clear …"), ("bossbar", "add|set|remove …"), ("attribute", "<cel> <atrybut> get|base …"), ("damage", "<cel> <ilość>"), ("ride", "<cel> mount|dismount"),
-    ("tick", "query|rate|freeze|unfreeze|step|sprint"), ("debug", "start|stop"), ("perf", "start|stop"), ("jfr", "start|stop"), ("publish", ""), ("transfer", "<host> [port] [gracz]"),
+    ("help", ""),
+    ("list", ""),
+    ("say", "<wiadomość>"),
+    ("tell", "<gracz> <wiadomość>"),
+    ("msg", "<gracz> <wiadomość>"),
+    ("me", "<akcja>"),
+    ("op", "<gracz>"),
+    ("deop", "<gracz>"),
+    ("kick", "<gracz> [powód]"),
+    ("ban", "<gracz> [powód]"),
+    ("ban-ip", "<ip|gracz>"),
+    ("pardon", "<gracz>"),
+    ("pardon-ip", "<ip>"),
+    ("banlist", ""),
+    ("whitelist", "add|remove|on|off|list|reload"),
+    ("gamemode", "survival|creative|adventure|spectator [gracz]"),
+    ("defaultgamemode", "<tryb>"),
+    ("difficulty", "peaceful|easy|normal|hard"),
+    ("time", "set|add|query day|night|noon|midnight"),
+    ("weather", "clear|rain|thunder [czas]"),
+    ("tp", "<gracz> <cel>"),
+    ("teleport", "<gracz> <cel>"),
+    ("give", "<gracz> <przedmiot> [ilość]"),
+    ("clear", "[gracz] [przedmiot]"),
+    ("kill", "[cel]"),
+    ("effect", "give|clear <gracz> <efekt>"),
+    ("enchant", "<gracz> <zaklęcie> [poziom]"),
+    ("xp", "add|set|query <gracz> <ilość>"),
+    ("experience", "add|set|query <gracz> <ilość>"),
+    ("gamerule", "<reguła> [wartość]"),
+    ("seed", ""),
+    ("setworldspawn", "[x y z]"),
+    ("spawnpoint", "[gracz] [x y z]"),
+    ("worldborder", "set|center|add|get"),
+    ("save-all", "[flush]"),
+    ("save-on", ""),
+    ("save-off", ""),
+    ("stop", ""),
+    ("reload", ""),
+    ("locate", "structure|biome <nazwa>"),
+    ("summon", "<byt> [x y z]"),
+    ("setblock", "<x y z> <blok>"),
+    ("fill", "<od> <do> <blok>"),
+    ("execute", "…"),
+    ("scoreboard", "objectives|players …"),
+    ("team", "add|remove|join|leave …"),
+    ("title", "<gracz> title|subtitle|actionbar <tekst>"),
+    ("tellraw", "<gracz> <json>"),
+    ("playsound", "<dźwięk> <źródło> <gracz>"),
+    ("particle", "<cząsteczka> [x y z]"),
+    ("spreadplayers", "…"),
+    ("forceload", "add|remove|query"),
+    ("datapack", "list|enable|disable"),
+    ("function", "<funkcja>"),
+    ("schedule", "function|clear …"),
+    ("bossbar", "add|set|remove …"),
+    ("attribute", "<cel> <atrybut> get|base …"),
+    ("damage", "<cel> <ilość>"),
+    ("ride", "<cel> mount|dismount"),
+    ("tick", "query|rate|freeze|unfreeze|step|sprint"),
+    ("debug", "start|stop"),
+    ("perf", "start|stop"),
+    ("jfr", "start|stop"),
+    ("publish", ""),
+    ("transfer", "<host> [port] [gracz]"),
 ];
-const PAPER: &[(&str, &str)] = &[("tps", ""), ("mspt", ""), ("plugins", ""), ("pl", ""), ("version", "[plugin]"), ("timings", "on|off|paste"), ("spark", "profiler|tps|health"), ("paper", "heap|dumpitem|entity"), ("restart", "")];
+const PAPER: &[(&str, &str)] = &[
+    ("tps", ""),
+    ("mspt", ""),
+    ("plugins", ""),
+    ("pl", ""),
+    ("version", "[plugin]"),
+    ("timings", "on|off|paste"),
+    ("spark", "profiler|tps|health"),
+    ("paper", "heap|dumpitem|entity"),
+    ("restart", ""),
+];
 const FORGE: &[(&str, &str)] = &[("forge", "tps|track|entity|generate"), ("neoforge", "tps|track|entity|generate"), ("spark", "profiler|tps|health")];
 const FABRIC: &[(&str, &str)] = &[("spark", "profiler|tps|health")];
-const PROXY: &[(&str, &str)] = &[("end", ""), ("shutdown", ""), ("velocity", "version|plugins|reload|dump"), ("server", "[serwer]"), ("glist", ""), ("send", "<gracz> <serwer>"), ("alert", "<wiadomość>"), ("find", "<gracz>"), ("greload", "")];
+const PROXY: &[(&str, &str)] = &[
+    ("end", ""),
+    ("shutdown", ""),
+    ("velocity", "version|plugins|reload|dump"),
+    ("server", "[serwer]"),
+    ("glist", ""),
+    ("send", "<gracz> <serwer>"),
+    ("alert", "<wiadomość>"),
+    ("find", "<gracz>"),
+    ("greload", ""),
+];
 
 fn arg_values(cmd: &str) -> Option<&'static [&'static str]> {
     const MODES: &[&str] = &["survival", "creative", "adventure", "spectator"];
@@ -157,9 +243,31 @@ fn arg_values(cmd: &str) -> Option<&'static [&'static str]> {
         "effect" => &["give", "clear"],
         "xp" => &["add", "set", "query"],
         "gamerule" => &[
-            "keepInventory", "doDaylightCycle", "doWeatherCycle", "doMobSpawning", "mobGriefing", "doFireTick", "playersSleepingPercentage", "randomTickSpeed", "showDeathMessages",
-            "announceAdvancements", "doImmediateRespawn", "naturalRegeneration", "spawnRadius", "doInsomnia", "doPatrolSpawning", "doTraderSpawning", "fallDamage", "fireDamage",
-            "drowningDamage", "commandBlockOutput", "sendCommandFeedback", "maxEntityCramming", "disableRaids", "forgiveDeadPlayers", "universalAnger",
+            "keepInventory",
+            "doDaylightCycle",
+            "doWeatherCycle",
+            "doMobSpawning",
+            "mobGriefing",
+            "doFireTick",
+            "playersSleepingPercentage",
+            "randomTickSpeed",
+            "showDeathMessages",
+            "announceAdvancements",
+            "doImmediateRespawn",
+            "naturalRegeneration",
+            "spawnRadius",
+            "doInsomnia",
+            "doPatrolSpawning",
+            "doTraderSpawning",
+            "fallDamage",
+            "fireDamage",
+            "drowningDamage",
+            "commandBlockOutput",
+            "sendCommandFeedback",
+            "maxEntityCramming",
+            "disableRaids",
+            "forgiveDeadPlayers",
+            "universalAnger",
         ],
         "time set" => &["day", "night", "noon", "midnight"],
         "time add" => &["1000", "6000", "12000"],
@@ -172,8 +280,34 @@ fn arg_values(cmd: &str) -> Option<&'static [&'static str]> {
 }
 
 const PLAYER_ARG: &[&str] = &[
-    "op", "deop", "kick", "ban", "pardon", "tell", "msg", "tp", "teleport", "give", "clear", "kill", "spawnpoint", "whitelist add", "whitelist remove", "gamemode survival",
-    "gamemode creative", "gamemode adventure", "gamemode spectator", "title", "tellraw", "send", "find", "effect give", "effect clear", "xp add", "xp set", "xp query",
+    "op",
+    "deop",
+    "kick",
+    "ban",
+    "pardon",
+    "tell",
+    "msg",
+    "tp",
+    "teleport",
+    "give",
+    "clear",
+    "kill",
+    "spawnpoint",
+    "whitelist add",
+    "whitelist remove",
+    "gamemode survival",
+    "gamemode creative",
+    "gamemode adventure",
+    "gamemode spectator",
+    "title",
+    "tellraw",
+    "send",
+    "find",
+    "effect give",
+    "effect clear",
+    "xp add",
+    "xp set",
+    "xp query",
 ];
 
 pub fn commands_for(t: &str) -> Vec<(&'static str, &'static str)> {
@@ -225,7 +359,10 @@ pub fn complete(input: &str, t: &str, players: &[String], history: &[String]) ->
         }
     }
     let first2 = head.iter().take(2).copied().collect::<Vec<_>>().join(" ").to_lowercase();
-    if PLAYER_ARG.contains(&cmd.as_str()) || (head.len() >= 2 && PLAYER_ARG.contains(&first2.as_str())) || (PLAYER_ARG.contains(&head[0].to_lowercase().as_str()) && head.len() == 1) {
+    if PLAYER_ARG.contains(&cmd.as_str())
+        || (head.len() >= 2 && PLAYER_ARG.contains(&first2.as_str()))
+        || (PLAYER_ARG.contains(&head[0].to_lowercase().as_str()) && head.len() == 1)
+    {
         for p in players {
             if p.to_lowercase().starts_with(&last) {
                 add(&mut out, p, "gracz");
@@ -252,7 +389,10 @@ mod tests {
         assert_eq!(ms_until(now, "04:00"), Some(10 * 60000));
         assert_eq!(ms_until(now, "03:50"), Some(24 * 3600000));
         assert_eq!(ms_until(now, "25:00"), None);
-        assert_eq!(normalize_schedule(&json!({ "restartAt": "4:05", "backupEveryH": "500", "warnMinutes": 99 })), json!({ "restartAt": "04:05", "backupEveryH": 168, "warnMinutes": 30 }));
+        assert_eq!(
+            normalize_schedule(&json!({ "restartAt": "4:05", "backupEveryH": "500", "warnMinutes": 99 })),
+            json!({ "restartAt": "04:05", "backupEveryH": 168, "warnMinutes": 30 })
+        );
         assert_eq!(normalize_schedule(&json!({ "restartAt": "x" })), json!({ "restartAt": "", "backupEveryH": 0, "warnMinutes": 5 }));
         assert_eq!(restart_warnings(5).iter().map(|w| w.0).collect::<Vec<_>>(), vec![300000, 180000, 120000, 60000, 10000]);
         assert_eq!(parse_tps("[12:00:00 INFO]: §6TPS from last 1m, 5m, 15m: §a*20.0, §a19.97, §a19.99"), Some(json!({ "tps": 20 })));

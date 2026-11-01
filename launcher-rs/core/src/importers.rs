@@ -96,7 +96,11 @@ pub fn detect(dir: &Path) -> Option<Value> {
         let m = &mr["metadata"];
         if let Some(gv) = m.str_of("game_version") {
             let loader = m.str_of("loader").filter(|l| ["fabric", "quilt", "forge", "neoforge"].contains(l)).unwrap_or("vanilla");
-            let lv = if loader == "vanilla" { Value::Null } else { m["loader_version"].get("id").cloned().or_else(|| m.get("loader_version").filter(|v| v.is_string()).cloned()).unwrap_or(Value::Null) };
+            let lv = if loader == "vanilla" {
+                Value::Null
+            } else {
+                m["loader_version"].get("id").cloned().or_else(|| m.get("loader_version").filter(|v| v.is_string()).cloned()).unwrap_or(Value::Null)
+            };
             return Some(json!({
                 "type": "modrinth", "label": "Modrinth App", "name": m.str_of("name").map(String::from).unwrap_or_else(|| name_of(dir)), "mcVersion": gv, "loader": loader,
                 "loaderVersion": lv, "gameDir": dir.to_string_lossy(), "memoryMb": mr.pointer("/memory/maximum").cloned().unwrap_or(json!(0)), "jvmArgs": "",
@@ -106,7 +110,23 @@ pub fn detect(dir: &Path) -> Option<Value> {
     None
 }
 
-const SKIP: [&str; 15] = ["logs", "crash-reports", "natives", ".cache", ".fabric", "webcache", "webcache2", "downloads", ".mixin.out", "instance.cfg", "mmc-pack.json", "minecraftinstance.json", "profile.json", "patches", "libraries"];
+const SKIP: [&str; 15] = [
+    "logs",
+    "crash-reports",
+    "natives",
+    ".cache",
+    ".fabric",
+    "webcache",
+    "webcache2",
+    "downloads",
+    ".mixin.out",
+    "instance.cfg",
+    "mmc-pack.json",
+    "minecraftinstance.json",
+    "profile.json",
+    "patches",
+    "libraries",
+];
 
 /// Copies the game folder of a detected instance into dest (nothing already there is overwritten).
 pub async fn copy_game(found: &Value, dest: &Path, progress: &(dyn Fn(Value) + Send + Sync)) -> crate::Result<()> {
@@ -135,19 +155,31 @@ mod tests {
         let prism = d.path().join("prism");
         std::fs::create_dir_all(prism.join(".minecraft/mods")).unwrap();
         std::fs::write(prism.join("instance.cfg"), "[General]\nname=Moja paczka\nOverrideMemory=true\nMaxMemAlloc=6144\n").unwrap();
-        std::fs::write(prism.join("mmc-pack.json"), r#"{"components":[{"uid":"net.minecraft","version":"1.20.1"},{"uid":"net.minecraftforge","version":"47.2.0"}]}"#).unwrap();
+        std::fs::write(
+            prism.join("mmc-pack.json"),
+            r#"{"components":[{"uid":"net.minecraft","version":"1.20.1"},{"uid":"net.minecraftforge","version":"47.2.0"}]}"#,
+        )
+        .unwrap();
         std::fs::write(prism.join(".minecraft/mods/a.jar"), "a").unwrap();
         std::fs::write(prism.join(".minecraft/icon.png"), "i").unwrap();
         let p = detect(&prism).unwrap();
-        assert_eq!(json!([p["type"], p["name"], p["mcVersion"], p["loader"], p["loaderVersion"], p["memoryMb"]]), json!(["prism", "Moja paczka", "1.20.1", "forge", "47.2.0", 6144]));
+        assert_eq!(
+            json!([p["type"], p["name"], p["mcVersion"], p["loader"], p["loaderVersion"], p["memoryMb"]]),
+            json!(["prism", "Moja paczka", "1.20.1", "forge", "47.2.0", 6144])
+        );
         let cf = d.path().join("cf");
         std::fs::create_dir_all(&cf).unwrap();
-        std::fs::write(cf.join("minecraftinstance.json"), r#"{"name":"ATM","gameVersion":"1.21.1","baseModLoader":{"name":"neoforge-21.1.80","minecraftVersion":"1.21.1"},"allocatedMemory":8192}"#).unwrap();
+        std::fs::write(
+            cf.join("minecraftinstance.json"),
+            r#"{"name":"ATM","gameVersion":"1.21.1","baseModLoader":{"name":"neoforge-21.1.80","minecraftVersion":"1.21.1"},"allocatedMemory":8192}"#,
+        )
+        .unwrap();
         let c = detect(&cf).unwrap();
         assert_eq!(json!([c["type"], c["loader"], c["loaderVersion"], c["memoryMb"]]), json!(["curseforge", "neoforge", "21.1.80", 8192]));
         let mr = d.path().join("mr");
         std::fs::create_dir_all(&mr).unwrap();
-        std::fs::write(mr.join("profile.json"), r#"{"metadata":{"name":"Fab","game_version":"1.21.1","loader":"fabric","loader_version":{"id":"0.16.9"}}}"#).unwrap();
+        std::fs::write(mr.join("profile.json"), r#"{"metadata":{"name":"Fab","game_version":"1.21.1","loader":"fabric","loader_version":{"id":"0.16.9"}}}"#)
+            .unwrap();
         let m = detect(&mr).unwrap();
         assert_eq!(json!([m["type"], m["loader"], m["loaderVersion"]]), json!(["modrinth", "fabric", "0.16.9"]));
         assert!(detect(d.path()).is_none());

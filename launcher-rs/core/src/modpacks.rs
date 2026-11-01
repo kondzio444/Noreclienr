@@ -52,7 +52,17 @@ fn first_download(f: &Value) -> Option<&str> {
 
 /// Files of modrinth.index.json the client needs.
 pub fn client_files(index: &Value) -> Vec<Value> {
-    index["files"].as_array().into_iter().flatten().filter(|f| f.str_of("path").is_some_and(|p| !p.is_empty()) && first_download(f).is_some() && f.pointer("/env/client").and_then(Value::as_str) != Some("unsupported")).cloned().collect()
+    index["files"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|f| {
+            f.str_of("path").is_some_and(|p| !p.is_empty())
+                && first_download(f).is_some()
+                && f.pointer("/env/client").and_then(Value::as_str) != Some("unsupported")
+        })
+        .cloned()
+        .collect()
 }
 
 /// Entries under overrides/ and client-overrides/ (the latter wins): (rel, entry name).
@@ -116,8 +126,11 @@ pub fn override_action(rel: &str, exists: bool, current: Option<&str>, old_hash:
 /// Downloads pack files; blocked CurseForge files are tried once through the CDN and returned for
 /// the manual-download prompt when that fails.
 pub async fn download_tasks(env: &Env, tasks: &[PackTask], concurrency: usize, progress: Progress<'_>) -> Result<Vec<Value>> {
-    let normal: Vec<net::Task> =
-        tasks.iter().filter(|t| t.blocked.is_none()).map(|t| net::Task { url: t.url.clone(), dest: t.dest.clone(), sha1: t.sha1.clone(), size: t.size, name: t.name.clone() }).collect();
+    let normal: Vec<net::Task> = tasks
+        .iter()
+        .filter(|t| t.blocked.is_none())
+        .map(|t| net::Task { url: t.url.clone(), dest: t.dest.clone(), sha1: t.sha1.clone(), size: t.size, name: t.name.clone() })
+        .collect();
     let last = Mutex::new(0i64);
     env.net
         .download_all(
@@ -173,7 +186,9 @@ impl Ctx<'_> {
     /// Creates an instance from a .mrpack (or CurseForge .zip) file.
     pub async fn install_file(&self, file: &Path, meta: Value, progress: Progress<'_>, concurrency: usize) -> Result<Value> {
         let f = file.to_path_buf();
-        let is_cf = util::blocking(move || Ok(curseforge::read_manifest(&f).is_some() && !Zip::open(&f).map(|z| z.has("modrinth.index.json")).unwrap_or(false))).await?;
+        let is_cf =
+            util::blocking(move || Ok(curseforge::read_manifest(&f).is_some() && !Zip::open(&f).map(|z| z.has("modrinth.index.json")).unwrap_or(false)))
+                .await?;
         if is_cf {
             return self.install_curseforge(file, meta, progress, concurrency).await;
         }
@@ -187,7 +202,9 @@ impl Ctx<'_> {
         let mc = deps.str_of("minecraft").filter(|s| !s.is_empty()).ok_or_else(|| msg("Paczka nie podaje wersji Minecraft."))?.to_string();
         let (loader, lv) = loader_of(&deps);
         let title = meta.str_of("title").filter(|s| !s.is_empty()).map(String::from).or_else(|| index.str_of("name").map(String::from));
-        let inst = self.insts.create(&json!({ "name": title.clone().unwrap_or_else(|| "Modpack".into()), "mcVersion": mc, "loader": loader, "loaderVersion": lv, "modpack": "pack" }))?;
+        let inst = self.insts.create(
+            &json!({ "name": title.clone().unwrap_or_else(|| "Modpack".into()), "mcVersion": mc, "loader": loader, "loaderVersion": lv, "modpack": "pack" }),
+        )?;
         let id = inst.string_or("id", "");
         let mut pack = json!({
             "projectId": meta.get("projectId").cloned().filter(truthy).unwrap_or(Value::Null), "versionId": meta.get("versionId").cloned().filter(truthy).unwrap_or(Value::Null),
@@ -274,7 +291,11 @@ impl Ctx<'_> {
             Some(v) => self.env.net.get_json(&format!("{API}/version/{}", urlencoding::encode(v))).await?,
             None => {
                 let list: Vec<Value> = self.env.net.get_json(&format!("{API}/project/{}/version", urlencoding::encode(project_id))).await?;
-                list.iter().find(|v| v.str_of("version_type") == Some("release")).or(list.first()).cloned().ok_or_else(|| msg("Ta paczka nie ma jeszcze żadnej wersji."))?
+                list.iter()
+                    .find(|v| v.str_of("version_type") == Some("release"))
+                    .or(list.first())
+                    .cloned()
+                    .ok_or_else(|| msg("Ta paczka nie ma jeszcze żadnej wersji."))?
             }
         };
         let f = mrpack_file(&version)?;
@@ -292,7 +313,10 @@ impl Ctx<'_> {
 
     async fn pack_versions(&self, project_id: &str) -> Result<Vec<Value>> {
         let list: Vec<Value> = self.env.net.get_json(&format!("{API}/project/{}/version", urlencoding::encode(project_id))).await?;
-        let mut l: Vec<Value> = list.into_iter().filter(|v| v["files"].as_array().is_some_and(|f| f.iter().any(|x| x.str_of("filename").is_some_and(|n| n.ends_with(".mrpack"))))).collect();
+        let mut l: Vec<Value> = list
+            .into_iter()
+            .filter(|v| v["files"].as_array().is_some_and(|f| f.iter().any(|x| x.str_of("filename").is_some_and(|n| n.ends_with(".mrpack")))))
+            .collect();
         l.sort_by_key(|v| std::cmp::Reverse(util::parse_date(v.str_of("date_published").unwrap_or(""))));
         Ok(l)
     }
@@ -404,7 +428,15 @@ impl Ctx<'_> {
         r
     }
 
-    async fn update_inner(&self, inst: &Value, version_id: &str, progress: Progress<'_>, backup_worlds: bool, concurrency: usize, temp: &mut Vec<PathBuf>) -> Result<Value> {
+    async fn update_inner(
+        &self,
+        inst: &Value,
+        version_id: &str,
+        progress: Progress<'_>,
+        backup_worlds: bool,
+        concurrency: usize,
+        temp: &mut Vec<PathBuf>,
+    ) -> Result<Value> {
         let root = PathBuf::from(inst.string_or("gameDir", ""));
         let id = inst.string_or("id", "");
         let p = inst["pack"].clone();
@@ -432,7 +464,8 @@ impl Ctx<'_> {
                 return Err(msg("Paczka nie podaje wersji Minecraft."));
             }
             let old = self.old_record(inst, progress, temp).await;
-            let meta = json!({ "versionId": version["id"], "version": version["version_number"], "type": version["version_type"], "date": version["date_published"] });
+            let meta =
+                json!({ "versionId": version["id"], "version": version["version_number"], "type": version["version_type"], "date": version["date_published"] });
             (zip, index, old, meta)
         };
         let deps = index["dependencies"].clone();
@@ -492,7 +525,13 @@ fn truncate(s: &str, n: usize) -> String {
 pub fn mrpack_file(version: &Value) -> Result<Value> {
     let files = version["files"].as_array().cloned().unwrap_or_default();
     let is_pack = |f: &&Value| f.str_of("filename").is_some_and(|n| n.ends_with(".mrpack"));
-    files.iter().filter(is_pack).find(|f| f.truthy_of("primary")).or(files.iter().find(is_pack)).cloned().ok_or_else(|| msg("Ta wersja nie zawiera pliku .mrpack."))
+    files
+        .iter()
+        .filter(is_pack)
+        .find(|f| f.truthy_of("primary"))
+        .or(files.iter().find(is_pack))
+        .cloned()
+        .ok_or_else(|| msg("Ta wersja nie zawiera pliku .mrpack."))
 }
 
 fn mc_of(v: &Value, inst: &Value) -> Value {
@@ -723,7 +762,8 @@ async fn swap_inner(
             Some(_) => Some(net::sha1_file(&dest).await?),
             None => None,
         };
-        let action = override_action(&rel, meta.is_some(), current.as_deref(), old_over.get(&rel).and_then(Value::as_str), new_over.get(&rel).and_then(Value::as_str));
+        let action =
+            override_action(&rel, meta.is_some(), current.as_deref(), old_over.get(&rel).and_then(Value::as_str), new_over.get(&rel).and_then(Value::as_str));
         if action == "keep" {
             kept.push(rel.clone());
         }
@@ -763,7 +803,9 @@ async fn swap_inner(
         std::fs::write(backup.join("nore-backup.json"), crate::config_edit::pretty(&info, "  "))?;
         modrinth::prune_backups(root, |n| n.ends_with("-pack"), 3).await;
     }
-    Ok(json!({ "added": created_n, "removed": removed, "replaced": replaced, "kept": kept, "backup": if has_backup { json!(backup.to_string_lossy()) } else { Value::Null }, "blocked": blocked }))
+    Ok(
+        json!({ "added": created_n, "removed": removed, "replaced": replaced, "kept": kept, "backup": if has_backup { json!(backup.to_string_lossy()) } else { Value::Null }, "blocked": blocked }),
+    )
 }
 
 /// Looks for blocked files (`{ file, rel, sha1 }`) in the folders – by name, also "name (1).jar",
@@ -855,7 +897,9 @@ pub fn inspect(file: &Path) -> Result<Value> {
     let deps = &index["dependencies"];
     let (loader, lv) = loader_of(deps);
     let _ = HashMap::<(), ()>::new();
-    Ok(json!({ "name": index["name"], "version": index["versionId"], "mcVersion": deps["minecraft"], "loader": loader, "loaderVersion": lv, "files": index["files"].as_array().map_or(0, Vec::len) }))
+    Ok(
+        json!({ "name": index["name"], "version": index["versionId"], "mcVersion": deps["minecraft"], "loader": loader, "loaderVersion": lv, "files": index["files"].as_array().map_or(0, Vec::len) }),
+    )
 }
 
 #[cfg(test)]
@@ -879,12 +923,15 @@ mod tests {
     fn record() {
         let d = tempfile::tempdir().unwrap();
         let f = d.path().join("p.mrpack");
-        util::write_zip(&f, vec![
-            ("modrinth.index.json".into(), b"{}".to_vec()),
-            ("overrides/config/a.toml".into(), b"a".to_vec()),
-            ("overrides/options.txt".into(), b"o".to_vec()),
-            ("client-overrides/options.txt".into(), b"c".to_vec()),
-        ])
+        util::write_zip(
+            &f,
+            vec![
+                ("modrinth.index.json".into(), b"{}".to_vec()),
+                ("overrides/config/a.toml".into(), b"a".to_vec()),
+                ("overrides/options.txt".into(), b"o".to_vec()),
+                ("client-overrides/options.txt".into(), b"c".to_vec()),
+            ],
+        )
         .unwrap();
         let mut zip = Zip::open(&f).unwrap();
         let index = json!({ "files": [
@@ -916,7 +963,7 @@ mod tests {
             json!({ "file": "c.jar", "rel": "mods/c.jar", "sha1": sha1_hex(b"cee") }),
             json!({ "file": "x.jar", "rel": "../x.jar", "sha1": "0" }),
         ];
-        let (found, rest) = find_downloaded(&root, &list, &[dl.clone()]).await.unwrap();
+        let (found, rest) = find_downloaded(&root, &list, std::slice::from_ref(&dl)).await.unwrap();
         assert_eq!(found, vec![json!("a.jar"), json!("b.zip")]);
         assert_eq!(rest.len(), 1);
         assert_eq!(rest[0]["file"], "c.jar");

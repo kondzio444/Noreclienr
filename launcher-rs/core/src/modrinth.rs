@@ -140,8 +140,10 @@ fn truncate(s: &str, n: usize) -> String {
 /// Everything the details view needs: project, versions, members and dependencies.
 pub async fn details(env: &Env, id: &str) -> Result<Value> {
     let e = enc(id);
-    let (u1, u2, u3, u4) = (format!("{API}/project/{e}"), format!("{API}/project/{e}/version"), format!("{API}/project/{e}/members"), format!("{API}/project/{e}/dependencies"));
-    let (proj, vers, members, deps) = tokio::join!(env.net.get_json::<Value>(&u1), env.net.get_json::<Value>(&u2), env.net.get_json::<Value>(&u3), env.net.get_json::<Value>(&u4));
+    let (u1, u2, u3, u4) =
+        (format!("{API}/project/{e}"), format!("{API}/project/{e}/version"), format!("{API}/project/{e}/members"), format!("{API}/project/{e}/dependencies"));
+    let (proj, vers, members, deps) =
+        tokio::join!(env.net.get_json::<Value>(&u1), env.net.get_json::<Value>(&u2), env.net.get_json::<Value>(&u3), env.net.get_json::<Value>(&u4));
     let proj = proj?;
     let vers = vers.unwrap_or(json!([]));
     let members = members.unwrap_or(json!([]));
@@ -220,7 +222,13 @@ fn check_file_name(name: &str) -> Result<()> {
 
 /// Installs a project (and, for mods, its required dependencies) into the target folder.
 /// Returns the installed file names.
-pub fn install<'a>(env: &'a Env, req: InstallReq, on_status: StatusFn<'a>, seen: &'a mut HashSet<String>, ctx: &'a mut HaveCtx) -> BoxFuture<'a, Result<Vec<String>>> {
+pub fn install<'a>(
+    env: &'a Env,
+    req: InstallReq,
+    on_status: StatusFn<'a>,
+    seen: &'a mut HashSet<String>,
+    ctx: &'a mut HaveCtx,
+) -> BoxFuture<'a, Result<Vec<String>>> {
     Box::pin(async move {
         if !seen.insert(req.project_id.clone()) {
             return Ok(vec![]);
@@ -246,7 +254,13 @@ pub fn install<'a>(env: &'a Env, req: InstallReq, on_status: StatusFn<'a>, seen:
         tokio::fs::create_dir_all(&req.target_dir).await?;
         on_status(format!("Pobieranie {name}"));
         env.net
-            .download(file.str_of("url").unwrap_or_default(), &req.target_dir.join(&name), file.pointer("/hashes/sha1").and_then(Value::as_str), file.get("size").and_then(Value::as_u64), &|_| {})
+            .download(
+                file.str_of("url").unwrap_or_default(),
+                &req.target_dir.join(&name),
+                file.pointer("/hashes/sha1").and_then(Value::as_str),
+                file.get("size").and_then(Value::as_u64),
+                &|_| {},
+            )
             .await?;
         let mut installed = vec![name];
         if req.kind == "mod" {

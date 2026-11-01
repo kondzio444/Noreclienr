@@ -496,7 +496,10 @@ impl App {
 
     /// Discord Rich Presence with the application id from the settings.
     fn apply_discord(&self) {
-        let id = self.store.read(|d| d.pointer("/settings/discordAppId").and_then(Value::as_str).filter(|s| !s.is_empty()).map(String::from)).unwrap_or_else(|| store::DISCORD_APP_ID.into());
+        let id = self
+            .store
+            .read(|d| d.pointer("/settings/discordAppId").and_then(Value::as_str).filter(|s| !s.is_empty()).map(String::from))
+            .unwrap_or_else(|| store::DISCORD_APP_ID.into());
         self.discord.get_or_init(crate::discord::Discord::start).set_client_id(&id);
     }
 
@@ -906,7 +909,7 @@ impl App {
                 return Err(match status_of(other) {
                     Some(_) => Error::Pending(other.to_string()),
                     None => msg(format!("Nieznany kanał: {other}")),
-                })
+                });
             }
         })
     }
@@ -922,7 +925,10 @@ impl App {
                 "selectedInstance": d["selectedInstance"],
             })
         });
-        assign(&mut s, &json!({ "instances": self.instances().list(), "running": running, "noreVersions": self.mods.versions(), "servers": self.servers_list() }));
+        assign(
+            &mut s,
+            &json!({ "instances": self.instances().list(), "running": running, "noreVersions": self.mods.versions(), "servers": self.servers_list() }),
+        );
         s
     }
 
@@ -1287,8 +1293,11 @@ impl App {
                 };
                 if !ups.is_empty() {
                     modrinth::apply_updates(&self.env, &mods_dir, &ups, Some(&game_dir)).await?;
-                    crate::modpacks::remap_pack_files(&self.instances(), &inst, &mods_dir, &ups);
-                    self.log(format!("[Launcher] Zaktualizowano mody: {}", ups.iter().map(|u| u.string_or("newFile", "")).collect::<Vec<_>>().join(", ")), "out");
+                    crate::modpacks::remap_pack_files(&self.instances(), inst, &mods_dir, &ups);
+                    self.log(
+                        format!("[Launcher] Zaktualizowano mody: {}", ups.iter().map(|u| u.string_or("newFile", "")).collect::<Vec<_>>().join(", ")),
+                        "out",
+                    );
                 }
                 Ok(())
             }
@@ -1484,7 +1493,9 @@ impl App {
         if inst.str_of("modpack") == Some("nore") {
             self.discord_activity(None);
         } else {
-            self.discord_activity(Some(&json!({ "details": format!("Gra w Minecraft {}", inst.string_or("mcVersion", "")), "state": inst["name"], "start": started / 1000 })));
+            self.discord_activity(Some(
+                &json!({ "details": format!("Gra w Minecraft {}", inst.string_or("mcVersion", "")), "state": inst["name"], "start": started / 1000 }),
+            ));
         }
         self.instances().update(&id, &json!({ "lastPlayed": now_ms() }))?;
         self.emit("game:state", json!({ "running": id, "phase": "starting" }));
@@ -1639,7 +1650,20 @@ mod tests {
         assert_eq!(app.invoke("servers:list", vec![]).await.unwrap(), json!([]));
         assert_eq!(app.invoke("servers:start", vec![json!("x")]).await.unwrap_err().to_string(), "Nie znaleziono serwera.");
         // offline channels answer without "pending" or "unknown", whatever the arguments
-        let network = ["content:", "curseforge:setKey", "modpacks:", "servers:netInfo", "servers:diagnose", "servers:dnsRecords", "servers:tunnelLink", "servers:upnp", "doctor:check", "perf:", "mods:changelog", "mods:identify"];
+        let network = [
+            "content:",
+            "curseforge:setKey",
+            "modpacks:",
+            "servers:netInfo",
+            "servers:diagnose",
+            "servers:dnsRecords",
+            "servers:tunnelLink",
+            "servers:upnp",
+            "doctor:check",
+            "perf:",
+            "mods:changelog",
+            "mods:identify",
+        ];
         for (ch, _) in CHANNELS {
             if ch.starts_with("versions:")
                 || ch.starts_with("loaders:")
@@ -1733,7 +1757,13 @@ mod tests {
         let st: Value = c.get(url("/v1/state")).header("x-nore-token", token).send().await.unwrap().json().await.unwrap();
         assert_eq!(st["me"]["name"], "Gracz");
         assert_eq!(st["contacts"], json!([]));
-        let r = c.post(url("/v1/contacts/add")).header("x-nore-token", token).json(&json!({ "hex": "0123456789abcdef0123", "name": "Kumpel" })).send().await.unwrap();
+        let r = c
+            .post(url("/v1/contacts/add"))
+            .header("x-nore-token", token)
+            .json(&json!({ "hex": "0123456789abcdef0123", "name": "Kumpel" }))
+            .send()
+            .await
+            .unwrap();
         assert_eq!(r.status(), 200);
         assert_eq!(r.json::<Value>().await.unwrap()["contact"]["name"], "Kumpel");
         let r = c.post(url("/v1/send")).header("x-nore-token", token).json(&json!({ "hex": "0123456789abcdef0123", "text": "  hej  " })).send().await.unwrap();

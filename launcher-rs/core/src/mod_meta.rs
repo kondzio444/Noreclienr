@@ -175,8 +175,13 @@ pub fn parse_meta(read: &mut dyn FnMut(&str) -> Option<String>) -> Option<Value>
         optional.extend(str_list(&j["suggests"]));
         let mut breaks = str_list(&j["breaks"]);
         breaks.extend(str_list(&j["conflicts"]));
-        let authors: Vec<String> = as_list(&j["authors"]).iter().filter_map(|a| a.as_str().map(String::from).or_else(|| a.str_of("name").map(String::from))).filter(|a| !a.is_empty()).collect();
-        let provides: Vec<String> = as_list(&j["provides"]).iter().filter_map(|p| p.as_str().map(String::from).or_else(|| p.str_of("id").map(String::from))).collect();
+        let authors: Vec<String> = as_list(&j["authors"])
+            .iter()
+            .filter_map(|a| a.as_str().map(String::from).or_else(|| a.str_of("name").map(String::from)))
+            .filter(|a| !a.is_empty())
+            .collect();
+        let provides: Vec<String> =
+            as_list(&j["provides"]).iter().filter_map(|p| p.as_str().map(String::from).or_else(|| p.str_of("id").map(String::from))).collect();
         return Some(json!({
             "kind": "mod", "loader": "fabric", "id": j["id"], "name": j.get("name").filter(|v| v.as_str().is_some_and(|x| !x.is_empty())).unwrap_or(&j["id"]),
             "version": s(&j["version"]), "side": side(j.str_of("environment").unwrap_or("*")),
@@ -186,7 +191,8 @@ pub fn parse_meta(read: &mut dyn FnMut(&str) -> Option<String>) -> Option<Value>
     }
     if let Some(j) = read("quilt.mod.json").and_then(|t| serde_json::from_str::<Value>(&t).ok()) {
         let q = &j["quilt_loader"];
-        let deps: Vec<Value> = q["depends"].as_array().cloned().unwrap_or_default().into_iter().map(|d| if d.is_string() { json!({ "id": d }) } else { d }).collect();
+        let deps: Vec<Value> =
+            q["depends"].as_array().cloned().unwrap_or_default().into_iter().map(|d| if d.is_string() { json!({ "id": d }) } else { d }).collect();
         let id_of = |d: &Value| d.as_str().map(String::from).or_else(|| d.str_of("id").map(String::from));
         return Some(json!({
             "kind": "mod", "loader": "quilt", "id": q["id"], "name": q.pointer("/metadata/name").cloned().filter(|v| !v.is_null()).unwrap_or(q["id"].clone()), "version": s(&q["version"]),
@@ -219,7 +225,11 @@ pub fn parse_meta(read: &mut dyn FnMut(&str) -> Option<String>) -> Option<Value>
             }
             let v = &t.values;
             let Some(dep) = v.get("modId").and_then(Value::as_str).filter(|x| !x.is_empty()) else { continue };
-            let ty = v.get("type").map(s).unwrap_or_else(|| if v.get("mandatory") == Some(&json!(false)) { "optional".into() } else { "required".into() }).to_lowercase();
+            let ty = v
+                .get("type")
+                .map(s)
+                .unwrap_or_else(|| if v.get("mandatory") == Some(&json!(false)) { "optional".into() } else { "required".into() })
+                .to_lowercase();
             let sd = v.get("side").map(|x| s(x).to_uppercase()).unwrap_or_default();
             if sd == "CLIENT" {
                 client_deps += 1;
@@ -378,7 +388,8 @@ pub fn analyze(mods: &[ModFile], server: bool, loader: Option<&str>) -> (Map<Str
             || (has_api && (n.starts_with("fabric-") || n == "fabric"))
             || (qsl && (n.starts_with("quilt_") || n.starts_with("fabric-")))
     };
-    let mut out: HashMap<String, (Vec<String>, Vec<Value>, Vec<String>)> = mods.iter().map(|m| (m.file.clone(), (vec![], vec![], vec![]))).collect();
+    type Links = (Vec<String>, Vec<Value>, Vec<String>);
+    let mut out: HashMap<String, Links> = mods.iter().map(|m| (m.file.clone(), (vec![], vec![], vec![]))).collect();
     let mut warnings = Vec::new();
     for m in mods.iter().filter(|m| m.enabled) {
         let Some(meta) = &m.meta else { continue };
@@ -466,12 +477,32 @@ mod tests {
         assert_eq!(fab["depends"], json!(["minecraft", "fabric-api"]));
         assert_eq!(fab["breaks"], json!(["optifabric"]));
         let toml = [
-            "modLoader=\"javafml\"", "loaderVersion=\"[47,)\"", "[[mods]]", "modId=\"create\"", "version=\"${file.jarVersion}\"", "displayName=\"Create\"",
-            "[[dependencies.create]]", "modId=\"forge\"", "mandatory=true", "side=\"BOTH\"", "[[dependencies.create]]", "modId=\"flywheel\"", "mandatory=true", "side=\"BOTH\"",
-            "[[dependencies.create]]", "modId=\"jei\"", "type=\"optional\"", "side=\"CLIENT\"", "[[dependencies.create]]", "modId=\"badmod\"", "type=\"incompatible\"",
+            "modLoader=\"javafml\"",
+            "loaderVersion=\"[47,)\"",
+            "[[mods]]",
+            "modId=\"create\"",
+            "version=\"${file.jarVersion}\"",
+            "displayName=\"Create\"",
+            "[[dependencies.create]]",
+            "modId=\"forge\"",
+            "mandatory=true",
+            "side=\"BOTH\"",
+            "[[dependencies.create]]",
+            "modId=\"flywheel\"",
+            "mandatory=true",
+            "side=\"BOTH\"",
+            "[[dependencies.create]]",
+            "modId=\"jei\"",
+            "type=\"optional\"",
+            "side=\"CLIENT\"",
+            "[[dependencies.create]]",
+            "modId=\"badmod\"",
+            "type=\"incompatible\"",
         ]
         .join("\n");
-        let forge = parse_meta(&mut reader(json!({ "META-INF/mods.toml": toml, "META-INF/MANIFEST.MF": "Manifest-Version: 1.0\nImplementation-Version: 0.5.1f\n" }))).unwrap();
+        let forge =
+            parse_meta(&mut reader(json!({ "META-INF/mods.toml": toml, "META-INF/MANIFEST.MF": "Manifest-Version: 1.0\nImplementation-Version: 0.5.1f\n" })))
+                .unwrap();
         assert_eq!(forge["id"], "create");
         assert_eq!(forge["version"], "0.5.1f");
         assert_eq!(forge["depends"], json!(["forge", "flywheel"]));
@@ -479,8 +510,14 @@ mod tests {
         assert_eq!(forge["breaks"], json!(["badmod"]));
         let neo = parse_meta(&mut reader(json!({ "META-INF/neoforge.mods.toml": "[[mods]]\nmodId=\"x\"\nversion=\"1\"\n" }))).unwrap();
         assert_eq!(neo["loader"], "neoforge");
-        let pl = parse_meta(&mut reader(json!({ "plugin.yml": "name: Essentials\nversion: 2.20\ndepend: [Vault]\nsoftdepend:\n  - LuckPerms\n  - WorldGuard\nauthor: md_5\n" }))).unwrap();
-        assert_eq!(json!([pl["kind"], pl["id"], pl["version"], pl["depends"], pl["optional"]]), json!(["plugin", "Essentials", "2.20", ["Vault"], ["LuckPerms", "WorldGuard"]]));
+        let pl = parse_meta(&mut reader(
+            json!({ "plugin.yml": "name: Essentials\nversion: 2.20\ndepend: [Vault]\nsoftdepend:\n  - LuckPerms\n  - WorldGuard\nauthor: md_5\n" }),
+        ))
+        .unwrap();
+        assert_eq!(
+            json!([pl["kind"], pl["id"], pl["version"], pl["depends"], pl["optional"]]),
+            json!(["plugin", "Essentials", "2.20", ["Vault"], ["LuckPerms", "WorldGuard"]])
+        );
         let pp = parse_meta(&mut reader(json!({ "paper-plugin.yml": "name: Shop\nversion: 1\ndependencies:\n  server:\n    Vault:\n      load: BEFORE\n      required: true\n    PlaceholderAPI:\n      required: false\n" }))).unwrap();
         assert_eq!(json!([pp["depends"], pp["optional"]]), json!([["Vault"], ["PlaceholderAPI"]]));
         assert!(parse_meta(&mut reader(json!({}))).is_none());

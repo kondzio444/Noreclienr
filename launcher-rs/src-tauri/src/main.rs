@@ -165,7 +165,6 @@ fn allow_navigation(handle: &AppHandle, url: &tauri::Url) -> bool {
     own
 }
 
-
 /// The launcher window (after the splash).
 fn open_main(handle: &AppHandle) -> tauri::Result<()> {
     MAIN_OPENED.store(true, std::sync::atomic::Ordering::SeqCst);

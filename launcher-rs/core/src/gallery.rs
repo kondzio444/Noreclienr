@@ -61,7 +61,9 @@ pub async fn list(instances: Vec<Value>, limit: usize) -> Value {
 
 pub async fn full_image(p: &Path) -> Value {
     let p = p.to_path_buf();
-    tokio::task::spawn_blocking(move || image::open(&p).ok().and_then(|i| png_data_url(&i)).map(Value::String).unwrap_or(Value::Null)).await.unwrap_or(Value::Null)
+    tokio::task::spawn_blocking(move || image::open(&p).ok().and_then(|i| png_data_url(&i)).map(Value::String).unwrap_or(Value::Null))
+        .await
+        .unwrap_or(Value::Null)
 }
 
 /// RGBA pixels of an image (for the clipboard).
@@ -100,9 +102,9 @@ mod tests {
         let a = l.as_array().unwrap().iter().find(|x| x["name"] == "a.png").unwrap();
         assert!(a["thumb"].as_str().unwrap().starts_with("data:image/png;base64,"));
         assert!(l.as_array().unwrap().iter().find(|x| x["name"] == "broken.png").unwrap()["thumb"].is_null());
-        assert!(screenshot_path(&shots.join("a.png").to_string_lossy(), &[inst.clone()]).is_ok());
-        assert!(screenshot_path(&d.path().join("inst/options.png").to_string_lossy(), &[inst.clone()]).is_err());
-        assert!(screenshot_path(&format!("{}/../../x.png", shots.display()), &[inst.clone()]).is_err());
+        assert!(screenshot_path(&shots.join("a.png").to_string_lossy(), std::slice::from_ref(&inst)).is_ok());
+        assert!(screenshot_path(&d.path().join("inst/options.png").to_string_lossy(), std::slice::from_ref(&inst)).is_err());
+        assert!(screenshot_path(&format!("{}/../../x.png", shots.display()), std::slice::from_ref(&inst)).is_err());
         assert_eq!(rgba(&shots.join("a.png")).unwrap().0, 720);
     }
 }

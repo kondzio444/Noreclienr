@@ -31,7 +31,13 @@ impl Default for Bridge {
     fn default() -> Self {
         let mut b = [0u8; 24];
         rand::thread_rng().fill_bytes(&mut b);
-        Self { port: AtomicU16::new(0), token: hex::encode(b), presence: Mutex::new(json!({})), events: Mutex::new((0, VecDeque::new())), notify: tokio::sync::Notify::new() }
+        Self {
+            port: AtomicU16::new(0),
+            token: hex::encode(b),
+            presence: Mutex::new(json!({})),
+            events: Mutex::new((0, VecDeque::new())),
+            notify: tokio::sync::Notify::new(),
+        }
     }
 }
 
@@ -65,7 +71,13 @@ impl Bridge {
 }
 
 fn contact_name(contacts: &Value, hex: &str) -> String {
-    contacts.as_array().into_iter().flatten().find(|c| c.str_of("hex") == Some(hex)).and_then(|c| c.str_of("name").map(String::from)).unwrap_or_else(|| "Znajomy".into())
+    contacts
+        .as_array()
+        .into_iter()
+        .flatten()
+        .find(|c| c.str_of("hex") == Some(hex))
+        .and_then(|c| c.str_of("name").map(String::from))
+        .unwrap_or_else(|| "Znajomy".into())
 }
 
 fn valid_hex(h: &str) -> bool {
@@ -123,12 +135,22 @@ async fn read_req(sock: &mut TcpStream) -> Option<Req> {
         buf.extend_from_slice(&chunk[..n]);
     }
     let url = reqwest::Url::parse(&format!("http://127.0.0.1{target}")).ok()?;
-    Some(Req { method, path: url.path().to_string(), query: url.query_pairs().into_owned().collect(), host, token, body: buf[head_end..(head_end + len).min(buf.len())].to_vec() })
+    Some(Req {
+        method,
+        path: url.path().to_string(),
+        query: url.query_pairs().into_owned().collect(),
+        host,
+        token,
+        body: buf[head_end..(head_end + len).min(buf.len())].to_vec(),
+    })
 }
 
 async fn reply(sock: &mut TcpStream, code: u16, body: &Value) {
     let text = body.to_string();
-    let head = format!("HTTP/1.1 {code} X\r\nContent-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nContent-Length: {}\r\nConnection: close\r\n\r\n", text.len());
+    let head = format!(
+        "HTTP/1.1 {code} X\r\nContent-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        text.len()
+    );
     let _ = sock.write_all(head.as_bytes()).await;
     let _ = sock.write_all(text.as_bytes()).await;
     let _ = sock.shutdown().await;
@@ -169,7 +191,14 @@ impl App {
             "hex": hex, "name": c["name"], "unread": c["unread"],
             "last": if last.is_object() { json!({ "text": last["text"], "mine": last.truthy_of("mine"), "ts": last["ts"] }) } else { Value::Null },
         });
-        let p = self.bridge.presence.lock().unwrap_or_else(|e| e.into_inner()).get(&hex).cloned().unwrap_or(json!({ "online": false, "status": "offline", "detail": "" }));
+        let p = self
+            .bridge
+            .presence
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .get(&hex)
+            .cloned()
+            .unwrap_or(json!({ "online": false, "status": "offline", "detail": "" }));
         crate::js::assign(&mut v, &p);
         v
     }
@@ -215,8 +244,11 @@ impl App {
             ("POST", _) => {}
             _ => return (404, json!({ "error": "not found" })),
         }
-        let Ok(b) = (if req.body.is_empty() { Ok(json!({})) } else { serde_json::from_slice::<Value>(&req.body) }) else { return (400, json!({ "error": "body" })) };
-        let hex = b.str_of("hex").map(String::from).unwrap_or_else(|| b.get("hex").filter(|v| !v.is_null()).map(crate::config_edit::js_string).unwrap_or_default());
+        let Ok(b) = (if req.body.is_empty() { Ok(json!({})) } else { serde_json::from_slice::<Value>(&req.body) }) else {
+            return (400, json!({ "error": "body" }));
+        };
+        let hex =
+            b.str_of("hex").map(String::from).unwrap_or_else(|| b.get("hex").filter(|v| !v.is_null()).map(crate::config_edit::js_string).unwrap_or_default());
         match req.path.as_str() {
             "/v1/send" | "/v1/read" => {
                 let contacts = chat::contacts(&self.store);
@@ -304,7 +336,8 @@ impl App {
         let contacts = chat::contacts(&self.store);
         for (hex, p) in map.as_object().into_iter().flatten() {
             if p.truthy_of("online") && !before[hex.as_str()].truthy_of("online") {
-                self.bridge.push(json!({ "type": "online", "hex": hex, "name": contact_name(&contacts, hex), "text": p.string_or("detail", ""), "ts": now_ms() }));
+                self.bridge
+                    .push(json!({ "type": "online", "hex": hex, "name": contact_name(&contacts, hex), "text": p.string_or("detail", ""), "ts": now_ms() }));
             }
         }
     }

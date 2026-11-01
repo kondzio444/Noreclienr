@@ -47,7 +47,12 @@ pub async fn search(env: &Env, srv: &Value, o: &Value) -> Result<Value> {
         "newest" => "-newest",
         _ => "-stars",
     };
-    let mut p: Vec<(&str, String)> = vec![("limit", o.get("limit").and_then(Value::as_i64).unwrap_or(20).to_string()), ("offset", o.get("offset").and_then(Value::as_i64).unwrap_or(0).to_string()), ("sort", sort.into()), ("platform", platform.into())];
+    let mut p: Vec<(&str, String)> = vec![
+        ("limit", o.get("limit").and_then(Value::as_i64).unwrap_or(20).to_string()),
+        ("offset", o.get("offset").and_then(Value::as_i64).unwrap_or(0).to_string()),
+        ("sort", sort.into()),
+        ("platform", platform.into()),
+    ];
     if let Some(q) = o.str_of("query").filter(|s| !s.is_empty()) {
         p.push(("query", q.into()));
     }
@@ -57,7 +62,9 @@ pub async fn search(env: &Env, srv: &Value, o: &Value) -> Result<Value> {
         }
     }
     let j: Value = env.net.get_json(&modrinth::with_params(&format!("{}/projects", api()), &p)).await?;
-    Ok(json!({ "hits": j["result"].as_array().into_iter().flatten().map(hit).collect::<Vec<_>>(), "total_hits": j.pointer("/pagination/count").cloned().unwrap_or(json!(0)) }))
+    Ok(
+        json!({ "hits": j["result"].as_array().into_iter().flatten().map(hit).collect::<Vec<_>>(), "total_hits": j.pointer("/pagination/count").cloned().unwrap_or(json!(0)) }),
+    )
 }
 
 fn parts(v: &str) -> Vec<i64> {
@@ -87,7 +94,12 @@ pub fn supports(list: &[String], mc: Option<&str>) -> bool {
             return true;
         }
         match s.split_once('-') {
-            Some((a, b)) if a.trim().chars().all(|c| c.is_ascii_digit() || c == '.') && b.trim().chars().all(|c| c.is_ascii_digit() || c == '.') && !a.trim().is_empty() && !b.trim().is_empty() => {
+            Some((a, b))
+                if a.trim().chars().all(|c| c.is_ascii_digit() || c == '.')
+                    && b.trim().chars().all(|c| c.is_ascii_digit() || c == '.')
+                    && !a.trim().is_empty()
+                    && !b.trim().is_empty() =>
+            {
                 cmp(mc, a.trim()) >= 0 && cmp(mc, b.trim()) <= 0
             }
             _ => false,
@@ -101,16 +113,32 @@ pub fn pick_version(versions: &[Value], platform: &str, mc: &str) -> Option<Valu
         .iter()
         .filter(|v| {
             v.pointer(&format!("/downloads/{platform}")).is_some_and(|d| !d.is_null()) && {
-                let list: Vec<String> = v.pointer(&format!("/platformDependencies/{platform}")).and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).map(String::from).collect();
+                let list: Vec<String> = v
+                    .pointer(&format!("/platformDependencies/{platform}"))
+                    .and_then(Value::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(Value::as_str)
+                    .map(String::from)
+                    .collect();
                 supports(&list, if platform == "PAPER" { Some(mc) } else { None })
             }
         })
         .collect();
-    ok.iter().find(|v| v.pointer("/channel/name").and_then(Value::as_str).is_some_and(|n| n.to_lowercase().contains("release"))).or(ok.first()).map(|v| (*v).clone())
+    ok.iter()
+        .find(|v| v.pointer("/channel/name").and_then(Value::as_str).is_some_and(|n| n.to_lowercase().contains("release")))
+        .or(ok.first())
+        .map(|v| (*v).clone())
 }
 
 async fn versions(env: &Env, slug: &str, platform: &str) -> Result<Vec<Value>> {
-    let j: Value = env.net.get_json(&modrinth::with_params(&format!("{}/projects/{}/versions", api(), urlencoding::encode(slug)), &[("limit", "25".into()), ("offset", "0".into()), ("platform", platform.into())])).await?;
+    let j: Value = env
+        .net
+        .get_json(&modrinth::with_params(
+            &format!("{}/projects/{}/versions", api(), urlencoding::encode(slug)),
+            &[("limit", "25".into()), ("offset", "0".into()), ("platform", platform.into())],
+        ))
+        .await?;
     Ok(j["result"].as_array().cloned().unwrap_or_default())
 }
 
@@ -122,7 +150,14 @@ fn download(v: &Value, platform: &str) -> (String, String, Option<u64>) {
 }
 
 /// Installs a plugin (with required Hangar dependencies): `[{ file, slug, version }]`.
-pub fn install<'a>(env: &'a Env, srv: &'a Value, project_id: &'a str, dir: &'a Path, on_status: modrinth::StatusFn<'a>, seen: &'a mut HashSet<String>) -> BoxFuture<'a, Result<Vec<Value>>> {
+pub fn install<'a>(
+    env: &'a Env,
+    srv: &'a Value,
+    project_id: &'a str,
+    dir: &'a Path,
+    on_status: modrinth::StatusFn<'a>,
+    seen: &'a mut HashSet<String>,
+) -> BoxFuture<'a, Result<Vec<Value>>> {
     Box::pin(async move {
         let slug = slug_of(project_id);
         if !seen.insert(slug.to_lowercase()) {

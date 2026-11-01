@@ -171,7 +171,13 @@ pub fn toml_format(t: &str, value: &Value) -> String {
         }
         "string" => serde_json::to_string(&js_string(value)).unwrap_or_default(),
         "array" => {
-            let items: Vec<String> = value.as_array().cloned().unwrap_or_default().iter().map(|v| if v.is_string() { serde_json::to_string(v).unwrap_or_default() } else { js_string(v) }).collect();
+            let items: Vec<String> = value
+                .as_array()
+                .cloned()
+                .unwrap_or_default()
+                .iter()
+                .map(|v| if v.is_string() { serde_json::to_string(v).unwrap_or_default() } else { js_string(v) })
+                .collect();
             format!("[{}]", items.join(", "))
         }
         _ => js_string(value),
@@ -634,7 +640,20 @@ mod tests {
     /// mods-servers.test.js: TOML fields keep comments, sections and formatting when one value changes.
     #[test]
     fn toml_keeps_formatting() {
-        let text = ["# Client settings", "[client]", "\t# Show the HUD", "\tshowHud = true # inline", "\tscale = 1.5", "", "[server]", "\tname = \"Nore\"", "\tlist = [\"a\", \"b\",", "\t  \"c\"]", "\tmax = 20"].join("\n");
+        let text = [
+            "# Client settings",
+            "[client]",
+            "\t# Show the HUD",
+            "\tshowHud = true # inline",
+            "\tscale = 1.5",
+            "",
+            "[server]",
+            "\tname = \"Nore\"",
+            "\tlist = [\"a\", \"b\",",
+            "\t  \"c\"]",
+            "\tmax = 20",
+        ]
+        .join("\n");
         let r = parse("x.toml", &text);
         assert_eq!(r["editable"], true);
         assert_eq!(field(&r, "client.showHud")["value"], true);

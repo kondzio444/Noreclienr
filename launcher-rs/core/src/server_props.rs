@@ -239,7 +239,13 @@ pub fn motd_segments(motd: &str) -> Value {
 }
 
 pub fn motd_plain(motd: &str) -> String {
-    motd_segments(motd).as_array().into_iter().flatten().map(|l| l.as_array().into_iter().flatten().map(|s| s["text"].as_str().unwrap_or("")).collect::<String>()).collect::<Vec<_>>().join("\n")
+    motd_segments(motd)
+        .as_array()
+        .into_iter()
+        .flatten()
+        .map(|l| l.as_array().into_iter().flatten().map(|s| s["text"].as_str().unwrap_or("")).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[cfg(test)]
@@ -267,12 +273,23 @@ mod tests {
         assert_eq!(validate("difficulty", &json!("nope")).0, Some(json!("peaceful")));
         assert_eq!(validate("motd", &json!("a\\nb\nc")).0, Some(json!("a\nb")));
         assert_eq!(validate("motd", &json!("&aZielony &lB")).0, Some(json!("§aZielony §lB")));
-        let w: Vec<Value> = warnings(json!({ "online-mode": "false", "view-distance": "20", "simulation-distance": "24" }).as_object().unwrap()).iter().map(|x| x["key"].clone()).collect();
+        let w: Vec<Value> = warnings(json!({ "online-mode": "false", "view-distance": "20", "simulation-distance": "24" }).as_object().unwrap())
+            .iter()
+            .map(|x| x["key"].clone())
+            .collect();
         assert_eq!(w, vec![json!("online-mode"), json!("view-distance"), json!("simulation-distance")]);
         let segs = motd_segments("§aZielony &lgruby§r zwykły &#ff8800hex\\ndruga");
         assert_eq!(segs.as_array().unwrap().len(), 2);
         let first: Vec<Value> = segs[0].as_array().unwrap().iter().map(|s| json!([s["text"], s["color"], s["bold"]])).collect();
-        assert_eq!(first, vec![json!(["Zielony ", "#55ff55", false]), json!(["gruby", "#55ff55", true]), json!([" zwykły ", "#aaaaaa", false]), json!(["hex", "#ff8800", false])]);
+        assert_eq!(
+            first,
+            vec![
+                json!(["Zielony ", "#55ff55", false]),
+                json!(["gruby", "#55ff55", true]),
+                json!([" zwykły ", "#aaaaaa", false]),
+                json!(["hex", "#ff8800", false])
+            ]
+        );
         assert_eq!(motd_plain("§aA§lB"), "AB");
     }
 }

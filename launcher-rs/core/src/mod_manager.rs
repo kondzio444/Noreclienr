@@ -299,14 +299,22 @@ fn md(s: &str) -> String {
 pub fn modlist(mods: &[Value], format: &str, title: &str, mc_version: &str, loader: &str) -> String {
     let on: Vec<&Value> = mods.iter().filter(|m| m.truthy_of("enabled")).collect();
     let off: Vec<&Value> = mods.iter().filter(|m| !m.truthy_of("enabled")).collect();
-    let second = [(!mc_version.is_empty()).then(|| format!("Minecraft {mc_version}")), (!loader.is_empty()).then(|| loader.to_string())].into_iter().flatten().collect::<Vec<_>>().join(" • ");
+    let second = [(!mc_version.is_empty()).then(|| format!("Minecraft {mc_version}")), (!loader.is_empty()).then(|| loader.to_string())]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" • ");
     let head: Vec<String> = [title.to_string(), second].into_iter().filter(|s| !s.is_empty()).collect();
     let link = |m: &Value| -> Option<String> {
         let pid = crate::config_edit::js_string(&m["projectId"]);
         if !crate::js::truthy(&m["projectId"]) {
             return None;
         }
-        Some(if m.str_of("source") == Some("curseforge") { format!("https://www.curseforge.com/projects/{}", pid.trim_start_matches("cf:")) } else { format!("https://modrinth.com/project/{pid}") })
+        Some(if m.str_of("source") == Some("curseforge") {
+            format!("https://www.curseforge.com/projects/{}", pid.trim_start_matches("cf:"))
+        } else {
+            format!("https://modrinth.com/project/{pid}")
+        })
     };
     if format == "md" {
         let row = |m: &Value| {
@@ -393,7 +401,11 @@ pub fn mrpack_index(name: &str, version: &str, summary: &str, mc_version: &str, 
 
 /// CurseForge manifest.json.
 pub fn cf_manifest(name: &str, version: &str, author: &str, mc_version: &str, loader: &str, loader_version: &str, files: &[Value]) -> Value {
-    let mod_loaders = if loader_dep(loader).is_some() && !loader_version.is_empty() { json!([{ "id": format!("{loader}-{loader_version}"), "primary": true }]) } else { json!([]) };
+    let mod_loaders = if loader_dep(loader).is_some() && !loader_version.is_empty() {
+        json!([{ "id": format!("{loader}-{loader_version}"), "primary": true }])
+    } else {
+        json!([])
+    };
     json!({
         "minecraft": { "version": mc_version, "modLoaders": mod_loaders }, "manifestType": "minecraftModpack", "manifestVersion": 1,
         "name": if name.is_empty() { "Paczka" } else { name }, "version": if version.is_empty() { "1.0.0" } else { version }, "author": author,
@@ -443,7 +455,13 @@ pub fn split_export(files: &[String], lookup: &Map<String, Value>, format: &str)
     for rel in files {
         let l = lookup.get(rel);
         let content = CONTENT_DIRS.iter().any(|d| rel.starts_with(&format!("{d}/")));
-        let ok = l.is_some_and(|l| if format == "mrpack" { l.truthy_of("url") && l.truthy_of("sha512") } else { crate::js::truthy(&l["projectID"]) && crate::js::truthy(&l["fileID"]) });
+        let ok = l.is_some_and(|l| {
+            if format == "mrpack" {
+                l.truthy_of("url") && l.truthy_of("sha512")
+            } else {
+                crate::js::truthy(&l["projectID"]) && crate::js::truthy(&l["fileID"])
+            }
+        });
         if content && ok {
             let mut r = json!({ "path": rel });
             crate::js::assign(&mut r, l.unwrap_or(&Value::Null));
@@ -489,7 +507,10 @@ pub async fn curseforge_lookup(env: &crate::Env, cf: &crate::curseforge::Cf, roo
         let ids = cf.identify(env, &root.join(&d), &[".jar", ".zip"], &HashSet::new()).await.unwrap_or_default();
         for n in names {
             if let Some(i) = ids.get(&n) {
-                out.insert(format!("{d}/{n}"), json!({ "projectID": crate::curseforge::raw_id(&i["projectId"]), "fileID": i.str_of("versionId").and_then(|v| v.parse::<u64>().ok()) }));
+                out.insert(
+                    format!("{d}/{n}"),
+                    json!({ "projectID": crate::curseforge::raw_id(&i["projectId"]), "fileID": i.str_of("versionId").and_then(|v| v.parse::<u64>().ok()) }),
+                );
             }
         }
     }
@@ -506,7 +527,13 @@ pub struct ExportOpts {
 }
 
 /// Writes the instance as a pack: `{ file, remote, overrides }`.
-pub async fn export_pack(env: &crate::Env, cf: &crate::curseforge::Cf, inst: &Value, o: &ExportOpts, on_status: &(dyn Fn(&str) + Send + Sync)) -> Result<Value> {
+pub async fn export_pack(
+    env: &crate::Env,
+    cf: &crate::curseforge::Cf,
+    inst: &Value,
+    o: &ExportOpts,
+    on_status: &(dyn Fn(&str) + Send + Sync),
+) -> Result<Value> {
     let root = PathBuf::from(inst.string_or("gameDir", ""));
     on_status("Zbieranie plików");
     let r2 = root.clone();
@@ -586,7 +613,12 @@ mod tests {
     use super::*;
 
     fn jar(dir: &Path, name: &str, entries: Value) {
-        let files = entries.as_object().unwrap().iter().map(|(k, v)| (k.clone(), if let Value::String(s) = v { s.clone().into_bytes() } else { v.to_string().into_bytes() })).collect();
+        let files = entries
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(k, v)| (k.clone(), if let Value::String(s) = v { s.clone().into_bytes() } else { v.to_string().into_bytes() }))
+            .collect();
         util::write_zip(&dir.join(name), files).unwrap();
     }
 
@@ -596,7 +628,11 @@ mod tests {
         let d = tempfile::tempdir().unwrap();
         let dir = d.path().join("mods");
         std::fs::create_dir_all(&dir).unwrap();
-        jar(&dir, "sodium-fabric-0.6.0+mc1.21.1.jar", json!({ "fabric.mod.json": { "id": "sodium", "name": "Sodium", "version": "0.6.0", "environment": "client", "depends": { "fabric-api": "*" } } }));
+        jar(
+            &dir,
+            "sodium-fabric-0.6.0+mc1.21.1.jar",
+            json!({ "fabric.mod.json": { "id": "sodium", "name": "Sodium", "version": "0.6.0", "environment": "client", "depends": { "fabric-api": "*" } } }),
+        );
         jar(&dir, "fabric-api-0.100.jar", json!({ "fabric.mod.json": { "id": "fabric-api", "name": "Fabric API", "version": "0.100", "environment": "*" } }));
         jar(&dir, "lithium.jar.disabled", json!({ "fabric.mod.json": { "id": "lithium", "name": "Lithium", "version": "0.13", "environment": "*" } }));
         std::fs::write(dir.join("notes.txt"), "x").unwrap();
@@ -634,7 +670,11 @@ mod tests {
         assert_eq!(without_pinned(ups, &[json!("A")], key_of), vec![json!({ "oldFile": "b-1.jar" })]);
         assert_eq!(toggle_pin(&[json!("a")], "B", true), vec!["a", "b"]);
         assert_eq!(toggle_pin(&[json!("a"), json!("b")], "a", false), vec!["b"]);
-        let mods = vec![json!({ "key": "a", "file": "a.jar", "enabled": true }), json!({ "key": "b", "file": "b.jar.disabled", "enabled": false }), json!({ "key": "c", "file": "c.jar", "enabled": true })];
+        let mods = vec![
+            json!({ "key": "a", "file": "a.jar", "enabled": true }),
+            json!({ "key": "b", "file": "b.jar.disabled", "enabled": false }),
+            json!({ "key": "c", "file": "c.jar", "enabled": true }),
+        ];
         let p = make_profile("  PvP  ", &mods);
         assert_eq!(p["enabled"], json!(["a", "c"]));
         assert_eq!(p["name"], "PvP");
@@ -666,15 +706,27 @@ mod tests {
         assert!(m.contains("| [Sodium](https://modrinth.com/project/AANobbMI) | 0.6 | klient | `sodium.jar` |"), "{m}");
         assert!(m.contains("[JEI \\| x](https://www.curseforge.com/projects/238222)"));
         assert!(m.contains("## Wyłączone"));
-        let idx = mrpack_index("P", "2", "", "1.21.1", "fabric", "0.16.9", &[json!({ "path": "mods/a.jar", "sha1": "s1", "sha512": "s5", "size": 3, "url": "https://cdn.modrinth.com/a.jar" })]);
+        let idx = mrpack_index(
+            "P",
+            "2",
+            "",
+            "1.21.1",
+            "fabric",
+            "0.16.9",
+            &[json!({ "path": "mods/a.jar", "sha1": "s1", "sha512": "s5", "size": 3, "url": "https://cdn.modrinth.com/a.jar" })],
+        );
         assert_eq!(idx["dependencies"], json!({ "minecraft": "1.21.1", "fabric-loader": "0.16.9" }));
-        assert_eq!(idx["files"][0], json!({ "path": "mods/a.jar", "hashes": { "sha1": "s1", "sha512": "s5" }, "downloads": ["https://cdn.modrinth.com/a.jar"], "fileSize": 3 }));
+        assert_eq!(
+            idx["files"][0],
+            json!({ "path": "mods/a.jar", "hashes": { "sha1": "s1", "sha512": "s5" }, "downloads": ["https://cdn.modrinth.com/a.jar"], "fileSize": 3 })
+        );
         assert_eq!(idx["formatVersion"], 1);
         let man = cf_manifest("P", "", "", "1.20.1", "forge", "47.2.0", &[json!({ "projectID": 1, "fileID": 2 })]);
         assert_eq!(man["minecraft"], json!({ "version": "1.20.1", "modLoaders": [{ "id": "forge-47.2.0", "primary": true }] }));
         assert_eq!(man["files"], json!([{ "projectID": 1, "fileID": 2, "required": true }]));
         let lookup = json!({ "mods/a.jar": { "url": "u", "sha512": "h", "projectID": 1, "fileID": 2 } });
-        let (remote, over) = split_export(&["mods/a.jar".into(), "mods/own.jar".into(), "config/x.toml".into(), "options.txt".into()], lookup.as_object().unwrap(), "mrpack");
+        let (remote, over) =
+            split_export(&["mods/a.jar".into(), "mods/own.jar".into(), "config/x.toml".into(), "options.txt".into()], lookup.as_object().unwrap(), "mrpack");
         assert_eq!(remote.iter().map(|r| r["path"].as_str().unwrap()).collect::<Vec<_>>(), vec!["mods/a.jar"]);
         assert_eq!(over, vec!["mods/own.jar", "config/x.toml", "options.txt"]);
     }
@@ -684,7 +736,9 @@ mod tests {
     async fn export_offline() {
         let d = tempfile::tempdir().unwrap();
         let root = d.path().join("inst");
-        for f in ["mods/own.jar", "config/a.toml", "saves/w/level.dat", "logs/latest.log", ".nore-backup/x", "options.txt", "usercache.json", "resourcepacks/p.zip"] {
+        for f in
+            ["mods/own.jar", "config/a.toml", "saves/w/level.dat", "logs/latest.log", ".nore-backup/x", "options.txt", "usercache.json", "resourcepacks/p.zip"]
+        {
             std::fs::create_dir_all(root.join(f).parent().unwrap()).unwrap();
             std::fs::write(root.join(f), "x").unwrap();
         }

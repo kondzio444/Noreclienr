@@ -6,7 +6,10 @@ use crate::error::{msg, Result};
 use crate::ipc::{arg, arg_str, App};
 use crate::js::{assign, now_ms, truthy, ValueExt};
 use crate::modrinth::{self, InstallReq};
-use crate::{doctor, gallery, hangar, importers, mod_manager as mm, modpacks, perf, server_cf, server_content as sc, server_net, server_props, server_tunnel, util, ProgressFn};
+use crate::{
+    doctor, gallery, hangar, importers, mod_manager as mm, modpacks, perf, server_cf, server_content as sc, server_net, server_props, server_tunnel, util,
+    ProgressFn,
+};
 use serde_json::{json, Map, Value};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -194,7 +197,8 @@ impl App {
             let pack_set = modpacks::pack_file_set(inst);
             if pack_set.as_ref().is_some_and(|s| !s.is_empty()) || inst.str_of("modpack") != Some("pack") || pack_set.is_some() {
                 let folder = modrinth::folder_of(kind).unwrap_or("mods");
-                let mut skip: HashSet<String> = modrinth::identify(&self.env, &dir, modrinth::exts_of(kind)).await.unwrap_or_default().keys().cloned().collect();
+                let mut skip: HashSet<String> =
+                    modrinth::identify(&self.env, &dir, modrinth::exts_of(kind)).await.unwrap_or_default().keys().cloned().collect();
                 for rel in pack_set.iter().flatten() {
                     if let Some(r) = rel.strip_prefix(&format!("{folder}/")) {
                         skip.insert(r.into());
@@ -451,7 +455,8 @@ impl App {
                 if kind == "datapack" && o.str_of("world").is_none_or(str::is_empty) {
                     return Ok(Some(json!([])));
                 }
-                modrinth::list_installed(&modrinth::content_dir(Path::new(&inst.string_or("gameDir", "")), &kind, o.str_of("world"))?, modrinth::exts_of(&kind)).await
+                modrinth::list_installed(&modrinth::content_dir(Path::new(&inst.string_or("gameDir", "")), &kind, o.str_of("world"))?, modrinth::exts_of(&kind))
+                    .await
             }
             "content:updates" => {
                 let o = arg(a, 0);
@@ -459,12 +464,21 @@ impl App {
                 let kind = o.string_or("kind", "mod");
                 let dir = modrinth::content_dir(Path::new(&inst.string_or("gameDir", "")), &kind, o.str_of("world"))?;
                 let channel = self.update_channel();
-                let mut ups = modrinth::check_updates(env, &dir, &kind, inst.str_of("mcVersion").unwrap_or(""), inst.str_of("loader").unwrap_or(""), &channel).await?;
+                let mut ups =
+                    modrinth::check_updates(env, &dir, &kind, inst.str_of("mcVersion").unwrap_or(""), inst.str_of("loader").unwrap_or(""), &channel).await?;
                 if kind != "datapack" {
                     let known: HashSet<String> = modrinth::identify(env, &dir, modrinth::exts_of(&kind)).await.unwrap_or_default().keys().cloned().collect();
                     ups.extend(
                         self.cf()
-                            .check_updates(env, &dir, &kind, inst.str_of("mcVersion").unwrap_or(""), inst.str_of("loader").unwrap_or(""), &modrinth::channel_types(&channel), &known)
+                            .check_updates(
+                                env,
+                                &dir,
+                                &kind,
+                                inst.str_of("mcVersion").unwrap_or(""),
+                                inst.str_of("loader").unwrap_or(""),
+                                &modrinth::channel_types(&channel),
+                                &known,
+                            )
                             .await
                             .unwrap_or_default(),
                     );
@@ -544,7 +558,9 @@ impl App {
                     return Err(msg("Nieznana akcja"));
                 }
                 let files: Vec<String> = arg(a, 1).as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect();
-                let backup = (action == "remove").then(|| tg.root.join(".nore-backup").join(format!("usuniete-{}", util::stamp_dash(19))).join(if tg.kind == "plugin" { "plugins" } else { "mods" }));
+                let backup = (action == "remove").then(|| {
+                    tg.root.join(".nore-backup").join(format!("usuniete-{}", util::stamp_dash(19))).join(if tg.kind == "plugin" { "plugins" } else { "mods" })
+                });
                 json!(mm::bulk(&tg.dir, &files, &action, backup.as_deref()).await)
             }
             "mods:pin" => {
@@ -587,7 +603,13 @@ impl App {
                     json!(text)
                 } else {
                     let safe = regex::Regex::new(r#"[\\/:*?"<>|]+"#).unwrap().replace_all(&tg.title, "_").to_string();
-                    let Some(path) = self.shell.save_file("Zapisz listę modów", &format!("{safe} – mody.{fmt}"), if fmt == "md" { "Markdown" } else { "Tekst" }, &[fmt]).await else { return Ok(Some(Value::Null)) };
+                    let Some(path) = self
+                        .shell
+                        .save_file("Zapisz listę modów", &format!("{safe} – mody.{fmt}"), if fmt == "md" { "Markdown" } else { "Tekst" }, &[fmt])
+                        .await
+                    else {
+                        return Ok(Some(Value::Null));
+                    };
                     tokio::fs::write(&path, text).await?;
                     json!(path.to_string_lossy())
                 }
@@ -601,12 +623,23 @@ impl App {
                 let ext = if mr { "mrpack" } else { "zip" };
                 let Some(out) = self
                     .shell
-                    .save_file(if mr { "Eksportuj jako paczkę Modrinth" } else { "Eksportuj jako paczkę CurseForge" }, &format!("{safe}-{version}.{ext}"), if mr { "Modrinth (.mrpack)" } else { "CurseForge (.zip)" }, &[ext])
+                    .save_file(
+                        if mr { "Eksportuj jako paczkę Modrinth" } else { "Eksportuj jako paczkę CurseForge" },
+                        &format!("{safe}-{version}.{ext}"),
+                        if mr { "Modrinth (.mrpack)" } else { "CurseForge (.zip)" },
+                        &[ext],
+                    )
                     .await
                 else {
                     return Ok(Some(Value::Null));
                 };
-                let opts = mm::ExportOpts { mrpack: mr, out, version: o.string_or("version", ""), author: o.string_or("author", ""), include_options: o.get("includeOptions") != Some(&json!(false)) };
+                let opts = mm::ExportOpts {
+                    mrpack: mr,
+                    out,
+                    version: o.string_or("version", ""),
+                    author: o.string_or("author", ""),
+                    include_options: o.get("includeOptions") != Some(&json!(false)),
+                };
                 let e = self.emitter.clone();
                 let r = mm::export_pack(env, &self.cf(), &inst, &opts, &move |s: &str| e.emit("mods:status", json!({ "stage": s }))).await;
                 self.emit("mods:status", Value::Null);
@@ -621,7 +654,11 @@ impl App {
                     Some("curseforge") => json!(self.cf().changelog(env, &u["projectId"], &u["versionId"]).await),
                     Some("hangar") => json!(""),
                     _ => {
-                        let v: Option<Value> = env.net.get_json(&format!("{}/version/{}", modrinth::API, urlencoding::encode(&crate::config_edit::js_string(&u["versionId"])))).await.ok();
+                        let v: Option<Value> = env
+                            .net
+                            .get_json(&format!("{}/version/{}", modrinth::API, urlencoding::encode(&crate::config_edit::js_string(&u["versionId"]))))
+                            .await
+                            .ok();
                         json!(v.map(|v| v.str_of("changelog").unwrap_or("").chars().take(20000).collect::<String>()).unwrap_or_default())
                     }
                 }
@@ -682,10 +719,12 @@ impl App {
             // ------------------------------------------------------------ modpacks
             "modpacks:install" | "modpacks:import" | "modpacks:importInstance" => {
                 let picked = match channel {
-                    "modpacks:import" => match self.shell.pick_file("Importuj modpack", "Modpack (Modrinth .mrpack, CurseForge .zip)", &["mrpack", "zip"]).await {
-                        Some(f) => Some(f),
-                        None => return Ok(Some(Value::Null)),
-                    },
+                    "modpacks:import" => {
+                        match self.shell.pick_file("Importuj modpack", "Modpack (Modrinth .mrpack, CurseForge .zip)", &["mrpack", "zip"]).await {
+                            Some(f) => Some(f),
+                            None => return Ok(Some(Value::Null)),
+                        }
+                    }
                     "modpacks:importInstance" => match self.shell.pick_folder("Wybierz folder instancji (Prism, MultiMC, CurseForge, Modrinth App)").await {
                         Some(f) => Some(f),
                         None => return Ok(Some(Value::Null)),
@@ -748,13 +787,21 @@ impl App {
                 self.emit("modpack:progress", Value::Null);
                 r?
             }
-            "modpacks:blocked" => self.instances().get(&arg_str(a, 0)).and_then(|i| i.pointer("/pack/blocked").cloned()).filter(Value::is_array).unwrap_or(json!([])),
+            "modpacks:blocked" => {
+                self.instances().get(&arg_str(a, 0)).and_then(|i| i.pointer("/pack/blocked").cloned()).filter(Value::is_array).unwrap_or(json!([]))
+            }
             "modpacks:resolveBlocked" => self.modpacks_ctx().resolve_blocked(&arg_str(a, 0), &util::download_dirs()).await?,
             "modpacks:checkUpdate" => {
                 let id = arg_str(a, 0);
                 let inst = self.instances().require(&id)?;
                 let up = self.modpacks_ctx().check_update(&inst, &self.update_channel()).await?;
-                let mut cur = self.content_updates.lock().unwrap_or_else(|e| e.into_inner()).get(&id).cloned().unwrap_or(json!({ "mods": 0, "resourcepacks": 0, "shaders": 0 }));
+                let mut cur = self
+                    .content_updates
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .get(&id)
+                    .cloned()
+                    .unwrap_or(json!({ "mods": 0, "resourcepacks": 0, "shaders": 0 }));
                 cur["pack"] = up.clone();
                 cur["checked"] = json!(now_ms());
                 self.set_instance_updates(&id, cur);
@@ -784,9 +831,19 @@ impl App {
                         }
                         vid = crate::config_edit::js_string(&up["versionId"]);
                     }
-                    let r = ctx.update(&id, &vid, &progress, o.get("backupWorlds") != Some(&json!(false)), settings.num_of("concurrency").clamp(1.0, 64.0) as usize).await?;
+                    let r = ctx
+                        .update(&id, &vid, &progress, o.get("backupWorlds") != Some(&json!(false)), settings.num_of("concurrency").clamp(1.0, 64.0) as usize)
+                        .await?;
                     let backup = r.str_of("backup").map(|b| format!(" (kopia: {b})")).unwrap_or_default();
-                    self.log(format!("[Launcher] Zaktualizowano modpack {}: {} → {}{backup}", inst.string_or("name", ""), inst.pointer("/pack/version").map(crate::config_edit::js_string).unwrap_or_default(), r.pointer("/instance/pack/version").map(crate::config_edit::js_string).unwrap_or_default()), "out");
+                    self.log(
+                        format!(
+                            "[Launcher] Zaktualizowano modpack {}: {} → {}{backup}",
+                            inst.string_or("name", ""),
+                            inst.pointer("/pack/version").map(crate::config_edit::js_string).unwrap_or_default(),
+                            r.pointer("/instance/pack/version").map(crate::config_edit::js_string).unwrap_or_default()
+                        ),
+                        "out",
+                    );
                     self.recheck_instance(&id);
                     let mut out = r.clone();
                     out["kept"] = json!(r["kept"].as_array().map_or(0, Vec::len));
@@ -856,7 +913,8 @@ impl App {
                         self.instances().update(&id, &json!({ "optionsProfile": prof, "optionsProfileApplied": prof }))?;
                     }
                     self.recheck_instance(&id);
-                    let files = |k: &str| r.as_ref().and_then(|r| r[k].as_array().cloned()).unwrap_or_default().iter().map(|x| x["file"].clone()).collect::<Vec<_>>();
+                    let files =
+                        |k: &str| r.as_ref().and_then(|r| r[k].as_array().cloned()).unwrap_or_default().iter().map(|x| x["file"].clone()).collect::<Vec<_>>();
                     Ok(json!({ "added": files("added"), "removed": files("removed"), "instance": self.instances().get(&id) }))
                 }
                 .await;
@@ -934,10 +992,14 @@ impl App {
             "servers:setIcon" => {
                 let id = arg_str(a, 0);
                 let dir = sc::dir_of(&self.server_require(&id)?);
-                let Some(src) = self.shell.pick_file("Ikona serwera", "Obrazy", &["png", "jpg", "jpeg", "webp", "gif"]).await else { return Ok(Some(json!(false))) };
+                let Some(src) = self.shell.pick_file("Ikona serwera", "Obrazy", &["png", "jpg", "jpeg", "webp", "gif"]).await else {
+                    return Ok(Some(json!(false)));
+                };
                 util::blocking(move || {
                     let img = image::open(&src).map_err(|_| msg("Nie udało się wczytać obrazu."))?;
-                    img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3).save_with_format(dir.join("server-icon.png"), image::ImageFormat::Png).map_err(|e| msg(e.to_string()))
+                    img.resize_exact(64, 64, image::imageops::FilterType::Lanczos3)
+                        .save_with_format(dir.join("server-icon.png"), image::ImageFormat::Png)
+                        .map_err(|e| msg(e.to_string()))
                 })
                 .await?;
                 json!(true)
@@ -1003,8 +1065,15 @@ impl App {
             }
             "servers:modpackVersions" => {
                 let srv = self.server_require(&arg_str(a, 0))?;
-                let pid = Some(arg_str(a, 1)).filter(|s| !s.is_empty()).or_else(|| srv.pointer("/pack/projectId").map(crate::config_edit::js_string)).unwrap_or_default();
-                json!(if curseforge::is_cf(&pid) { server_cf::pack_versions(env, &self.cf(), &pid).await? } else { sc::modpack_versions(env, &srv, &pid).await? })
+                let pid = Some(arg_str(a, 1))
+                    .filter(|s| !s.is_empty())
+                    .or_else(|| srv.pointer("/pack/projectId").map(crate::config_edit::js_string))
+                    .unwrap_or_default();
+                json!(if curseforge::is_cf(&pid) {
+                    server_cf::pack_versions(env, &self.cf(), &pid).await?
+                } else {
+                    sc::modpack_versions(env, &srv, &pid).await?
+                })
             }
             "servers:modpackUpdate" => {
                 let srv = self.server_require(&arg_str(a, 0))?;
@@ -1089,7 +1158,8 @@ impl App {
                         if let Some(o) = rec.as_object_mut() {
                             o.remove(u.str_of("oldFile").unwrap_or(""));
                         }
-                        rec[u.str_of("newFile").unwrap_or("")] = json!({ "slug": hangar::slug_of(u.str_of("projectId").unwrap_or("")), "version": u["version"] });
+                        rec[u.str_of("newFile").unwrap_or("")] =
+                            json!({ "slug": hangar::slug_of(u.str_of("projectId").unwrap_or("")), "version": u["version"] });
                     }
                     self.server_update(&id, &json!({ "hangar": rec }))?;
                 }
@@ -1106,7 +1176,9 @@ impl App {
                 };
                 json!({ "lan": server_net::lan_addresses(), "publicIp": ip, "platform": platform, "tunnelSupported": server_tunnel::supported(), "playitLinked": self.store.read(|d| d.pointer("/playit/secret").is_some_and(truthy)) })
             }
-            "servers:checkReachable" => server_net::check_reachable(env, &arg_str(a, 0), arg(a, 1).as_u64().or_else(|| arg_str(a, 1).parse().ok()).unwrap_or(25565) as u16).await?,
+            "servers:checkReachable" => {
+                server_net::check_reachable(env, &arg_str(a, 0), arg(a, 1).as_u64().or_else(|| arg_str(a, 1).parse().ok()).unwrap_or(25565) as u16).await?
+            }
             "servers:upnp" => {
                 let id = arg_str(a, 0);
                 let open = truthy(&arg(a, 1));
@@ -1175,7 +1247,9 @@ impl App {
                 let id = arg_str(a, 0);
                 let srv = self.server_raw(&id).ok_or_else(|| msg("Nie znaleziono serwera."))?;
                 if truthy(&arg(a, 1)) {
-                    let secret = self.decrypt_token(&self.store.read(|d| d.pointer("/playit/secret").cloned().unwrap_or(Value::Null))).ok_or_else(|| msg("Najpierw połącz konto playit.gg."))?;
+                    let secret = self
+                        .decrypt_token(&self.store.read(|d| d.pointer("/playit/secret").cloned().unwrap_or(Value::Null)))
+                        .ok_or_else(|| msg("Najpierw połącz konto playit.gg."))?;
                     let name: String = format!("nore-{id}").chars().take(40).collect();
                     let (tid, addr) = server_tunnel::ensure_tunnel(env, &secret, &name).await?;
                     self.server_update(&id, &json!({ "tunnel": { "enabled": true, "id": tid, "address": addr } }))?;

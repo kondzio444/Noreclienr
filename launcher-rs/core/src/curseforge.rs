@@ -196,7 +196,9 @@ impl Cf {
     }
 
     pub async fn categories(&self, env: &Env, kind: &str) -> Result<Value> {
-        Ok(Value::Array(self.category_list(env, kind).await?.iter().map(|c| json!({ "name": c["slug"], "header": "categories", "icon": c["iconUrl"] })).collect()))
+        Ok(Value::Array(
+            self.category_list(env, kind).await?.iter().map(|c| json!({ "name": c["slug"], "header": "categories", "icon": c["iconUrl"] })).collect(),
+        ))
     }
 
     pub async fn search(&self, env: &Env, o: &Value) -> Result<Value> {
@@ -331,7 +333,10 @@ impl Cf {
                 None => {
                     let loader = if req.kind == "mod" { req.loader.as_deref() } else { None };
                     let list = self.files(env, &json!(n), gv.as_deref(), loader).await?;
-                    let ok: Vec<&Value> = list.iter().filter(|f| gv.as_ref().is_none_or(|g| f["gameVersions"].as_array().is_some_and(|l| l.iter().any(|x| x.as_str() == Some(g))))).collect();
+                    let ok: Vec<&Value> = list
+                        .iter()
+                        .filter(|f| gv.as_ref().is_none_or(|g| f["gameVersions"].as_array().is_some_and(|l| l.iter().any(|x| x.as_str() == Some(g)))))
+                        .collect();
                     ok.iter().find(|f| f["releaseType"].as_u64() == Some(1)).or(ok.first()).map(|f| (*f).clone())
                 }
             };
@@ -426,7 +431,17 @@ impl Cf {
     }
 
     /// Newer CurseForge files for recognised files (same game version / loader, by update channel).
-    pub async fn check_updates(&self, env: &Env, dir: &Path, kind: &str, game_version: &str, loader: &str, types: &[&str], skip: &HashSet<String>) -> Result<Vec<Value>> {
+    #[allow(clippy::too_many_arguments)]
+    pub async fn check_updates(
+        &self,
+        env: &Env,
+        dir: &Path,
+        kind: &str,
+        game_version: &str,
+        loader: &str,
+        types: &[&str],
+        skip: &HashSet<String>,
+    ) -> Result<Vec<Value>> {
         let exts: &[&str] = if kind == "mod" { &[".jar"] } else { &[".zip"] };
         let ids = self.identify(env, dir, exts, skip).await?;
         let mut out = Vec::new();
@@ -437,9 +452,15 @@ impl Cf {
             let loader = if kind == "mod" { Some(loader) } else { None };
             let Ok(list) = self.files(env, &info["projectId"], Some(game_version), loader).await else { continue };
             let cur_id = info.string_or("versionId", "");
-            let best = list.iter().find(|f| types.contains(&release(f["releaseType"].as_u64().unwrap_or(1))) && f["gameVersions"].as_array().is_some_and(|l| l.iter().any(|x| x.as_str() == Some(game_version))));
+            let best = list.iter().find(|f| {
+                types.contains(&release(f["releaseType"].as_u64().unwrap_or(1)))
+                    && f["gameVersions"].as_array().is_some_and(|l| l.iter().any(|x| x.as_str() == Some(game_version)))
+            });
             let Some(best) = best else { continue };
-            let cur_date = list.iter().find(|f| f["id"].as_u64().map(|x| x.to_string()) == Some(cur_id.clone())).map_or(0, |f| util::parse_date(f.str_of("fileDate").unwrap_or("")));
+            let cur_date = list
+                .iter()
+                .find(|f| f["id"].as_u64().map(|x| x.to_string()) == Some(cur_id.clone()))
+                .map_or(0, |f| util::parse_date(f.str_of("fileDate").unwrap_or("")));
             if best["id"].as_u64().map(|x| x.to_string()) == Some(cur_id.clone()) || util::parse_date(best.str_of("fileDate").unwrap_or("")) <= cur_date {
                 continue;
             }
@@ -453,7 +474,12 @@ impl Cf {
 
     /// Resolves manifest files to download tasks (chunks of 200 file + project records).
     pub async fn resolve_files(&self, env: &Env, manifest: &Value, root: &Path, on_progress: &(dyn Fn(Value) + Send + Sync)) -> Result<ManifestTasks> {
-        let wanted: Vec<&Value> = manifest["files"].as_array().into_iter().flatten().filter(|f| f.get("required") != Some(&json!(false)) && truthy_id(&f["projectID"]) && truthy_id(&f["fileID"])).collect();
+        let wanted: Vec<&Value> = manifest["files"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .filter(|f| f.get("required") != Some(&json!(false)) && truthy_id(&f["projectID"]) && truthy_id(&f["fileID"]))
+            .collect();
         let mut all = ManifestTasks::default();
         for (i, chunk) in wanted.chunks(200).enumerate() {
             on_progress(json!({ "stage": "Pobieranie listy plików z CurseForge", "done": i * 200, "total": wanted.len() }));
@@ -462,7 +488,12 @@ impl Cf {
             let (b1, b2) = (json!({ "fileIds": file_ids }), json!({ "modIds": mod_ids }));
             let (fl, mods) = tokio::join!(self.call(env, "/v1/mods/files", Some(&b1)), self.call(env, "/v1/mods", Some(&b2)));
             let (fl, mods) = (fl?, mods?);
-            let r = manifest_tasks(&json!({ "files": chunk }), fl["data"].as_array().map(Vec::as_slice).unwrap_or(&[]), mods["data"].as_array().map(Vec::as_slice).unwrap_or(&[]), root);
+            let r = manifest_tasks(
+                &json!({ "files": chunk }),
+                fl["data"].as_array().map(Vec::as_slice).unwrap_or(&[]),
+                mods["data"].as_array().map(Vec::as_slice).unwrap_or(&[]),
+                root,
+            );
             all.tasks.extend(r.tasks);
             all.server_only.extend(r.server_only);
             all.missing.extend(r.missing);
@@ -517,7 +548,11 @@ impl Cf {
             Some(id) => self.call(env, &format!("/v1/mods/{n}/files/{id}"), None).await?["data"].clone(),
             None => {
                 let list = self.files(env, &json!(n), None, None).await?;
-                list.iter().find(|x| x["releaseType"].as_u64() == Some(1)).or(list.first()).cloned().ok_or_else(|| msg("Ta paczka nie ma jeszcze żadnej wersji."))?
+                list.iter()
+                    .find(|x| x["releaseType"].as_u64() == Some(1))
+                    .or(list.first())
+                    .cloned()
+                    .ok_or_else(|| msg("Ta paczka nie ma jeszcze żadnej wersji."))?
             }
         };
         let name = util::basename(f.str_of("fileName").unwrap_or("pack.zip"));
@@ -570,7 +605,14 @@ pub fn hit(m: &Value) -> Value {
 
 /// One file in the Modrinth version shape of the details view.
 pub fn version(f: &Value) -> Value {
-    let loaders: Vec<String> = f["gameVersions"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_lowercase).filter(|v| ["forge", "fabric", "quilt", "neoforge"].contains(&v.as_str())).collect();
+    let loaders: Vec<String> = f["gameVersions"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .map(str::to_lowercase)
+        .filter(|v| ["forge", "fabric", "quilt", "neoforge"].contains(&v.as_str()))
+        .collect();
     let name = f.get("displayName").filter(|v| v.as_str().is_some_and(|s| !s.is_empty())).unwrap_or(&f["fileName"]).clone();
     json!({
         "id": f["id"].as_u64().map(|x| x.to_string()), "name": name, "number": name, "type": release(f["releaseType"].as_u64().unwrap_or(1)),
@@ -732,7 +774,8 @@ pub struct ManifestTasks {
 /// Files whose author blocked third-party downloads get the CDN link and a `blocked` record.
 pub fn manifest_tasks(manifest: &Value, file_list: &[Value], mod_list: &[Value], root: &Path) -> ManifestTasks {
     let all: Vec<&Value> = manifest["files"].as_array().into_iter().flatten().filter(|f| truthy_id(&f["projectID"]) && truthy_id(&f["fileID"])).collect();
-    let optional = all.iter().filter(|f| f.get("required") == Some(&json!(false))).map(|f| json!({ "projectId": f["projectID"], "fileId": f["fileID"] })).collect();
+    let optional =
+        all.iter().filter(|f| f.get("required") == Some(&json!(false))).map(|f| json!({ "projectId": f["projectID"], "fileId": f["fileID"] })).collect();
     let mut wanted: Vec<u64> = Vec::new();
     for f in all.iter().filter(|f| f.get("required") != Some(&json!(false))) {
         let id = number(&f["fileID"]) as u64;
@@ -759,7 +802,15 @@ pub fn manifest_tasks(manifest: &Value, file_list: &[Value], mod_list: &[Value],
         let dir = class_kind(m["classId"].as_u64().unwrap_or(0)).and_then(folder).unwrap_or("mods");
         let name = util::basename(f.str_of("fileName").unwrap_or(""));
         let rel = format!("{dir}/{name}");
-        let mut t = PackTask { url: file_url(f), dest: root.join(dir).join(&name), rel: rel.clone(), sha1: sha1_of(f), size: f["fileLength"].as_u64(), name: name.clone(), blocked: None };
+        let mut t = PackTask {
+            url: file_url(f),
+            dest: root.join(dir).join(&name),
+            rel: rel.clone(),
+            sha1: sha1_of(f),
+            size: f["fileLength"].as_u64(),
+            name: name.clone(),
+            blocked: None,
+        };
         if f.str_of("downloadUrl").is_none_or(str::is_empty) {
             let site = m.pointer("/links/websiteUrl").and_then(Value::as_str).filter(|s| !s.is_empty()).map(String::from).unwrap_or_else(|| {
                 format!("https://www.curseforge.com/minecraft/mc-mods/{}", m.str_of("slug").map(String::from).unwrap_or_else(|| f["modId"].to_string()))

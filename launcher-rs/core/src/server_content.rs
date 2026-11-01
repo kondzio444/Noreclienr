@@ -137,19 +137,30 @@ async fn best_version(env: &Env, project: &str, loaders: &[&str], game_version: 
 }
 
 /// Installs a plugin / mod / datapack (mods also get their required dependencies).
-pub fn install<'a>(env: &'a Env, srv: &'a Value, kind: &'a str, project_id: String, on_status: modrinth::StatusFn<'a>, seen: &'a mut HashSet<String>) -> futures::future::BoxFuture<'a, Result<Vec<String>>> {
+pub fn install<'a>(
+    env: &'a Env,
+    srv: &'a Value,
+    kind: &'a str,
+    project_id: String,
+    on_status: modrinth::StatusFn<'a>,
+    seen: &'a mut HashSet<String>,
+) -> futures::future::BoxFuture<'a, Result<Vec<String>>> {
     Box::pin(async move {
         if !seen.insert(project_id.clone()) {
             return Ok(vec![]);
         }
         let gv = if is_proxy(ty(srv)) { None } else { srv.str_of("mcVersion") };
-        let version = best_version(env, &project_id, &loaders_for(ty(srv), kind), gv).await?.ok_or_else(|| msg(format!("Brak wersji zgodnej z {} {}", ty(srv), srv.string_or("mcVersion", ""))))?;
+        let version = best_version(env, &project_id, &loaders_for(ty(srv), kind), gv)
+            .await?
+            .ok_or_else(|| msg(format!("Brak wersji zgodnej z {} {}", ty(srv), srv.string_or("mcVersion", ""))))?;
         let file = modrinth::primary_file(&version).ok_or_else(|| msg("Wersja nie ma plików"))?;
         let name = util::basename(file.str_of("filename").unwrap_or(""));
         let dir = folder_of(srv, kind);
         tokio::fs::create_dir_all(&dir).await?;
         on_status(format!("Pobieranie {name}"));
-        env.net.download(file.str_of("url").unwrap_or(""), &dir.join(&name), file.pointer("/hashes/sha1").and_then(Value::as_str), file["size"].as_u64(), &|_| {}).await?;
+        env.net
+            .download(file.str_of("url").unwrap_or(""), &dir.join(&name), file.pointer("/hashes/sha1").and_then(Value::as_str), file["size"].as_u64(), &|_| {})
+            .await?;
         let mut out = vec![name];
         if kind != "datapack" {
             for dep in version["dependencies"].as_array().cloned().unwrap_or_default() {
@@ -368,7 +379,10 @@ pub async fn move_to_backup(srv: &Value, file: &Path, label: &str) {
 /// Versions of a modpack usable on this server's loader.
 pub async fn modpack_versions(env: &Env, srv: &Value, project_id: &str) -> Result<Vec<Value>> {
     let loaders: Vec<&str> = mod_loaders(ty(srv)).map(|l| l.to_vec()).unwrap_or_else(|| vec!["fabric", "quilt", "forge", "neoforge"]);
-    let url = modrinth::with_params(&format!("{API}/project/{}/version", urlencoding::encode(project_id)), &[("loaders", serde_json::to_string(&loaders).unwrap_or_default())]);
+    let url = modrinth::with_params(
+        &format!("{API}/project/{}/version", urlencoding::encode(project_id)),
+        &[("loaders", serde_json::to_string(&loaders).unwrap_or_default())],
+    );
     let list: Vec<Value> = env.net.get_json(&url).await?;
     Ok(list
         .iter()
@@ -563,7 +577,8 @@ pub async fn install_server_pack(srv: &Value, file: &Path, on_status: &(dyn Fn(S
     let mut zip = Zip::open(file)?;
     let names = zip.names();
     let tops: HashSet<&str> = names.iter().map(|n| n.split('/').next().unwrap_or("")).collect();
-    let strip = if tops.len() == 1 && names.iter().all(|n| n.contains('/')) { format!("{}/", tops.iter().next().copied().unwrap_or("")) } else { String::new() };
+    let strip =
+        if tops.len() == 1 && names.iter().all(|n| n.contains('/')) { format!("{}/", tops.iter().next().copied().unwrap_or("")) } else { String::new() };
     let (mut n, mut loader, mut mc): (usize, Option<String>, Option<String>) = (0, None, None);
     for e in &names {
         let rel = &e[strip.len().min(e.len())..];

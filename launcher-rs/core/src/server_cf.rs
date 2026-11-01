@@ -17,10 +17,12 @@ use std::sync::LazyLock;
 const MOD_LOADERS: [&str; 4] = ["fabric", "quilt", "forge", "neoforge"];
 const PLUGIN_TYPES: [&str; 3] = ["paper", "purpur", "folia"];
 
-static CLIENT_PATHS: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^(resourcepacks|shaderpacks|screenshots|saves|options\.txt|optionsof\.txt|optionsshaders\.txt|servers\.dat[^/]*|config/(iris|oculus|sodium|embeddium|rubidium)[^/]*)(/|$)").unwrap());
-static PROTECTED: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^(world|world_nether|world_the_end|backups|\.nore-backup|server\.properties|eula\.txt|whitelist\.json|ops\.json|banned-players\.json|banned-ips\.json)(/|$)").unwrap());
+static CLIENT_PATHS: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)^(resourcepacks|shaderpacks|screenshots|saves|options\.txt|optionsof\.txt|optionsshaders\.txt|servers\.dat[^/]*|config/(iris|oculus|sodium|embeddium|rubidium)[^/]*)(/|$)").unwrap()
+});
+static PROTECTED: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)^(world|world_nether|world_the_end|backups|\.nore-backup|server\.properties|eula\.txt|whitelist\.json|ops\.json|banned-players\.json|banned-ips\.json)(/|$)").unwrap()
+});
 
 /// Which side a CurseForge file runs on, from its "Client" / "Server" tags.
 pub fn cf_side(f: &Value) -> &'static str {
@@ -93,7 +95,8 @@ pub fn manifest_server_tasks(manifest: &Value, file_list: &[Value], mod_list: &[
             wanted.push(id);
         }
     }
-    let optional = all.iter().filter(|f| f.get("required") == Some(&json!(false))).map(|f| json!({ "projectId": f["projectID"], "fileId": f["fileID"] })).collect();
+    let optional =
+        all.iter().filter(|f| f.get("required") == Some(&json!(false))).map(|f| json!({ "projectId": f["projectID"], "fileId": f["fileID"] })).collect();
     let mods: HashMap<u64, &Value> = mod_list.iter().filter_map(|m| Some((m["id"].as_u64()?, m))).collect();
     let mut out = ServerTasks { optional, ..Default::default() };
     let mut got = HashSet::new();
@@ -109,7 +112,8 @@ pub fn manifest_server_tasks(manifest: &Value, file_list: &[Value], mod_list: &[
         let title = m.str_of("name").or(f.str_of("displayName")).or(f.str_of("fileName")).unwrap_or("").to_string();
         let name = util::basename(f.str_of("fileName").unwrap_or(""));
         if cls == curseforge::class_id("resourcepack") || cls == curseforge::class_id("shader") {
-            out.client_skipped.push(json!({ "title": title, "file": name, "why": if cls == curseforge::class_id("shader") { "shader" } else { "resourcepack" } }));
+            out.client_skipped
+                .push(json!({ "title": title, "file": name, "why": if cls == curseforge::class_id("shader") { "shader" } else { "resourcepack" } }));
             continue;
         }
         if cf_side(f) == "client" {
@@ -124,12 +128,22 @@ pub fn manifest_server_tasks(manifest: &Value, file_list: &[Value], mod_list: &[
             "mods".into()
         };
         let rel = format!("{dir}/{name}");
-        let mut t = PackTask { url: curseforge::file_url(f), dest: root.join(&dir).join(&name), rel: rel.clone(), sha1: curseforge::sha1_of(f), size: f["fileLength"].as_u64(), name: name.clone(), blocked: None };
+        let mut t = PackTask {
+            url: curseforge::file_url(f),
+            dest: root.join(&dir).join(&name),
+            rel: rel.clone(),
+            sha1: curseforge::sha1_of(f),
+            size: f["fileLength"].as_u64(),
+            name: name.clone(),
+            blocked: None,
+        };
         if f.str_of("downloadUrl").is_none_or(str::is_empty) {
             let site = m.pointer("/links/websiteUrl").and_then(Value::as_str).filter(|s| !s.is_empty()).map(String::from).unwrap_or_else(|| {
                 format!("https://www.curseforge.com/minecraft/mc-mods/{}", m.str_of("slug").map(String::from).unwrap_or_else(|| f["modId"].to_string()))
             });
-            t.blocked = Some(json!({ "projectId": f["modId"], "fileId": f["id"], "title": title, "file": name, "rel": rel, "sha1": t.sha1, "size": f["fileLength"], "page": format!("{}/download/{}", site.trim_end_matches('/'), fid) }));
+            t.blocked = Some(
+                json!({ "projectId": f["modId"], "fileId": f["id"], "title": title, "file": name, "rel": rel, "sha1": t.sha1, "size": f["fileLength"], "page": format!("{}/download/{}", site.trim_end_matches('/'), fid) }),
+            );
         }
         out.tasks.push(t);
     }
@@ -206,7 +220,15 @@ pub async fn install_modpack(env: &Env, cf: &Cf, srv: &Value, source: &Value, on
     r
 }
 
-async fn install_modpack_inner(env: &Env, cf: &Cf, srv: &Value, source: &Value, on_status: &(dyn Fn(String) + Send + Sync), base: &Path, cache: &Path) -> Result<Value> {
+async fn install_modpack_inner(
+    env: &Env,
+    cf: &Cf,
+    srv: &Value,
+    source: &Value,
+    on_status: &(dyn Fn(String) + Send + Sync),
+    base: &Path,
+    cache: &Path,
+) -> Result<Value> {
     let mut pack_file = source.str_of("file").map(PathBuf::from);
     let (mut info, mut record) = (Value::Null, None);
     if pack_file.is_none() {
@@ -257,7 +279,12 @@ async fn install_modpack_inner(env: &Env, cf: &Cf, srv: &Value, source: &Value, 
         return Ok(base_v);
     }
     // the manifest: file and project records in chunks of 200
-    let wanted: Vec<&Value> = manifest["files"].as_array().into_iter().flatten().filter(|f| truthy(&f["projectID"]) && truthy(&f["fileID"]) && f.get("required") != Some(&json!(false))).collect();
+    let wanted: Vec<&Value> = manifest["files"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|f| truthy(&f["projectID"]) && truthy(&f["fileID"]) && f.get("required") != Some(&json!(false)))
+        .collect();
     let (mut files, mut mods) = (Vec::new(), Vec::new());
     for (i, chunk) in wanted.chunks(200).enumerate() {
         on_status(format!("Lista plików z CurseForge {}/{}", ((i + 1) * 200).min(wanted.len()), wanted.len()));
@@ -359,8 +386,14 @@ mod tests {
             json!({ "id": 6, "classId": 6945, "name": "DP" }),
         ];
         let r = manifest_server_tasks(&manifest, &files, &mods, Path::new("/srv"), "swiat");
-        assert_eq!(r.tasks.iter().map(|t| t.rel.as_str()).collect::<Vec<_>>(), vec!["mods/create.jar", "mods/ftbbackups.jar", "mods/blocked.jar", "swiat/datapacks/dp.zip"]);
-        assert_eq!(r.client_skipped.iter().map(|c| json!([c["title"], c["why"]])).collect::<Vec<_>>(), vec![json!(["Oculus", "client"]), json!(["Faithful", "resourcepack"])]);
+        assert_eq!(
+            r.tasks.iter().map(|t| t.rel.as_str()).collect::<Vec<_>>(),
+            vec!["mods/create.jar", "mods/ftbbackups.jar", "mods/blocked.jar", "swiat/datapacks/dp.zip"]
+        );
+        assert_eq!(
+            r.client_skipped.iter().map(|c| json!([c["title"], c["why"]])).collect::<Vec<_>>(),
+            vec![json!(["Oculus", "client"]), json!(["Faithful", "resourcepack"])]
+        );
         assert_eq!(r.missing, vec![80]);
         assert_eq!(r.optional, vec![json!({ "projectId": 7, "fileId": 70 })]);
         let b = r.tasks.iter().find(|t| t.blocked.is_some()).unwrap();
