@@ -1,6 +1,6 @@
 name: Launcher (Rust)
 
-# The Rust launcher (launcher-rs/, phase 1 of the port) is built and tested here, never published:
+# The Rust launcher (launcher-rs/, Tauri) is built and tested here; releases attach it in build.yml (job tauri):
 # the Electron launcher in build.yml stays the shipping product until the Rust one reaches parity.
 on:
   push:

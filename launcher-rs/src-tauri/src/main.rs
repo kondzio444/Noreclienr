@@ -7,6 +7,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod splash;
 mod updater;
 
 use async_trait::async_trait;
@@ -19,6 +20,9 @@ use std::sync::Arc;
 use tauri::{AppHandle, Manager, UserAttentionType, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_opener::OpenerExt;
+
+static MAIN_OPENED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static STOPPING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 const COMPAT: &str = include_str!("../../compat/nore-tauri.js");
 
@@ -90,6 +94,57 @@ impl Shell for Desktop {
     fn quit(&self) {
         self.0.exit(0);
     }
+
+    async fn save_file(&self, title: &str, default_name: &str, filter_name: &str, extensions: &[&str]) -> Option<PathBuf> {
+        let mut dialog = self.0.dialog().file().set_title(title).set_file_name(default_name);
+        if let Some(w) = self.main() {
+            dialog = dialog.set_parent(&w);
+        }
+        if !extensions.is_empty() {
+            dialog = dialog.add_filter(filter_name, extensions);
+        }
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        dialog.save_file(move |f| {
+            let _ = tx.send(f.and_then(|f| f.into_path().ok()));
+        });
+        rx.await.ok().flatten()
+    }
+
+    async fn pick_folder(&self, title: &str) -> Option<PathBuf> {
+        let mut dialog = self.0.dialog().file().set_title(title);
+        if let Some(w) = self.main() {
+            dialog = dialog.set_parent(&w);
+        }
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        dialog.pick_folder(move |f| {
+            let _ = tx.send(f.and_then(|f| f.into_path().ok()));
+        });
+        rx.await.ok().flatten()
+    }
+
+    async fn pick_files(&self, title: &str, filter_name: &str, extensions: &[&str]) -> Vec<PathBuf> {
+        let mut dialog = self.0.dialog().file().set_title(title);
+        if let Some(w) = self.main() {
+            dialog = dialog.set_parent(&w);
+        }
+        if !extensions.is_empty() {
+            dialog = dialog.add_filter(filter_name, extensions);
+        }
+        let (tx, rx) = tokio::sync::oneshot::channel();
+        dialog.pick_files(move |f| {
+            let _ = tx.send(f.unwrap_or_default().into_iter().filter_map(|f| f.into_path().ok()).collect::<Vec<_>>());
+        });
+        rx.await.unwrap_or_default()
+    }
+
+    fn reveal(&self, path: &Path) -> Result<()> {
+        self.0.opener().reveal_item_in_dir(path).map_err(|e| msg(format!("Nie udało się otworzyć folderu: {e}")))
+    }
+
+    fn copy_image(&self, width: u32, height: u32, rgba: Vec<u8>) -> Result<()> {
+        use tauri_plugin_clipboard_manager::ClipboardExt;
+        self.0.clipboard().write_image(&tauri::image::Image::new_owned(rgba, width, height)).map_err(|e| msg(format!("Nie udało się skopiować obrazu: {e}")))
+    }
 }
 
 /// Every `window.nore.*` call of the renderer.
@@ -110,6 +165,41 @@ fn allow_navigation(handle: &AppHandle, url: &tauri::Url) -> bool {
     own
 }
 
+/// The launcher window (after the splash).
+fn open_main(handle: &AppHandle) -> tauri::Result<()> {
+    MAIN_OPENED.store(true, std::sync::atomic::Ordering::SeqCst);
+    let nav = handle.clone();
+    let window = WebviewWindowBuilder::new(handle, "main", WebviewUrl::App("index.html".into()))
+        .title("Nore Launcher")
+        .inner_size(1220.0, 760.0)
+        .min_inner_size(980.0, 640.0)
+        .decorations(false)
+        .background_color(tauri::window::Color(0x29, 0x1c, 0x3d, 0xff))
+        .initialization_script(COMPAT)
+        .on_navigation(move |url| allow_navigation(&nav, url))
+        .build()?;
+    // development builds only: NORE_DEV_CLICK="<css selector>;…" clicks through the UI for headless screenshots
+    #[cfg(debug_assertions)]
+    if let Ok(sel) = std::env::var("NORE_DEV_CLICK") {
+        let w = window.clone();
+        tauri::async_runtime::spawn(async move {
+            for s in sel.split(';').filter(|s| !s.is_empty()) {
+                tokio::time::sleep(std::time::Duration::from_secs(6)).await;
+                let _ = w.eval(format!("document.querySelector({}).click()", serde_json::to_string(s).unwrap_or_default()));
+            }
+        });
+    }
+    let events = handle.clone();
+    let shown = window.clone();
+    window.on_window_event(move |e| {
+        if let WindowEvent::Resized(_) = e {
+            let maximized = shown.is_maximized().unwrap_or(false);
+            let _ = tauri::Emitter::emit(&events, "window:state", json!({ "maximized": maximized }));
+        }
+    });
+    Ok(())
+}
+
 fn main() {
     // one tokio runtime for Tauri and nore-core (which spawns its own background tasks)
     let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().thread_name("nore").build().expect("tokio runtime");
@@ -119,6 +209,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![nore_ipc])
         .setup(|tauri_app| {
@@ -139,22 +230,15 @@ fn main() {
             .map_err(|e| Box::new(std::io::Error::other(e.to_string())))?;
             tauri_app.manage(core.clone());
 
-            let nav = handle.clone();
-            let window = WebviewWindowBuilder::new(tauri_app, "main", WebviewUrl::App("index.html".into()))
-                .title("Nore Launcher")
-                .inner_size(1220.0, 760.0)
-                .min_inner_size(980.0, 640.0)
-                .decorations(false)
-                .background_color(tauri::window::Color(0x29, 0x1c, 0x3d, 0xff))
-                .initialization_script(COMPAT)
-                .on_navigation(move |url| allow_navigation(&nav, url))
-                .build()?;
-            let events = handle.clone();
-            let shown = window.clone();
-            window.on_window_event(move |e| {
-                if let WindowEvent::Resized(_) = e {
-                    let maximized = shown.is_maximized().unwrap_or(false);
-                    let _ = tauri::Emitter::emit(&events, "window:state", json!({ "maximized": maximized }));
+            // the Nore Updater splash first (packaged builds, after an update), then the launcher window
+            let splash_updater: Arc<dyn nore_core::updater::Updater> = updater.clone();
+            let h2 = handle.clone();
+            let c2 = core.clone();
+            tauri::async_runtime::spawn(async move {
+                splash::run(h2.clone(), c2.clone(), splash_updater).await;
+                if let Err(e) = open_main(&h2) {
+                    log::error!("Nie udało się otworzyć okna launchera: {e}");
+                    h2.exit(1);
                 }
             });
             core.start_background();
@@ -164,6 +248,26 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("Nore Launcher")
         .run(|handle, event| {
+            // running servers get "stop" and the launcher waits until they saved their worlds
+            if let tauri::RunEvent::ExitRequested { api, code, .. } = &event {
+                // the splash closes before the launcher window exists
+                if code.is_none() && !MAIN_OPENED.load(std::sync::atomic::Ordering::SeqCst) {
+                    api.prevent_exit();
+                    return;
+                }
+                if let Some(core) = handle.try_state::<Arc<App>>() {
+                    if core.servers_running_count() > 0 && !STOPPING.swap(true, std::sync::atomic::Ordering::SeqCst) {
+                        api.prevent_exit();
+                        let core = core.inner().clone();
+                        let h = handle.clone();
+                        tauri::async_runtime::spawn(async move {
+                            core.shutdown_servers().await;
+                            h.exit(0);
+                        });
+                        return;
+                    }
+                }
+            }
             if let tauri::RunEvent::Exit = event {
                 if let Some(core) = handle.try_state::<Arc<App>>() {
                     core.shutdown();

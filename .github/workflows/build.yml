@@ -172,3 +172,64 @@ jobs:
               gh release delete-asset "$t" "$a" -y || gh release delete "$t" -y || echo "::warning::Could not remove $a from $t"
             done
           done
+
+  # The Rust launcher (launcher-rs/, Tauri) next to the Electron release – NOT the shipping product yet:
+  # its installer and latest.json (the Tauri updater feed, served by the Worker at
+  # /api/v2/updates/feed/latest.json) are attached to the same release so Tauri builds can update
+  # themselves. Electron users keep updating through latest.yml. Runs only when the updater signing
+  # key is configured and never blocks the Electron release. See launcher-rs/PORTING.md "Switch-over".
+  tauri:
+    needs: [version, mod, release]
+    if: needs.version.outputs.publish == 'true'
+    runs-on: windows-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: launcher-rs
+        shell: bash
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      NORE_UPDATER_PUBKEY: ${{ vars.NORE_UPDATER_PUBKEY }}
+      NORE_CF_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+      NORE_MS_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Signing key configured?
+        id: key
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ] && [ -n "$NORE_UPDATER_PUBKEY" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "::notice::TAURI_SIGNING_PRIVATE_KEY / NORE_UPDATER_PUBKEY not set – Tauri release skipped"; fi
+      - uses: actions/download-artifact@v4
+        if: steps.key.outputs.ok == 'true'
+        with:
+          name: noreclient-mod
+          path: dist/mods
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.key.outputs.ok == 'true'
+      - uses: Swatinem/rust-cache@v2
+        if: steps.key.outputs.ok == 'true'
+        with:
+          workspaces: launcher-rs
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.ok == 'true'
+        with:
+          node-version: 22
+      - name: Build the Tauri installer ${{ needs.version.outputs.version }}
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          npm ci --no-audit --no-fund
+          node scripts/prepare-mods.js --require
+          V="${{ needs.version.outputs.version }}"
+          npx tauri build --bundles nsis --config "{\"version\":\"$V\",\"bundle\":{\"createUpdaterArtifacts\":true}}"
+      - name: Attach installer + latest.json to release v${{ needs.version.outputs.version }}
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          mkdir -p out
+          EXE=$(ls target/release/bundle/nsis/*.exe | head -1)
+          cp "$EXE" "out/NoreLauncher-rs-Setup-$V.exe"
+          cp "$EXE.sig" "out/NoreLauncher-rs-Setup-$V.exe.sig"
+          node scripts/latest-json.js "$V" "out/NoreLauncher-rs-Setup-$V.exe.sig" \
+            "https://github.com/${{ github.repository }}/releases/download/v$V/NoreLauncher-rs-Setup-$V.exe" > out/latest.json
+          for i in 1 2 3; do gh release upload "v$V" out/* --clobber && exit 0; sleep $((i * 20)); done; exit 1

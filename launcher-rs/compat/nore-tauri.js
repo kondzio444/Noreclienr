@@ -38,6 +38,55 @@
     return () => { dead = true; if (off) off(); };
   };
 
+  /*
+   * Drag & drop of files: a webview does not give dropped files a path (Electron has
+   * webUtils.getPathForFile). Tauri reports native drops with their paths (tauri://drag-*); they are
+   * replayed as DOM drag events on the element under the cursor with File objects whose paths
+   * pathForFile() knows. Real DOM file drags are stopped so a drop never arrives twice.
+   */
+  const droppedPaths = new WeakMap();
+  const dragDrop = () => {
+    const api = window.__TAURI__ && window.__TAURI__.event;
+    if (!api) return;
+    let target = null;
+    let last = [];
+    const at = (p) => {
+      const r = window.devicePixelRatio || 1;
+      return p ? document.elementFromPoint(p.x / r, p.y / r) : null;
+    };
+    const transfer = (paths) => {
+      const dt = new DataTransfer();
+      for (const p of paths || []) {
+        const f = new File([], String(p).split(/[\\/]/).pop() || 'plik');
+        droppedPaths.set(f, p);
+        try { dt.items.add(f); } catch { /* not a file */ }
+      }
+      return dt;
+    };
+    const fire = (el, type, paths) => {
+      if (!el) return;
+      const e = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transfer(paths) });
+      Object.defineProperty(e, '__nore', { value: true });
+      el.dispatchEvent(e);
+    };
+    for (const type of ['dragenter', 'dragover', 'dragleave', 'drop']) {
+      window.addEventListener(type, (e) => {
+        if (!e.__nore && e.isTrusted && e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files')) { e.preventDefault(); e.stopImmediatePropagation(); }
+      }, true);
+    }
+    api.listen('tauri://drag-enter', (m) => { last = m.payload.paths || []; target = at(m.payload.position); fire(target, 'dragenter', last); }).catch(() => {});
+    api.listen('tauri://drag-over', (m) => {
+      const el = at(m.payload.position);
+      if (el !== target) { fire(target, 'dragleave', last); target = el; fire(target, 'dragenter', last); }
+      fire(target, 'dragover', last);
+    }).catch(() => {});
+    api.listen('tauri://drag-leave', () => { fire(target, 'dragleave', last); target = null; }).catch(() => {});
+    api.listen('tauri://drag-drop', (m) => { const el = at(m.payload.position) || target; fire(el, 'drop', m.payload.paths || last); target = null; }).catch(() => {});
+  };
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', dragDrop); else dragDrop();
+  }
+
   const nore = {
     info: invoke('app:info'),
     state: invoke('state:get'),
@@ -133,8 +182,8 @@
       contentUpdates: invoke('servers:contentUpdates'),
       contentApplyUpdates: invoke('servers:contentApplyUpdates'),
       contentAddPaths: invoke('servers:contentAddPaths'),
-      // dropped files carry no path in a webview: the drop goes through the file picker instead
-      pathForFile: () => null,
+      // dropped files: the paths come from Tauri's native drag & drop (see dragDrop below)
+      pathForFile: (file) => (file && droppedPaths.get(file)) || null,
       modpackVersions: invoke('servers:modpackVersions'),
       modpackUpdate: invoke('servers:modpackUpdate'),
       modpackApply: invoke('servers:modpackApply'),
