@@ -14,7 +14,9 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{LazyLock, Mutex};
 
-pub const CATALOG_VERSION: u32 = 2;
+pub const CATALOG_VERSION: u32 = 3;
+/// Not added to modpack instances (they bring their own tuning; Krypton crashed Fabulously Optimized).
+pub const PACK_SKIP: &[&str] = &["krypton"];
 
 pub struct Entry {
     pub slug: &'static str,
@@ -571,7 +573,20 @@ pub async fn preview(env: &Env, inst: &Value) -> Preview {
     let present: Vec<Present> = all.iter().filter(|m| !own_files.contains(&m.file)).cloned().collect();
     let own_plain: Vec<Own> =
         own.iter().filter(|o| !o.truthy_of("dep")).map(|o| Own { slug: o.string_or("slug", ""), file: o.string_or("file", "") }).collect();
-    let plan = plan_perf_mods(inst.str_of("loader").unwrap_or(""), &present, &own_plain, &strings(&inst["perfBlocked"]), &strings(&inst["perfRemoved"]));
+    // modpacks tune their own network stack: Krypton broke Fabulously Optimized on 1.21.1 (see perf.js PACK_SKIP)
+    let is_pack = !inst["pack"].is_null();
+    let mut blocked = strings(&inst["perfBlocked"]);
+    if is_pack {
+        blocked.extend(PACK_SKIP.iter().map(|s| s.to_string()));
+    }
+    let mut plan = plan_perf_mods(inst.str_of("loader").unwrap_or(""), &present, &own_plain, &blocked, &strings(&inst["perfRemoved"]));
+    if is_pack {
+        for x in plan.skip.iter_mut().chain(plan.drop.iter_mut()) {
+            if PACK_SKIP.contains(&x["slug"].as_str().unwrap_or("")) {
+                x["reason"] = serde_json::json!("pomijany w modpackach");
+            }
+        }
+    }
     let for_resolve: Vec<Present> =
         all.iter().filter(|m| !own_files.contains(&m.file) || own.iter().any(|o| o.str_of("file") == Some(&m.file))).cloned().collect();
     let r = resolve(env, &plan, inst.str_of("mcVersion").unwrap_or(""), inst.str_of("loader").unwrap_or(""), &for_resolve).await;
@@ -826,7 +841,7 @@ mod tests {
         assert!(!enabled_for(&json!({ "loader": "fabric" })));
         assert!(!enabled_for(&json!({ "loader": "forge", "perfMods": false })));
         assert!(!enabled_for(&json!({ "loader": "vanilla", "perfMods": true })));
-        assert_eq!(state_key(&json!({ "mcVersion": "1.21.1", "loader": "fabric" })), "2|1.21.1|fabric|");
+        assert_eq!(state_key(&json!({ "mcVersion": "1.21.1", "loader": "fabric" })), "3|1.21.1|fabric|");
         assert_eq!(file_tokens("Sodium-Fabric-0.6.jar.disabled"), vec!["sodium"]);
     }
 }

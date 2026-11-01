@@ -17,7 +17,9 @@ const path = require('path');
 const AdmZip = require('adm-zip');
 
 /** Bumped when the catalog changes, so instances are checked again once. */
-const CATALOG_VERSION = 2;
+const CATALOG_VERSION = 3;
+/** Not added to modpack instances (they bring their own tuning; Krypton crashed Fabulously Optimized). */
+const PACK_SKIP = ['krypton'];
 
 /**
  * slug: Modrinth project, ids: mod ids that mean "already there", loaders: where it exists,
@@ -292,7 +294,10 @@ async function preview(inst, { blocked, removed } = {}) {
   if (!sameTarget) own = [];
   const ownFiles = new Set([...own, ...stale].flatMap(o => [o.file, o.file + '.disabled']));
   const present = all.filter(m => !ownFiles.has(m.file));
-  const plan = planPerfMods({ loader: inst.loader, present, own: own.filter(o => !o.dep), blocked: blocked || inst.perfBlocked || [], removed: removed || inst.perfRemoved || [] });
+  // modpacks tune their own network stack: Krypton broke Fabulously Optimized on 1.21.1, so it is never added to packs
+  const packSkip = inst.pack ? PACK_SKIP : [];
+  const plan = planPerfMods({ loader: inst.loader, present, own: own.filter(o => !o.dep), blocked: [...(blocked || inst.perfBlocked || []), ...packSkip], removed: removed || inst.perfRemoved || [] });
+  for (const x of [...plan.skip, ...plan.drop]) if (packSkip.includes(x.slug)) x.reason = 'pomijany w modpackach';
   const res = await resolve(plan, { mcVersion: inst.mcVersion, loader: inst.loader, present: all.filter(m => !ownFiles.has(m.file) || own.some(o => o.file === m.file)) });
   return { plan, files: res.files, missing: res.missing, errors: res.errors, own, stale, present };
 }
