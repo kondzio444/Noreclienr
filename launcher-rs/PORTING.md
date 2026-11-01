@@ -15,7 +15,7 @@ publishes it; the Tauri installer and `latest.json` are only attached to the sam
 | `core/src/ipc_more.rs` | The phase 2 channels (content, mod manager, modpacks, performance mods, doctor, gallery, servers). |
 | `core/src/bin/nore-cli.rs` | Headless driver: `channels`, `invoke <channel> [json…]`, `play --mc 1.21.1 --loader fabric`, `modpack <project> [--version id]`, `launch <instance>`, `server --type paper --mc 1.21.1` (`--shot file.png` takes a screenshot of the game window). |
 | `src-tauri/` (`nore-launcher`) | Tauri 2 shell: window, updater splash (`splash.rs`, shared `updater.html`), dialogs (open / save / folder / multi-file), opener + reveal, clipboard, Tauri updater; forwards `nore_ipc` calls to `nore-core` and core events to the webview; stops running servers (and waits for their saves) before exiting. |
-| `src-tauri/windows/` | NSIS template (tauri-bundler 2.7.5 + orange finish-page checkboxes) and `hooks.nsh` (album colours, Polish texts). |
+| `src-tauri/windows/` | NSIS template (tauri-bundler 2.10.4, matching @tauri-apps/cli 2.12.4 – re-copy it when the CLI is updated + orange finish-page checkboxes) and `hooks.nsh` (album colours, Polish texts). |
 | `scripts/` | `prepare-mods.js` (Nore Client jars → `<resources>/nore/mods`, like `launcher/scripts/copy-mod.js`), `latest-json.js` (Tauri updater feed). |
 | `compat/nore-tauri.js` | Injected before the page loads (Tauri only): builds `window.nore` with exactly the shape of `launcher/src/preload.js` on top of `invoke` / `listen`. |
 | `../launcher/src/renderer/` | The UI – **shared, not forked**: Tauri serves this folder as its frontend. In Electron `window.nore` already exists, so the compat script never runs there. |
