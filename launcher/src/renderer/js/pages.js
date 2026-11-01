@@ -509,6 +509,7 @@ Pages.settings = (root) => {
           <input class="input" id="w" value="${s.width}" style="width:84px"> × <input class="input" id="h" value="${s.height}" style="width:84px"></div>
         <div class="setting"><div class="col"><b>Pełny ekran</b><span>Uruchamiaj grę na pełnym ekranie</span></div><label class="switch"><input type="checkbox" id="fs" ${s.fullscreen ? 'checked' : ''}><i></i></label></div>
         <div class="setting"><div class="col"><b>Po uruchomieniu gry</b><span>Co zrobić z launcherem</span></div><div id="after"></div></div>
+        ${App.info && App.info.shell === 'rust' ? `<div class="setting"><div class="col"><b>Uruchamiaj z systemem</b><span>Launcher startuje po włączeniu komputera, schowany w zasobniku</span></div><label class="switch"><input type="checkbox" id="autostart" ${s.autoStart !== false ? 'checked' : ''}><i></i></label></div>` : ''}
         ${App.info && App.info.shell === 'rust' ? `<div class="setting"><div class="col"><b>Działaj w tle</b><span>Krzyżyk chowa launcher do zasobnika (obok zegara) – serwery, porty i domeny dalej działają</span></div><label class="switch"><input type="checkbox" id="tray" ${s.closeToTray !== false ? 'checked' : ''}><i></i></label></div>` : ''}
       </div>
       <div class="card panel">
@@ -576,6 +577,7 @@ Pages.settings = (root) => {
     const st = await nore.update.check().catch(() => null);
     $('#updstate', root).textContent = updateText(st || App.update);
   };
+  if ($('#autostart', root)) $('#autostart', root).onchange = (e) => save({ autoStart: e.target.checked }).catch((err) => { e.target.checked = !e.target.checked; toast('Autostart', err.message, 'error'); });
   if ($('#tray', root)) $('#tray', root).onchange = (e) => save({ closeToTray: e.target.checked });
   $('#after', root).appendChild(segmented([{ value: 'hide', label: App.info && App.info.shell === 'rust' ? 'Do zasobnika' : 'Ukryj' }, { value: 'minimize', label: 'Minimalizuj' }, { value: 'keep', label: 'Zostaw' }, { value: 'close', label: 'Zamknij' }], s.afterLaunch, (v) => save({ afterLaunch: v })));
   $('#pickjava', root).onclick = async () => {

@@ -25,6 +25,9 @@ use tauri_plugin_opener::OpenerExt;
 static MAIN_OPENED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static STOPPING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
+/// Added to the command line when the system starts the launcher (setting autoStart): no window, tray only.
+const AUTOSTART_ARG: &str = "--autostart";
+
 const COMPAT: &str = include_str!("../../compat/nore-tauri.js");
 
 struct Events(AppHandle);
@@ -142,6 +145,13 @@ impl Shell for Desktop {
         self.0.opener().reveal_item_in_dir(path).map_err(|e| msg(format!("Nie udało się otworzyć folderu: {e}")))
     }
 
+    fn set_autostart(&self, on: bool) -> Result<()> {
+        use tauri_plugin_autostart::ManagerExt;
+        let a = self.0.autolaunch();
+        let r = if on { a.enable() } else { a.disable() };
+        r.map_err(|e| msg(format!("Nie udało się zmienić autostartu: {e}")))
+    }
+
     fn copy_image(&self, width: u32, height: u32, rgba: Vec<u8>) -> Result<()> {
         use tauri_plugin_clipboard_manager::ClipboardExt;
         self.0.clipboard().write_image(&tauri::image::Image::new_owned(rgba, width, height)).map_err(|e| msg(format!("Nie udało się skopiować obrazu: {e}")))
@@ -203,7 +213,7 @@ fn show_main(handle: &AppHandle) {
 }
 
 /// The launcher window (after the splash).
-fn open_main(handle: &AppHandle) -> tauri::Result<()> {
+fn open_main(handle: &AppHandle, hidden: bool) -> tauri::Result<()> {
     MAIN_OPENED.store(true, std::sync::atomic::Ordering::SeqCst);
     let nav = handle.clone();
     let window = WebviewWindowBuilder::new(handle, "main", WebviewUrl::App("index.html".into()))
@@ -211,6 +221,7 @@ fn open_main(handle: &AppHandle) -> tauri::Result<()> {
         .inner_size(1220.0, 760.0)
         .min_inner_size(980.0, 640.0)
         .decorations(false)
+        .visible(!hidden)
         .background_color(tauri::window::Color(0x29, 0x1c, 0x3d, 0xff))
         .initialization_script(COMPAT)
         .on_navigation(move |url| allow_navigation(&nav, url))
@@ -244,10 +255,13 @@ fn main() {
     let _enter = runtime.enter();
 
     tauri::Builder::default()
+        // one launcher at a time: starting it again (shortcut, autostart) shows the running one
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![AUTOSTART_ARG])))
         .invoke_handler(tauri::generate_handler![nore_ipc])
         .setup(|tauri_app| {
             let handle = tauri_app.handle().clone();
@@ -266,14 +280,25 @@ fn main() {
             })
             .map_err(|e| Box::new(std::io::Error::other(e.to_string())))?;
             tauri_app.manage(core.clone());
+            // start with the system (setting autoStart, on by default) – installed builds only
+            if !cfg!(debug_assertions) {
+                let on = core.store.settings()["autoStart"].as_bool().unwrap_or(true);
+                if let Err(e) = Desktop(handle.clone()).set_autostart(on) {
+                    log::warn!("{e}");
+                }
+            }
 
             // the Nore Updater splash first (packaged builds, after an update), then the launcher window
             let splash_updater: Arc<dyn nore_core::updater::Updater> = updater.clone();
             let h2 = handle.clone();
             let c2 = core.clone();
             tauri::async_runtime::spawn(async move {
-                splash::run(h2.clone(), c2.clone(), splash_updater).await;
-                if let Err(e) = open_main(&h2) {
+                // started with the system: straight to the tray, no splash and no window
+                let autostarted = std::env::args().any(|a| a == AUTOSTART_ARG);
+                if !autostarted {
+                    splash::run(h2.clone(), c2.clone(), splash_updater).await;
+                }
+                if let Err(e) = open_main(&h2, autostarted) {
                     log::error!("Nie udało się otworzyć okna launchera: {e}");
                     h2.exit(1);
                     return;

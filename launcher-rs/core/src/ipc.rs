@@ -269,6 +269,10 @@ pub trait Shell: Send + Sync {
     fn reveal(&self, path: &Path) -> Result<()> {
         self.open_path(path.parent().unwrap_or(path))
     }
+    /// Starts the launcher with the system (hidden in the tray) or stops doing so.
+    fn set_autostart(&self, _on: bool) -> Result<()> {
+        Ok(())
+    }
     /// Puts an RGBA image on the clipboard.
     fn copy_image(&self, _width: u32, _height: u32, _rgba: Vec<u8>) -> Result<()> {
         Err(msg("Schowek nie jest dostępny."))
@@ -963,6 +967,9 @@ impl App {
         let settings = self.store.settings();
         if patch.get("autoUpdate").is_some() {
             self.updater.configure(&settings);
+        }
+        if let Some(on) = patch.get("autoStart") {
+            self.shell.set_autostart(on.as_bool().unwrap_or(true))?;
         }
         if patch.get("hubPresence").is_some() {
             self.refresh_hub();
