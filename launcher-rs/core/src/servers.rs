@@ -194,7 +194,7 @@ impl App {
         let srv = json!({
             "id": id, "name": name.unwrap_or_else(|| format!("Serwer {mc}")), "mcVersion": mc, "type": t, "memoryMb": o.get("memoryMb").cloned().unwrap_or(json!(2048)),
             "port": o.get("port").cloned().unwrap_or(json!(25565)), "eula": o.truthy_of("eula"), "props": default_props(),
-            "created": now_ms(), "installed": false, "autoRestart": true, "backupOnStart": false, "backupKeep": 10, "upnp": false, "domain": null, "jvmArgs": "",
+            "created": now_ms(), "installed": false, "autoRestart": true, "backupOnStart": false, "backupKeep": 10, "upnp": true, "domain": null, "jvmArgs": "",
             "loaderVersion": "", "tunnel": null, "disableClientMods": true, "jvmProfile": "aikar", "schedule": { "restartAt": "", "backupEveryH": 0, "warnMinutes": 5 },
             "modPins": [], "modProfiles": [],
         });
@@ -729,6 +729,17 @@ impl App {
                 Err(e) => {
                     self.set_net(&id, gen, "forwardError", json!(e.to_string()));
                     self.server_log(&id, &format!("[Launcher] {e}"), "err");
+                }
+            }
+        }
+        // Windows firewall: the inbound rule for the server port is added on its own the first time
+        // (one administrator prompt); after a refusal it is not asked again – the button stays
+        if cfg!(windows) && srv.get("firewallAsked") != Some(&json!(true)) && server_net::firewall_status(port).await["rule"] != json!(true) {
+            let _ = self.server_update(&id, &json!({ "firewallAsked": true }));
+            match server_net::firewall_allow(port).await {
+                Ok(_) => self.server_log(&id, &format!("[Launcher] Zapora Windows: dodano regułę dla portu {port}."), "cmd"),
+                Err(e) => {
+                    self.server_log(&id, &format!("[Launcher] Zapora Windows: {e} – kliknij „Zezwól w zaporze Windows” w zakładce „Sieć i domena”."), "err")
                 }
             }
         }

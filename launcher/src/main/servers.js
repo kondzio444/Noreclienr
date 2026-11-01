@@ -67,7 +67,7 @@ function create({ name, mcVersion, type = 'paper', memoryMb = 2048, port = 25565
   const id = (name || 'serwer').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) + '-' + crypto.randomBytes(3).toString('hex');
   const srv = {
     id, name: name || `Serwer ${mcVersion}`, mcVersion, type, memoryMb, port, eula: !!eula, props: { ...DEFAULT_PROPS },
-    created: Date.now(), installed: false, autoRestart: true, backupOnStart: false, backupKeep: 10, upnp: false, domain: null, jvmArgs: '',
+    created: Date.now(), installed: false, autoRestart: true, backupOnStart: false, backupKeep: 10, upnp: true, domain: null, jvmArgs: '',
     loaderVersion: '', tunnel: null, disableClientMods: true, jvmProfile: 'aikar', schedule: { restartAt: '', backupEveryH: 0, warnMinutes: 5 },
     modPins: [], modProfiles: [],
   };

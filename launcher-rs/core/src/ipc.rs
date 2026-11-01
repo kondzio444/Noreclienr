@@ -594,7 +594,13 @@ impl App {
                 self.shell.open_path(Path::new(&arg_str(a, 0)))?;
                 json!("")
             }
-            "window:minimize" | "window:maximize" | "window:close" => {
+            "window:close" => {
+                // X: to the tray (background) unless the player switched it off; servers keep running
+                let to_tray = self.store.settings()["closeToTray"].as_bool().unwrap_or(true);
+                self.shell.window(if to_tray { "hide" } else { "close" });
+                json!({ "tray": to_tray })
+            }
+            "window:minimize" | "window:maximize" => {
                 self.shell.window(&channel[7..]);
                 Value::Null
             }

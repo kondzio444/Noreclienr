@@ -166,6 +166,42 @@ fn allow_navigation(handle: &AppHandle, url: &tauri::Url) -> bool {
     own
 }
 
+/// The tray icon: the launcher keeps running there while the game plays or after the window's X
+/// (setting closeToTray). Left click or „Pokaż launcher” brings the window back; „Zakończ” quits
+/// (running servers still get "stop" first, see the ExitRequested handler).
+fn build_tray(handle: &AppHandle) -> tauri::Result<()> {
+    use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+    use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+    let show = MenuItem::with_id(handle, "show", "Pokaż launcher", true, None::<&str>)?;
+    let quit = MenuItem::with_id(handle, "quit", "Zakończ Nore Launcher", true, None::<&str>)?;
+    let menu = Menu::with_items(handle, &[&show, &PredefinedMenuItem::separator(handle)?, &quit])?;
+    let mut tray = TrayIconBuilder::with_id("nore").tooltip("Nore Launcher").menu(&menu).show_menu_on_left_click(false);
+    if let Some(icon) = handle.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    tray.on_menu_event(|app, e| match e.id().as_ref() {
+        "show" => show_main(app),
+        "quit" => app.exit(0),
+        _ => {}
+    })
+    .on_tray_icon_event(|tray, e| {
+        if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+            show_main(tray.app_handle());
+        }
+    })
+    .build(handle)?;
+    Ok(())
+}
+
+/// Brings the launcher window back from the tray (or from behind other windows).
+fn show_main(handle: &AppHandle) {
+    if let Some(w) = handle.get_webview_window("main") {
+        let _ = w.show();
+        let _ = w.unminimize();
+        let _ = w.set_focus();
+    }
+}
+
 /// The launcher window (after the splash).
 fn open_main(handle: &AppHandle) -> tauri::Result<()> {
     MAIN_OPENED.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -241,6 +277,9 @@ fn main() {
                     log::error!("Nie udało się otworzyć okna launchera: {e}");
                     h2.exit(1);
                     return;
+                }
+                if let Err(e) = build_tray(&h2) {
+                    log::warn!("Brak ikony w zasobniku: {e}");
                 }
                 // after the move from the Electron launcher: offer once to remove it (Windows)
                 cleanup::offer(h2.clone(), c2.clone());
