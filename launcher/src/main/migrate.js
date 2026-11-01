@@ -27,6 +27,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { spawn, execFile } = require('child_process');
 const net = require('./net');
+const { blake2b512 } = require('./blake2b');
 
 const API_DOWNLOADS = 'https://noreclient.pl/api/v2/downloads';
 const GITHUB_LATEST = 'https://api.github.com/repos/kondzio444/Noreclienr/releases/latest';
@@ -128,7 +129,7 @@ function verifyMinisign({ sig, pubkey, blake2b, content }) {
 /** SHA-256 (hex) and BLAKE2b-512 (bytes) of a file in one pass. */
 async function hashFile(file) {
   const sha = crypto.createHash('sha256');
-  const blake = crypto.createHash('blake2b512');
+  const blake = blake2b512(); // Electron's BoringSSL has no blake2b512 – JS fallback in blake2b.js
   for await (const chunk of fs.createReadStream(file)) { sha.update(chunk); blake.update(chunk); }
   return { sha256: sha.digest('hex'), blake2b: blake.digest() };
 }

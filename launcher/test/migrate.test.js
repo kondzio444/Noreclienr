@@ -13,7 +13,7 @@ const m = require('../src/main/migrate');
 const TEST_PUB = 'dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwMTEzMjlBM0Q1MkE0ODQKUldTRXBGSTltaklSa0tzcERWOEtsNFNEN2tEQjZTcHQwZWxTck94N0pIaGpQRnhHeHpzUGtpS2gK';
 const TEST_SIG = 'dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVTRXBGSTltaklSa0I5QTFzUktkZTQ5bG54TEo4TEY4d2xYTDAra3JDeUVobDh6UHFNZjJJbk5ZUXlQbWorcDhMWjQ0VThMeS9ZVWN3QXZycXlKdlkrc0NOY3p1V3MyZWdVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkzNTI2Nzc3CWZpbGU6ZmlsZS5iaW4KQys2WTc3ZVVVMWc2eS9SbysxNDlJQnk0SEdsQUt1eUxnVVJ3NkNtUzZaeER0dXZLNUdBWGNRVG9mMjdoaEdSdnBqd095RC82d1ZBVjViZ3R1cytrQVE9PQo=';
 const FILE = Buffer.from('Nore test installer\n');
-const blake = (b) => crypto.createHash('blake2b512').update(b).digest();
+const blake = (b) => require('../src/main/blake2b').blake2b512().update(b).digest(); // native, or JS in Electron
 
 test('Tauri installer names – never the Electron bridge build', () => {
   assert.ok(m.isTauriInstaller('NoreLauncher-Setup-1.4.1500.exe', 'win'));
@@ -87,4 +87,16 @@ test('decide: postponed start, switched off, too many installs; app bundle path'
   assert.equal(m.decide({ installs: m.MAX_INSTALLS }, {}), 'skip');
   assert.equal(m.appBundle('/Applications/Nore Launcher.app/Contents/MacOS/Nore Launcher'), '/Applications/Nore Launcher.app');
   assert.equal(m.appBundle('/usr/bin/nore'), null);
+});
+
+test('JS BLAKE2b-512 (Electron has no native one) matches Node and verifies the signature', async () => {
+  const { createBlake2b512 } = require('../src/main/blake2b');
+  assert.equal(createBlake2b512().update(Buffer.from('abc')).digest().toString('hex'),
+    'ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923');
+  const native = (() => { try { return crypto.createHash('blake2b512'); } catch { return null; } })();
+  if (native) for (const n of [0, 1, 127, 128, 129, 256, 4097]) {
+    const b = crypto.randomBytes(n);
+    assert.equal(createBlake2b512().update(b.subarray(0, n >> 1)).update(b.subarray(n >> 1)).digest().toString('hex'), crypto.createHash('blake2b512').update(b).digest('hex'));
+  }
+  assert.equal(m.verifyMinisign({ sig: TEST_SIG, pubkey: TEST_PUB, blake2b: createBlake2b512().update(FILE).digest() }), true);
 });
