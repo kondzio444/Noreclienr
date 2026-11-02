@@ -1,0 +1,17 @@
+/* §-coloured text: only real Minecraft MOTD lines (servers, Nore MC) use it now; js/motd.js renders them.
+   The rest of the launcher speaks Album (album.css). */
+.motd { font-size: 14px; line-height: 1.45; color: var(--nore-ink-soft); }
+.motd .c0 { color: #000; } .motd .c1 { color: #5a5aff; } .motd .c2 { color: #00aa00; } .motd .c3 { color: #00aaaa; }
+.motd .c4 { color: #d43c3c; } .motd .c5 { color: #c23bc2; } .motd .c6 { color: #ffaa00; } .motd .c7 { color: #aaaaaa; }
+.motd .c8 { color: #7a7a7a; } .motd .c9 { color: #7a7aff; } .motd .ca { color: #55ff55; } .motd .cb { color: #55ffff; }
+.motd .cc { color: #ff5555; } .motd .cd { color: #ff55ff; } .motd .ce { color: #ffff55; } .motd .cf { color: #fff; }
+.motd .cx { color: var(--nore-accent-light); }
+.motd .l { font-weight: 700; } .motd .o { font-style: italic; } .motd .n { text-decoration: underline; } .motd .m { text-decoration: line-through; }
+/* §k: obfuscated glyphs, resolved by motd.js – drawn in the pixel face, scaled so a scrambling word keeps its width */
+.mk { font-family: var(--nore-font-pixel); font-weight: 400; letter-spacing: 0; color: var(--nore-accent-light); }
+h1 .mk, h2 .mk, h3 .mk { font-size: .7em; line-height: 1; }
+.motd span { display: inline; }
+
+/* changed state stays lit until it has been seen (hover/focus clears it): a wait dot sticker */
+.lit { position: relative; }
+.lit::after { content: ''; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--nore-dot-wait); box-shadow: 0 0 0 1.5px var(--nore-vinyl); animation: dot-slap var(--nore-dur-base) var(--nore-ease-out) both; }

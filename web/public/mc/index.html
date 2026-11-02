@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Nore MC – serwer Minecraft mc.noreclient.pl</title>
+  <meta name="description" content="Nore MC – oficjalny serwer partnerski Nore Client i Nore Launchera. Adres: mc.noreclient.pl. Stan serwera na żywo, jak dołączyć, zasady i rangi.">
+  <meta name="theme-color" content="#141216">
+  <meta property="og:title" content="Nore MC – mc.noreclient.pl">
+  <meta property="og:description" content="Oficjalny serwer partnerski Nore Client. Jeden klik w Nore Launcherze.">
+  <meta property="og:image" content="/assets/home/panorama.webp">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="preload" href="/assets/fonts/dela-gothic-one-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/onest-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <link rel="stylesheet" href="/mc.css">
+</head>
+<body>
+  <a class="skip" href="#tresc">Przejdź do treści</a>
+  <header class="site-nav">
+    <a class="mark" href="/" aria-label="Nore MC – strona serwera"><img src="/assets/album/logo-sticker-256.png" alt="" width="42" height="42">Nore MC<small>serwer</small></a>
+    <nav class="links" aria-label="Serwer">
+      <a href="#dolacz">Jak dołączyć</a>
+      <a href="#tryby">Tryby</a>
+      <a href="#zasady">Zasady</a>
+      <a href="#rangi">Rangi</a>
+      <a href="#aktualnosci">Aktualności</a>
+    </nav>
+    <a class="pill sm" href="#discord"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>Discord</a>
+  </header>
+
+  <main id="tresc">
+    <!-- hero: the address label is the server's signature object -->
+    <section class="hero" aria-labelledby="h">
+      <div class="hero-copy">
+        <h1 id="h" class="rv">Nore MC</h1>
+        <p class="lead rv">Oficjalny serwer partnerski Nore Client. W Nore Launcherze jest przypięty na stronie Serwery: jeden klik i grasz.</p>
+        <button type="button" class="ip rv" id="ip" aria-label="Kopiuj adres serwera mc.noreclient.pl">mc.noreclient.pl<small>Kopiuj</small></button>
+        <div class="live rv" id="live" aria-live="polite">
+          <span class="on"><i class="dot wait"></i>Sprawdzam serwer…</span>
+        </div>
+        <p class="motd rv" id="motd" hidden></p>
+        <div class="acts rv">
+          <a class="pill lg" href="#dolacz"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5v17a1 1 0 0 0 1.5.86l14-8.5a1 1 0 0 0 0-1.72l-14-8.5A1 1 0 0 0 6 3.5z" fill="currentColor" stroke="none"/></svg>Graj przez Nore Launcher</a>
+          <a class="pill ink lg" href="#zasady">Zasady serwera</a>
+        </div>
+      </div>
+      <div class="world rv rv-stick">
+        <div class="st art" style="--tilt:2.5deg"><img src="/assets/home/panorama.webp" alt="Wiśniowy staw w Minecraft, panorama z menu Nore Client" width="1200" height="750" fetchpriority="high"></div>
+        <span class="badge">oficjalny<br>serwer Nore</span>
+        <img class="logo" src="/assets/album/logo-sticker-256.png" alt="" width="256" height="256">
+        <div class="heads" id="heads" aria-label="Gracze teraz na serwerze" hidden></div>
+      </div>
+    </section>
+
+    <!-- three ways in, ordered by how close you are to Nore -->
+    <section class="join" id="dolacz" aria-labelledby="j">
+      <h2 id="j" class="heading rv">Trzy drogi na serwer</h2>
+      <div class="ways">
+        <article class="way a rv">
+          <img class="shot" src="/assets/home/servers.webp" alt="Strona Serwery w Nore Launcherze" width="1200" height="750"><div><h3>Z Nore Launcher</h3><p>Nore MC jest przypięty na stronie Serwery i na ekranie Start. Dołącz instaluje właściwą wersję z Nore Client i od razu łączy.</p></div>
+          <div class="path" aria-label="Serwery, Nore MC, Dołącz"><span>Serwery</span><b aria-hidden="true">→</b><span>Nore MC</span><b aria-hidden="true">→</b><span class="go">Dołącz</span></div>
+          <a class="pill ink" href="https://noreclient.pl/#pobierz">Pobierz Nore Launcher</a>
+        </article>
+        <article class="way b rv">
+          <img class="shot" src="/assets/home/menu.webp" alt="Menu główne Nore Client z przyciskiem Multiplayer" width="1600" height="900"><div><h3>Z Nore Client</h3><p>Serwer jest przypięty na górze listy Multiplayer w każdej wersji klienta. Nie da się go przypadkiem usunąć.</p></div>
+          <div class="slot-row" data-ui><img class="ico" src="/assets/logo.png" alt="" width="54" height="54"><div><b>Nore MC</b><small id="way-live"><i class="dot sm off"></i> sprawdzam…</small></div><span class="pin">oficjalny</span></div>
+        </article>
+        <article class="way c rv">
+          <div><h3>Z innego launchera</h3><p id="way-ver">Dodaj serwer w Minecraft: Java Edition i wpisz adres. Wersję podaje serwer, sprawdzimy ją za chwilę.</p></div>
+          <button type="button" class="addr" data-copy="mc.noreclient.pl"><code>mc.noreclient.pl</code><span>Kopiuj</span></button>
+        </article>
+      </div>
+    </section>
+
+    <!-- game modes (preliminary) -->
+    <section class="modes" id="tryby" aria-labelledby="t">
+      <div class="modes-head">
+        <h2 id="t" class="heading rv">Tryby gry</h2>
+        <p class="rv"><span class="label event">Wstępnie</span> Lista trybów i ich zasady potwierdzi administracja serwera przed startem. Trybów, których jeszcze nie ma, nie udajemy: mają puste sloty.</p>
+      </div>
+      <div class="mode-grid">
+        <article class="mode on rv"><span class="dot ready"></span><h3>Survival</h3><p>Klasyczne przetrwanie z przyjaciółmi na wspólnym świecie.</p></article>
+        <article class="mode ghost rv"><h3>Kolejny tryb</h3><p>Pusty slot. Pojawi się tu, gdy administracja go ogłosi.</p></article>
+        <article class="mode ghost rv"><h3>Wydarzenia</h3><p>Pusty slot na sezonowe wydarzenia serwera.</p></article>
+      </div>
+    </section>
+
+    <!-- rules -->
+    <section class="rules" id="zasady" aria-labelledby="z">
+      <h2 id="z" class="heading rv">Zasady w skrócie</h2>
+      <ol class="rule-list">
+        <li class="rv"><b>Szacunek dla innych</b><span>Bez wyzwisk, gróźb, dyskryminacji i spamu na czacie.</span></li>
+        <li class="rv"><b>Gramy uczciwie</b><span>Bez cheatów, X-raya, makr i wykorzystywania błędów. Moduły Nore Client są dozwolone.</span></li>
+        <li class="rv"><b>Nie niszczymy cudzego</b><span>Bez griefingu i kradzieży. Budujesz obok kogoś? Zapytaj.</span></li>
+        <li class="rv"><b>Jedno konto na gracza</b><span>Bez multikont do omijania kar i limitów.</span></li>
+        <li class="rv"><b>Bez reklam</b><span>Nie reklamujemy innych serwerów ani stron na czacie i w nazwach.</span></li>
+        <li class="rv"><b>Słuchamy administracji</b><span>Spór zgłoś na Discordzie, w tickecie. Pełny regulamin opublikuje administracja serwera.</span></li>
+      </ol>
+    </section>
+
+    <!-- ranks: a sticker sheet; prices are not set yet -->
+    <section class="ranks" id="rangi" aria-labelledby="r">
+      <h2 id="r" class="heading rv">Rangi</h2>
+      <p class="fair rv">Rangi nie dają przewagi w walce. Cennik i przywileje płatnych rang ogłosimy przed otwarciem sklepu, do tego czasu nic nie kupisz.</p>
+      <div class="sheet-ranks">
+        <article class="rk g rv"><h3>Gracz</h3><p class="price">Za darmo</p><ul><li>Pełny dostęp do serwera</li><li>Kosmetyki Nore widoczne w F5</li><li>Pomoc administracji na Discordzie</li></ul><a class="pill white" href="#dolacz">Wejdź na serwer</a></article>
+        <article class="rk v rv"><h3>VIP</h3><p class="price">Cena wkrótce</p><ul><li>Przywileje ogłosimy przed startem sklepu</li></ul><span class="pill ink" aria-disabled="true">Jeszcze niedostępne</span></article>
+        <article class="rk s rv"><h3>SVIP</h3><p class="price">Cena wkrótce</p><ul><li>Przywileje ogłosimy przed startem sklepu</li></ul><span class="pill ink" aria-disabled="true">Jeszcze niedostępne</span></article>
+      </div>
+    </section>
+
+    <!-- vote + shop: clearly marked placeholders -->
+    <section class="soon" aria-labelledby="soon-title">
+      <h2 id="soon-title" class="sr">Głosowanie i sklep</h2>
+      <article class="soon-card slot rv" id="glosuj"><h3>Głosuj na serwer</h3><span class="label dark">Wkrótce</span><p>Linki do list serwerów i nagrody za głosy pojawią się tutaj, gdy serwer wystartuje na listach.</p></article>
+      <article class="soon-card slot rv" id="sklep"><h3>Sklep serwera</h3><span class="label dark">Wkrótce</span><p>Sklep jest jeszcze zamknięty. Nie płać nikomu, kto sprzedaje rangi Nore MC poza tą stroną.</p></article>
+    </section>
+
+    <!-- news: clippings from the Nore news feed -->
+    <section class="news" id="aktualnosci" aria-labelledby="n">
+      <h2 id="n" class="heading rv">Aktualności Nore</h2>
+      <div class="clips" id="news">
+        <article class="clip rv" style="--tilt:-1deg"><span class="tape"></span><p class="meta">Wczytuję aktualności…</p><h3>Nowości z Nore Client i Nore Launchera</h3><p>Lista wczyta się z API Nore.</p></article>
+      </div>
+    </section>
+
+    <!-- Discord (link not published yet) -->
+    <section class="discord" id="discord" aria-labelledby="d">
+      <div>
+        <h2 id="d" class="heading rv">Discord serwera</h2>
+        <p class="rv">Zgłoszenia, propozycje, wydarzenia i stan serwera na żywo z Nore Botem. Zaproszenie opublikujemy tutaj przy starcie serwera.</p>
+      </div>
+      <span class="pill white lg rv" aria-disabled="true">Zaproszenie wkrótce</span>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <p class="name" aria-hidden="true">Nore MC</p>
+    <div class="row">
+      <span class="state" id="foot-state"><i class="dot off"></i>mc.noreclient.pl</span>
+      <div class="cols">
+        <ul><li><a href="#dolacz">Jak dołączyć</a></li><li><a href="#zasady">Zasady</a></li><li><a href="#rangi">Rangi</a></li></ul>
+        <ul><li><a href="https://noreclient.pl/">Nore Client</a></li><li><a href="https://noreclient.pl/#pobierz">Pobierz launcher</a></li><li><a href="https://noreclient.pl/api">API Nore</a></li></ul>
+      </div>
+    </div>
+    <div class="legal"><span>Nore MC nie jest powiązany z Mojang Studios ani Microsoft. Minecraft jest znakiem towarowym Mojang AB.</span><a class="pen" href="#tresc">Na górę</a></div>
+  </footer>
+
+  <script src="/assets/album.js" defer></script>
+  <script src="/mc.js" defer></script>
+</body>
+</html>

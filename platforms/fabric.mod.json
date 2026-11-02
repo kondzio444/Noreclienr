@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "noreclient",
+  "version": "${version}",
+  "name": "Nore Client",
+  "description": "Rozbudowany klient PvP/QoL: ClickGUI, edytor HUD, nakładki, zoom, freelook, profile konfiguracji i wiele więcej.",
+  "authors": ["kondzio444"],
+  "license": "Apache-2.0",
+  "icon": "assets/noreclient/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.noreclient.platform.NoreEntrypoint"]
+  },
+  "mixins": ["noreclient.mixins.json"],
+  "accessWidener": "noreclient.accesswidener",
+  "custom": {
+    "noreclient:platform": "${platform}"
+  },
+  "depends": {
+    "fabricloader": ">=${loader_min}",
+    "minecraft": "${mc_range}",
+    "java": ">=${java_version}"
+  }
+}

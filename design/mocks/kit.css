@@ -1,0 +1,306 @@
+/* Nore "Album" – component kit for the mocks (launcher, updater, installer, panel, game stand-ins).
+   Reference implementation of DESIGN.md: implementers port these rules into the real stylesheets.
+   Depends on ../tokens.css. */
+@import url('https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Onest:wght@400;500;600;700&family=Pixelify+Sans:wght@400;600&display=block');
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--nore-page);
+  color: var(--nore-ink);
+  font: 400 14px/1.5 var(--nore-font-text);
+  font-feature-settings: 'tnum' 0;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--nore-accent); color: #fff; }
+img { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.tnum { font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* ------------------------------------------------------------------ materials */
+/* Black album card: fibre grain. A tiny SVG noise tile, light specks at very low alpha. */
+.card-grain {
+  background-color: var(--nore-page);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 .97  0 0 0 0 .94  0 0 0 2.2 -1.35'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
+}
+/* Bookcloth: the album cover. Fine weave from two noise passes stretched along x and y. */
+.cloth {
+  background-color: var(--nore-cover);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9 .06' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.6 -.95'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.10'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.06 .9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1.6 -.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23w)' opacity='.22'/%3E%3C/svg%3E");
+  color: var(--nore-cover-ink);
+}
+
+/* ------------------------------------------------------------------ type */
+.display { font-family: var(--nore-font-display); font-weight: 400; letter-spacing: -0.01em; line-height: 1; }
+.t-hero { font: var(--nore-launcher-hero); letter-spacing: var(--nore-launcher-hero-tracking); }
+.t-title { font: var(--nore-launcher-title); letter-spacing: var(--nore-launcher-title-tracking); }
+.t-section { font: var(--nore-launcher-section); }
+.t-lead { font: var(--nore-launcher-lead); }
+.t-label { font: var(--nore-launcher-label); }
+.t-meta { font: var(--nore-launcher-meta); color: var(--nore-ink-soft); }
+.soft { color: var(--nore-ink-soft); }
+.faint { color: var(--nore-ink-faint); }
+.pixel { font-family: var(--nore-font-pixel); }
+
+/* ------------------------------------------------------------------ the sticker */
+/* A die-cut sticker: vinyl rim, artwork inside, flat at rest. --tilt is its resting rotation. */
+.sticker {
+  --rim: var(--nore-rim-md);
+  --r: var(--nore-radius-sticker);
+  --tilt: 0deg;
+  position: relative;
+  display: block;
+  border: var(--rim) solid var(--nore-vinyl);
+  border-radius: var(--r);
+  background: var(--nore-page-raised) center / cover no-repeat;
+  rotate: var(--tilt);
+  transition: translate var(--nore-dur-quick) var(--nore-ease-out), rotate var(--nore-dur-base) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out);
+}
+.sticker.lg { --rim: var(--nore-rim-lg); --r: 22px; }
+.sticker.sm { --rim: var(--nore-rim-sm); --r: var(--nore-radius-md); }
+.sticker.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.sticker.ink { background: var(--nore-page); color: var(--nore-ink); }
+.sticker.violet { background: var(--nore-accent); color: #fff; }
+/* Lift: the sticker is being peeled. Shadow only here. */
+.sticker.is-lift, .sticker:hover:not(.no-lift) {
+  translate: 0 calc(var(--nore-shift-lift) * -1);
+  rotate: calc(var(--tilt) * .6);
+  box-shadow: var(--nore-shadow-lift);
+}
+.sticker:active:not(.no-lift) { scale: .97; translate: 0 0; box-shadow: none; }
+/* Peel corner: a folded triangle showing the sticker's paper back. Appears on lift. */
+.sticker .peel, .peelable::after {
+  content: '';
+  position: absolute;
+  right: calc(var(--rim) * -1);
+  top: calc(var(--rim) * -1);
+  width: 18px; height: 18px;
+  border-top-right-radius: var(--r);
+  background: linear-gradient(225deg, var(--nore-page) 0 50%, #d9d4cc 50% 100%);
+  opacity: 0;
+  transition: opacity var(--nore-dur-quick), width var(--nore-dur-base) var(--nore-ease-peel), height var(--nore-dur-base) var(--nore-ease-peel);
+}
+.sticker.is-lift .peel, .sticker:hover .peel, .is-lift.peelable::after { opacity: 1; width: 22px; height: 22px; }
+
+/* Die-cut contour around a transparent PNG (logo, heads, cosmetics). */
+.cut { filter: drop-shadow(2px 0 0 var(--nore-vinyl)) drop-shadow(-2px 0 0 var(--nore-vinyl)) drop-shadow(0 2px 0 var(--nore-vinyl)) drop-shadow(0 -2px 0 var(--nore-vinyl)); }
+.cut-lg { filter: drop-shadow(3px 0 0 var(--nore-vinyl)) drop-shadow(-3px 0 0 var(--nore-vinyl)) drop-shadow(0 3px 0 var(--nore-vinyl)) drop-shadow(0 -3px 0 var(--nore-vinyl)) drop-shadow(2px 2px 0 var(--nore-vinyl)) drop-shadow(-2px -2px 0 var(--nore-vinyl)); }
+.logo-violet { filter: hue-rotate(238deg) saturate(1.05); }
+.logo-sticker { position: relative; display: inline-block; }
+.logo-sticker img { filter: hue-rotate(238deg) drop-shadow(2px 0 0 var(--nore-vinyl)) drop-shadow(-2px 0 0 var(--nore-vinyl)) drop-shadow(0 2px 0 var(--nore-vinyl)) drop-shadow(0 -2px 0 var(--nore-vinyl)); }
+.logo-sticker.lg img { filter: hue-rotate(238deg) drop-shadow(4px 0 0 var(--nore-vinyl)) drop-shadow(-4px 0 0 var(--nore-vinyl)) drop-shadow(0 4px 0 var(--nore-vinyl)) drop-shadow(0 -4px 0 var(--nore-vinyl)) drop-shadow(3px 3px 0 var(--nore-vinyl)) drop-shadow(-3px -3px 0 var(--nore-vinyl)); }
+
+/* ------------------------------------------------------------------ ghost slot */
+/* Where a sticker goes: recessed, with its die line printed and its silhouette in ghost ink. */
+.slot {
+  position: relative;
+  border-radius: var(--nore-radius-sticker);
+  background: var(--nore-slot);
+  outline: 2px dashed var(--nore-ghost);
+  outline-offset: -7px;
+  color: var(--nore-ink-faint);
+}
+.slot.plain { outline: none; }
+
+/* ------------------------------------------------------------------ dot sticker (state) */
+.dot {
+  --c: var(--nore-dot-off);
+  display: inline-block;
+  flex: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--nore-vinyl);
+  vertical-align: middle;
+}
+.dot.sm { width: 8px; height: 8px; box-shadow: 0 0 0 1.5px var(--nore-vinyl); }
+.dot.lg { width: 16px; height: 16px; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.dot.ready { --c: var(--nore-dot-ready); }
+.dot.wait { --c: var(--nore-dot-wait); }
+.dot.error { --c: var(--nore-dot-error); }
+.dot.event { --c: var(--nore-dot-event); }
+.dot.info { --c: var(--nore-dot-info); }
+.dot.nore { --c: var(--nore-accent); }
+.dot.off { --c: var(--nore-dot-off); }
+
+/* ------------------------------------------------------------------ label stickers (tags) */
+.label {
+  --bg: var(--nore-vinyl);
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 24px; padding: 0 10px;
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--nore-vinyl-ink);
+  box-shadow: 0 0 0 2px var(--nore-vinyl);
+  font: 600 12.5px/1 var(--nore-font-text);
+  white-space: nowrap;
+}
+.label.fabric { --bg: var(--nore-label-fabric); }
+.label.quilt { --bg: var(--nore-label-quilt); }
+.label.forge { --bg: var(--nore-label-forge); }
+.label.vanilla { --bg: var(--nore-label-vanilla); }
+.label.modpack { --bg: var(--nore-label-modpack); }
+.label.nore { --bg: var(--nore-accent-deep); color: #fff; }
+.label.event { --bg: var(--nore-dot-event); }
+.label.dark { --bg: var(--nore-page); color: var(--nore-ink); }
+.label.sm { height: 20px; padding: 0 8px; font-size: 12px; border-radius: 6px; }
+
+/* ------------------------------------------------------------------ buttons */
+.btn-play {
+  --h: 64px;
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+  height: var(--h); padding: 0 40px 0 34px;
+  border: 0; border-radius: 999px;
+  background: var(--nore-accent);
+  box-shadow: 0 0 0 4px var(--nore-vinyl);
+  color: #fff;
+  font: var(--nore-launcher-play); letter-spacing: var(--nore-launcher-play-tracking);
+  cursor: pointer; overflow: hidden;
+  transition: translate var(--nore-dur-quick) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out);
+}
+.btn-play svg { width: 22px; height: 22px; }
+.btn-play:hover, .btn-play.is-lift { translate: 0 -3px; box-shadow: 0 0 0 4px var(--nore-vinyl), var(--nore-shadow-lift); }
+.btn-play:active { scale: .97; translate: 0 0; }
+/* rub-down highlight: a pale band sweeps once after press */
+.btn-play::after {
+  content: ''; position: absolute; inset: 0 auto 0 -40%; width: 30%;
+  background: rgba(255, 255, 255, .28); transform: skewX(-18deg); opacity: 0;
+}
+.btn-play.is-rub::after { animation: rub var(--nore-dur-base) var(--nore-ease-rub) both; }
+.btn-play .fill { position: absolute; inset: 0; background: var(--nore-accent-deep); transform-origin: left; }
+.btn-play > span, .btn-play > svg { position: relative; }
+.btn-play.sm { --h: 46px; padding: 0 26px 0 22px; font-size: 18px; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.btn-play.running { background: var(--nore-page-raised-2); color: var(--nore-ink); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 18px;
+  border: 0; border-radius: 999px;
+  background: var(--nore-page-raised-2);
+  color: var(--nore-ink);
+  font: 600 14px/1 var(--nore-font-text);
+  cursor: pointer;
+  transition: background var(--nore-dur-quick), scale var(--nore-dur-tap) var(--nore-ease-out);
+  white-space: nowrap;
+}
+.btn:hover { background: color-mix(in oklab, var(--nore-page-raised-2) 80%, #fff); }
+.btn:active { scale: .97; }
+.btn.sm { height: 32px; padding: 0 13px; font-size: 13px; }
+.btn.icon { width: 40px; padding: 0; }
+.btn.sticker-btn { background: var(--nore-accent-deep); color: #fff; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.btn.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.btn.danger { background: color-mix(in oklab, var(--nore-dot-error) 18%, var(--nore-page-raised)); color: #ffd9d5; }
+.btn svg { width: 17px; height: 17px; }
+.pen { color: var(--nore-ink); text-decoration: underline; text-decoration-color: color-mix(in oklab, var(--nore-accent-light) 60%, transparent); text-decoration-thickness: 2px; text-underline-offset: 4px; font-weight: 600; }
+a { color: var(--nore-accent-light); }
+
+:focus-visible { outline: 2px solid var(--nore-accent-light); outline-offset: 3px; border-radius: 6px; }
+
+/* ------------------------------------------------------------------ fields */
+.field { display: grid; gap: 7px; }
+.field > span { font: 600 13px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); }
+.input {
+  height: 44px; padding: 0 16px;
+  border: 0; border-radius: 12px;
+  background: var(--nore-slot);
+  color: var(--nore-ink);
+  font: 500 14px/1 var(--nore-font-text);
+  display: flex; align-items: center; gap: 10px;
+}
+.input.focus { box-shadow: 0 0 0 2px var(--nore-accent); }
+.input .ph { color: var(--nore-ink-faint); }
+.input .caret { width: 2px; height: 18px; background: var(--nore-accent-light); margin-left: -8px; animation: caret 1s steps(1) infinite; }
+
+/* switch: a dot sticker stuck on the left (off) or right (on) of a slot */
+.switch { position: relative; width: 48px; height: 28px; border-radius: 999px; background: var(--nore-slot); flex: none; }
+.switch::after {
+  content: ''; position: absolute; top: 5px; left: 5px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--nore-dot-off); box-shadow: 0 0 0 2.5px var(--nore-vinyl);
+  transition: translate var(--nore-spring-knob-dur) var(--nore-spring-knob), background var(--nore-dur-quick);
+}
+.switch.on { background: color-mix(in oklab, var(--nore-accent) 34%, var(--nore-slot)); }
+.switch.on::after { translate: 20px 0; background: var(--nore-accent); }
+
+/* slider: slot track, filled with accent tape, dot-sticker thumb */
+.slider { position: relative; height: 10px; border-radius: 999px; background: var(--nore-slot); }
+.slider > i { position: absolute; inset: 0 auto 0 0; width: var(--v, 40%); border-radius: 999px; background: var(--nore-accent); }
+.slider > b { position: absolute; top: 50%; left: var(--v, 40%); width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%; background: var(--nore-vinyl); box-shadow: 0 0 0 0 transparent; }
+.slider > b::after { content: ''; position: absolute; inset: 5px; border-radius: 50%; background: var(--nore-accent); }
+
+/* segmented: a slot with a white sticker pill under the chosen option */
+.seg { position: relative; display: inline-flex; padding: 4px; border-radius: 999px; background: var(--nore-slot); }
+.seg > span { position: relative; z-index: 1; height: 34px; padding: 0 16px; display: inline-flex; align-items: center; font: 600 13.5px/1 var(--nore-font-text); color: var(--nore-ink-soft); border-radius: 999px; }
+.seg > span.on { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+
+/* progress: exact-length fill in a slot */
+.progress { height: 10px; border-radius: 999px; background: var(--nore-slot); overflow: hidden; }
+.progress > i { display: block; height: 100%; width: var(--v, 50%); border-radius: 999px; background: var(--nore-accent); }
+
+/* ------------------------------------------------------------------ tape and clippings */
+.tape {
+  position: absolute; z-index: 2;
+  width: 74px; height: 22px;
+  background: var(--nore-tape-lilac);
+  rotate: -5deg;
+  clip-path: polygon(0 8%, 4% 0, 8% 9%, 12% 0, 88% 0, 92% 10%, 96% 0, 100% 8%, 100% 92%, 96% 100%, 92% 90%, 88% 100%, 12% 100%, 8% 91%, 4% 100%, 0 92%);
+}
+.tape.mint { background: var(--nore-tape-mint); }
+.tape.kraft { background: var(--nore-tape-kraft); }
+.clip {
+  position: relative;
+  background: var(--nore-paper);
+  color: var(--nore-vinyl-ink);
+  border-radius: 3px;
+  padding: 16px 18px 16px;
+}
+.clip p { margin: 0; color: var(--nore-vinyl-ink-soft); }
+
+/* ------------------------------------------------------------------ sheets */
+.sheet { background: var(--nore-page-raised); border-radius: var(--nore-radius-sheet); }
+.sheet.float { box-shadow: var(--nore-shadow-float); }
+
+/* ------------------------------------------------------------------ icons (Lucide geometry, 1.9 stroke) */
+.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* ------------------------------------------------------------------ keyframes (motion spec) */
+@keyframes stick {
+  from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(var(--tilt, 0deg) + var(--nore-stick-tilt)); box-shadow: var(--nore-shadow-lift); }
+  40% { opacity: 1; }
+  to { opacity: 1; scale: 1; rotate: var(--tilt, 0deg); box-shadow: none; }
+}
+@keyframes peel-off {
+  0% { clip-path: inset(0 0 0 0 round var(--r, 16px)); }
+  35% { translate: 0 -4px; rotate: calc(var(--tilt, 0deg) - 3deg); box-shadow: var(--nore-shadow-lift); }
+  to { opacity: 0; translate: 18px -18px; rotate: calc(var(--tilt, 0deg) + 8deg); }
+}
+@keyframes rub { from { opacity: 1; left: -40%; } to { opacity: 0; left: 120%; } }
+@keyframes page-in { from { opacity: 0; translate: var(--nore-shift-page) 0; } }
+@keyframes page-out { to { opacity: 0; translate: calc(var(--nore-shift-page-out) * -1) 0; } }
+@keyframes sheet-in { from { opacity: 0; translate: 0 var(--nore-shift-drop); scale: .985; } }
+@keyframes dot-slap { 0% { scale: 1.6; opacity: 0; } 60% { scale: .92; opacity: 1; } 100% { scale: 1; } }
+@keyframes caret { 50% { opacity: 0; } }
+@keyframes fill-x { from { transform: scaleX(0); } }
+@keyframes flicker { 0%, 100% { opacity: 1; } 8% { opacity: .35; } 12% { opacity: .9; } 22% { opacity: .2; } 30% { opacity: 1; } }
+@keyframes phosphor { 0%, 100% { filter: drop-shadow(0 0 6px var(--nore-halloween-phosphor-glow)); } 50% { filter: drop-shadow(0 0 12px var(--nore-halloween-phosphor-glow)); } }
+@keyframes snow { from { translate: 0 -10vh; } to { translate: 2vw 110vh; } }
+@keyframes sway { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; } }
+
+.enter > * { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; }
+.enter > *:nth-child(2) { animation-delay: calc(var(--nore-stagger) * 1); }
+.enter > *:nth-child(3) { animation-delay: calc(var(--nore-stagger) * 2); }
+.enter > *:nth-child(4) { animation-delay: calc(var(--nore-stagger) * 3); }
+.enter > *:nth-child(5) { animation-delay: calc(var(--nore-stagger) * 4); }
+.enter > *:nth-child(6) { animation-delay: calc(var(--nore-stagger) * 5); }
+.enter > *:nth-child(7) { animation-delay: calc(var(--nore-stagger) * 6); }
+.enter > *:nth-child(n+8) { animation-delay: calc(var(--nore-stagger) * 7); }
+
+@media (prefers-reduced-motion: reduce) {
+  .enter > * { animation-name: none; }
+  .sticker, .btn-play { transition-property: box-shadow, background; }
+}

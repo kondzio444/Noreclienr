@@ -1,0 +1,41 @@
+[workspace]
+resolver = "2"
+members = ["core", "src-tauri"]
+
+[workspace.package]
+version = "1.4.5"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["kondzio444"]
+repository = "https://github.com/kondzio444/Noreclienr"
+rust-version = "1.82"
+
+[workspace.dependencies]
+nore-core = { path = "core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+
+# no debug info in dev builds: the target folder stays small, backtraces still name functions
+[profile.dev]
+debug = 0
+
+# hashing, unzipping and crypto run thousands of times per install: keep them fast in debug builds too
+[profile.dev.package.sha1]
+opt-level = 3
+[profile.dev.package.sha2]
+opt-level = 3
+[profile.dev.package.md-5]
+opt-level = 3
+[profile.dev.package.miniz_oxide]
+opt-level = 3
+[profile.dev.package.aes-gcm]
+opt-level = 3
+[profile.dev.package.p256]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+codegen-units = 4
+strip = true

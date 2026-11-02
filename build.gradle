@@ -1,0 +1,13 @@
+def platformTask = { String name -> gradle.includedBuilds.collect { it.task(":${name}") } }
+
+tasks.register('build') {
+    group = 'build'
+    description = 'Builds Nore Client for every supported Minecraft version (dist/mods).'
+    dependsOn platformTask('build')
+}
+
+tasks.register('clean') {
+    group = 'build'
+    dependsOn platformTask('clean')
+    doLast { delete 'dist' }
+}

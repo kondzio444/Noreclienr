@@ -1,0 +1,124 @@
+/* ==========================================================================
+   Events (DESIGN.md §9, js/events.js). Forced on by date; only the intensity (--ev-fx, 0.25–1) is a setting.
+   Palette shifts come from tokens.css [data-event]; this file adds the motifs. No event styling lives
+   inside the base components.
+   ========================================================================== */
+
+:root { --ev-fx: 1; }
+#ev-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+#ev-over { position: absolute; inset: 0; z-index: 25; pointer-events: none; overflow: hidden; }
+#ev-dim { position: fixed; inset: 0; z-index: 8000; background: #000; opacity: 0; pointer-events: none; }
+/* the palette crossfades during a reveal (260–700 ms of the storyboard) */
+body.ev-revealing #main, body.ev-revealing #sidebar, body.ev-revealing .card, body.ev-revealing .icard, body.ev-revealing .pcard {
+  transition: background-color 440ms var(--nore-ease-in-out) !important; }
+
+/* ------------------------------------------------------------------ Halloween 2026: lights out */
+[data-event="halloween"] .ev-torch {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle 360px at var(--tx, 50%) var(--ty, 40%), rgba(255, 228, 180, calc(.13 * var(--ev-fx))), rgba(255, 228, 180, calc(.045 * var(--ev-fx))) 50%, transparent 72%);
+  animation: fadeIn 200ms var(--nore-ease-out) backwards;
+}
+body.ev-revealing .ev-torch { animation: fadeIn 200ms linear 1200ms backwards; }
+.ev-dust { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* things in the dark: events.js sets --dim from the distance to the torch; text and controls never dim */
+[data-event="halloween"] .ev-dimmable { filter: brightness(var(--dim, .62)) saturate(calc(.75 + .25 * var(--dim, .62))); transition: filter 160ms linear; }
+[data-event="halloween"] .tape { opacity: .72; }
+/* glow-in-the-dark stickers: the only glowing colour in the system; they charge under the torch */
+[data-event="halloween"] .glow { filter: drop-shadow(0 0 2px var(--nore-halloween-phosphor)) drop-shadow(0 0 calc(14px * var(--ev-fx)) var(--nore-halloween-phosphor-glow)); animation: phosphor 4s var(--nore-ease-in-out) infinite; transition: filter 600ms var(--nore-ease-out); }
+[data-event="halloween"] .sticker.glow { box-shadow: 0 0 calc(14px * var(--ev-fx)) var(--nore-halloween-phosphor-glow); filter: none; animation: none; }
+[data-event="halloween"] .glow.charged { filter: drop-shadow(0 0 3px var(--nore-halloween-phosphor)) drop-shadow(0 0 calc(26px * var(--ev-fx)) var(--nore-halloween-phosphor)); animation: none; transition-duration: 160ms; }
+[data-event="halloween"] .sticker.glow.charged { box-shadow: 0 0 calc(26px * var(--ev-fx)) var(--nore-halloween-phosphor), 0 0 2px var(--nore-halloween-phosphor); filter: none; }
+.glow-in { animation: glow-in 500ms var(--nore-ease-out) backwards !important; animation-delay: calc(var(--gi, 0) * 60ms) !important; }
+@keyframes glow-in { from { opacity: 0; filter: none; box-shadow: none; } }
+@keyframes phosphor { 0%, 100% { filter: drop-shadow(0 0 2px var(--nore-halloween-phosphor)) drop-shadow(0 0 calc(8px * var(--ev-fx)) var(--nore-halloween-phosphor-glow)); } 50% { filter: drop-shadow(0 0 2px var(--nore-halloween-phosphor)) drop-shadow(0 0 calc(15px * var(--ev-fx)) var(--nore-halloween-phosphor-glow)); } }
+/* the ghost sticker on the hero instance */
+.ev-ghost { position: absolute; z-index: 4; right: -22px; bottom: -18px; width: 58px; image-rendering: pixelated; rotate: 8deg; pointer-events: none; }
+/* phosphor cobweb in the page corner, drawn in on reveal */
+.ev-web { position: absolute; right: 0; top: 36px; width: 190px; height: 165px; stroke: var(--nore-halloween-phosphor); opacity: calc(.42 * var(--ev-fx)); }
+.ev-web.draw path { stroke-dasharray: 1; animation: web-draw 500ms var(--nore-ease-out) backwards; }
+.ev-web.draw path:nth-child(2) { animation-delay: 60ms; } .ev-web.draw path:nth-child(3) { animation-delay: 120ms; } .ev-web.draw path:nth-child(4) { animation-delay: 180ms; }
+@keyframes web-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* a spider on its thread, swaying */
+.ev-spider { position: absolute; right: 344px; top: 0; display: flex; flex-direction: column; align-items: center; transform-origin: top center; animation: sway 6s var(--nore-ease-in-out) infinite; opacity: var(--ev-fx); }
+.ev-spider i { width: 1.5px; height: 92px; background: color-mix(in oklab, var(--nore-ink) 45%, transparent); }
+.ev-spider img { width: 34px; image-rendering: pixelated; }
+.ev-spider.drop { animation: spider-drop var(--nore-spring-soft-dur) var(--nore-spring-soft) backwards, sway 6s var(--nore-ease-in-out) var(--nore-spring-soft-dur) infinite; }
+@keyframes spider-drop { from { translate: 0 -130px; } }
+@keyframes sway { 0%, 100% { rotate: -2deg; } 50% { rotate: 2deg; } }
+.ev-bat { position: absolute; left: 0; top: 0; width: 40px; image-rendering: pixelated; opacity: calc(.55 + .4 * var(--ev-fx)); will-change: transform; }
+.ev-bat[data-i="1"] { width: 30px; }
+.ev-bat[data-i="2"] { width: 24px; }
+body.ev-revealing .ev-bat { animation: fadeIn 200ms linear 1200ms backwards; }
+
+/* the rail: the event tab is pumpkin orange with a pixel pumpkin and the countdown */
+[data-event="halloween"] .nav a[data-page="halloween"] { color: #ffc08a; }
+[data-event="halloween"] .nav a[data-page="halloween"].active { color: var(--nore-halloween-pumpkin); }
+.nav a .ev-ico { width: 17px; height: 17px; image-rendering: pixelated; flex: none; }
+
+/* the event poster (Start), taped with kraft tape */
+.poster { position: relative; padding: 18px; border-radius: 16px; rotate: -1deg; animation: stick var(--nore-spring-soft-dur) var(--nore-spring-soft) 160ms backwards; --tilt: -1deg; }
+.poster .tape { top: -11px; left: 24px; rotate: -8deg; }
+.poster .tape.r { left: auto; right: 22px; rotate: 7deg; }
+.poster h3 { margin: 4px 0 4px; font: 400 26px/1 var(--nore-font-display); letter-spacing: -.01em; }
+.poster p { margin: 0 0 14px; font: 500 13px/1.45 var(--nore-font-text); color: var(--nore-ink-soft); }
+.poster .caps { display: flex; gap: 10px; margin-bottom: 14px; }
+.poster .caps .sticker, .poster .caps .slot { width: 52px; height: 68px; border-radius: 9px; --rim: 2.5px; --r: 9px; flex: none; }
+.poster .caps .sticker { background-size: cover; background-position: center; image-rendering: pixelated; }
+.poster .caps .slot { outline-width: 1.5px; outline-offset: -5px; display: grid; place-items: center; }
+.poster .caps .slot img { width: 28px; image-rendering: pixelated; filter: brightness(0) invert(.22); }
+.poster .caps .ghosty-card { display: grid; place-items: center; background: var(--nore-halloween-page, #0b0a0c); }
+.poster .caps .ghosty-card img { width: 30px; image-rendering: pixelated; }
+.poster .row2 { display: flex; align-items: center; gap: 12px; }
+.poster .count { margin-left: auto; text-align: right; font: 500 12px/1.3 var(--nore-font-text); color: var(--nore-ink-soft); }
+.poster .count b { display: block; font: 400 24px/1 var(--nore-font-display); font-variant-numeric: tabular-nums; }
+.poster.hw { background: #1a1210; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--nore-halloween-pumpkin) 35%, transparent); }
+.poster.hw h3 { color: var(--nore-halloween-pumpkin); }
+.poster.hw .count b { color: var(--nore-halloween-phosphor); }
+.btn.pumpkin, .btn.pumpkin:not(.ghost):not(.danger):not(.white):not(.play):not(.success):not(.quiet) { background: var(--nore-halloween-pumpkin); color: #1a0d04; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+.btn.pumpkin:hover, .btn.pumpkin:not(.ghost):not(.danger):not(.white):not(.play):not(.success):not(.quiet):hover { background: color-mix(in oklab, var(--nore-halloween-pumpkin) 88%, #fff); }
+.btn.pumpkin img { width: 16px; image-rendering: pixelated; }
+/* pixel pumpkins flicker like candles */
+.candle { animation: candle 2.8s steps(1, end) infinite; }
+@keyframes candle { 0%, 100% { filter: brightness(1); } 12% { filter: brightness(.82); } 16% { filter: brightness(1.08); } 44% { filter: brightness(.9); } 47% { filter: brightness(1.05); } 78% { filter: brightness(.86); } }
+[data-event="halloween"] .h-album .sticker.glow { box-shadow: 0 0 calc(14px * var(--ev-fx)) var(--nore-halloween-phosphor-glow); }
+
+/* ------------------------------------------------------------------ winter: frost, light dots, confetti snow */
+.ev-frost { position: absolute; width: 260px; height: 220px; opacity: calc(.55 * var(--ev-fx));
+  background:
+    radial-gradient(closest-side, rgba(233, 244, 255, .5), rgba(233, 244, 255, .18) 45%, transparent 100%),
+    repeating-conic-gradient(from 10deg, rgba(233, 244, 255, .22) 0 2deg, transparent 2deg 11deg);
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 100%); }
+.ev-frost.tl { left: -120px; top: -100px; transform-origin: 0 0; }
+.ev-frost.tr { right: -120px; top: -100px; transform-origin: 100% 0; }
+.ev-frost.bl { left: -120px; bottom: -110px; transform-origin: 0 100%; }
+.ev-frost.br { right: -120px; bottom: -110px; transform-origin: 100% 100%; }
+body.ev-revealing .ev-frost { animation: frost-grow 600ms var(--nore-ease-out) backwards; }
+@keyframes frost-grow { from { scale: 0; opacity: 0; } }
+.ev-snow { position: absolute; inset: 0; width: 100%; height: 100%; }
+#titlebar .ev-lights { position: absolute; left: 24px; right: 140px; top: 0; height: 24px; pointer-events: none; z-index: 0; }
+#titlebar .ev-lights .wire { position: absolute; inset: 0; width: 100%; height: 100%; }
+#titlebar .ev-lights .wire path { fill: none; stroke: color-mix(in oklab, var(--nore-winter-frost) 30%, transparent); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+/* the lights are dot stickers that twinkle in steps */
+#titlebar .ev-lights i { position: absolute; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px var(--nore-vinyl);
+  animation: twinkle 2.4s steps(1, end) infinite; animation-delay: calc(var(--i) * -0.37s); }
+body.ev-revealing #titlebar .ev-lights i { animation: light-on 1ms linear backwards, twinkle 2.4s steps(1, end) infinite; animation-delay: calc(400ms + var(--i) * 60ms), calc(400ms + var(--i) * 60ms); }
+@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@keyframes light-on { from { opacity: .15; background: var(--nore-dot-off); } }
+#titlebar .status, #titlebar .wc { position: relative; z-index: 1; }
+/* foil: the holographic conic, only on rare / seasonal stickers */
+.sticker.foil { background: var(--nore-foil); display: grid; place-items: center; overflow: hidden; }
+.sticker.foil img { width: 30px; image-rendering: pixelated; mix-blend-mode: multiply; }
+.poster.wt { background: #152031; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--nore-winter-ice) 35%, transparent); }
+.poster.wt h3 { color: var(--nore-winter-frost); }
+.poster.wt .count b { color: var(--nore-winter-ice); }
+body.ev-revealing .poster.wt .foil { animation: foil-sweep 900ms var(--nore-ease-in-out) 800ms; }
+@keyframes foil-sweep { from { --nore-foil-angle: 0deg; } to { --nore-foil-angle: 360deg; } }
+@property --nore-foil-angle { syntax: '<angle>'; inherits: true; initial-value: 0deg; }
+
+/* ------------------------------------------------------------------ reduced motion / animations off: no ambient loops, no particles */
+@media (prefers-reduced-motion: reduce) {
+  .ev-spider, .ev-spider.drop, .candle, [data-event="halloween"] .glow, #titlebar .ev-lights i, .poster { animation: none !important; }
+  .ev-bat, .ev-dust { display: none; }
+}
+body.motion-reduced .ev-spider, body.motion-reduced .candle, body.motion-reduced [data-event="halloween"] .glow, body.motion-reduced #titlebar .ev-lights i { animation: none !important; }
+body.motion-reduced .ev-bat, body.no-anim .ev-bat, body.no-anim .ev-dust { display: none; }

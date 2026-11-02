@@ -1,0 +1,80 @@
+name: Launcher (Rust)
+
+# The Rust launcher (launcher-rs/, Tauri) is built and tested here; releases attach it in build.yml (job tauri):
+# the Electron launcher in build.yml stays the shipping product until the Rust one reaches parity.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "launcher-rs/**"
+      - "launcher/src/**"
+      - ".github/workflows/launcher-rs.yml"
+  pull_request:
+    paths:
+      - "launcher-rs/**"
+      - "launcher/src/**"
+      - ".github/workflows/launcher-rs.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: launcher-rs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Test + clippy (Linux)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: launcher-rs
+    steps:
+      - uses: actions/checkout@v4
+      - name: System libraries (WebKitGTK, D-Bus)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libdbus-1-dev libssl-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher-rs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # the Tauri build script needs launcher/resources/mods (bundled Nore Client jars, empty list here)
+      - run: node scripts/prepare-mods.js
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: window.nore compat layer matches launcher/src/preload.js
+        run: node --test compat/compat.test.js
+
+  windows:
+    name: Tauri build (Windows, not published)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: launcher-rs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher-rs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: node scripts/prepare-mods.js
+      - run: cargo test -p nore-core
+      - name: tauri build (NSIS installer)
+        run: npx tauri build --bundles nsis
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nore-launcher-rs-windows
+          path: launcher-rs/target/release/bundle/nsis/*.exe
+          retention-days: 7

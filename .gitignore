@@ -1,0 +1,27 @@
+.gradle/
+build/
+!launcher/build/
+out/
+run/
+classes/
+*.iml
+.idea/
+.vscode/
+bin/
+.DS_Store
+node_modules/
+launcher/dist/
+launcher/resources/mods/
+dist/
+# CurseForge API key – only injected at build time
+launcher/cf-key.local
+launcher/keys.local.json
+launcher/src/main/keys.bin
+launcher/src/main/cf-key.bin
+launcher/src/main/cf-key.json
+.taste-skill/
+.impeccable/review/
+.impeccable/mocks/
+
+# raw captures for the website images (scripts/home-images.py turns them into webp)
+web/public/assets/home/raw/

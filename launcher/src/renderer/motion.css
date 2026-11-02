@@ -1,0 +1,165 @@
+/* ==========================================================================
+   Nore Launcher – motion (DESIGN.md §7, storyboards in design/README.md). Loaded last.
+   Every duration, curve and distance is a --nore-* token (js/ui.js Motion reads the same).
+   Rules: transform/translate/scale/rotate and opacity for movement; things leave faster than they
+   arrive; content is visible by default (fill-mode backwards); springs are the generated linear()
+   curves; reduced motion (or "Animacje: Oszczędne") keeps fades and drops travel; "Wyłączone" = .no-anim.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------ keyframes */
+@keyframes stick {
+  from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(var(--tilt, 0deg) + var(--nore-stick-tilt)); }
+  40% { opacity: 1; }
+  to { opacity: 1; scale: 1; rotate: var(--tilt, 0deg); }
+}
+@keyframes peel-off {
+  35% { translate: 0 -4px; rotate: calc(var(--tilt, 0deg) - 3deg); box-shadow: var(--nore-shadow-lift); }
+  to { opacity: 0; translate: 18px -18px; rotate: calc(var(--tilt, 0deg) + 8deg); }
+}
+@keyframes peel-wait { from { scale: 1; } 50% { scale: 1.35; rotate: -6deg; } to { scale: 1; } }
+@keyframes rub { from { opacity: 1; left: -40%; } to { opacity: 0; left: 120%; } }
+@keyframes dot-slap { 0% { scale: 1.6; opacity: 0; } 60% { scale: .92; opacity: 1; } 100% { scale: 1; opacity: 1; } }
+@keyframes shake { 25% { translate: -2px 0; } 75% { translate: 2px 0; } }
+@keyframes page-in { from { opacity: 0; translate: var(--px, 0px) var(--py, 0px); } }
+@keyframes sheet-in { from { opacity: 0; translate: 0 var(--nore-shift-drop); scale: .985; } }
+@keyframes rise { from { opacity: 0; translate: 0 var(--nore-shift-drop); } }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes pop { from { opacity: 0; scale: .985; } }
+@keyframes bump { 0% { scale: 1.6; } 60% { scale: .92; } 100% { scale: 1; } }
+@keyframes indet { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes toastIn { from { opacity: 0; scale: var(--nore-stick-scale); rotate: calc(-1deg + var(--nore-stick-tilt)); } 40% { opacity: 1; } }
+@keyframes toastOut { 35% { translate: 0 -4px; } to { opacity: 0; translate: 18px -18px; rotate: 6deg; } }
+@keyframes toastBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes skelSweep { to { transform: translateX(100%); } }
+
+/* ------------------------------------------------------------------ page turn (app.js go() sets data-dir)
+   incoming: 28px from the right (left when moving up the rail / back out of a detail page), dur.page, ease.out;
+   outgoing: the .page-ghost drops 14px the other way and fades in dur.exit, ease.in (Motion in app.js). */
+#main { isolation: isolate; }
+.page { animation: page-in var(--nore-dur-page) var(--nore-ease-out) backwards; }
+.page[data-dir="down"], .page[data-dir="in"] { --px: var(--nore-shift-page); }
+.page[data-dir="up"], .page[data-dir="out"] { --px: calc(var(--nore-shift-page) * -1); }
+body[data-trans="fade"] .page { --px: 0px !important; --py: 0px !important; }
+body[data-trans="rise"] .page[data-dir="down"] { --px: 0px; --py: var(--nore-shift-page); }
+body[data-trans="rise"] .page[data-dir="up"] { --px: 0px; --py: calc(var(--nore-shift-page) * -1); }
+body[data-trans="zoom"] .page { animation-name: pop; }
+body[data-trans="blur"] .page { animation-name: fadeIn; }
+.page-ghost { position: absolute; z-index: 0; pointer-events: none; overflow: hidden; }
+.page-ghost > .page { animation: none; }
+
+/* stickers stick in: staggered 45 ms, capped at 8 (~360 ms); refreshed lists do not replay */
+.stagger > * { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; animation-delay: calc(min(var(--i, 0), 7) * var(--nore-stagger) + 60ms); }
+.stagger.settled > * { animation: none; }
+.page .h-hero .h-inst { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) 60ms backwards; }
+.page .h-hero .h-inst .label { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; animation-delay: calc(var(--nore-stagger) * 4 + 120ms); }
+.page .h-hero .h-inst .lab-a { animation-delay: calc(var(--nore-stagger) * 5 + 120ms); }
+.page .h-info > * { animation: rise var(--nore-dur-page) var(--nore-ease-out) backwards; }
+.page .h-info > :nth-child(2) { animation-delay: var(--nore-stagger); }
+.page .h-info > :nth-child(3) { animation-delay: calc(var(--nore-stagger) * 2); }
+.page .h-info > :nth-child(4) { animation-delay: calc(var(--nore-stagger) * 3); }
+.page .h-info > :nth-child(5) { animation-delay: calc(var(--nore-stagger) * 4); }
+.page .h-labels > * { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; }
+.page .h-labels > :nth-child(1) { animation-delay: calc(var(--nore-stagger) * 2 + 80ms); }
+.page .h-labels > :nth-child(2) { animation-delay: calc(var(--nore-stagger) * 3 + 80ms); }
+.page .h-labels > :nth-child(3) { animation-delay: calc(var(--nore-stagger) * 4 + 80ms); }
+.page .h-side > * { animation: rise var(--nore-dur-page) var(--nore-ease-out) backwards; }
+.page .h-side > :nth-child(2) { animation-delay: var(--nore-stagger); }
+.page .h-side > :nth-child(3) { animation-delay: calc(var(--nore-stagger) * 2); }
+.page .h-side > :nth-child(4) { animation-delay: calc(var(--nore-stagger) * 3); }
+.page .h-clips .clip { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; animation-delay: calc(var(--nore-stagger) * 3 + 80ms); --tilt: -1.2deg; }
+.page .h-clips .clip:nth-child(even) { animation-delay: calc(var(--nore-stagger) * 4 + 80ms); --tilt: .8deg; }
+.off-card { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) 120ms backwards; --tilt: -1deg; }
+#srv-official.off-card { --tilt: 0deg; }
+.swap-in { animation: fadeIn var(--nore-dur-base) var(--nore-ease-out) backwards; }
+
+/* ------------------------------------------------------------------ rail: the active tab piece travels on spring.tab (app.js) */
+.rail-ind { transition: opacity var(--nore-dur-base) var(--nore-ease-out); will-change: transform; }
+.nav .indicator { display: none; }
+.nav a:active { scale: .98; }
+.nav a .badge { transition: opacity var(--nore-dur-quick); }
+.badge.bump, .fx-unread.bump { animation: bump var(--nore-dur-base) var(--nore-ease-out); }
+
+/* ------------------------------------------------------------------ controls */
+.btn svg { transition: transform var(--nore-dur-base) var(--nore-ease-out); }
+.btn:hover:not(:disabled) > svg:last-child:not(:first-child) { transform: translateX(2px); }
+.play, .btn.play { transition: translate var(--nore-dur-quick) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out), background-color var(--nore-dur-base), color var(--nore-dur-base); }
+.page .h-actions .play-wrap { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick) 280ms backwards; }
+.card, .pcard, .icard, .irow2, .srv2-row, .fx-row, .scene-tile, .vrow, .ga-item, .h-srv, .h-friend {
+  transition: background-color var(--nore-dur-quick) var(--nore-ease-out), box-shadow var(--nore-dur-quick) var(--nore-ease-out), translate var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out), opacity var(--nore-dur-base);
+}
+.card.hover:active, .pcard:active, .icard:active, .irow2:active, .fx-row:active, .ga-item:active { scale: .985; translate: 0 0; box-shadow: none; }
+.pc-banner, .ibanner, .ga-item img { transition: transform .9s var(--nore-ease-out); }
+.lchip, .chip, .seg button, .seg-icons button, .fcheck, .wz-acc, .wz-scene, .version-list button {
+  transition: color var(--nore-dur-quick) var(--nore-ease-out), background-color var(--nore-dur-quick) var(--nore-ease-out), scale var(--nore-dur-tap) var(--nore-ease-out);
+}
+.lchip:active, .chip:active, .seg button:active, .seg-icons button:active, .version-list button:active, .wz-acc:active, .wz-scene:active { scale: .96; }
+.lchip.on, .chip.on, .seg-icons button.on, .version-list button.on { animation: stick var(--nore-spring-stick-dur) var(--nore-spring-stick); }
+.seg .pill { will-change: transform; }
+.fcheck input:checked + i { animation: dot-slap var(--nore-dur-base) var(--nore-ease-out); }
+.switch input:checked + i::after, .switch input:not(:checked) + i::after { will-change: translate; }
+.switch:active i::after { scale: 1.15; }
+.swatch.on { animation: dot-slap var(--nore-dur-base) var(--nore-ease-out); }
+.input, .search, select.input { transition: box-shadow var(--nore-dur-quick) var(--nore-ease-out), background-color var(--nore-dur-quick); }
+.mini-play { animation: rise var(--nore-dur-page) var(--nore-ease-out) backwards; }
+.account-chip:active, .mini-play .mp-btn:active:not(:disabled) { scale: .96; }
+.sdot.wait, .h-ready .sdot { animation: dot-slap var(--nore-dur-base) var(--nore-ease-out) backwards; }
+
+/* ------------------------------------------------------------------ live values: exact lengths */
+.progress-bar > i { width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform var(--nore-dur-base) var(--nore-ease-out); }
+.progress-bar.indeterminate > i { width: 35% !important; transform: none; animation: indet 1.2s var(--nore-ease-in-out) infinite; }
+.progress-wrap.show { animation: rise var(--nore-dur-base) var(--nore-ease-out) backwards; }
+.mini-play .mp-bar { width: 100%; transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform var(--nore-dur-base) var(--nore-ease-out), opacity var(--nore-dur-base); }
+.mini-play:not(.busy) .mp-bar { opacity: 0; }
+.srv2-sig i { transition: background-color var(--nore-dur-base) var(--nore-ease-out); }
+.srv2-stat .bar i, .ub-progress i, .pu-bar i, .mp-bar i, .wz-membar .track i { transition: width var(--nore-dur-base) var(--nore-ease-out); }
+.num-tick { display: inline-block; animation: fadeIn var(--nore-dur-base) var(--nore-ease-out); }
+
+/* skeleton → content */
+.skeleton { position: relative; overflow: hidden; animation: fadeIn var(--nore-dur-base) 120ms var(--nore-ease-out) backwards; }
+.skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .04), transparent); transform: translateX(-100%); animation: skelSweep 1.3s var(--nore-ease-in-out) infinite; }
+.swap-ghost { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+/* ------------------------------------------------------------------ overlays: sheet arrives in dur.overlay, leaves in dur.exit */
+.modal-backdrop { animation: fadeIn var(--nore-dur-base) var(--nore-ease-out) backwards; }
+.modal-backdrop.closing { animation: fadeOut var(--nore-dur-exit) var(--nore-ease-in) forwards; pointer-events: none; }
+.modal { animation: sheet-in var(--nore-dur-overlay) var(--nore-ease-out) backwards; }
+.modal-backdrop.closing .modal { animation: fadeOut var(--nore-dur-exit) var(--nore-ease-in) forwards; }
+.pop-menu { animation: sheet-in var(--nore-dur-base) var(--nore-ease-out) backwards; transform-origin: var(--origin, top right); }
+.pop-menu.out { animation: fadeOut var(--nore-dur-exit) var(--nore-ease-in) forwards; }
+.lightbox { animation: fadeIn var(--nore-dur-base) var(--nore-ease-out) backwards; }
+.lightbox.out { animation: fadeOut var(--nore-dur-exit) var(--nore-ease-in) forwards; }
+.lightbox img, .lb-stage img { animation: sheet-in var(--nore-dur-overlay) var(--nore-ease-out) backwards; }
+.update-bar, .doc-scan, .call-bar { animation: sheet-in var(--nore-dur-overlay) var(--nore-ease-out) backwards; }
+#login-gate { animation: fadeIn var(--nore-dur-overlay) var(--nore-ease-out) both; }
+#login-gate.leave { animation: fadeOut var(--nore-dur-exit) var(--nore-ease-in) both; }
+
+/* toasts are slapped on (stick) and peel off */
+.toast { animation: toastIn var(--nore-spring-stick-dur) var(--nore-spring-stick) backwards; }
+.toast.out { animation: toastOut var(--nore-dur-peel) var(--nore-ease-peel) forwards; pointer-events: none; }
+.toast .bar { width: 100%; transform-origin: left; animation: toastBar linear forwards; }
+.toast:hover .bar { animation-play-state: paused; }
+
+/* friends & chat */
+.cv-msg { animation: rise var(--nore-dur-base) var(--nore-ease-out) backwards; }
+.cv-log.settled .cv-msg { animation: none; }
+
+/* ------------------------------------------------------------------ reduced motion: fades and colour stay, travel goes
+   (the tokens themselves already zero the shifts and turn springs into a 140 ms ease.out) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; }
+  #bg .photo, .pd-banner, .skeleton::after, .wz-confetti i, .play.waiting::after { animation: none !important; }
+  .pc-banner, .ibanner, .ga-item img { transition: none !important; transform: none !important; }
+  .play.shake { animation: none; }
+  .sticker:hover, button.sticker:hover, .h-recent figure:hover .sticker, .card.hover:hover, .icard:hover, .pcard:hover { translate: none !important; rotate: var(--tilt, 0deg) !important; }
+}
+/* "Animacje: Oszczędne" – the same as reduced motion, chosen in the app */
+body.motion-reduced { --nore-shift-lift: 0px; --nore-shift-press: 0px; --nore-shift-page: 0px; --nore-shift-page-out: 0px; --nore-shift-drop: 0px; --nore-stick-tilt: 0deg; --nore-stick-scale: 1;
+  --nore-spring-stick: var(--nore-ease-out); --nore-spring-stick-dur: 140ms; --nore-spring-tab: var(--nore-ease-out); --nore-spring-tab-dur: 140ms;
+  --nore-spring-knob: var(--nore-ease-out); --nore-spring-knob-dur: 140ms; --nore-spring-soft: var(--nore-ease-out); --nore-spring-soft-dur: 140ms;
+  --nore-dur-page: 200ms; --nore-dur-overlay: 200ms; --nore-dur-reveal: 200ms; --nore-dur-launch: 200ms; }
+body.motion-reduced .play.shake, body.motion-reduced .play.waiting::after, body.motion-reduced .skeleton::after { animation: none !important; }
+/* "Animacje: Wyłączone" */
+body.no-anim *, body.no-anim *::before, body.no-anim *::after { animation-duration: 0s !important; animation-delay: 0s !important; transition-duration: 0s !important; }

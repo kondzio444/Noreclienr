@@ -1,0 +1,13 @@
+Nore Launcher i Nore Client
+Copyright (c) 2026 kondzio444
+
+Program jest udostępniany na licencji Apache License 2.0.
+Pełny tekst licencji: https://www.apache.org/licenses/LICENSE-2.0
+
+Minecraft jest znakiem towarowym Mojang Synergies AB. Nore Launcher nie jest
+oficjalnym produktem Minecraft ani nie jest powiązany z Mojang ani Microsoft.
+Pliki gry są pobierane bezpośrednio z serwerów Mojang. Zgodnie z EULA Minecraft
+do gry potrzebna jest zakupiona licencja Minecraft: Java Edition.
+
+Tło: "Cosmic Cliffs" (Carina Nebula) – NASA, ESA, CSA, STScI – domena publiczna.
+Czcionki Inter i Outfit – SIL Open Font License 1.1.

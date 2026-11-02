@@ -1,0 +1,36 @@
+/* In-game client mocks. 1 CSS px = 1 Minecraft GUI pixel; rendered at deviceScaleFactor 3 (GUI scale 3, 1600x900).
+   Everything here must be drawable with Render2D: rects, rounded rects, outlines, circles, radial fills,
+   triangles via mesh, textures, Minecraft text at integer scales. No rotation of text, no blur except
+   the vanilla menu blur, no CSS-only tricks without a Render2D equivalent noted in DESIGN.md.
+   Text stand-in: Pixelify Sans at 10px ~ Minecraft's 8px glyph box with 7px caps and 9px line. */
+@import url('https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=block');
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body { width: 533px; height: 300px; overflow: hidden; background: #000; color: var(--nore-ink); font: 400 10px/9px 'Pixelify Sans', monospace; -webkit-font-smoothing: none; }
+.world { position: absolute; inset: 0; background: center / auto 100% no-repeat; }
+.shade { position: absolute; inset: 0; }
+.px { image-rendering: pixelated; }
+.mc { font: 400 10px/9px 'Pixelify Sans', monospace; }
+.x2 { font-size: 20px; line-height: 18px; }
+.x3 { font-size: 30px; line-height: 27px; }
+.sh { text-shadow: 1px 1px 0 rgba(0, 0, 0, .45); }
+.soft { color: var(--nore-ink-soft); }
+.faint { color: var(--nore-ink-faint); }
+
+/* album sheet (opaque-ish page) */
+.gsheet { position: absolute; background: #141216eb; border-radius: 4px; }
+.gspine { position: absolute; top: 0; bottom: 0; left: 0; width: 5px; background: var(--nore-cover); }
+
+/* sticker in game: 1px vinyl rim, radius 4, no rotation */
+.gst { position: relative; border-radius: 4px; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+.gst.white { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+.gst.violet { background: var(--nore-accent-deep); color: #fff; }
+.gst.lift { translate: 0 -1px; box-shadow: 0 0 0 1px var(--nore-vinyl), 0 3px 5px -1px rgba(0, 0, 0, .6); }
+/* peel corner: two triangles drawn with Render2D mesh */
+.gst.lift::after { content: ''; position: absolute; right: -1px; top: -1px; width: 7px; height: 7px; border-top-right-radius: 4px; background: linear-gradient(225deg, #141216 0 50%, #d9d4cc 50%); }
+.gslot { position: relative; border-radius: 4px; background: #0c0b0ee6; outline: 1px dashed var(--nore-ghost); outline-offset: -3px; color: var(--nore-ink-faint); }
+.gdot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--c, var(--nore-dot-off)); box-shadow: 0 0 0 1px var(--nore-vinyl); vertical-align: 1px; }
+.gkey { display: inline-flex; align-items: center; height: 10px; padding: 0 3px; border-radius: 2px; background: var(--nore-page); color: var(--nore-ink-soft); box-shadow: 0 1px 0 #000; font-size: 10px; line-height: 9px; }
+.gic { width: 9px; height: 9px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.gtape { position: absolute; height: 8px; width: 30px; background: var(--nore-tape-lilac); clip-path: polygon(0 10%, 6% 0, 12% 12%, 18% 0, 82% 0, 88% 12%, 94% 0, 100% 10%, 100% 90%, 94% 100%, 88% 88%, 82% 100%, 18% 100%, 12% 88%, 6% 100%, 0 90%); }
+.gclip { position: absolute; background: var(--nore-paper); color: var(--nore-vinyl-ink); border-radius: 2px; }

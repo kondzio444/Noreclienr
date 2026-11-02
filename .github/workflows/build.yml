@@ -1,0 +1,334 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+# a newer push replaces a running build of the same branch / PR; release builds (default branch,
+# tags) are queued instead, so a release is never cut off halfway through publishing
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' && github.ref_name != github.event.repository.default_branch }}
+
+permissions:
+  contents: write  # pushes to the default branch publish the release the launcher auto-updates from
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      publish: ${{ steps.v.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        # every build gets its own launcher version (major.minor from package.json, patch = build number)
+        # so an installed launcher always sees the next build as an update
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            BASE=$(node -p "require('./launcher/package.json').version.split('.').slice(0,2).join('.')")
+            # build number = run number + 1237 (Nore 1.4.5 started at build 1432); the patch must keep growing for auto-update
+            V="$BASE.$((GITHUB_RUN_NUMBER + 1237))"
+          fi
+          PUBLISH=false
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" && ( "$GITHUB_REF" == refs/tags/v* || "$GITHUB_REF_NAME" == "${{ github.event.repository.default_branch }}" ) ]]; then
+            PUBLISH=true
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          echo "Launcher $V (publish: $PUBLISH)"
+
+  mod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # 25 for the 26.x platforms (JAVA_HOME_25_X64), 21 (listed last) stays the default
+          java-version: |
+            25
+            21
+      - name: Build Nore Client (all platforms)
+        run: ./scripts/build-all.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: noreclient-mod
+          path: dist/mods/*.jar
+          retention-days: 1  # the mod ships only inside the launcher
+
+
+  # Nore Launcher – the Rust / Tauri launcher (launcher-rs/), the shipping product. Installers:
+  #   Windows  NoreLauncher-Setup-<v>.exe            (NSIS, current user)
+  #   Linux    NoreLauncher-<v>.AppImage, NoreLauncher-<v>_amd64.deb
+  #   macOS    NoreLauncher-<v>.dmg, NoreLauncher-<v>.app.tar.gz (universal: Apple Silicon + Intel)
+  # With the updater signing key (secrets TAURI_SIGNING_PRIVATE_KEY / _PASSWORD) every installer gets a
+  # minisign signature <file>.sig and the release gets latest.json (job "release"). Without the key the
+  # installers are still built and published, unsigned, and the Tauri auto-update feed is skipped.
+  # The public key is committed (launcher-rs/src-tauri/src/updater.rs); vars.NORE_UPDATER_PUBKEY overrides it.
+  tauri:
+    needs: [version, mod]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: win
+            bundles: nsis
+            target: ''
+          - os: ubuntu-22.04  # older glibc: the AppImage / .deb run on more distributions
+            name: linux
+            bundles: appimage,deb
+            target: ''
+          - os: macos-latest
+            name: mac
+            bundles: app,dmg
+            target: universal-apple-darwin
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: launcher-rs
+        shell: bash
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      NORE_UPDATER_PUBKEY: ${{ vars.NORE_UPDATER_PUBKEY }}
+      # baked into the build, never committed (the repository is public)
+      NORE_CF_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+      NORE_MS_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+      APPIMAGE_EXTRACT_AND_RUN: 1
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: noreclient-mod
+          path: dist/mods
+      - name: Linux build dependencies
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libdbus-1-dev patchelf file libfuse2
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.name == 'mac' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: launcher-rs
+          key: ${{ matrix.name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher-rs/package-lock.json
+      - name: Install dependencies
+        run: for i in 1 2 3; do npm ci --no-audit --no-fund && exit 0; echo "npm ci failed (attempt $i), retrying"; sleep 15; done; exit 1
+      - run: npm test
+      - name: Rust tests
+        if: matrix.name == 'linux'
+        run: |
+          node scripts/prepare-mods.js
+          cargo test --workspace
+      - name: Bundle the official Nore Client jars
+        run: node scripts/prepare-mods.js --require
+      - name: Updater signing key
+        id: key
+        run: |
+          if [ -n "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not set – the Tauri installers are built UNSIGNED and the release gets no latest.json (installed launchers will not update themselves). Add the secrets TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD."
+          fi
+      - name: Build Nore Launcher ${{ needs.version.outputs.version }}
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          CONF="{\"version\":\"$V\",\"bundle\":{\"createUpdaterArtifacts\":${{ steps.key.outputs.signed }}}}"
+          ARGS=(--bundles "${{ matrix.bundles }}" --config "$CONF")
+          if [ -n "${{ matrix.target }}" ]; then ARGS+=(--target "${{ matrix.target }}"); fi
+          npx tauri build "${ARGS[@]}"
+      - name: Collect installers
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          B=target/release/bundle
+          [ -n "${{ matrix.target }}" ] && B="target/${{ matrix.target }}/release/bundle"
+          mkdir -p out
+          put() { # <found file> <published name>
+            [ -f "$1" ] || { echo "::error::Missing $2 ($1)"; exit 1; }
+            cp "$1" "out/$2"
+            if [ -f "$1.sig" ]; then cp "$1.sig" "out/$2.sig"; fi
+          }
+          case "${{ matrix.name }}" in
+            win)   put "$(ls "$B"/nsis/*.exe | head -1)" "NoreLauncher-Setup-$V.exe" ;;
+            linux) put "$(ls "$B"/appimage/*.AppImage | head -1)" "NoreLauncher-$V.AppImage"
+                   put "$(ls "$B"/deb/*.deb | head -1)" "NoreLauncher-${V}_amd64.deb" ;;
+            mac)   put "$(ls "$B"/dmg/*.dmg | head -1)" "NoreLauncher-$V.dmg"
+                   if ls "$B"/macos/*.app.tar.gz >/dev/null 2>&1; then put "$(ls "$B"/macos/*.app.tar.gz | head -1)" "NoreLauncher-$V.app.tar.gz"; fi ;;
+          esac
+          # every installer gets a signature (the bundler signs the updater artifacts; the rest – .deb,
+          # .dmg – is signed here) so the Electron bridge can check any of them
+          if [ "${{ steps.key.outputs.signed }}" = "true" ]; then
+            for f in out/*; do
+              case "$f" in *.sig) continue ;; esac
+              [ -f "$f.sig" ] || npx tauri signer sign "$f"
+            done
+          fi
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nore-rs-${{ matrix.name }}
+          path: launcher-rs/out/*
+          if-no-files-found: error
+
+  # The Electron launcher (launcher/) is only the one-time BRIDGE now: existing Electron installs update
+  # to it through latest*.yml (electron-updater), and on its next start it installs the Tauri launcher
+  # above (launcher/src/main/migrate.js). Its files are NoreLauncher-Bridge-… and are not offered as downloads.
+  launcher:
+    needs: [version, mod]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            script: dist:win
+            files: |
+              launcher/dist/*.exe
+              launcher/dist/*.exe.blockmap
+              launcher/dist/latest.yml
+          - os: ubuntu-latest
+            script: dist:linux
+            files: |
+              launcher/dist/*.AppImage
+              launcher/dist/latest-linux.yml
+          - os: macos-latest
+            script: dist:mac
+            files: |
+              launcher/dist/*.dmg
+              launcher/dist/*.zip
+              launcher/dist/latest-mac.yml
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: launcher
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
+      - uses: actions/download-artifact@v4
+        with:
+          name: noreclient-mod
+          path: dist/mods
+      - name: Install dependencies
+        # the Electron binary download occasionally times out on hosted runners – retry
+        run: for i in 1 2 3; do npm ci && exit 0; echo "npm ci failed (attempt $i), retrying"; sleep 15; done; exit 1
+      - run: npm test
+      - name: Set version ${{ needs.version.outputs.version }}
+        run: npm version "${{ needs.version.outputs.version }}" --no-git-tag-version --allow-same-version
+      - name: Build the bridge installer
+        env:
+          # baked into the app by scripts/keys.js, never committed (the repository is public)
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        run: npm run ${{ matrix.script }} -- --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nore-launcher-${{ matrix.os }}
+          path: ${{ matrix.files }}
+          if-no-files-found: ignore
+
+  release:
+    needs: [version, launcher, tauri]
+    # the bridge must be published (Electron installs update through it); a failed Tauri platform only
+    # leaves that platform out of the release (with a warning)
+    if: always() && needs.version.outputs.publish == 'true' && needs.launcher.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          pattern: nore-launcher-*  # the Electron bridge – the mod is never published on its own
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
+        continue-on-error: true  # no Tauri platform built
+        with:
+          path: out
+          pattern: nore-rs-*
+          merge-multiple: true
+      - name: Release notes
+        env:
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          PREV=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || true)
+          {
+            echo "## Nore Launcher $V"
+            echo
+            echo "Zainstalowany launcher pobierze tę wersję sam (Ustawienia → Aktualizacje)."
+            echo
+            echo "Pobierz: **NoreLauncher-Setup-$V.exe** (Windows), **NoreLauncher-$V.AppImage** albo **NoreLauncher-${V}_amd64.deb** (Linux), **NoreLauncher-$V.dmg** (macOS). Pliki *NoreLauncher-Bridge-…* służą tylko do przeniesienia starego launchera na nowy."
+            echo
+            echo "### Zmiany"
+            if [ -n "$PREV" ]; then git log --no-merges --pretty='- %s' "$PREV..HEAD" | head -40; else git log --no-merges --pretty='- %s' -15; fi
+          } > notes.md
+      - name: Tauri updater feed (latest.json)
+        env:
+          V: ${{ needs.version.outputs.version }}
+          TAURI_RESULT: ${{ needs.tauri.result }}
+        run: |
+          if [ "$TAURI_RESULT" != "success" ]; then
+            echo "::warning::The Tauri build did not succeed on every platform ($TAURI_RESULT) – the release carries only the installers that were built."
+          fi
+          if ! ls out/NoreLauncher-*.sig >/dev/null 2>&1; then
+            echo "::warning::The Tauri installers are unsigned (no TAURI_SIGNING_PRIVATE_KEY) – latest.json skipped, installed Tauri launchers will not update themselves from this release."
+            exit 0
+          fi
+          if ! node launcher-rs/scripts/latest-json.js "$V" out "https://github.com/${{ github.repository }}/releases/download/v$V" notes.md > latest.json; then
+            echo "::warning::latest.json could not be created – skipped."
+            exit 0
+          fi
+          mv latest.json out/latest.json
+          cat out/latest.json
+      - name: Publish GitHub release v${{ needs.version.outputs.version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          ls -la out
+          # the releases API sometimes answers a transient 403 / 5xx – retry before failing the job
+          for i in 1 2 3 4; do
+            if gh release view "v$V" >/dev/null 2>&1; then
+              gh release upload "v$V" out/* --clobber && exit 0
+            else
+              gh release create "v$V" out/* --target "$GITHUB_SHA" --title "Nore Launcher $V" --notes-file notes.md --latest && exit 0
+            fi
+            echo "Publishing the release failed (attempt $i), retrying in $((i * 20)) s"
+            sleep $((i * 20))
+          done
+          exit 1
+      - name: Remove stand-alone mod jars from releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          # immutable releases do not allow removing single files – such an old release is
+          # deleted as a whole (newer releases already supersede it for auto-update)
+          for t in $(gh release list --limit 100 --json tagName -q '.[].tagName'); do
+            [ "$t" = "v$V" ] && continue
+            for a in $(gh release view "$t" --json assets -q '.assets[].name' | grep -E '^noreclient-.*\.jar$' || true); do
+              echo "Removing $a from $t"
+              gh release delete-asset "$t" "$a" -y || gh release delete "$t" -y || echo "::warning::Could not remove $a from $t"
+            done
+          done

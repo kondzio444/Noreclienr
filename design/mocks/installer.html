@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Instalator Nore Launcher</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+  /* NSIS MUI2 window at 96 dpi: system chrome and buttons stay Windows; everything inside the dialog follows the album.
+     Text in the dialog is the system font (Segoe UI) because NSIS draws it; Dela and Onest appear only inside the bitmaps. */
+  body { width: 497px; height: 390px; overflow: hidden; background: #202020; font-family: 'Segoe UI', 'Onest', sans-serif; }
+  .win { position: absolute; inset: 0; display: grid; grid-template-rows: 31px 1fr 47px; background: var(--nore-page); border: 1px solid #3a3a3a; }
+  .tb { display: flex; align-items: center; gap: 8px; padding: 0 0 0 10px; background: #f3f3f3; color: #1b1b1b; font: 400 12px/1 'Segoe UI', 'Onest', sans-serif; }
+  .tb img { width: 16px; height: 16px; }
+  .tb .ctl { margin-left: auto; display: flex; height: 100%; }
+  .tb .ctl span { width: 46px; display: grid; place-items: center; font-size: 13px; color: #444; }
+  .foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 0 12px; background: #f0f0f0; border-top: 1px solid #dfdfdf; }
+  .foot .brandline { margin-right: auto; color: #8a8a8a; font: 400 11px/1 'Segoe UI', 'Onest', sans-serif; }
+  .wb { min-width: 75px; height: 23px; padding: 0 10px; border: 1px solid #adadad; border-radius: 3px; background: #fdfdfd; font: 400 12px/21px 'Segoe UI', 'Onest', sans-serif; color: #1b1b1b; text-align: center; }
+  .wb.def { border-color: #0067c0; box-shadow: inset 0 0 0 1px #0067c0; }
+  .wb.dis { color: #a0a0a0; border-color: #cfcfcf; }
+  .screen { display: none; }
+  .screen:target, .screen.default { display: block; }
+  :target ~ .default { display: none; }
+  .body { position: relative; height: 310px; }
+  /* -------- welcome: sidebar bitmap 164x314 -------- */
+  .side { position: absolute; left: 0; top: 0; width: 164px; height: 310px; overflow: hidden; }
+  .side .logo-sticker { position: absolute; left: 30px; top: 34px; rotate: -6deg; }
+  .side .logo-sticker img { width: 100px; height: 100px; }
+  .side h2 { position: absolute; left: 18px; top: 160px; margin: 0; font: 400 22px/1.02 var(--nore-font-display); letter-spacing: -.01em; color: var(--nore-cover-ink); }
+  .side .label { position: absolute; left: 18px; top: 222px; rotate: -3deg; }
+  .side .dots { position: absolute; left: 18px; bottom: 18px; display: flex; gap: 7px; align-items: center; font: 600 11px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+  .side .dots .dot { width: 8px; height: 8px; box-shadow: 0 0 0 1.5px var(--nore-vinyl); }
+  .main { position: absolute; left: 164px; top: 0; right: 0; bottom: 0; padding: 18px 20px 0 22px; color: var(--nore-ink); font: 400 12px/1.45 'Segoe UI', 'Onest', sans-serif; }
+  .main h1 { margin: 0 0 12px; font: 700 16px/1.25 'Segoe UI', 'Onest', sans-serif; }
+  .main p { margin: 0 0 9px; }
+  .main ul { margin: 0 0 9px; padding-left: 14px; }
+  .main li { margin: 0 0 2px; }
+  /* -------- progress: header bitmap 150x57 -------- */
+  .hdr { height: 57px; display: flex; align-items: center; padding-left: 14px; background: var(--nore-page-raised); color: var(--nore-ink); font: 400 12px/1.35 'Segoe UI', 'Onest', sans-serif; }
+  .hdr b { display: block; font-weight: 700; }
+  .hdr span { color: var(--nore-ink-soft); }
+  .hbmp { margin-left: auto; width: 150px; height: 57px; position: relative; overflow: hidden; }
+  .hbmp .logo-sticker { position: absolute; right: 14px; top: 9px; rotate: -6deg; }
+  .hbmp .logo-sticker img { width: 38px; height: 38px; }
+  .hbmp .label { position: absolute; left: 16px; top: 18px; height: 20px; font-size: 11px; rotate: -3deg; }
+  .prog { padding: 16px 22px 0; color: var(--nore-ink); font: 400 12px/1.4 'Segoe UI', 'Onest', sans-serif; }
+  .pb { height: 14px; margin: 8px 0 12px; background: var(--nore-slot); }
+  .pb i { display: block; height: 100%; width: 64%; background: var(--nore-accent); }
+  .log { height: 150px; overflow: hidden; padding: 6px 8px; background: var(--nore-slot); color: var(--nore-ink-soft); font: 400 11.5px/1.5 'Segoe UI', 'Onest', sans-serif; }
+  .log div:last-child { color: var(--nore-ink); }
+  .note { margin-top: 10px; display: flex; gap: 8px; align-items: center; color: var(--nore-ink-soft); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="tb"><img src="../../web/public/assets/logo.png" class="logo-violet" alt="">Instalator Nore Launcher 1.4 Beta<span class="ctl"><span>&#x2014;</span><span>&#x2715;</span></span></div>
+  <div>
+    <section class="screen" id="progress">
+      <div class="hdr"><div><b>Instalowanie</b><span>Kopiuję pliki Nore Launcher na dysk.</span></div><div class="hbmp cloth"><span class="label nore">1.4 Beta</span><span class="logo-sticker"><img src="../../web/public/assets/logo.png" alt=""></span></div></div>
+      <div class="prog">
+        <div>Wypakowywanie: resources\app.asar (38,4 MB)</div>
+        <div class="pb"><i></i></div>
+        <div class="log">
+          <div>Folder docelowy: C:\Users\kondzio\AppData\Local\Programs\Nore Launcher</div>
+          <div>Zachowano: instancje, światy i ustawienia (12 folderów)</div>
+          <div>Wypakowywanie: Nore Launcher.exe… gotowe</div>
+          <div>Wypakowywanie: locales\pl.pak… gotowe</div>
+          <div>Wypakowywanie: resources\app.asar…</div>
+        </div>
+        <div class="note"><i class="dot sm ready"></i>Twoje instancje i światy zostają na miejscu.</div>
+      </div>
+    </section>
+    <section class="screen default" id="welcome">
+      <div class="body">
+        <div class="side cloth"><span class="logo-sticker lg"><img src="../../web/public/assets/logo.png" alt=""></span><h2>Nore<br>Launcher</h2><span class="label nore">1.4 Beta</span><span class="dots"><i class="dot ready"></i><i class="dot event"></i><i class="dot nore"></i>noreclient.pl</span></div>
+        <div class="main">
+          <h1>Witaj w Nore Launcher 1.4 Beta</h1>
+          <p>Ten kreator zainstaluje Nore Launcher, launcher Minecraft z wbudowanym klientem PvP Nore Client.</p>
+          <p>Co nowego w 1.4 Beta:</p>
+          <ul><li>nowy ekran główny i zwijane menu boczne</li><li>znajomi: zobacz, w co grają inni</li><li>galeria zrzutów ekranu z gry (F2)</li><li>kreator pierwszego uruchomienia: konto, wygląd, RAM</li></ul>
+          <p>Twoje instancje, światy i ustawienia zostaną zachowane. Kliknij Dalej, aby kontynuować.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="foot"><span class="brandline">Nore Launcher</span><span class="wb dis">&lt; Wstecz</span><span class="wb def">Dalej &gt;</span><span class="wb">Anuluj</span></div>
+</div>
+</body>
+</html>

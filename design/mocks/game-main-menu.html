@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Client – menu główne</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="game.css">
+<style>
+  .world { background-image: url(../../common/src/main/resources/assets/noreclient/panorama/cherry_day.jpg); background-position: -520px 0; }
+  .shade { background: linear-gradient(90deg, rgba(10, 9, 12, .55), rgba(10, 9, 12, 0) 45%); }
+  .side { left: 10px; top: 10px; width: 168px; height: 280px; overflow: hidden; }
+  .brand { position: absolute; left: 16px; top: 13px; display: flex; gap: 7px; align-items: center; }
+  .brand img { width: 30px; height: 30px; }
+  .brand b { display: block; font-weight: 400; }
+  .menu { position: absolute; left: 12px; right: 10px; top: 58px; display: grid; gap: 3px; }
+  .it { position: relative; display: flex; align-items: center; gap: 7px; height: 18px; padding: 0 7px; border-radius: 4px; color: var(--nore-ink); }
+  .it .gic { color: var(--nore-ink-soft); }
+  .it.hover { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); }
+  .it.hover .gic { color: var(--nore-accent); }
+  .it .k { margin-left: auto; }
+  .it.quit { color: #ffb0a8; margin-top: 7px; }
+  .it.quit .gic { color: #ffb0a8; }
+  .me { position: absolute; left: 12px; right: 10px; bottom: 10px; display: flex; gap: 7px; align-items: center; padding: 5px; border-radius: 4px; background: #1e1b21; }
+  .me img { width: 16px; height: 16px; border-radius: 2px; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .clock { position: absolute; right: 13px; top: 10px; text-align: right; padding: 6px 8px 6px 10px; border-radius: 4px; background: #141216d8; }
+  .clock .x3 { display: block; }
+  .clock .soft { display: block; margin-top: 4px; }
+  .news { left: 330px; top: 72px; width: 190px; padding: 10px 10px 9px; }
+  .news .gtape { left: 80px; top: -4px; }
+  .news h4 { margin: 0 0 6px; font-weight: 400; }
+  .news li { list-style: none; display: flex; gap: 5px; align-items: baseline; margin: 0 0 3px; color: #4b444e; }
+  .news ul { margin: 0; padding: 0; }
+  .news .gdot { flex: none; }
+  .join { position: absolute; left: 330px; top: 166px; width: 190px; padding: 8px; display: grid; grid-template-columns: 22px 1fr auto; gap: 7px; align-items: center; border-radius: 4px; background: #141216eb; }
+  .join .ico { width: 22px; height: 22px; border-radius: 3px; background: url(../../web/public/assets/home/sky.webp) 50% 50% / 400%; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .join small { display: block; margin-top: 2px; }
+  .btn { display: inline-flex; align-items: center; height: 14px; padding: 0 6px; border-radius: 7px; background: var(--nore-accent); color: #fff; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .friends { position: absolute; left: 330px; top: 214px; width: 190px; display: flex; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 4px; background: #141216d0; }
+  .friends .h { position: relative; }
+  .friends img { width: 14px; height: 14px; border-radius: 50%; box-shadow: 0 0 0 1px var(--nore-vinyl); }
+  .friends .gdot { position: absolute; right: -2px; bottom: -1px; width: 4px; height: 4px; }
+  .credit { position: absolute; right: 13px; bottom: 9px; color: rgba(243, 239, 233, .55); }
+  .ms { position: absolute; left: 238px; top: 140px; width: 9px; height: 9px; }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="world"></div><div class="shade"></div>
+<aside class="gsheet side">
+  <div class="gspine"></div>
+  <div class="brand"><img class="px" src="assets/logo-sticker-game.png" alt=""><div><b class="x2">NORE</b><span class="soft">Client 2.1.0</span></div></div>
+  <nav class="menu">
+    <a class="it gst white lift"><svg class="gic"><use href="#i-play"/></svg>Singleplayer</a>
+    <a class="it"><svg class="gic"><use href="#i-globe"/></svg>Multiplayer</a>
+    <a class="it"><svg class="gic"><use href="#i-grid"/></svg>Moduły klienta<span class="k gkey">P.Shift</span></a>
+    <a class="it"><svg class="gic"><use href="#i-shirt"/></svg>Szatnia</a>
+    <a class="it"><svg class="gic"><use href="#i-layout"/></svg>Edytor HUD</a>
+    <a class="it"><svg class="gic"><use href="#i-download"/></svg>Pobieraj zasoby</a>
+    <a class="it"><svg class="gic"><use href="#i-cog"/></svg>Opcje</a>
+    <a class="it quit"><svg class="gic"><use href="#i-power"/></svg>Wyjdź z gry</a>
+  </nav>
+  <div class="me"><img class="px" src="assets/head-kondzio.png" alt=""><div>kondzio<br><span class="faint"><i class="gdot"></i> offline · 1.21.11</span></div></div>
+</aside>
+<div class="clock"><span class="x3">21:37</span><span class="soft">sobota, 25 października</span></div>
+<article class="gclip news"><span class="gtape"></span><h4>Nowe w 2.1</h4><ul>
+  <li><i class="gdot" style="--c:var(--nore-accent)"></i>Szatnia: uszy lisa i kota</li>
+  <li><i class="gdot" style="--c:var(--nore-dot-event)"></i>3 peleryny Halloween</li>
+  <li><i class="gdot" style="--c:var(--nore-dot-info)"></i>Auto Craft i 12 modułów</li>
+  <li><i class="gdot" style="--c:var(--nore-dot-ready)"></i>Szybsze menu na 26.x</li></ul></article>
+<div class="join"><span class="ico"></span><div>Nore SMP<small class="soft"><i class="gdot" style="--c:var(--nore-dot-ready)"></i> 7/20 · survival</small></div><a class="btn">Dołącz</a></div>
+<div class="friends"><span class="soft">Znajomi</span><span class="h"><img class="px" src="assets/head-ola.png" alt=""><i class="gdot" style="--c:var(--nore-dot-ready)"></i></span><span class="h"><img class="px" src="assets/head-bartek.png" alt=""><i class="gdot" style="--c:var(--nore-dot-ready)"></i></span><span class="h"><img class="px" src="assets/head-mila.png" alt=""><i class="gdot" style="--c:var(--nore-dot-wait)"></i></span><span class="soft" style="margin-left:auto">2 w grze</span></div>
+<span class="credit">Wiśniowy staw · dzień</span>
+<svg class="ms" viewBox="0 0 9 9"><path d="M0 0v8l2-2 2 3 1-1-2-3h3z" fill="#fff" stroke="#000" stroke-width=".8"/></svg>
+</body>
+</html>

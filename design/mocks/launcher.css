@@ -1,0 +1,55 @@
+/* Nore Launcher shell – album cover rail with index tabs, black card page. Mock reference. */
+body { width: 1280px; height: 800px; overflow: hidden; }
+.app { width: 1280px; height: 800px; display: grid; grid-template-columns: var(--nore-launcher-rail) 1fr; overflow: hidden; }
+
+/* ------------------------------------------------ rail = album cover */
+.rail { position: relative; display: flex; flex-direction: column; padding: 16px 0 14px 14px; min-height: 0; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 4px 0 18px 6px; }
+.brand .logo-sticker img { width: 38px; height: 38px; }
+.brand b { font: 400 22px/1 var(--nore-font-display); letter-spacing: -.01em; color: var(--nore-cover-ink); }
+.brand small { display: block; margin-top: 4px; font: 600 12px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+.nav { flex: 1; min-height: 0; }
+.nav h6 { margin: 14px 0 5px 12px; font: 600 12px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+.nav h6:first-child { margin-top: 0; }
+.tab {
+  position: relative; display: flex; align-items: center; gap: 11px;
+  height: 33px; padding: 0 14px 0 12px; margin: 1px 0;
+  border-radius: 11px 0 0 11px;
+  color: var(--nore-cover-ink); font: 500 14px/1 var(--nore-font-text);
+  opacity: .82;
+}
+.tab .ic { width: 17px; height: 17px; opacity: .9; }
+.tab:hover { background: var(--nore-cover-tab); opacity: 1; }
+.tab .end { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.tab .n { font: 600 12px/1 var(--nore-font-text); color: var(--nore-cover-ink-soft); }
+/* active tab: a piece of the page pulled out over the cover, joined with concave corners */
+.tab.on { background: var(--nore-page); color: var(--nore-ink); opacity: 1; font-weight: 600; }
+.tab.on .ic { color: var(--nore-accent-light); opacity: 1; }
+.tab.on::before, .tab.on::after { content: ''; position: absolute; right: 0; width: 12px; height: 12px; }
+.tab.on::before { top: -12px; background: radial-gradient(circle at 0 0, transparent 11.5px, var(--nore-page) 12px); }
+.tab.on::after { bottom: -12px; background: radial-gradient(circle at 0 100%, transparent 11.5px, var(--nore-page) 12px); }
+.tab.event { color: #ffc08a; }
+.tab.event img { width: 17px; height: 17px; image-rendering: pixelated; }
+.tab.muted { opacity: .55; }
+
+.me { display: flex; align-items: center; gap: 11px; margin: 8px 14px 0 0; padding: 9px 10px; border-radius: 14px; background: color-mix(in oklab, var(--nore-cover-tab) 70%, transparent); }
+.me .me-head { width: 34px; height: 34px; border-radius: 9px; image-rendering: pixelated; box-shadow: 0 0 0 2.5px var(--nore-vinyl); }
+.me b { display: block; font: 600 14px/1.1 var(--nore-font-text); color: var(--nore-cover-ink); }
+.me small { font: 500 12px/1.3 var(--nore-font-text); color: var(--nore-cover-ink-soft); display: flex; align-items: center; gap: 6px; }
+
+/* ------------------------------------------------ page */
+.page { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.titlebar { flex: none; height: var(--nore-launcher-titlebar); display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 0 8px 0 32px; color: var(--nore-ink-soft); }
+.titlebar .status { margin-right: auto; display: flex; align-items: center; gap: 8px; font: 500 12.5px/1 var(--nore-font-text); }
+.titlebar .wc { width: 36px; height: 28px; display: grid; place-items: center; border-radius: 8px; }
+.titlebar .wc .ic { width: 15px; height: 15px; }
+.content { flex: 1; min-height: 0; padding: 6px 32px 28px; }
+.page-head { display: flex; align-items: flex-end; gap: 16px; margin: 4px 0 22px; }
+.page-head h1 { margin: 0; font: var(--nore-launcher-title); letter-spacing: var(--nore-launcher-title-tracking); }
+.page-head p { margin: 6px 0 0; color: var(--nore-ink-soft); }
+.section-title { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font: var(--nore-launcher-section); }
+.section-title .more { margin-left: auto; font: 600 13px/1 var(--nore-font-text); color: var(--nore-ink-soft); }
+
+/* toast: a loose label sticker slapped bottom-right */
+.toast { position: absolute; right: 24px; bottom: 22px; display: flex; align-items: center; gap: 12px; padding: 12px 18px 12px 14px; border-radius: 14px; background: var(--nore-vinyl); color: var(--nore-vinyl-ink); box-shadow: var(--nore-shadow-float); font: 600 13.5px/1.3 var(--nore-font-text); rotate: -1deg; }
+.toast small { display: block; font-weight: 500; color: var(--nore-vinyl-ink-soft); }

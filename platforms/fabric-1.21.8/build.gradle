@@ -1,0 +1,16 @@
+plugins {
+    id 'fabric-loom' version "${loom_version}"
+}
+
+apply from: '../shared.gradle'
+
+repositories {
+    maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+

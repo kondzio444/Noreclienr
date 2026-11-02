@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<title>Nore Launcher – Instancja</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="launcher.css">
+<style>
+  .back { display: inline-flex; align-items: center; gap: 8px; font: 600 13.5px/1 var(--nore-font-text); color: var(--nore-ink-soft); margin: 2px 0 14px; }
+  .back .ic { width: 16px; height: 16px; }
+  .head { display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center; padding: 18px 22px 18px 18px; border-radius: 22px; background: var(--nore-page-raised); }
+  .head .sticker { --tilt: -3deg; width: 104px; height: 104px; background: url(../../web/public/assets/home/panorama.webp) 38% 60% / 190%; }
+  .head h1 { margin: 0 0 10px; font: var(--nore-launcher-title); letter-spacing: var(--nore-launcher-title-tracking); }
+  .head .labels { display: flex; gap: 9px; align-items: center; }
+  .head .labels .t-meta { margin-left: 6px; }
+  .head .acts { display: flex; gap: 10px; align-items: center; }
+  .tabs { margin: 22px 0 20px; }
+  .tabs .n { margin-left: 7px; font-weight: 500; color: var(--nore-ink-faint); }
+  .tabs .on .n { color: var(--nore-vinyl-ink-soft); }
+  .body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 30px; }
+  .tools { display: flex; gap: 10px; margin-bottom: 12px; }
+  .tools .input { flex: 1; height: 40px; }
+  .mods { display: grid; gap: 4px; }
+  .mod { display: grid; grid-template-columns: 44px 1fr auto auto; gap: 14px; align-items: center; padding: 9px 12px 9px 10px; border-radius: 14px; }
+  .mod:hover, .mod.hover { background: var(--nore-page-raised); }
+  .mi { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font: 400 15px/1 var(--nore-font-display); color: #fff; box-shadow: 0 0 0 2.5px var(--nore-vinyl); }
+  .mod b { display: block; font: 600 14.5px/1.2 var(--nore-font-text); }
+  .mod small { display: flex; align-items: center; gap: 8px; margin-top: 3px; font: 500 12.5px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .mod.off .mi { background: var(--nore-slot) !important; color: var(--nore-ghost); box-shadow: inset 0 0 0 1.5px var(--nore-ghost); outline: 1.5px dashed var(--nore-ghost); outline-offset: -5px; }
+  .mod.off b { color: var(--nore-ink-faint); }
+  .side h3 { margin-top: 0; }
+  .worlds { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; margin-bottom: 26px; }
+  .worlds figure { margin: 0; }
+  .worlds .sticker { aspect-ratio: 4 / 3; border-radius: 12px; --rim: 2.5px; }
+  .worlds figcaption { margin-top: 8px; font: 600 13px/1.2 var(--nore-font-text); }
+  .worlds figcaption small { display: block; margin-top: 2px; font: 500 12px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .w1 { background: url(../../web/public/assets/home/sky.webp) 50% 50% / cover; --tilt: -1.5deg; }
+  .w2 { background: url(../../web/public/assets/home/ward-history.webp) 50% 60% / 160%; --tilt: 1deg; }
+  .facts { display: grid; gap: 0; padding: 6px 18px; border-radius: 18px; background: var(--nore-page-raised); }
+  .facts div { display: flex; justify-content: space-between; padding: 11px 0; font-size: 13.5px; }
+  .facts div + div { box-shadow: 0 -1px 0 color-mix(in oklab, var(--nore-ink) 7%, transparent); }
+  .facts span { color: var(--nore-ink-soft); }
+  .facts b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .progress-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .progress-row .progress { flex: 1; height: 6px; }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="app">
+  <aside class="rail cloth" data-active="instances"></aside>
+  <section class="page card-grain">
+    <div class="titlebar"><span class="status"><i class="dot sm ready"></i>Online · Nore Hub</span><span class="wc"><svg class="ic"><use href="#i-minus"/></svg></span><span class="wc"><svg class="ic"><use href="#i-square"/></svg></span><span class="wc"><svg class="ic"><use href="#i-x"/></svg></span></div>
+    <div class="content">
+      <a class="back"><svg class="ic"><use href="#i-back"/></svg>Instancje</a>
+      <header class="head">
+        <div class="sticker"></div>
+        <div>
+          <h1>Wiśniowy Survival</h1>
+          <div class="labels"><span class="label sm">1.21.11</span><span class="label sm fabric">Fabric 0.17</span><span class="label sm nore">Nore Client</span><span class="t-meta tnum">37 h w grze · 1,8 GB na dysku</span></div>
+        </div>
+        <div class="acts">
+          <button class="btn icon" aria-label="Folder"><svg class="ic"><use href="#i-folder"/></svg></button>
+          <button class="btn icon" aria-label="Duplikuj"><svg class="ic"><use href="#i-copy"/></svg></button>
+          <button class="btn-play sm"><svg class="ic"><use href="#i-play"/></svg><span>GRAJ</span></button>
+        </div>
+      </header>
+      <div class="seg tabs"><span>Przegląd</span><span class="on">Mody<i class="n">24</i></span><span>Paczki<i class="n">3</i></span><span>Shadery<i class="n">1</i></span><span>Światy<i class="n">4</i></span><span>Zrzuty<i class="n">61</i></span><span>Ustawienia</span></div>
+      <div class="body">
+        <div>
+          <div class="tools">
+            <div class="input"><svg class="ic"><use href="#i-search"/></svg><span class="ph">Szukaj w 24 modach</span></div>
+            <button class="btn"><svg class="ic"><use href="#i-refresh"/></svg>Aktualizuj 2</button>
+            <button class="btn sticker-btn"><svg class="ic"><use href="#i-plus"/></svg>Dodaj mody</button>
+          </div>
+          <div class="mods">
+            <div class="mod"><span class="mi" style="background:var(--nore-accent)">N</span><div><b>Nore Client</b><small><i class="dot sm nore"></i>2.1.0 · radialne menu, HUD, Szatnia</small></div><span></span><span class="switch on"></span></div>
+            <div class="mod hover"><span class="mi" style="background:#3c8f6d">So</span><div><b>Sodium</b><small><i class="dot sm wait"></i>0.6.13 → 0.7.0 · szybsze renderowanie</small></div><button class="btn sm">Aktualizuj</button><span class="switch on"></span></div>
+            <div class="mod"><span class="mi" style="background:#5a6fd6">Ir</span><div><b>Iris Shaders</b><small><i class="dot sm ready"></i>1.8.8 · shadery z OptiFine</small></div><span></span><span class="switch on"></span></div>
+            <div class="mod"><span class="mi" style="background:#c46a3a">Li</span><div><b>Lithium</b><small><i class="dot sm wait"></i>0.15.0 → 0.15.1 · logika gry</small></div><button class="btn sm">Aktualizuj</button><span class="switch on"></span></div>
+            <div class="mod off"><span class="mi">Xa</span><div><b>Xaero's Minimap</b><small><i class="dot sm off"></i>25.2.10 · wyłączony przez Ciebie 3 dni temu</small></div><span></span><span class="switch"></span></div>
+            <div class="mod"><span class="mi" style="background:#8a5ad6">Mm</span><div><b>Mod Menu</b><small><i class="dot sm ready"></i>15.0.0 · lista modów w grze</small></div><span></span><span class="switch on"></span></div>
+            <div class="mod"><span class="mi" style="background:#2f7fb8">Ec</span><div><b>Entity Culling</b><small><i class="dot sm ready"></i>1.8.2 · ukrywa niewidoczne byty</small></div><span></span><span class="switch on"></span></div>
+          </div>
+        </div>
+        <aside class="side">
+          <h3 class="section-title">Światy<span class="more">4</span></h3>
+          <div class="worlds">
+            <figure><div class="sticker w1"></div><figcaption>Wiśniowy staw<small>wczoraj · 31 h</small></figcaption></figure>
+            <figure><div class="sticker w2"></div><figcaption>Kuźnia<small>12 paź · 6 h</small></figcaption></figure>
+          </div>
+          <h3 class="section-title">Szczegóły</h3>
+          <div class="facts">
+            <div><span>Minecraft</span><b>1.21.11</b></div>
+            <div><span>Loader</span><b>Fabric 0.17.2</b></div>
+            <div><span>Pamięć</span><b>4 GB</b></div>
+            <div><span>Utworzona</span><b>3 sierpnia 2026</b></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <div class="toast"><i class="dot ready"></i><div>Zainstalowano Mod Menu<small>15.0.0 z Modrinth · sprawdzono SHA-512</small></div></div>
+  </section>
+</div>
+<script src="rail.js"></script>
+</body>
+</html>

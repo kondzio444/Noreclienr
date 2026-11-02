@@ -1,0 +1,64 @@
+[package]
+name = "nore-core"
+description = "Nore Launcher backend: game install, Java, loaders, launch, accounts, Nore services (no UI)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "nore_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "nore-cli"
+path = "src/bin/nore-cli.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+tokio-util = "0.7"
+futures = "0.3"
+thiserror = "2"
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json", "stream", "http2", "charset", "form", "system-proxy"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+regex = "1"
+sha1 = "0.10"
+sha2 = "0.10"
+md-5 = "0.10"
+hmac = "0.12"
+hex = "0.4"
+base64 = "0.22"
+rand = "0.8"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+p256 = { version = "0.13", features = ["ecdsa", "pkcs8", "pem"] }
+aes-gcm = "0.10"
+aes = "0.8"
+cbc = { version = "0.1", features = ["alloc"] }
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+sysinfo = { version = "0.32", default-features = false, features = ["system"] }
+dirs = "5"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+hickory-resolver = "0.24"
+urlencoding = "2"
+log = "0.4"
+if-addrs = "0.13"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Memory"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["test-util"] }

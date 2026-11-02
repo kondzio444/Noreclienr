@@ -1,0 +1,904 @@
+'use strict';
+/* /panel – Nore Bot configuration panel (docs/bot-api.md).
+   Discord login → guild picker (/api/v2/me) → editor whose forms are rendered ONLY from the bot schema
+   (/api/v2/bot/config.schema.json: x-module tabs, x-ui hints, x-i18n labels from /panel/locales/<lang>.json).
+   Saves with { config, version }: 409 = someone saved meanwhile, 400 = JSON-pointer errors mapped to fields.
+   The action queue (config.actions.queue) shows each job's result from the bot's action_result events.
+   Languages: Polish (default) and English. */
+(() => {
+  const N = window.Nore;
+  if (!N) return;
+  const { $, $$, esc } = N;
+  const app = $('#app');
+
+  // ------------------------------------------------------------------ chrome strings (the schema labels come from the locale files)
+  const UI = {
+    pl: {
+      brand: 'Panel bota', loading: 'Wczytuję panel…', loginTitle: 'Panel Nore Bota', loginText: 'Zaloguj się przez Discord. Zobaczysz serwery, na których masz uprawnienie „Zarządzanie serwerem”.', login: 'Zaloguj przez Discord',
+      loginDisabled: 'Logowanie jest chwilowo wyłączone na serwerze.', logout: 'Wyloguj', pickTitle: 'Wybierz serwer', pickText: 'Serwery, którymi możesz zarządzać. Bota dodasz jednym kliknięciem.', find: 'Szukaj serwera', open: 'Otwórz', invite: 'Dodaj bota', noPerm: 'Brak uprawnień', botHere: 'Nore Bot jest na serwerze', botMissing: 'Bota jeszcze nie ma', noGuilds: 'Nie masz serwerów, którymi możesz zarządzać.',
+      modules: 'Moduły', server: 'Serwer', change: 'Zmień serwer', botSeen: 'Bot zgłosił się', botNever: 'Bot jeszcze się nie zgłosił', version: 'wersja', enabled: 'Moduł włączony',
+      unsaved: (n) => `Masz ${n} ${N.plural(n, 'niezapisaną zmianę', 'niezapisane zmiany', 'niezapisanych zmian')}`, unsavedHint: 'Bot wczyta je w ciągu 15 sekund od zapisania.', undo: 'Cofnij', save: 'Zapisz', saving: 'Zapisuję…', saved: 'Zapisano', savedHint: (v) => `Wersja ${v}. Bot wczyta zmiany w ciągu 15 sekund.`,
+      conflict: (who, v) => `${who || 'Ktoś'} zapisał(a) konfigurację w międzyczasie (wersja ${v}).`, conflictLoad: 'Wczytaj nową wersję', conflictKeep: 'Zapisz moje zmiany mimo to', invalid: (n) => `Konfiguracja ma błędy (${n}). Popraw zaznaczone pola.`,
+      preview: 'Podgląd na Discordzie', previewHint: 'Kliknij pole z wiadomością, żeby zobaczyć podgląd.', today: 'dziś', recent: 'Ostatnio', noEvents: 'Jeszcze nic się nie wydarzyło.', notSet: '– nie ustawiono –', unknownCh: 'nieznany kanał', unknownRole: 'nieznana rola',
+      add: 'Dodaj', addItem: 'Dodaj wpis', remove: 'Usuń', item: 'Wpis', emptyList: 'Pusta lista. Dodaj pierwszy wpis.', addRole: '+ Dodaj rolę', addChannel: '+ Dodaj kanał', addText: 'Wpisz i naciśnij Enter',
+      vars: 'Wstaw zmienną kliknięciem.', newAction: 'Nowa akcja', queueHint: 'Akcja wykona się raz, po zapisaniu. Wynik pojawi się poniżej i w zdarzeniach.', aUnsaved: 'czeka na zapis', aQueued: 'w kolejce, bot jeszcze nie odpowiedział', aOk: 'wykonano', aFail: 'błąd',
+      err401: 'Sesja wygasła. Zaloguj się ponownie.', err403: 'Nie masz uprawnienia „Zarządzanie serwerem” na tym serwerze.', err404bot: 'Nore Bota nie ma na tym serwerze.', errNet: 'Nie udało się połączyć z API. Spróbuj za chwilę.', retry: 'Spróbuj ponownie', back: 'Wróć do listy serwerów',
+      loginErr: { cancelled: 'Logowanie zostało anulowane.', expired: 'Logowanie wygasło. Zacznij od nowa.', state: 'Coś poszło nie tak przy logowaniu. Zacznij od nowa.', token: 'Discord nie przyjął logowania. Spróbuj jeszcze raz.', scope: 'Potrzebujemy zgody na listę serwerów.', user: 'Nie udało się pobrać konta Discord.', code: 'Brak kodu logowania od Discorda.' },
+      ev: { action_result: 'Akcja', panel_config_saved: 'Zapis w panelu', bot_config_saved: 'Zmiana z bota', member_join: 'Nowa osoba', member_leave: 'Ktoś wyszedł', ticket_open: 'Ticket otwarty', mod_action: 'Moderacja', builder_finished: 'Kreator skończył', builder_start: 'Kreator ruszył', backup_create: 'Kopia zapasowa', suggestion_new: 'Nowa propozycja', application_new: 'Nowe podanie' },
+      ago: (s) => N.ago(s),
+      overview: 'Przegląd', builderPage: 'Kreator serwera', eventsPage: 'Dziennik zdarzeń', legal: 'Informacje', terms: 'Regulamin', privacy: 'Prywatność', site: 'Strona Nore', support: 'Wsparcie',
+      grp: { general: 'Ogólne', moderation: 'Moderacja', community: 'Społeczność', nore: 'Nore i Minecraft', automation: 'Automatyzacja', server: 'Serwer', other: 'Inne' },
+      stMembers: 'Członkowie', stChannels: 'Kanały', stRoles: 'Role', stBoosts: 'Boosty', stEmoji: 'Emotki', stVersion: 'Wersja ustawień', stModules: 'Włączone moduły', botOnline: 'Bot działa', botStale: 'Bot dawno się nie zgłosił', botOff: 'Bot jeszcze się nie zgłosił',
+      modulesTitle: 'Moduły', modulesHint: 'Włącz albo wyłącz moduł jednym kliknięciem, szczegóły po kliknięciu nazwy.', quick: 'Szybkie akcje', qPanels: 'Wyślij panele (tickety, weryfikacja, role)', qBackup: 'Zrób kopię zapasową', qDiscovery: 'Sprawdź wymagania Discovery', qServer: 'Zastosuj ustawienia serwera',
+      queued: 'Zlecono botowi – wynik pojawi się w dzienniku.', settings: 'Ustawienia', searchMods: 'Szukaj ustawień',
+      bTemplate: 'Szablon', bSize: 'Rozmiar', bLang: 'Język kanałów i ról', bLook: 'Wygląd', bBuild: 'Zbuduj serwer', bRepair: 'Napraw i zastosuj wygląd', bWarn: 'Przed budową bot robi kopię zapasową. Budowa z panelu niczego nie usuwa – kanały spoza szablonu usuniesz tylko komendą /builder start prune:true na Discordzie.', bJobs: 'Ostatnie zlecenia', bNone: 'Jeszcze nic nie zlecono.', bUnsaved: 'Najpierw zapisz albo cofnij zmiany.',
+      sizes: { small: 'Mały', medium: 'Średni', full: 'Pełny' }, langAuto: 'Język serwera',
+      tpl: { 'nore-client': ['Nore Client', 'Społeczność klienta: aktualizacje, pomoc, beta, twórcy, ekipa z pełną drabinką stopni.'], 'mc-server': ['Serwer Minecraft', 'MC.noreclient.pl: tryby gry, rangi z gry, ekipa serwera MC, status na żywo, tickety.'], gaming: ['Społeczność graczy', 'Gry, poziomy, eventy, konkursy i kanały głosowe.'], support: ['Tylko pomoc', 'Mały serwer wsparcia: tickety, FAQ, statusy i aktualizacje.'] },
+      evAll: 'Wszystkie', evFilter: 'Filtr', more: 'Więcej',
+    },
+    en: {
+      brand: 'Bot panel', loading: 'Loading the panel…', loginTitle: 'Nore Bot panel', loginText: 'Sign in with Discord. You will see the servers where you have the “Manage Server” permission.', login: 'Sign in with Discord',
+      loginDisabled: 'Sign-in is temporarily disabled on the server.', logout: 'Sign out', pickTitle: 'Choose a server', pickText: 'Servers you can manage. Add the bot in one click.', find: 'Search servers', open: 'Open', invite: 'Add the bot', noPerm: 'No permission', botHere: 'Nore Bot is on the server', botMissing: 'The bot is not here yet', noGuilds: 'You have no servers you can manage.',
+      modules: 'Modules', server: 'Server', change: 'Change server', botSeen: 'Bot reported', botNever: 'The bot has not reported yet', version: 'version', enabled: 'Module enabled',
+      unsaved: (n) => `You have ${n} unsaved change${n === 1 ? '' : 's'}`, unsavedHint: 'The bot loads them within 15 seconds of saving.', undo: 'Undo', save: 'Save', saving: 'Saving…', saved: 'Saved', savedHint: (v) => `Version ${v}. The bot loads the changes within 15 seconds.`,
+      conflict: (who, v) => `${who || 'Someone'} saved the configuration in the meantime (version ${v}).`, conflictLoad: 'Load the new version', conflictKeep: 'Save my changes anyway', invalid: (n) => `The configuration has ${n} error${n === 1 ? '' : 's'}. Fix the marked fields.`,
+      preview: 'Discord preview', previewHint: 'Click a message field to see a preview.', today: 'today', recent: 'Recent', noEvents: 'Nothing has happened yet.', notSet: '– not set –', unknownCh: 'unknown channel', unknownRole: 'unknown role',
+      add: 'Add', addItem: 'Add entry', remove: 'Remove', item: 'Entry', emptyList: 'Empty list. Add the first entry.', addRole: '+ Add role', addChannel: '+ Add channel', addText: 'Type and press Enter',
+      vars: 'Click to insert a variable.', newAction: 'New action', queueHint: 'An action runs once, after saving. Its result appears below and in the events.', aUnsaved: 'waiting for save', aQueued: 'queued, no answer from the bot yet', aOk: 'done', aFail: 'error',
+      err401: 'Your session expired. Please sign in again.', err403: 'You do not have the “Manage Server” permission on this server.', err404bot: 'Nore Bot is not on this server.', errNet: 'Could not reach the API. Try again in a moment.', retry: 'Try again', back: 'Back to the server list',
+      loginErr: { cancelled: 'Sign-in was cancelled.', expired: 'Sign-in expired. Start again.', state: 'Something went wrong while signing in. Start again.', token: 'Discord did not accept the sign-in. Try again.', scope: 'We need permission to see your server list.', user: 'Could not load your Discord account.', code: 'Discord sent no sign-in code.' },
+      ev: { action_result: 'Action', panel_config_saved: 'Saved in the panel', bot_config_saved: 'Changed by the bot', member_join: 'New member', member_leave: 'Member left', ticket_open: 'Ticket opened', mod_action: 'Moderation', builder_finished: 'Builder finished', builder_start: 'Builder started', backup_create: 'Backup', suggestion_new: 'New suggestion', application_new: 'New application' },
+      ago: (iso) => { const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; },
+      overview: 'Overview', builderPage: 'Server builder', eventsPage: 'Event log', legal: 'Information', terms: 'Terms', privacy: 'Privacy', site: 'Nore website', support: 'Support',
+      grp: { general: 'General', moderation: 'Moderation', community: 'Community', nore: 'Nore & Minecraft', automation: 'Automation', server: 'Server', other: 'Other' },
+      stMembers: 'Members', stChannels: 'Channels', stRoles: 'Roles', stBoosts: 'Boosts', stEmoji: 'Emoji', stVersion: 'Settings version', stModules: 'Modules on', botOnline: 'Bot is online', botStale: 'Bot has not reported for a while', botOff: 'The bot has not reported yet',
+      modulesTitle: 'Modules', modulesHint: 'Turn a module on or off with one click, open it for the details.', quick: 'Quick actions', qPanels: 'Post panels (tickets, verification, roles)', qBackup: 'Make a backup', qDiscovery: 'Check Discovery requirements', qServer: 'Apply server settings',
+      queued: 'Sent to the bot – the result appears in the log.', settings: 'Settings', searchMods: 'Search settings',
+      bTemplate: 'Template', bSize: 'Size', bLang: 'Language of channels and roles', bLook: 'Look', bBuild: 'Build the server', bRepair: 'Repair and apply the look', bWarn: 'The bot makes a backup before building. Building from the panel never deletes anything – channels outside the template are removed only by /builder start prune:true on Discord.', bJobs: 'Recent jobs', bNone: 'Nothing requested yet.', bUnsaved: 'Save or undo your changes first.',
+      sizes: { small: 'Small', medium: 'Medium', full: 'Full' }, langAuto: 'Server language',
+      tpl: { 'nore-client': ['Nore Client', 'Client community: updates, support, beta, creators, staff with the full rank ladder.'], 'mc-server': ['Minecraft server', 'MC.noreclient.pl: game modes, in-game ranks, MC staff, live status, tickets.'], gaming: ['Gaming community', 'Games, levels, events, giveaways and voice channels.'], support: ['Support only', 'A small support server: tickets, FAQ, status and updates.'] },
+      evAll: 'All', evFilter: 'Filter', more: 'More',
+    },
+  };
+  const LANGS = ['pl', 'en'];
+  let lang = (() => { try { const l = localStorage.getItem('nore-panel-lang'); if (LANGS.includes(l)) return l; } catch { /* storage off */ } return /^en\b/i.test(navigator.language || '') ? 'en' : 'pl'; })();
+  const u = (k, ...a) => { const v = UI[lang][k] ?? UI.pl[k]; return typeof v === 'function' ? v(...a) : v; };
+  const locales = {};
+  async function loadLocale(l) {
+    if (locales[l]) return locales[l];
+    try { const r = await fetch(`/panel/locales/${l}.json`); locales[l] = r.ok ? await r.json() : {}; } catch { locales[l] = {}; }
+    return locales[l];
+  }
+  const dig = (obj, key) => String(key || '').split('.').reduce((o, k) => (o && typeof o === 'object' ? o[k] : undefined), obj);
+  const humanize = (k) => String(k).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  function tr(key, fallback) {
+    if (!key) return fallback;
+    for (const l of [lang, 'pl', 'en']) {
+      let v = dig(locales[l], key);
+      if (v && typeof v === 'object') v = v._label;
+      if (typeof v === 'string' && v) return v;
+    }
+    return fallback;
+  }
+
+  // ------------------------------------------------------------------ API (session routes send the cookie; same origin)
+  async function call(method, path, body) {
+    let r;
+    try {
+      r = await fetch(`/api/v2/${path}`, { method, credentials: 'same-origin', headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined });
+    } catch { throw Object.assign(new Error(u('errNet')), { status: 0 }); }
+    const j = await r.json().catch(() => null);
+    if (!r.ok || !j || j.ok === false) throw Object.assign(new Error((j && j.error) || `HTTP ${r.status}`), { status: r.status, body: j || {} });
+    return j;
+  }
+
+  // ------------------------------------------------------------------ JSON pointers and values
+  const escPtr = (k) => String(k).replace(/~/g, '~0').replace(/\//g, '~1');
+  const ptrJoin = (base, k) => `${base}/${escPtr(k)}`;
+  const ptrParts = (p) => p.split('/').slice(1).map((s) => s.replace(/~1/g, '/').replace(/~0/g, '~'));
+  function getAt(obj, p) { return ptrParts(p).reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+  function setAt(obj, p, v) {
+    const parts = ptrParts(p); let o = obj;
+    for (let i = 0; i < parts.length - 1; i++) { if (o[parts[i]] == null) o[parts[i]] = /^\d+$/.test(parts[i + 1]) ? [] : {}; o = o[parts[i]]; }
+    o[parts[parts.length - 1]] = v;
+  }
+  const clone = (v) => JSON.parse(JSON.stringify(v));
+  function changes(a, b, p = '', out = []) {
+    if (a === b) return out;
+    if (a && b && typeof a === 'object' && typeof b === 'object' && Array.isArray(a) === Array.isArray(b)) {
+      if (Array.isArray(a) && a.length !== b.length) { out.push(p); return out; }
+      for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) changes(a[k], b[k], ptrJoin(p, k), out);
+      return out;
+    }
+    if (JSON.stringify(a) !== JSON.stringify(b)) out.push(p);
+    return out;
+  }
+  function deref(s, root, depth = 0) {
+    if (!s || !s.$ref || depth > 8) return s || {};
+    const t = s.$ref.replace(/^#\//, '').split('/').reduce((o, k) => (o ? o[k] : undefined), root);
+    return deref({ ...t, ...Object.fromEntries(Object.entries(s).filter(([k]) => k !== '$ref')) }, root, depth + 1);
+  }
+  function defaultOf(s0) {
+    const s = deref(s0, schema);
+    if (s.default !== undefined) return clone(s.default);
+    if (s.type === 'object') { const o = {}; for (const [k, v] of Object.entries(s.properties || {})) o[k] = defaultOf(v); return o; }
+    if (s.type === 'array') return [];
+    if (s.type === 'boolean') return false;
+    if (s.type === 'integer' || s.type === 'number') return s.minimum ?? 0;
+    if (s.enum) return s.enum[0];
+    return '';
+  }
+
+  // ------------------------------------------------------------------ state
+  let schema = null, me = null, guild = null, original = null, config = null, version = 0, current = '', errors = new Map(), focusPreview = null, pollTimer = 0;
+  // panel.noreclient.pl/<guild>/<page>; on the main site (tests, old links) the same under /panel
+  const BASE = /^panel\./i.test(location.hostname) ? '' : '/panel';
+  const HOME = BASE || '/';
+  const routeMatch = () => location.pathname.slice(BASE.length).match(/^\/(\d{17,20})(?:\/([a-zA-Z][a-zA-Z0-9_-]{0,40}))?\/?$/);
+  const route = () => { const m = routeMatch(); return m ? m[1] : null; };
+  const routePage = () => { const m = routeMatch(); return (m && m[2]) || (location.hash.slice(1) || null); };
+  const go = (path, replace) => { if (location.pathname !== path) history[replace ? 'replaceState' : 'pushState']({}, '', path); render(); };
+  const SPECIAL = ['overview', 'builder', 'events'];
+  const GROUPS = {
+    general: ['general', 'utility', 'logging'],
+    moderation: ['moderation', 'automod', 'verification'],
+    community: ['welcome', 'goodbye', 'autorole', 'roles', 'leveling', 'tickets', 'suggestions', 'applications', 'giveaways', 'polls', 'starboard', 'boosts'],
+    nore: ['nore', 'minecraft', 'status', 'social'],
+    automation: ['customCommands', 'scheduled', 'reminders', 'stats'],
+    server: ['server', 'community', 'actions'],
+  };
+  addEventListener('popstate', () => render());
+
+  // ------------------------------------------------------------------ header: language switch + user
+  function paintChrome() {
+    document.documentElement.lang = lang;
+    for (const el of $$('[data-t]')) el.textContent = u(el.dataset.t);
+    for (const b of $$('.lang button')) b.setAttribute('aria-pressed', b.dataset.lang === lang);
+    const box = $('#user');
+    if (me) {
+      const name = me.user.globalName || me.user.username;
+      box.innerHTML = `${me.user.avatarUrl ? `<img src="${esc(me.user.avatarUrl)}" alt="">` : ''}<span>${esc(name)}</span><button type="button" id="logout">${esc(u('logout'))}</button>`;
+      box.hidden = false;
+      $('#logout').addEventListener('click', async () => { try { await call('POST', 'auth/logout'); } catch { /* already gone */ } me = null; box.hidden = true; go(HOME); });
+      fixIcons(box);
+    } else box.hidden = true;
+  }
+  for (const b of $$('.lang button')) b.addEventListener('click', async () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem('nore-panel-lang', lang); } catch { /* storage off */ }
+    await loadLocale(lang);
+    paintChrome();
+    if (guild && config) paintEditor(); else render();
+  });
+
+  // ------------------------------------------------------------------ screens
+  // a Discord icon that fails to load falls back to the initials sticker
+  function fixIcons(root) {
+    for (const img of $$('.gi img, .user img', root)) img.addEventListener('error', () => { const box = img.parentElement; if (box.classList.contains('gi')) box.textContent = (box.closest('[data-name]')?.dataset.name || '?').slice(0, 2).toUpperCase(); else img.remove(); }, { once: true });
+  }
+  function screen(html) { app.innerHTML = html; N.entrances(app); fixIcons(app); }
+  function showError(e, { backToList = true } = {}) {
+    const text = e.status === 401 ? u('err401') : e.status === 403 ? u('err403') : e.status === 404 && e.body.code === 'bot_not_present' ? u('err404bot') : e.message || u('errNet');
+    screen(`<section class="center"><h1>${esc(text)}</h1>${e.body && e.body.inviteUrl ? `<a class="pill" href="${esc(e.body.inviteUrl)}">${esc(u('invite'))}</a>` : ''}<div class="chips"><button type="button" class="btn" id="retry">${esc(u('retry'))}</button>${backToList ? `<a class="btn" href="${HOME}" id="back">${esc(u('back'))}</a>` : ''}</div></section>`);
+    $('#retry').addEventListener('click', () => render());
+    const b = $('#back'); if (b) b.addEventListener('click', (ev) => { ev.preventDefault(); go(HOME); });
+  }
+  function showLogin(disabled) {
+    const q = new URLSearchParams(location.search);
+    const code = q.get('login');
+    const msg = code ? (u('loginErr')[code] || u('loginErr').state) : '';
+    const next = location.pathname || HOME;
+    screen(`<section class="center"><div class="login rv rv-stick"><img src="/assets/album/logo-sticker-256.png" alt="" width="88" height="88"><h1>${esc(u('loginTitle'))}</h1><p>${esc(u('loginText'))}</p>
+      ${disabled ? `<p class="err-line"><i class="dot error"></i>${esc(u('loginDisabled'))}</p>` : `<a class="pill lg" href="/api/v2/auth/discord/login?next=${encodeURIComponent(next)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>${esc(u('login'))}</a>`}
+      ${msg ? `<p class="err-line"><i class="dot error"></i>${esc(msg)}</p>` : ''}<p class="fine">${lang === 'en' ? 'By signing in you accept the' : 'Logując się, akceptujesz'} <a href="${BASE ? 'https://panel.noreclient.pl' : ''}/terms">${lang === 'en' ? 'Terms' : 'Regulamin'}</a> ${lang === 'en' ? 'and the' : 'i'} <a href="${BASE ? 'https://panel.noreclient.pl' : ''}/privacy">${lang === 'en' ? 'Privacy policy' : 'Politykę prywatności'}</a>.</p></div></section>`);
+  }
+  const initials = (name) => esc(String(name || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase());
+  function showPicker() {
+    const list = me.guilds;
+    screen(`<section class="picker"><h1 class="rv">${esc(u('pickTitle'))}</h1><p class="rv">${esc(u('pickText'))}</p>
+      <label class="sr" for="find">${esc(u('find'))}</label><input class="find rv" id="find" type="search" placeholder="${esc(u('find'))}" autocomplete="off">
+      <ul class="guilds rv" id="guilds"></ul></section>`);
+    const paint = (f = '') => {
+      const items = list.filter((g) => g.name.toLowerCase().includes(f.toLowerCase()));
+      $('#guilds').innerHTML = items.length ? items.map((g) => {
+        const icon = `<span class="gi">${g.iconUrl ? `<img src="${esc(g.iconUrl)}" alt="">` : initials(g.name)}</span>`;
+        if (!g.manageable) return `<li class="g off" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm off"></i>${esc(u('noPerm'))}</small></div></li>`;
+        if (!g.botPresent) return `<li class="g" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm wait"></i>${esc(u('botMissing'))}</small></div>${g.inviteUrl ? `<a class="pill sm quiet" href="${esc(g.inviteUrl)}">${esc(u('invite'))}</a>` : ''}</li>`;
+        return `<li><a class="g" href="${BASE}/${esc(g.id)}" data-gid="${esc(g.id)}" data-name="${esc(g.name)}">${icon}<div><b>${esc(g.name)}</b><small><i class="dot sm ready"></i>${esc(u('botHere'))}</small></div><span class="pill sm">${esc(u('open'))}</span></a></li>`;
+      }).join('') : `<li class="empty">${esc(u('noGuilds'))}</li>`;
+      fixIcons($('#guilds'));
+    };
+    paint();
+    $('#find').addEventListener('input', (e) => paint(e.target.value));
+    $('#guilds').addEventListener('click', (e) => { const a = e.target.closest('a[data-gid]'); if (a) { e.preventDefault(); go(`${BASE}/${a.dataset.gid}`); } });
+  }
+
+  async function render() {
+    clearTimeout(pollTimer);
+    await loadLocale(lang);
+    paintChrome();
+    try {
+      if (!schema) schema = await fetch('/api/v2/bot/config.schema.json').then((r) => r.json());
+      if (!me) me = await call('GET', 'me');
+    } catch (e) {
+      if (e.status === 401) { me = null; paintChrome(); return showLogin(false); }
+      if (e.status === 503) return showLogin(true);
+      return showError(e, { backToList: false });
+    }
+    paintChrome();
+    const gid = route();
+    if (!gid) return showPicker();
+    screen(`<section class="center"><img class="spin" src="/assets/album/logo-sticker-256.png" alt="" width="96" height="96"><p>${esc(u('loading'))}</p></section>`);
+    try {
+      guild = await call('GET', `panel/guilds/${gid}`);
+    } catch (e) {
+      if (e.status === 401) { me = null; paintChrome(); return showLogin(false); }
+      return showError(e);
+    }
+    original = clone(guild.config); config = clone(guild.config); version = guild.version; errors = new Map();
+    const mods = modules();
+    const want = routePage();
+    current = want && (SPECIAL.includes(want) || mods.some(([k]) => k === want)) ? want : (SPECIAL.includes(current) || mods.some(([k]) => k === current) ? current : 'overview');
+    paintEditor();
+    schedulePoll();
+  }
+
+  // ------------------------------------------------------------------ the editor
+  const modules = () => Object.entries(schema.properties || {}).filter(([, s]) => deref(s, schema).type === 'object');
+  function moduleDot(key) {
+    const v = config[key];
+    const errs = [...errors.keys()].filter((p) => p === `/${key}` || p.startsWith(`/${key}/`)).length;
+    if (errs) return `<span class="cnt">${errs}</span>`;
+    if (v && typeof v.enabled === 'boolean') return `<i class="dot sm ${v.enabled ? 'ready' : 'off'}"></i>`;
+    return '';
+  }
+  // stroke icons (the launcher's set), never emoji
+  const ICONS = {
+    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+    layers: '<path d="m12 2 9 5-9 5-9-5 9-5z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    shield: '<path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2.2.6 3.5 2.8 3.5 6"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+    message: '<path d="M4 5h16v11H9l-5 4z"/>',
+    sparkles: '<path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+    database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
+    server: '<rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01M11 7.5h6M11 16.5h6"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    activity: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    check: '<path d="m5 12 5 5 9-10"/>',
+    box: '<path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/>',
+    crown: '<path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 12H5z"/>',
+    refresh: '<path d="M20 11a8 8 0 0 0-14.9-3.5L4 9"/><path d="M4 4v5h5"/><path d="M4 13a8 8 0 0 0 14.9 3.5L20 15"/><path d="M20 20v-5h-5"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+    heart: '<path d="M12 20s-7-4.4-9.3-8.8A5.2 5.2 0 0 1 12 6.4a5.2 5.2 0 0 1 9.3 4.8C19 15.6 12 20 12 20z"/>',
+    plug: '<path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0zM12 17v5"/>',
+    terminal: '<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m7 10 3 2-3 2M13 15h4"/>',
+    archive: '<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+    key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M14 9l2 2"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
+    hammer: '<path d="m15 12-8.5 8.5a2.1 2.1 0 0 1-3-3L12 9"/><path d="m17.6 15 4.4-4.4-6.6-6.6L11 8.4z"/>',
+    ticket: '<path d="M3 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h18v-2a2 2 0 0 1 0-4 2 2 0 0 1 0-4V6H3z"/><path d="M13 6v12" stroke-dasharray="2 2"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v9H5v-9"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+    star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8-6.2-3.2-6.2 3.2L7 14.2 2 9.3l6.9-1z"/>',
+    bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+    chart: '<path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-9"/>',
+    wand: '<path d="m15 4 5 5L9 20H4v-5z"/><path d="m13 6 5 5"/>',
+    pickaxe: '<path d="M14.5 9.5 4 20"/><path d="M3 7a15 15 0 0 1 14-4l4 4a15 15 0 0 1-4 14"/>',
+    door: '<path d="M14 3H6v18h8"/><path d="M14 3l5 2v15l-5 1z"/><path d="M11 12h.01"/>',
+    tag: '<path d="M3 12V3h9l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
+    bulb: '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/>',
+    form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+    swap: '<path d="m7 4-4 4 4 4"/><path d="M3 8h14"/><path d="m17 20 4-4-4-4"/><path d="M21 16H7"/>',
+    wave: '<path d="M7 11V6a2 2 0 0 1 4 0v5"/><path d="M11 10V4a2 2 0 0 1 4 0v6"/><path d="M15 10V6a2 2 0 0 1 4 0v8a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L3 15a2 2 0 0 1 3-2.6L7 14"/>',
+    pin: '<path d="M12 17v5"/><path d="M9 3h6l-1 7 4 3v2H6v-2l4-3z"/>',
+    save: '<path d="M5 3h11l5 5v13H3V3z"/><path d="M7 3v5h8"/><path d="M7 21v-7h10v7"/>',
+  };
+  const ico = (n) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ICONS.box}</svg>`;
+  const modLabel = (k) => esc(tr(deref(schema.properties[k], schema)['x-i18n'], humanize(k)));
+  const MOD_ICON = { general: 'settings', utility: 'terminal', logging: 'archive', moderation: 'hammer', automod: 'shield', verification: 'check', welcome: 'wave', goodbye: 'door', autorole: 'user', roles: 'tag', leveling: 'chart', tickets: 'ticket', suggestions: 'bulb', applications: 'form', giveaways: 'gift', polls: 'list', starboard: 'star', boosts: 'sparkles', nore: 'zap', minecraft: 'pickaxe', status: 'activity', social: 'link', customCommands: 'message', scheduled: 'clock', reminders: 'bell', stats: 'chart', server: 'server', community: 'globe', actions: 'zap', builder: 'wand' };
+  const modIco = (k) => ico(MOD_ICON[k] || 'box');
+  function navHtml() {
+    const mods = modules().map(([k]) => k);
+    const used = new Set();
+    const link = (k, label, icon) => `<a class="tab" href="${BASE}/${esc(guild.guild.id)}/${esc(k)}" data-mod="${esc(k)}"${k === current ? ' aria-current="page"' : ''}><span class="ti" aria-hidden="true">${icon}</span><span class="tl">${label}</span>${SPECIAL.includes(k) ? '' : moduleDot(k)}</a>`;
+    let html = `<div class="ngrp">${link('overview', esc(u('overview')), ico('home'))}${link('builder', esc(u('builderPage')), ico('wand'))}${link('events', esc(u('eventsPage')), ico('list'))}</div>`;
+    for (const [g, keys] of Object.entries(GROUPS)) {
+      const list = keys.filter((k) => mods.includes(k));
+      list.forEach((k) => used.add(k));
+      if (list.length) html += `<details class="ngrp" open><summary>${esc(u('grp')[g])}</summary>${list.map((k) => link(k, modLabel(k), modIco(k))).join('')}</details>`;
+    }
+    const rest = mods.filter((k) => !used.has(k) && k !== 'builder');
+    if (rest.length) html += `<details class="ngrp" open><summary>${esc(u('grp').other)}</summary>${rest.map((k) => link(k, modLabel(k), modIco(k))).join('')}</details>`;
+    return html;
+  }
+  function paintEditor() {
+    const metaAge = guild.metaAt ? (Date.now() - Date.parse(guild.metaAt)) / 1000 : null;
+    const botDot = metaAge == null ? 'off' : metaAge < 20 * 60 ? 'ready' : 'wait';
+    const g = guild.guild;
+    app.innerHTML = `<div class="app">
+      <aside class="rail" id="rail">
+        <a class="guild" href="${HOME}" id="change" data-name="${esc(g.name)}" title="${esc(u('change'))}"><span class="gi">${g.iconUrl ? `<img src="${esc(g.iconUrl)}" alt="">` : initials(g.name)}</span><div><b>${esc(g.name)}</b><small><i class="dot sm ${botDot}"></i>${esc(metaAge == null ? u('botNever') : `${u('botSeen')} ${u('ago', guild.metaAt)}`)}</small></div><span class="swap">${ico('swap')}</span></a>
+        <label class="sr" for="navfind">${esc(u('searchMods'))}</label><input class="navfind" id="navfind" type="search" placeholder="${esc(u('searchMods'))}" autocomplete="off">
+        <nav aria-label="${esc(u('modules'))}" id="nav">${navHtml()}</nav>
+        <footer class="rail-foot"><a href="${BASE ? 'https://panel.noreclient.pl' : ''}/terms">${esc(u('terms'))}</a><a href="${BASE ? 'https://panel.noreclient.pl' : ''}/privacy">${esc(u('privacy'))}</a><a href="https://noreclient.pl">${esc(u('site'))}</a></footer>
+      </aside>
+      <section class="main" id="main"></section>
+    </div>
+    <div class="save" id="save" hidden></div>`;
+    $('#nav').addEventListener('click', (e) => {
+      const a = e.target.closest('a.tab'); if (!a) return;
+      e.preventDefault();
+      current = a.dataset.mod; history.pushState({}, '', `${BASE}/${g.id}/${current}`);
+      for (const t of $$('.tab[data-mod]')) { if (t === a) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); }
+      document.body.classList.remove('nav-open');
+      paintModule(); window.scrollTo({ top: 0 });
+    });
+    $('#change').addEventListener('click', (e) => { e.preventDefault(); go(HOME); });
+    $('#navfind').addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      for (const t of $$('#nav .tab')) t.hidden = !!q && !t.textContent.toLowerCase().includes(q);
+      for (const d of $$('#nav details')) { if (q) d.open = true; d.hidden = !!q && ![...$$('.tab', d)].some((t) => !t.hidden); }
+    });
+    const tg = $('#navtoggle'); if (tg) tg.onclick = () => document.body.classList.toggle('nav-open');
+    $('#main').addEventListener('click', () => document.body.classList.remove('nav-open'));
+    paintModule();
+    paintSave();
+    fixIcons(app);
+  }
+  function refreshTabs() { for (const t of $$('.tab[data-mod]')) { const k = t.dataset.mod; const old = $('.dot, .cnt', t); if (old) old.remove(); t.insertAdjacentHTML('beforeend', moduleDot(k)); } }
+
+  function paintModule() {
+    if (current === 'overview') return paintOverview();
+    if (current === 'builder') return paintBuilder();
+    if (current === 'events') return paintEventsPage();
+    return paintModuleForm();
+  }
+  function bindMain() {
+    const m = $('#main');
+    m.addEventListener('input', onInput);
+    m.addEventListener('change', onInput);
+    m.addEventListener('click', onClick);
+    m.addEventListener('keydown', onKey);
+  }
+  function paintModuleForm() {
+    const s = deref(schema.properties[current], schema);
+    const ptr = `/${escPtr(current)}`;
+    const value = config[current] || {};
+    const props = s.properties || {};
+    const hasEnabled = props.enabled && deref(props.enabled, schema).type === 'boolean';
+    const body = Object.entries(props).filter(([k]) => !(hasEnabled && k === 'enabled')).map(([k, ps]) => field(ptrJoin(ptr, k), k, ps, value[k])).join('');
+    const isActions = current === 'actions';
+    $('#main').innerHTML = `
+      <div class="head"><div><h1>${esc(tr(s['x-i18n'], humanize(current)))}</h1>${s['x-i18n-help'] ? `<p>${esc(tr(s['x-i18n-help'], ''))}</p>` : ''}</div>
+        ${hasEnabled ? `<button type="button" class="switch" role="switch" aria-checked="${!!value.enabled}" aria-label="${esc(u('enabled'))}" data-ptr="${ptr}/enabled" data-kind="toggle"></button>` : ''}</div>
+      ${errAt(`${ptr}/enabled`)}
+      <div class="cols"><form class="form" id="form" novalidate>${body}</form>
+        <aside class="side">
+          ${isActions ? `<div class="quick"><button type="button" class="btn" id="new-action">+ ${esc(u('newAction'))}</button><p>${esc(u('queueHint'))}</p></div>` : ''}
+          ${body.includes('data-kind="textarea"') ? `<h3>${esc(u('preview'))}</h3><div class="discord" id="dprev" data-ui><span class="soft">${esc(u('previewHint'))}</span></div>` : ''}
+          <h3>${esc(u('recent'))}</h3><ul class="events" id="events"></ul>
+        </aside></div>`;
+    const form = $('#form');
+    form.addEventListener('submit', (e) => e.preventDefault());
+    $('#main').addEventListener('input', onInput);
+    $('#main').addEventListener('change', onInput);
+    $('#main').addEventListener('click', onClick);
+    $('#main').addEventListener('keydown', onKey);
+    $('#main').addEventListener('focusin', (e) => { const t = e.target.closest('[data-kind="textarea"], [data-kind="text"]'); if (t) { focusPreview = t.dataset.ptr; preview(); } });
+    const na = $('#new-action'); if (na) na.addEventListener('click', newAction);
+    paintEvents();
+    if (!focusPreview || !focusPreview.startsWith(`${ptr}/`)) { const t = $('#form [data-kind="textarea"]'); focusPreview = t ? t.dataset.ptr : null; }
+    if (focusPreview) preview();
+  }
+
+  // ------------------------------------------------------------------ overview, builder and event log pages
+  const metaNum = (k) => (guild.meta && Number.isInteger(guild.meta[k]) ? guild.meta[k] : null);
+  function stat(label, value, sub) { return `<div class="stat"><small>${esc(label)}</small><b>${value == null ? '—' : esc(String(value))}</b>${sub ? `<span>${sub}</span>` : ''}</div>`; }
+  function botState() {
+    const age = guild.metaAt ? (Date.now() - Date.parse(guild.metaAt)) / 1000 : null;
+    return age == null ? ['off', u('botOff')] : age < 20 * 60 ? ['ready', `${u('botOnline')} · ${u('ago', guild.metaAt)}`] : ['wait', `${u('botStale')} · ${u('ago', guild.metaAt)}`];
+  }
+  /** Adds an action to config.actions.queue and saves at once (only when nothing else is unsaved). */
+  async function queueAction(type, extra = {}) {
+    if (changes(original, config).length) { paintSave(`<i class="dot wait"></i><span class="grow">${esc(u('bUnsaved'))}</span>`); setTimeout(() => paintSave(), 3500); return; }
+    const qs = deref(deref(schema.properties.actions, schema).properties.queue, schema);
+    const item = { ...defaultOf(qs.items), ...extra, type, id: `p${Date.now().toString(36)}` };
+    const list = ((config.actions && config.actions.queue) || []).slice();
+    if (qs.maxItems && list.length >= qs.maxItems) list.shift();
+    list.push(item);
+    setAt(config, '/actions/queue', list);
+    await save();
+    paintSave(`<i class="dot ready slap"></i><span class="grow">${esc(u('queued'))}</span>`);
+    setTimeout(() => paintSave(), 3500);
+  }
+  function paintOverview() {
+    const [dot, botText] = botState();
+    const mods = modules().map(([k]) => k).filter((k) => { const v = deref(schema.properties[k], schema).properties || {}; return v.enabled && deref(v.enabled, schema).type === 'boolean'; });
+    const on = mods.filter((k) => config[k] && config[k].enabled).length;
+    const ch = ((guild.meta && guild.meta.channels) || []).filter((c) => chType(c) !== 'category').length;
+    const roles = ((guild.meta && guild.meta.roles) || []).filter((r) => !r.managed).length;
+    const tier = metaNum('boostTier');
+    $('#main').innerHTML = `
+      <div class="head hero"><div><p class="eyebrow"><i class="dot sm ${dot}"></i>${esc(botText)}</p><h1>${esc(guild.guild.name)}</h1><p>${esc(u('stVersion'))} ${version}${guild.updatedBy && guild.updatedBy.name ? ` · ${esc(guild.updatedBy.name)}` : ''}${guild.updatedAt ? ` · ${esc(u('ago', guild.updatedAt))}` : ''}</p></div></div>
+      <div class="stats">${stat(u('stMembers'), metaNum('memberCount'))}${stat(u('stChannels'), ch)}${stat(u('stRoles'), roles)}${stat(u('stBoosts'), metaNum('boosts'), tier != null ? `${lang === 'pl' ? 'poziom' : 'level'} ${tier}` : '')}${stat(u('stEmoji'), metaNum('emojis'))}${stat(u('stModules'), `${on}/${mods.length}`)}</div>
+      <div class="cols wide">
+        <section class="card"><div class="card-h"><h2>${esc(u('modulesTitle'))}</h2><p>${esc(u('modulesHint'))}</p></div>
+          <ul class="modgrid">${mods.map((k) => `<li class="${config[k] && config[k].enabled ? 'on' : ''}"><a href="${BASE}/${esc(guild.guild.id)}/${esc(k)}" data-open="${esc(k)}"><span class="ti">${modIco(k)}</span>${modLabel(k)}</a><button type="button" class="switch sm" role="switch" aria-checked="${!!(config[k] && config[k].enabled)}" aria-label="${modLabel(k)}" data-ptr="/${escPtr(k)}/enabled" data-kind="toggle"></button></li>`).join('')}</ul></section>
+        <aside class="side">
+          <section class="card"><h3>${esc(u('quick'))}</h3><div class="qa">
+            <button type="button" class="btn" data-q="post_panels">${ico('pin')} ${esc(u('qPanels'))}</button>
+            <button type="button" class="btn" data-q="backup_create">${ico('save')} ${esc(u('qBackup'))}</button>
+            <button type="button" class="btn" data-q="apply_server">${ico('server')} ${esc(u('qServer'))}</button>
+            <button type="button" class="btn" data-q="discovery_check">${ico('globe')} ${esc(u('qDiscovery'))}</button>
+            <a class="btn" href="${BASE}/${esc(guild.guild.id)}/builder" data-open="builder">${ico('wand')} ${esc(u('builderPage'))}</a></div></section>
+          <section class="card"><h3>${esc(u('recent'))}</h3><ul class="events" id="events"></ul></section>
+        </aside></div>`;
+    bindMain();
+    $('#main').addEventListener('click', onPageClick);
+    paintEvents();
+  }
+  function onPageClick(e) {
+    const o = e.target.closest('[data-open]');
+    if (o) { e.preventDefault(); const t = $(`.tab[data-mod="${CSS.escape(o.dataset.open)}"]`); if (t) t.click(); return; }
+    const q = e.target.closest('[data-q]');
+    if (q) { e.preventDefault(); queueAction(q.dataset.q); return; }
+    const b = e.target.closest('[data-build]');
+    if (b) {
+      e.preventDefault();
+      const tplEl = $('input[name="btpl"]:checked'), size = $('#bsize'), bl = $('#blang');
+      queueAction(b.dataset.build, { template: tplEl ? tplEl.value : 'nore-client', size: size ? size.value : 'full', language: bl ? bl.value : '' });
+    }
+  }
+  function actionJobs(types) {
+    const list = ((config.actions && config.actions.queue) || []).filter((a) => types.includes(a.type)).slice(-6).reverse();
+    return list.length ? `<ul class="jobs">${list.map((a) => `<li><b>${esc(optLabel(deref(deref(deref(schema.properties.actions, schema).properties.queue, schema).items.properties.type, schema), a.type))}</b> · ${esc((u('tpl')[a.template] || [a.template])[0] || '')} · ${esc((u('sizes')[a.size]) || a.size || '')}${actionState(a)}</li>`).join('')}</ul>` : `<p class="soft">${esc(u('bNone'))}</p>`;
+  }
+  function paintBuilder() {
+    const bs = deref(schema.properties.builder, schema);
+    const look = bs && bs.properties && bs.properties.style ? field('/builder/style', 'style', bs.properties.style, (config.builder && config.builder.style) || {}) : '';
+    const tpls = Object.entries(u('tpl'));
+    $('#main').innerHTML = `
+      <div class="head"><div><h1>${esc(u('builderPage'))}</h1><p>${esc(tr(bs && bs['x-i18n-help'], ''))}</p></div></div>
+      <div class="cols wide"><form class="form" id="form" novalidate>
+        <fieldset class="group"><legend><span>${esc(u('bTemplate'))}</span></legend>
+          <div class="tplgrid">${tpls.map(([id, [name, desc]], i) => `<label class="tpl"><input type="radio" name="btpl" value="${esc(id)}"${i === 0 ? ' checked' : ''}><span><b>${esc(name)}</b><small>${esc(desc)}</small></span></label>`).join('')}</div>
+          <div class="row2"><div class="f"><label class="lbl" for="bsize">${esc(u('bSize'))}</label><div class="sel-wrap"><select class="inp" id="bsize">${['full', 'medium', 'small'].map((z) => `<option value="${z}">${esc(u('sizes')[z])}</option>`).join('')}</select></div></div>
+          <div class="f"><label class="lbl" for="blang">${esc(u('bLang'))}</label><div class="sel-wrap"><select class="inp" id="blang"><option value="">${esc(u('langAuto'))}</option><option value="pl">Polski</option><option value="en">English</option></select></div></div></div>
+        </fieldset>
+        ${look}
+        <div class="buildbar"><button type="button" class="pill" data-build="setup">${ico('wand')} ${esc(u('bBuild'))}</button><button type="button" class="pill ghost" data-build="setup_repair">${ico('layers')} ${esc(u('bRepair'))}</button></div>
+        <p class="help soft">${esc(u('bWarn'))}</p>
+      </form>
+      <aside class="side"><section class="card"><h3>${esc(u('bJobs'))}</h3>${actionJobs(['setup', 'setup_repair'])}</section><section class="card"><h3>${esc(u('recent'))}</h3><ul class="events" id="events"></ul></section></aside></div>`;
+    $('#form').addEventListener('submit', (e) => e.preventDefault());
+    bindMain();
+    $('#main').addEventListener('click', onPageClick);
+    paintEvents();
+  }
+  let evFilter = '';
+  function paintEventsPage() {
+    const types = [...new Set((guild.events || []).map((e) => e.type))];
+    $('#main').innerHTML = `<div class="head"><div><h1>${esc(u('eventsPage'))}</h1></div>
+      <div class="sel-wrap"><label class="sr" for="evf">${esc(u('evFilter'))}</label><select class="inp" id="evf"><option value="">${esc(u('evAll'))}</option>${types.map((t) => `<option value="${esc(t)}"${t === evFilter ? ' selected' : ''}>${esc(u('ev')[t] || humanize(t))}</option>`).join('')}</select></div></div>
+      <section class="card"><ul class="events big" id="events"></ul></section>`;
+    $('#evf').addEventListener('change', (e) => { evFilter = e.target.value; paintEvents(); });
+    paintEvents();
+  }
+
+  // a field from its schema; the x-ui hint picks the control
+  function field(ptr, key, s0, value) {
+    const s = deref(s0, schema);
+    const label = esc(tr(s['x-i18n'], humanize(key)));
+    const help = s['x-i18n-help'] ? `<span class="help">${esc(tr(s['x-i18n-help'], ''))}</span>` : '';
+    const ui = s['x-ui'] || (s.type === 'boolean' ? 'toggle' : s.type === 'object' ? 'object' : s.type === 'array' ? 'list' : s.enum ? 'select' : (s.type === 'integer' || s.type === 'number') ? 'number' : 'text');
+    const id = `f${ptr.replace(/[^a-z0-9]/gi, '_')}`;
+    if (s.type === 'object' && ui !== 'list') return objectGroup(ptr, key, s, value || {});
+    switch (ui) {
+      case 'toggle':
+        return `<div class="row"><div><span class="lbl" id="${id}-l">${label}</span>${help}</div><button type="button" class="switch" role="switch" aria-checked="${!!value}" aria-labelledby="${id}-l" data-ptr="${ptr}" data-kind="toggle"></button></div>${errAt(ptr)}`;
+      case 'textarea':
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<textarea class="area${errors.has(ptr) ? ' bad' : ''}" id="${id}" data-ptr="${ptr}" data-kind="textarea"${s.maxLength ? ` maxlength="${s.maxLength}"` : ''}>${esc(value ?? '')}</textarea>${varChips(s, ptr)}${errAt(ptr)}</div>`;
+      case 'number':
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<input class="inp${errors.has(ptr) ? ' bad' : ''}" id="${id}" type="number" inputmode="${s.type === 'integer' ? 'numeric' : 'decimal'}" data-ptr="${ptr}" data-kind="number" data-int="${s.type === 'integer'}" value="${esc(value ?? '')}"${s.minimum != null ? ` min="${s.minimum}"` : ''}${s.maximum != null ? ` max="${s.maximum}"` : ''} step="${s.type === 'integer' ? 1 : 'any'}">${errAt(ptr)}</div>`;
+      case 'select':
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<div class="sel-wrap"><select class="inp${errors.has(ptr) ? ' bad' : ''}" id="${id}" data-ptr="${ptr}" data-kind="select" data-type="${s.type}">${(s.enum || []).map((e) => `<option value="${esc(e)}"${String(e) === String(value) ? ' selected' : ''}>${esc(optLabel(s, e))}</option>`).join('')}</select></div>${errAt(ptr)}</div>`;
+      case 'color':
+        return `<div class="f"><span class="lbl" id="${id}-l">${label}</span>${help}${colorPicker(ptr, value, id)}${errAt(ptr)}</div>`;
+      case 'channel':
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<div class="sel-wrap"><select class="inp${errors.has(ptr) ? ' bad' : ''}" id="${id}" data-ptr="${ptr}" data-kind="select">${channelOptions(s['x-channel-types'], value, true)}</select></div>${errAt(ptr)}</div>`;
+      case 'role':
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<div class="sel-wrap"><select class="inp${errors.has(ptr) ? ' bad' : ''}" id="${id}" data-ptr="${ptr}" data-kind="select">${roleOptions(value, true)}</select></div>${errAt(ptr)}</div>`;
+      case 'list':
+        return listField(ptr, key, s, Array.isArray(value) ? value : [], label, help, id);
+      default:
+        return `<div class="f"><label class="lbl" for="${id}">${label}</label>${help}<input class="inp${errors.has(ptr) ? ' bad' : ''}" id="${id}" data-ptr="${ptr}" data-kind="text" value="${esc(value ?? '')}"${s.maxLength ? ` maxlength="${s.maxLength}"` : ''} autocomplete="off" spellcheck="false">${errAt(ptr)}</div>`;
+    }
+  }
+  function objectGroup(ptr, key, s, value) {
+    const props = s.properties || {};
+    const hasEnabled = props.enabled && deref(props.enabled, schema).type === 'boolean';
+    const id = `g${ptr.replace(/[^a-z0-9]/gi, '_')}`;
+    return `<fieldset class="group${hasEnabled && !value.enabled ? ' off' : ''}" data-group="${ptr}"><legend><span id="${id}">${esc(tr(s['x-i18n'], humanize(key)))}</span>${hasEnabled ? `<button type="button" class="switch" role="switch" aria-checked="${!!value.enabled}" aria-labelledby="${id}" data-ptr="${ptr}/enabled" data-kind="toggle"></button>` : ''}</legend>
+      ${s['x-i18n-help'] ? `<p class="help soft">${esc(tr(s['x-i18n-help'], ''))}</p>` : ''}
+      ${Object.entries(props).filter(([k]) => !(hasEnabled && k === 'enabled')).map(([k, ps]) => field(ptrJoin(ptr, k), k, ps, value[k])).join('')}${ptr === '/builder/style' ? `<div class="bprev" id="bprev" aria-live="polite">${builderPreview(value)}</div>` : ''}${errAt(ptr)}</fieldset>`;
+  }
+  const optLabel = (s, e) => (s['x-i18n-options'] && s['x-i18n-options'][e] ? tr(s['x-i18n-options'][e], String(e)) : e === '' ? u('notSet') : String(e));
+
+  // channels and roles come from the bot's report (meta); channel type is a string (text, voice, category …) or a Discord number
+  const CH_NUM = { 0: 'text', 2: 'voice', 4: 'category', 5: 'announcement', 13: 'stage', 15: 'forum', 16: 'media' };
+  const chType = (c) => (typeof c.type === 'number' ? CH_NUM[c.type] || String(c.type) : String(c.type || 'text'));
+  function channelOptions(types, value, withEmpty, exclude = []) {
+    const chans = (guild.meta && guild.meta.channels) || [];
+    const ok = (c) => !types || !types.length || types.includes(chType(c));
+    const cats = new Map(chans.filter((c) => chType(c) === 'category').map((c) => [c.id, c]));
+    const groups = new Map();
+    for (const c of chans.filter(ok).filter((c) => !exclude.includes(c.id))) {
+      const key = chType(c) === 'category' ? '' : c.parentId || '';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(c);
+    }
+    let html = withEmpty ? `<option value="">${esc(u('notSet'))}</option>` : '';
+    const opt = (c) => `<option value="${esc(c.id)}"${c.id === value ? ' selected' : ''}>${esc(chType(c) === 'category' ? c.name.toUpperCase() : `${chType(c) === 'voice' || chType(c) === 'stage' ? '' : '#'}${c.name}`)}${chType(c) !== 'text' && chType(c) !== 'category' ? ` (${esc(chType(c))})` : ''}</option>`;
+    for (const [k, list] of groups) {
+      list.sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.name.localeCompare(b.name));
+      html += k && cats.has(k) ? `<optgroup label="${esc(cats.get(k).name)}">${list.map(opt).join('')}</optgroup>` : list.map(opt).join('');
+    }
+    if (value && !chans.some((c) => c.id === value)) html += `<option value="${esc(value)}" selected>${esc(u('unknownCh'))} (${esc(value)})</option>`;
+    return html;
+  }
+  function roleOptions(value, withEmpty, exclude = []) {
+    const roles = ((guild.meta && guild.meta.roles) || []).filter((r) => !r.managed && r.id !== guild.guild.id && !exclude.includes(r.id)).sort((a, b) => (b.position ?? 0) - (a.position ?? 0));
+    let html = withEmpty ? `<option value="">${esc(u('notSet'))}</option>` : '';
+    html += roles.map((r) => `<option value="${esc(r.id)}"${r.id === value ? ' selected' : ''}>@${esc(r.name)}</option>`).join('');
+    if (value && !roles.some((r) => r.id === value)) html += `<option value="${esc(value)}" selected>${esc(u('unknownRole'))} (${esc(value)})</option>`;
+    return html;
+  }
+  const roleById = (id) => ((guild.meta && guild.meta.roles) || []).find((r) => r.id === id);
+  const chanById = (id) => ((guild.meta && guild.meta.channels) || []).find((c) => c.id === id);
+  const roleColor = (r) => (r && r.color ? `#${Number(r.color).toString(16).padStart(6, '0')}` : 'var(--nore-dot-off)');
+
+  const SWATCHES = ['#9d5cff', '#4aa3ff', '#3fd27f', '#ffd23a', '#ff8a1f', '#ff5a4f', '#f3efe9'];
+  function colorPicker(ptr, value, id) {
+    const v = /^#[0-9a-f]{6}$/i.test(value || '') ? value.toLowerCase() : '#9d5cff';
+    return `<div class="sw" role="group" aria-labelledby="${id}-l">${SWATCHES.map((c) => `<button type="button" style="--c:${c}" data-ptr="${ptr}" data-kind="swatch" data-color="${c}" aria-pressed="${c === v}" aria-label="${c}"></button>`).join('')}<input type="color" value="${v}" data-ptr="${ptr}" data-kind="color" aria-label="${esc(u('add'))} ${v}"><code>${esc(v)}</code></div>`;
+  }
+  function varChips(s, ptr) {
+    const help = tr(s['x-i18n-help'], '') + ' ' + tr('panel.common.template_help', '');
+    const vars = [...new Set(help.match(/\{[a-zA-Z_.]+\}/g) || [])];
+    if (!vars.length) return '';
+    return `<div class="vars" aria-label="${esc(u('vars'))}">${vars.map((v) => `<button type="button" class="var" data-ptr="${ptr}" data-insert="${esc(v)}">${esc(v)}</button>`).join('')}</div>`;
+  }
+
+  // lists: primitives as chips (roles, channels, words), objects as repeatable sheets
+  function listField(ptr, key, s, arr, label, help, id) {
+    const it = deref(s.items || {}, schema);
+    const max = s.maxItems ?? Infinity;
+    if (it.type === 'object') {
+      const isQueue = ptr === '/actions/queue';
+      const items = arr.map((v, i) => `<div class="item" data-item="${ptrJoin(ptr, i)}">
+          <div class="item-head"><span>${esc(itemTitle(it, v, i))}</span>${isQueue ? actionState(v) : ''}<button type="button" class="btn sm danger rm" data-remove="${ptrJoin(ptr, i)}">${esc(u('remove'))}</button></div>
+          ${Object.entries(it.properties || {}).map(([k, ps]) => field(ptrJoin(ptrJoin(ptr, i), k), k, ps, (v || {})[k])).join('')}
+        </div>`).join('');
+      return `<fieldset class="group" data-group="${ptr}"><legend><span>${label}</span></legend>${help ? `<p class="help soft">${help.replace(/^<span class="help">|<\/span>$/g, '')}</p>` : ''}
+        <div class="items">${items || `<p class="empty">${esc(u('emptyList'))}</p>`}</div>
+        <button type="button" class="btn" data-add="${ptr}"${arr.length >= max ? ' disabled' : ''}>+ ${esc(u('addItem'))}</button>${errAt(ptr)}</fieldset>`;
+    }
+    const kind = it['x-ui'] || 'text';
+    const chips = arr.map((v, i) => {
+      let text = String(v), dot = '';
+      if (kind === 'role') { const r = roleById(v); text = r ? `@${r.name}` : `${u('unknownRole')} (${v})`; dot = `<i class="dot sm" style="--c:${roleColor(r)}"></i>`; }
+      if (kind === 'channel') { const c = chanById(v); text = c ? `#${c.name}` : `${u('unknownCh')} (${v})`; }
+      return `<span class="chip">${dot}${esc(text)}<button type="button" data-remove="${ptrJoin(ptr, i)}" aria-label="${esc(u('remove'))} ${esc(text)}">×</button></span>`;
+    }).join('');
+    let adder = '';
+    if (arr.length < max) {
+      if (kind === 'role') adder = `<span class="chip add"><select data-addsel="${ptr}" aria-label="${esc(u('addRole'))}"><option value="">${esc(u('addRole'))}</option>${roleOptions('', false, arr)}</select></span>`;
+      else if (kind === 'channel') adder = `<span class="chip add"><select data-addsel="${ptr}" aria-label="${esc(u('addChannel'))}"><option value="">${esc(u('addChannel'))}</option>${channelOptions(it['x-channel-types'], '', false, arr)}</select></span>`;
+      else adder = `<span class="chip add"><input data-addtext="${ptr}" data-type="${it.type}" placeholder="${esc(u('addText'))}" aria-label="${label}"${it.maxLength ? ` maxlength="${it.maxLength}"` : ''}></span>`;
+    }
+    return `<div class="f" data-group="${ptr}"><span class="lbl" id="${id}-l">${label}</span>${help}<div class="chips" role="group" aria-labelledby="${id}-l">${chips}${adder}</div>${errAt(ptr)}</div>`;
+  }
+  function itemTitle(it, v, i) {
+    for (const k of ['name', 'title', 'label', 'trigger', 'login', 'username', 'address', 'repo', 'rank', 'type', 'id']) {
+      if (v && v[k] != null && v[k] !== '') { const ps = deref((it.properties || {})[k], schema); return ps.enum ? optLabel(ps, v[k]) : String(v[k]); }
+    }
+    return `${u('item')} ${i + 1}`;
+  }
+
+  // the action queue: state of each job from the bot's action_result events
+  function actionState(a) {
+    if (!a || !a.id) return '';
+    const saved = ((original.actions && original.actions.queue) || []).some((x) => x.id === a.id);
+    if (!saved) return `<span class="state"><i class="dot sm wait"></i>${esc(u('aUnsaved'))}</span>`;
+    const ev = (guild.events || []).find((e) => e.type === 'action_result' && e.data && e.data.id === a.id);
+    if (!ev) return `<span class="state"><i class="dot sm info"></i>${esc(u('aQueued'))}</span>`;
+    return ev.data.ok ? `<span class="state"><i class="dot sm ready"></i>${esc(u('aOk'))} · ${esc(u('ago', ev.at))}</span>` : `<span class="state"><i class="dot sm error"></i>${esc(u('aFail'))}: ${esc(ev.data.error || '')}</span>`;
+  }
+  function newAction() {
+    const s = deref(schema.properties.actions, schema);
+    const qs = deref(s.properties.queue, schema);
+    const item = defaultOf(qs.items);
+    item.id = `p${Date.now().toString(36)}`;
+    const list = (config.actions && config.actions.queue) || [];
+    if (qs.maxItems && list.length >= qs.maxItems) list.shift(); // the oldest (already run) job makes room
+    list.push(item);
+    setAt(config, '/actions/queue', list);
+    changed(true);
+  }
+
+  // ------------------------------------------------------------------ editing
+  function parseVal(el) {
+    if (el.dataset.kind === 'number') { if (el.value === '') return null; const n = Number(el.value); return el.dataset.int === 'true' ? Math.trunc(n) : n; }
+    if (el.dataset.kind === 'select' && (el.dataset.type === 'integer' || el.dataset.type === 'number')) return Number(el.value);
+    return el.value;
+  }
+  function onInput(e) {
+    const el = e.target;
+    if (el.dataset.kind === 'color' && e.type === 'input') { setAt(config, el.dataset.ptr, el.value); clearErr(el.dataset.ptr); const sw = el.closest('.sw'); for (const b of $$('button', sw)) b.setAttribute('aria-pressed', b.dataset.color === el.value); $('code', sw).textContent = el.value; changed(); preview(); return; }
+    if (el.dataset.addsel && e.type === 'change' && el.value) { const p = el.dataset.addsel; const arr = getAt(config, p) || []; arr.push(el.value); setAt(config, p, arr); changed(true); return; }
+    if (!el.dataset.ptr || !['text', 'textarea', 'number', 'select'].includes(el.dataset.kind)) return;
+    if (e.type === 'change' && el.dataset.kind !== 'select') return;
+    const v = parseVal(el);
+    if (v === null) return;
+    setAt(config, el.dataset.ptr, v);
+    clearErr(el.dataset.ptr);
+    const titled = el.closest('.item') && /\/(name|title|label|id|trigger|login|username|address|repo|rank|type)$/.test(el.dataset.ptr);
+    changed(titled && e.type === 'change');
+    if (focusPreview === el.dataset.ptr) preview();
+  }
+  function onKey(e) {
+    const el = e.target;
+    if (el.dataset.addtext && e.key === 'Enter') {
+      e.preventDefault();
+      const v = el.value.trim(); if (!v) return;
+      const p = el.dataset.addtext; const arr = getAt(config, p) || [];
+      arr.push(el.dataset.type === 'integer' || el.dataset.type === 'number' ? Number(v) : v);
+      setAt(config, p, arr); changed(true);
+      const again = $(`[data-addtext="${CSS.escape(p)}"]`); if (again) again.focus();
+    }
+  }
+  function onClick(e) {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.dataset.kind === 'toggle') {
+      const v = t.getAttribute('aria-checked') !== 'true';
+      t.setAttribute('aria-checked', v);
+      setAt(config, t.dataset.ptr, v); clearErr(t.dataset.ptr);
+      const grp = t.closest('fieldset.group'); if (grp && t.closest('legend')) grp.classList.toggle('off', !v);
+      changed(); refreshTabs(); return;
+    }
+    if (t.dataset.kind === 'swatch') {
+      setAt(config, t.dataset.ptr, t.dataset.color); clearErr(t.dataset.ptr);
+      const sw = t.closest('.sw'); for (const b of $$('button', sw)) b.setAttribute('aria-pressed', b === t); $('input', sw).value = t.dataset.color; $('code', sw).textContent = t.dataset.color;
+      changed(); preview(); return;
+    }
+    if (t.dataset.insert) {
+      const ta = $(`[data-ptr="${CSS.escape(t.dataset.ptr)}"]`);
+      if (!ta) return;
+      const a = ta.selectionStart ?? ta.value.length, b = ta.selectionEnd ?? ta.value.length;
+      ta.value = ta.value.slice(0, a) + t.dataset.insert + ta.value.slice(b);
+      ta.focus(); ta.selectionStart = ta.selectionEnd = a + t.dataset.insert.length;
+      setAt(config, t.dataset.ptr, ta.value); focusPreview = t.dataset.ptr; changed(); preview(); return;
+    }
+    if (t.dataset.remove) {
+      const parts = t.dataset.remove.split('/'); const idx = Number(parts.pop()); const p = parts.join('/');
+      const arr = getAt(config, p) || []; arr.splice(idx, 1); setAt(config, p, arr);
+      for (const k of [...errors.keys()]) if (k.startsWith(`${p}/`)) errors.delete(k);
+      changed(true); return;
+    }
+    if (t.dataset.add) {
+      const p = t.dataset.add;
+      const s = schemaAt(p);
+      const arr = getAt(config, p) || [];
+      const item = defaultOf(s.items);
+      if (p === '/actions/queue' && item && typeof item === 'object' && !item.id) item.id = `p${Date.now().toString(36)}`;
+      arr.push(item); setAt(config, p, arr); changed(true);
+    }
+  }
+  function schemaAt(p) {
+    let s = schema;
+    for (const k of ptrParts(p)) { s = deref(s, schema); s = /^\d+$/.test(k) && s.items ? s.items : (s.properties || {})[k]; if (!s) return {}; }
+    return deref(s, schema);
+  }
+  // ------------------------------------------------------------------ builder look preview (mirrors discord-bot/src/lib/style.js)
+  const BP_SEP = { bar: '┃', dot: '・', line: '│', arrow: '»', thin: '﹒', colon: '꞉', bullet: '•', none: '' };
+  const BP_MATH = { bold: [0x1d400, 0x1d41a, 0x1d7ce], sans: [0x1d5d4, 0x1d5ee, 0x1d7ec], italic: [0x1d608, 0x1d622, 0], script: [0x1d4d0, 0x1d4ea, 0], double: [0x1d538, 0x1d552, 0x1d7d8], mono: [0x1d670, 0x1d68a, 0x1d7f6] };
+  const BP_HOLES = { C: 0x2102, H: 0x210d, N: 0x2115, P: 0x2119, Q: 0x211a, R: 0x211d, Z: 0x2124 };
+  const BP_SMALL = 'ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ';
+  const BP_PAL = {
+    nore: ['#ff2e88', '#f72585', '#d63aff', '#b5179e', '#9d5cff', '#8a4dff', '#7209b7', '#6a4cff', '#5a5cff', '#4361ee', '#4895ef', '#4cc9f0'],
+    neon: ['#ff0054', '#ff0099', '#ff00ff', '#cc00ff', '#9900ff', '#6600ff', '#3300ff', '#0066ff', '#00a2ff', '#00d9ff', '#00ffcc', '#00ff88'],
+    pastel: ['#ffadad', '#ffc2a8', '#ffd6a5', '#fdffb6', '#e4f1c5', '#caffbf', '#b5f2d3', '#9bf6ff', '#a0d2ff', '#a0c4ff', '#b8b8ff', '#bdb2ff'],
+    minecraft: ['#aa0000', '#ff5555', '#ffaa00', '#ffff55', '#00aa00', '#55ff55', '#55ffff', '#00aaaa', '#5555ff', '#0000aa', '#ff55ff', '#aa00aa'],
+    ocean: ['#03045e', '#023e8a', '#0077b6', '#0096c7', '#00b4d8', '#48cae4', '#90e0ef', '#2ec4b6', '#20a39e', '#1b998b', '#3ddc97', '#7bdff2'],
+    sunset: ['#d00000', '#dc2f02', '#e85d04', '#f48c06', '#faa307', '#ffba08', '#ff7b00', '#ff8800', '#ff9500', '#ffa200', '#ffaa00', '#ffb700'],
+    halloween: ['#ff6a00', '#ff7f11', '#ff9500', '#ffaa33', '#9d4edd', '#7b2cbf', '#5a189a', '#3c096c', '#8ac926', '#6a994e', '#ffbe0b', '#f48c06'],
+    mono: ['#ffffff', '#f1f1f1', '#e3e3e3', '#d5d5d5', '#c7c7c7', '#b9b9b9', '#ababab', '#9d9d9d', '#8f8f8f', '#818181', '#737373', '#656565'],
+  };
+  function bpFont(text, font) {
+    if (!font || font === 'plain') return text;
+    return [...String(text).normalize('NFD')].map((ch) => {
+      const c = ch.codePointAt(0), up = c >= 65 && c <= 90, lo = c >= 97 && c <= 122, dg = c >= 48 && c <= 57;
+      if (!up && !lo && !dg) return ch;
+      if (font === 'smallcaps') return up || lo ? BP_SMALL[up ? c - 65 : c - 97] : ch;
+      if (font === 'wide') return String.fromCodePoint(c + 0xfee0);
+      const m = BP_MATH[font]; if (!m) return ch;
+      if (font === 'double' && up && BP_HOLES[ch]) return String.fromCodePoint(BP_HOLES[ch]);
+      if (up) return String.fromCodePoint(m[0] + c - 65);
+      if (lo) return String.fromCodePoint(m[1] + c - 97);
+      return m[2] ? String.fromCodePoint(m[2] + c - 48) : ch;
+    }).join('');
+  }
+  function builderPreview(st) {
+    st = st || {};
+    const pl = lang === 'pl';
+    const sep = st.separator in BP_SEP ? BP_SEP[st.separator] : '┃';
+    const emo = st.emoji !== false, upper = st.upper !== false, font = st.font || 'plain';
+    const cat = (e, l) => {
+      const t = bpFont(upper ? l.toUpperCase() : l, font), em = emo ? e : '';
+      switch (st.category) {
+        case 'lines': return `━━ ${em ? em + ' ' : ''}${t} ━━`;
+        case 'brackets': return `${em ? em + ' ' : ''}『 ${t} 』`;
+        case 'arrows': return `${em ? em + ' ' : ''}» ${t} «`;
+        case 'stars': return `✦ ${em ? em + ' ' : ''}${t} ✦`;
+        case 'dots': return `${em ? em + ' ' : ''}・${t}・`;
+        default: return em ? `${em} ${sep ? sep + ' ' : ''}${t}` : t;
+      }
+    };
+    const ch = (e, l, voice) => { const t = bpFont(voice ? l : l.toLowerCase().replace(/\s+/g, '-'), font); return !emo ? t : voice ? `${e} ${sep ? sep + ' ' : ''}${t}` : `${e}${sep}${t}`; };
+    const role = (i, l) => { const t = bpFont(l, font); return st.role === 'brackets' ? `『 ${t} 』` : st.role === 'dot' ? `• ${t}` : st.role === 'arrow' ? `» ${t}` : st.role === 'plain' ? t : `${i} ${t}`; };
+    const tplColors = ['#ff2e4d', '#ff4d6d', '#ff8243', '#ff9f43', '#ffb84d', '#3d7eff', '#54a0ff', '#74b4ff', '#2bcbba', '#48dbfb', '#7bed9f', '#e74c3c'];
+    const pal = BP_PAL[st.palette] || tplColors;
+    const roles = [['👑', pl ? 'Właściciel' : 'Owner'], ['💠', pl ? 'Współwłaściciel' : 'Co-Owner'], ['⚜️', 'Head Admin'], ['🛡️', pl ? 'S.Admin' : 'Sr. Admin'], ['🔰', 'Admin'], ['⚔️', pl ? 'S.Mod' : 'Sr. Mod'], ['🔨', 'Moderator'], ['🗡️', pl ? 'T.Mod' : 'Trial Mod'], ['✨', pl ? 'S.Helper' : 'Sr. Helper'], ['🤝', 'Helper'], ['🌱', pl ? 'T.Helper' : 'Trial Helper'], ['⛏️', pl ? 'Admin MC' : 'MC Admin']];
+    const grad = (c) => { if (st.gradient === false) return c; const n = parseInt(c.slice(1), 16), mix = (v) => Math.round(v + (255 - v) * 0.35); return `linear-gradient(90deg, ${c}, rgb(${mix(n >> 16 & 255)},${mix(n >> 8 & 255)},${mix(n & 255)}))`; };
+    return `<div class="bp-col"><b>${esc(pl ? 'Kanały' : 'Channels')}</b>
+        <div class="bp-cat">${esc(cat('🚪', pl ? 'Zacznij tutaj' : 'Start here'))}</div>
+        <div class="bp-ch"># ${esc(ch('📜', pl ? 'Regulamin' : 'Rules'))}</div><div class="bp-ch"># ${esc(ch('📢', pl ? 'Ogłoszenia' : 'Announcements'))}</div>
+        <div class="bp-cat">${esc(cat('💬', pl ? 'Społeczność' : 'Community'))}</div>
+        <div class="bp-ch"># ${esc(ch('💬', pl ? 'Ogólny' : 'General'))}</div><div class="bp-ch">🔊 ${esc(ch('🏠', pl ? 'Poczekalnia' : 'Lobby', true))}</div></div>
+      <div class="bp-col"><b>${esc(pl ? 'Role ekipy' : 'Staff roles')}</b>${roles.map(([i, l], n) => `<div class="bp-role"><i style="background:${grad(pal[n % pal.length])}"></i><span style="color:${pal[n % pal.length]}">${esc(role(i, l))}</span></div>`).join('')}</div>`;
+  }
+
+  function changed(repaint) {
+    if (repaint) { const y = scrollY; paintModule(); scrollTo(0, y); }
+    paintSave(); refreshTabs();
+    const bp = $('#bprev'); if (bp) bp.innerHTML = builderPreview(getAt(config, '/builder/style') || {});
+  }
+
+  // ------------------------------------------------------------------ errors from the server (JSON pointers)
+  function errAt(ptr) { const m = errors.get(ptr); return m ? `<p class="ferr slap" data-err="${ptr}"><i class="dot sm error"></i>${esc(m)}</p>` : ''; }
+  function clearErr(ptr) {
+    if (!errors.delete(ptr)) return;
+    const el = $(`[data-err="${CSS.escape(ptr)}"]`); if (el) el.remove();
+    const f = $(`[data-ptr="${CSS.escape(ptr)}"]`); if (f) f.classList.remove('bad');
+  }
+  function showErrors(list) {
+    errors = new Map();
+    // a pointer with no field of its own (a missing property, an array item) shows on its nearest rendered parent
+    for (const e of list) errors.set(e.pointer || e.path || '', e.message);
+    const first = [...errors.keys()][0] || '';
+    const mod = ptrParts(first)[0];
+    if (mod && mod !== current && schema.properties[mod]) { current = mod; history.replaceState({}, '', `${location.pathname}#${current}`); }
+    paintEditor();
+    // place unmapped errors under the closest rendered group
+    for (const [p, m] of errors) {
+      if ($(`[data-err="${CSS.escape(p)}"]`)) continue;
+      let q = p, host = null;
+      while (q && !host) { q = q.slice(0, q.lastIndexOf('/')); host = q ? $(`[data-group="${CSS.escape(q)}"], [data-item="${CSS.escape(q)}"]`) : null; }
+      (host || $('#form'))?.insertAdjacentHTML('beforeend', `<p class="ferr slap" data-err="${esc(p)}"><i class="dot sm error"></i><span><code>${esc(p)}</code> ${esc(m)}</span></p>`);
+    }
+    const target = $('.ferr'); if (target) target.scrollIntoView({ block: 'center', behavior: N.reduced ? 'auto' : 'smooth' });
+  }
+
+  // ------------------------------------------------------------------ the save bar
+  let saving = false, conflict = null;
+  function paintSave(note) {
+    const bar = $('#save'); if (!bar) return;
+    const n = changes(original, config).length;
+    bar.classList.toggle('conflict', !!conflict);
+    if (conflict) {
+      bar.hidden = false;
+      bar.innerHTML = `<i class="dot error"></i><span class="grow">${esc(u('conflict', conflict.updatedBy && conflict.updatedBy.name, conflict.version))}</span><button type="button" class="pill sm ghost" id="c-load">${esc(u('conflictLoad'))}</button><button type="button" class="pill sm" id="c-keep">${esc(u('conflictKeep'))}</button>`;
+      $('#c-load').addEventListener('click', () => { conflict = null; render(); });
+      $('#c-keep').addEventListener('click', () => { version = conflict.version; conflict = null; save(); });
+      return;
+    }
+    if (note) { bar.hidden = false; bar.innerHTML = note; return; }
+    if (!n) { bar.hidden = true; return; }
+    bar.hidden = false;
+    const errs = errors.size;
+    bar.innerHTML = `<span class="grow">${errs ? `<i class="dot sm error"></i> ${esc(u('invalid', errs))}` : `${esc(u('unsaved', n))}<small>${esc(u('unsavedHint'))}</small>`}</span><button type="button" class="pill sm ghost" id="s-undo">${esc(u('undo'))}</button><button type="button" class="pill sm" id="s-save"${saving ? ' disabled' : ''}>${esc(saving ? u('saving') : u('save'))}</button>`;
+    $('#s-undo').addEventListener('click', () => { config = clone(original); errors = new Map(); paintEditor(); });
+    $('#s-save').addEventListener('click', save);
+  }
+  async function save() {
+    if (saving) return;
+    saving = true; paintSave();
+    try {
+      const r = await call('PUT', `panel/guilds/${guild.guild.id}/config`, { config, version });
+      version = r.version; original = clone(config); errors = new Map(); saving = false;
+      guild.version = r.version; guild.updatedAt = r.updatedAt;
+      paintEditor();
+      paintSave(`<i class="dot ready slap"></i><span class="grow">${esc(u('saved'))}<small>${esc(u('savedHint', r.version))}</small></span>`);
+      setTimeout(() => paintSave(), 3200);
+      refreshEvents();
+      schedulePoll();
+    } catch (e) {
+      saving = false;
+      if (e.status === 409) { conflict = { version: e.body.version, updatedBy: e.body.updatedBy, updatedAt: e.body.updatedAt }; paintSave(); return; }
+      if (e.status === 400 && Array.isArray(e.body.errors)) { showErrors(e.body.errors); paintSave(); return; }
+      if (e.status === 401) { me = null; showLogin(false); return; }
+      paintSave(`<i class="dot error"></i><span class="grow">${esc(e.message)}</span><button type="button" class="pill sm" id="s-retry">${esc(u('retry'))}</button>`);
+      $('#s-retry').addEventListener('click', () => { paintSave(); save(); });
+    }
+  }
+
+  // ------------------------------------------------------------------ events (and action results), refreshed while jobs wait
+  function evLine(e) {
+    const d = e.data || {};
+    const name = u('ev')[e.type] || humanize(e.type);
+    let dot = 'info', text = name;
+    if (e.type === 'action_result') {
+      dot = d.ok ? 'ready' : 'error';
+      const t = deref((schemaAt('/actions/queue').items || {}), schema);
+      const typeS = deref((t.properties || {}).type, schema);
+      text = `${name}: ${typeS && typeS.enum ? optLabel(typeS, d.type) : d.type || ''}${d.ok ? '' : ` – ${d.error || ''}`}`;
+    } else if (e.type === 'panel_config_saved' || e.type === 'bot_config_saved') { dot = 'nore'; text = `${name} · v${d.version}${d.by && d.by.name ? ` · ${d.by.name}` : ''}${d.by && d.by.reason ? ` · ${d.by.reason}` : ''}`; }
+    else if (/join|verified|new|open|start/.test(e.type)) dot = 'ready';
+    else if (/mod|warn|raid|ban|kick|automod/.test(e.type)) dot = 'wait';
+    else if (/error|fail/.test(e.type)) dot = 'error';
+    const extra = d.user || d.name || d.title || '';
+    return `<li><i class="dot sm ${dot}"></i><span>${esc(text)}${extra && !/_config_saved$/.test(e.type) ? ` · ${esc(String(extra))}` : ''}</span><time datetime="${esc(e.at)}">${esc(u('ago', e.at))}</time></li>`;
+  }
+  function paintEvents() {
+    const box = $('#events'); if (!box) return;
+    const list = (guild.events || []).filter((e) => current !== 'events' || !evFilter || e.type === evFilter);
+    box.innerHTML = list.length ? list.slice(0, current === 'events' ? 200 : 12).map(evLine).join('') : `<li class="none">${esc(u('noEvents'))}</li>`;
+  }
+  async function refreshEvents() {
+    try {
+      const g = await call('GET', `panel/guilds/${guild.guild.id}`);
+      guild.events = g.events; guild.metaAt = g.metaAt; guild.meta = g.meta;
+      // the bot saved a newer version (builder, /config, an action) and nothing is edited here: show it
+      if (g.version > version && !saving && !conflict && !changes(original, config).length) {
+        guild.config = g.config; guild.version = g.version; guild.updatedAt = g.updatedAt; guild.updatedBy = g.updatedBy;
+        original = clone(g.config); config = clone(g.config); version = g.version; errors = new Map();
+        const y = scrollY; paintEditor(); scrollTo(0, y);
+        return;
+      }
+      paintEvents();
+      if (current === 'actions' || current === 'builder') { const y = scrollY; paintModule(); scrollTo(0, y); }
+    } catch { /* keep the old list */ }
+  }
+  function schedulePoll() {
+    clearTimeout(pollTimer);
+    const pending = ((original && original.actions && original.actions.queue) || []).some((a) => a.id && !(guild.events || []).some((e) => e.type === 'action_result' && e.data && e.data.id === a.id));
+    pollTimer = setTimeout(async () => { if (document.visibilityState === 'visible' && route()) await refreshEvents(); schedulePoll(); }, pending ? 8000 : 20000);
+  }
+
+  // ------------------------------------------------------------------ Discord preview of the focused message field
+  function preview() {
+    const box = $('#dprev'); if (!box || !focusPreview) return;
+    const text = getAt(config, focusPreview);
+    if (typeof text !== 'string') return;
+    const base = focusPreview.slice(0, focusPreview.lastIndexOf('/'));
+    const embed = getAt(config, `${base}/embed`) === true;
+    const color = getAt(config, `${base}/color`) || (config.general && config.general.color) || '#9d5cff';
+    const sample = { user: '<span class="men">@ola_mc</span>', mention: '<span class="men">@ola_mc</span>', name: 'ola_mc', username: 'ola_mc', server: esc(guild.guild.name), guild: esc(guild.guild.name), count: '128', memberCount: '128', role: '<span class="men">@Gracz</span>', channel: '<span class="men">#ogólny</span>' };
+    const body = text ? esc(text).replace(/\{([a-zA-Z_.]+)\}/g, (m, k) => sample[k] ?? m) : `<span style="opacity:.7">${lang === 'en' ? 'Default text in the server language.' : 'Domyślny tekst w języku serwera.'}</span>`;
+    const time = new Date().toLocaleTimeString(lang === 'en' ? 'en-GB' : 'pl-PL', { hour: '2-digit', minute: '2-digit' });
+    box.innerHTML = `<div class="who"><img src="/assets/album/logo-sticker-256.png" alt=""><b>Nore Bot</b><em>BOT</em><small>${esc(u('today'))} ${time}</small></div><div class="msg${embed ? ' embed' : ''}" style="--embed:${esc(color)}">${body}</div>`;
+  }
+
+  // ------------------------------------------------------------------ leave guard
+  addEventListener('beforeunload', (e) => { if (original && config && changes(original, config).length) { e.preventDefault(); e.returnValue = ''; } });
+
+  render();
+})();

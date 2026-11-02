@@ -1,0 +1,626 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T21:55:55.571Z",
+  "title": "Design System: Nore – Album",
+  "extensions": {
+    "colorMeta": {
+      "page": {
+        "role": "neutral",
+        "displayName": "page",
+        "canonical": "#141216",
+        "note": "Ground: the black album card every page sits on."
+      },
+      "page-raised": {
+        "role": "neutral",
+        "displayName": "page-raised",
+        "canonical": "#1e1b21",
+        "note": "A loose sheet: modals, menus, settings groups, the instance header. One tone step above the page, no border."
+      },
+      "page-raised-2": {
+        "role": "neutral",
+        "displayName": "page-raised-2",
+        "canonical": "#28242c",
+        "note": "Hover on a loose sheet or a secondary (slot) button."
+      },
+      "slot": {
+        "role": "neutral",
+        "displayName": "slot",
+        "canonical": "#0c0b0e",
+        "note": "Recessed slot: inputs, tracks, empty sticker places, code wells."
+      },
+      "ghost": {
+        "role": "neutral",
+        "displayName": "ghost",
+        "canonical": "#2e2a33",
+        "note": "The printed ghost silhouette inside an empty slot (icon outline, dashed die line)."
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "ink",
+        "canonical": "#f3efe9",
+        "note": "Text and icons on the page. Called white pen."
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "ink-soft",
+        "canonical": "#b3abb0",
+        "note": "Secondary text: descriptions, meta, inactive tabs."
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "ink-faint",
+        "canonical": "#837b82",
+        "note": "Placeholders, disabled labels, ghost slot names. Only at 13px and up."
+      },
+      "vinyl": {
+        "role": "neutral",
+        "displayName": "vinyl",
+        "canonical": "#fbfaf7",
+        "note": "The white rim of every die-cut sticker and the face of white stickers."
+      },
+      "vinyl-ink": {
+        "role": "neutral",
+        "displayName": "vinyl-ink",
+        "canonical": "#17141a",
+        "note": "Text printed on a white sticker or a paper clipping."
+      },
+      "vinyl-ink-soft": {
+        "role": "neutral",
+        "displayName": "vinyl-ink-soft",
+        "canonical": "#5d5560",
+        "note": "Secondary text on white stickers and clippings."
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "paper",
+        "canonical": "#e8e5e0",
+        "note": "News clippings and the login nameplate. Slightly greyer than vinyl so stickers still read as stickers on it."
+      },
+      "cover": {
+        "role": "neutral",
+        "displayName": "cover",
+        "canonical": "#291c3d",
+        "note": "The album cover: launcher rail, installer sidebar, updater, login backdrop. Derived from the accent, never hard-coded."
+      },
+      "cover-tab": {
+        "role": "neutral",
+        "displayName": "cover-tab",
+        "canonical": "#352552",
+        "note": "An inactive index tab sitting on the cover."
+      },
+      "cover-ink": {
+        "role": "neutral",
+        "displayName": "cover-ink",
+        "canonical": "#e9e2f5",
+        "note": "Text on the cover."
+      },
+      "cover-ink-soft": {
+        "role": "neutral",
+        "displayName": "cover-ink-soft",
+        "canonical": "#ab9fc0",
+        "note": "Group labels and secondary text on the cover."
+      },
+      "scrim": {
+        "role": "neutral",
+        "displayName": "scrim",
+        "canonical": "rgba(8, 7, 10, 0.72)",
+        "note": "Behind a loose sheet (modal). Flat, no blur."
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "accent",
+        "canonical": "#9d5cff",
+        "note": "Nore violet. User-themable at runtime (--nore-accent). The Graj sticker, active slot pill, focus ring, selected keyline, switch on, icons on white stickers."
+      },
+      "accent-light": {
+        "role": "primary",
+        "displayName": "accent-light",
+        "canonical": "#c6a3ff",
+        "note": "Links, accent text on the page, the phosphor of focus on dark."
+      },
+      "accent-deep": {
+        "role": "primary",
+        "displayName": "accent-deep",
+        "canonical": "#6d38dc",
+        "note": "Pressed accent, progress fill under the Graj label, accent fields that carry small white text (contrast 5.9:1)."
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "accent-ink",
+        "canonical": "#ffffff",
+        "note": "Text on an accent sticker. Large text only (22px heavy and up, 3.9:1); small text on accent uses accent-deep fields."
+      },
+      "dot-ready": {
+        "role": "state",
+        "displayName": "ready",
+        "canonical": "#3fd27f",
+        "note": "Ready, online, running, installed, done."
+      },
+      "dot-wait": {
+        "role": "state",
+        "displayName": "wait",
+        "canonical": "#ffd23a",
+        "note": "Waiting, update available, beta, starting, pending invite."
+      },
+      "dot-error": {
+        "role": "state",
+        "displayName": "error",
+        "canonical": "#ff5a4f",
+        "note": "Error, stopped by crash, danger, offline server."
+      },
+      "dot-event": {
+        "role": "state",
+        "displayName": "event",
+        "canonical": "#ff8a1f",
+        "note": "Events (Halloween, winter), seasonal items, countdowns."
+      },
+      "dot-info": {
+        "role": "state",
+        "displayName": "info",
+        "canonical": "#4aa3ff",
+        "note": "Information, links to docs, new content to look at."
+      },
+      "dot-nore": {
+        "role": "state",
+        "displayName": "nore",
+        "canonical": "#9d5cff",
+        "note": "Nore itself: Nore Client loader, Nore Hub players."
+      },
+      "dot-off": {
+        "role": "state",
+        "displayName": "off",
+        "canonical": "#6c656d",
+        "note": "Offline friend, disabled, unknown."
+      },
+      "label-fabric": {
+        "role": "tag",
+        "displayName": "fabric",
+        "canonical": "#e8c873",
+        "note": "Loader label sticker fill (dark text)."
+      },
+      "label-quilt": {
+        "role": "tag",
+        "displayName": "quilt",
+        "canonical": "#d99be8",
+        "note": "Loader label sticker fill (dark text)."
+      },
+      "label-forge": {
+        "role": "tag",
+        "displayName": "forge",
+        "canonical": "#e09a5b",
+        "note": "Forge and NeoForge label sticker fill (dark text)."
+      },
+      "label-vanilla": {
+        "role": "tag",
+        "displayName": "vanilla",
+        "canonical": "#8fd18b",
+        "note": "Vanilla label sticker fill (dark text)."
+      },
+      "label-modpack": {
+        "role": "tag",
+        "displayName": "modpack",
+        "canonical": "#7cc7d6",
+        "note": "Modpack label sticker fill (dark text)."
+      },
+      "label-nore": {
+        "role": "tag",
+        "displayName": "nore",
+        "canonical": "#9d5cff",
+        "note": "Nore Client label sticker (white text)."
+      },
+      "label-version": {
+        "role": "tag",
+        "displayName": "version",
+        "canonical": "#f3efe9",
+        "note": "Minecraft version label sticker (white sticker, dark text)."
+      },
+      "halloween-page": {
+        "role": "event",
+        "displayName": "halloween page",
+        "canonical": "#0b0a0c",
+        "note": "Lights out: the album in a dark room."
+      },
+      "halloween-page-raised": {
+        "role": "event",
+        "displayName": "halloween page-raised",
+        "canonical": "#151317",
+        "note": ""
+      },
+      "halloween-slot": {
+        "role": "event",
+        "displayName": "halloween slot",
+        "canonical": "#060507",
+        "note": ""
+      },
+      "halloween-cover": {
+        "role": "event",
+        "displayName": "halloween cover",
+        "canonical": "#150f1d",
+        "note": ""
+      },
+      "halloween-ink": {
+        "role": "event",
+        "displayName": "halloween ink",
+        "canonical": "#e9e4dc",
+        "note": ""
+      },
+      "halloween-ink-soft": {
+        "role": "event",
+        "displayName": "halloween ink-soft",
+        "canonical": "#b8b0b6",
+        "note": "Raised for lights-out so secondary text keeps 4.5:1 where the dark is deepest."
+      },
+      "halloween-phosphor": {
+        "role": "event",
+        "displayName": "halloween phosphor",
+        "canonical": "#d2ff7a",
+        "note": "Glow-in-the-dark stickers. The only colour allowed to glow, and only during Halloween."
+      },
+      "halloween-phosphor-glow": {
+        "role": "event",
+        "displayName": "halloween phosphor-glow",
+        "canonical": "rgba(210, 255, 122, 0.38)",
+        "note": "Halo around phosphor stickers (0 0 18px)."
+      },
+      "halloween-pumpkin": {
+        "role": "event",
+        "displayName": "halloween pumpkin",
+        "canonical": "#ff7417",
+        "note": "Pumpkin stickers, the event tab, Halloween countdown."
+      },
+      "halloween-pumpkin-deep": {
+        "role": "event",
+        "displayName": "halloween pumpkin-deep",
+        "canonical": "#c2470a",
+        "note": ""
+      },
+      "halloween-torch": {
+        "role": "event",
+        "displayName": "halloween torch",
+        "canonical": "rgba(255, 236, 196, 0.16)",
+        "note": "The flashlight cone that follows the pointer."
+      },
+      "halloween-bat": {
+        "role": "event",
+        "displayName": "halloween bat",
+        "canonical": "#221c26",
+        "note": "Bat and spider silhouettes (dark stickers with vinyl rim)."
+      },
+      "winter-page": {
+        "role": "event",
+        "displayName": "winter page",
+        "canonical": "#11141b",
+        "note": "Winter night card, cooler."
+      },
+      "winter-page-raised": {
+        "role": "event",
+        "displayName": "winter page-raised",
+        "canonical": "#1a1e27",
+        "note": ""
+      },
+      "winter-slot": {
+        "role": "event",
+        "displayName": "winter slot",
+        "canonical": "#0a0c11",
+        "note": ""
+      },
+      "winter-cover": {
+        "role": "event",
+        "displayName": "winter cover",
+        "canonical": "#1e1d38",
+        "note": ""
+      },
+      "winter-frost": {
+        "role": "event",
+        "displayName": "winter frost",
+        "canonical": "#e9f4ff",
+        "note": "Frost creeping from page corners, snow confetti."
+      },
+      "winter-ice": {
+        "role": "event",
+        "displayName": "winter ice",
+        "canonical": "#8fd3ff",
+        "note": "Winter label stickers, countdown."
+      },
+      "winter-light-red": {
+        "role": "event",
+        "displayName": "winter light-red",
+        "canonical": "#ff5a5a",
+        "note": "String-light dot stickers."
+      },
+      "winter-light-green": {
+        "role": "event",
+        "displayName": "winter light-green",
+        "canonical": "#5be38f",
+        "note": ""
+      },
+      "winter-light-gold": {
+        "role": "event",
+        "displayName": "winter light-gold",
+        "canonical": "#ffd257",
+        "note": ""
+      },
+      "winter-light-blue": {
+        "role": "event",
+        "displayName": "winter light-blue",
+        "canonical": "#6cb8ff",
+        "note": ""
+      }
+    },
+    "typographyMeta": {
+      "meta": {
+        "displayName": "meta",
+        "purpose": "Launcher meta: Onest 12px"
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "Launcher label: Onest 13px"
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "Launcher body: Onest 14px"
+      },
+      "lead": {
+        "displayName": "lead",
+        "purpose": "Launcher lead: Onest 16px"
+      },
+      "section": {
+        "displayName": "section",
+        "purpose": "Launcher section: Onest 18px"
+      },
+      "title": {
+        "displayName": "title",
+        "purpose": "Launcher title: Dela Gothic One 30px"
+      },
+      "hero": {
+        "displayName": "hero",
+        "purpose": "Launcher hero: Dela Gothic One 44px"
+      },
+      "play": {
+        "displayName": "play",
+        "purpose": "Launcher play: Dela Gothic One 24px"
+      },
+      "web-small": {
+        "displayName": "Web small",
+        "purpose": "Onest 16px"
+      },
+      "web-body": {
+        "displayName": "Web body",
+        "purpose": "Onest clamp(16px, 1.05vw + 12px, 19px)"
+      },
+      "web-lead": {
+        "displayName": "Web lead",
+        "purpose": "Onest clamp(20px, 1.2vw + 14px, 28px)"
+      },
+      "web-heading": {
+        "displayName": "Web heading",
+        "purpose": "Dela Gothic One clamp(34px, 4.2vw, 64px)"
+      },
+      "web-display": {
+        "displayName": "Web display",
+        "purpose": "Dela Gothic One clamp(64px, 12.5vw, 200px)"
+      }
+    },
+    "shadows": [
+      {
+        "name": "flat",
+        "value": "none",
+        "purpose": "Page, slots and stickers at rest. Stickers are glued down: no shadow."
+      },
+      {
+        "name": "lift",
+        "value": "0 10px 20px -8px rgba(0, 0, 0, 0.65), 0 2px 4px rgba(0, 0, 0, 0.35)",
+        "purpose": "A sticker being peeled: hover, drag, the moment before it sticks."
+      },
+      {
+        "name": "float",
+        "value": "0 24px 48px -12px rgba(0, 0, 0, 0.7), 0 4px 10px rgba(0, 0, 0, 0.4)",
+        "purpose": "Loose sheets: modals, menus, toasts, dropdowns."
+      },
+      {
+        "name": "phosphor",
+        "value": "0 0 18px rgba(210, 255, 122, 0.38), 0 0 2px rgba(210, 255, 122, 0.8)",
+        "purpose": "Halloween glow stickers only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "--nore-dur-tap",
+        "value": "90ms",
+        "purpose": "Press feedback."
+      },
+      {
+        "name": "--nore-dur-quick",
+        "value": "140ms",
+        "purpose": "Hover, colour and state changes."
+      },
+      {
+        "name": "--nore-dur-base",
+        "value": "220ms",
+        "purpose": "Routine transitions, value swaps."
+      },
+      {
+        "name": "--nore-dur-exit",
+        "value": "160ms",
+        "purpose": "Anything leaving. Always shorter than it arrived."
+      },
+      {
+        "name": "--nore-dur-peel",
+        "value": "260ms",
+        "purpose": "A sticker peeling off (toggle off, remove, dismiss)."
+      },
+      {
+        "name": "--nore-dur-overlay",
+        "value": "280ms",
+        "purpose": "Loose sheet arriving (modal, menu, toast)."
+      },
+      {
+        "name": "--nore-dur-page",
+        "value": "320ms",
+        "purpose": "Page turn in the launcher and site sections."
+      },
+      {
+        "name": "--nore-dur-stick",
+        "value": "380ms",
+        "purpose": "A sticker slapping into its slot (spring settle time)."
+      },
+      {
+        "name": "--nore-dur-launch",
+        "value": "900ms",
+        "purpose": "App launch storyboard, total."
+      },
+      {
+        "name": "--nore-dur-reveal",
+        "value": "1400ms",
+        "purpose": "Event reveal (lights out, frost), total."
+      },
+      {
+        "name": "--nore-dur-ambient",
+        "value": "9000ms",
+        "purpose": "Slow loops: flashlight sway, snow fall cycle, drift."
+      },
+      {
+        "name": "--nore-ease-out",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Arrivals."
+      },
+      {
+        "name": "--nore-ease-in",
+        "value": "cubic-bezier(0.55, 0, 1, 0.45)",
+        "purpose": "Departures."
+      },
+      {
+        "name": "--nore-ease-in-out",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Loops and position swaps."
+      },
+      {
+        "name": "--nore-ease-peel",
+        "value": "cubic-bezier(0.45, 0, 0.2, 1)",
+        "purpose": "Corner lift then release."
+      },
+      {
+        "name": "--nore-ease-rub",
+        "value": "cubic-bezier(0.3, 0, 0.1, 1)",
+        "purpose": "The rub-down highlight sweep after pressing."
+      },
+      {
+        "name": "--nore-spring-stick",
+        "value": "stiffness 700, damping 30, mass 1",
+        "purpose": "Sticker slaps into a slot: about 11% overshoot, settles in ~420ms."
+      },
+      {
+        "name": "--nore-spring-tab",
+        "value": "stiffness 430, damping 32, mass 1",
+        "purpose": "Active tab and segmented pill travelling to a slot: ~4% overshoot."
+      },
+      {
+        "name": "--nore-spring-knob",
+        "value": "stiffness 520, damping 26, mass 1",
+        "purpose": "Switch knob (a dot sticker) re-sticking on the other side."
+      },
+      {
+        "name": "--nore-spring-soft",
+        "value": "stiffness 180, damping 22, mass 1",
+        "purpose": "Large objects: the album cover opening, the event poster."
+      },
+      {
+        "name": "--nore-stagger",
+        "value": "45ms (max 8)",
+        "purpose": "List and grid entrances: 45ms apart, never more than 8 steps, so nothing takes over ~360ms to arrive."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "web-phone",
+        "value": "760px"
+      },
+      {
+        "name": "web-tablet",
+        "value": "1100px"
+      },
+      {
+        "name": "launcher-min",
+        "value": "980px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Graj sticker",
+      "kind": "button",
+      "refersTo": "button-play",
+      "description": "The one violet hero per view: pill, accent fill, 4px vinyl rim, Dela GRAJ.",
+      "html": "<button class=\"btn-play\"><span>GRAJ</span></button>",
+      "css": ".btn-play{height:64px;padding:0 40px 0 34px;border-radius:999px;background:var(--nore-accent);box-shadow:0 0 0 4px var(--nore-vinyl);color:#fff;font:400 24px/1 var(--nore-font-display)}"
+    },
+    {
+      "name": "Sticker",
+      "kind": "card",
+      "refersTo": "sticker",
+      "description": "Die-cut object with a vinyl rim, flat at rest, lifts with a peel corner on hover.",
+      "html": "<div class=\"sticker\"></div>",
+      "css": ".sticker{border:3px solid var(--nore-vinyl);border-radius:16px;background:var(--nore-page-raised)}"
+    },
+    {
+      "name": "Ghost slot",
+      "kind": "container",
+      "refersTo": "slot",
+      "description": "Where a sticker goes when it is off or missing: slot fill, dashed die line, ghost silhouette.",
+      "html": "<div class=\"slot\"></div>",
+      "css": ".slot{border-radius:16px;background:var(--nore-slot);outline:2px dashed var(--nore-ghost);outline-offset:-7px}"
+    },
+    {
+      "name": "Dot sticker",
+      "kind": "badge",
+      "refersTo": "dot",
+      "description": "State: ready, wait, error, event, info, nore, off.",
+      "html": "<i class=\"dot ready\"></i>",
+      "css": ".dot{width:12px;height:12px;border-radius:50%;background:var(--nore-dot-ready);box-shadow:0 0 0 2px var(--nore-vinyl)}"
+    },
+    {
+      "name": "Label sticker",
+      "kind": "tag",
+      "refersTo": "label",
+      "description": "Loader, version, RAM, rank.",
+      "html": "<span class=\"label fabric\">Fabric</span>",
+      "css": ".label{height:24px;padding:0 10px;border-radius:7px;background:var(--nore-label-fabric);box-shadow:0 0 0 2px var(--nore-vinyl)}"
+    },
+    {
+      "name": "Index tab",
+      "kind": "navigation",
+      "refersTo": "tab-active",
+      "description": "Active tab is a piece of page pulled over the cover, joined with concave corners.",
+      "html": "<a class=\"tab on\">Start</a>",
+      "css": ".tab.on{background:var(--nore-page);border-radius:11px 0 0 11px}"
+    },
+    {
+      "name": "Clipping",
+      "kind": "card",
+      "refersTo": "clipping",
+      "description": "Paper news card with one washi tape strip.",
+      "html": "<article class=\"clip\"><span class=\"tape\"></span>…</article>",
+      "css": ".clip{background:var(--nore-paper);color:var(--nore-vinyl-ink);border-radius:3px;padding:16px 18px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Album",
+    "overview": "Everything a player owns in Nore is a sticker in their album. Black card pages, die-cut stickers with a white vinyl rim, ghost slots for what is off or missing, dot stickers for state, an accent-dyed bookcloth cover. Source of truth: design/tokens.json.",
+    "keyCharacteristics": [
+      "Black album card ground with fibre grain",
+      "Accent-dyed cover for rails, installer, updater, login",
+      "Stickers flat at rest; shadow only while peeled",
+      "Ghost slots for off and empty",
+      "Dot stickers carry state",
+      "One violet hero per view",
+      "Dela Gothic One display, Onest text, Minecraft font in game"
+    ],
+    "rules": [
+      "One violet hero",
+      "Dots mean",
+      "Derived cover",
+      "No glass, no glow outside Halloween phosphor",
+      "No tilt in game or in lists"
+    ]
+  }
+}

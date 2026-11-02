@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Polityka prywatności – Nore Panel i Nore Bot</title>
+  <meta name="description" content="Jakie dane przetwarza Nore Bot i panel.noreclient.pl, w jakim celu i jak długo.">
+  <meta name="theme-color" content="#0c0b0e">
+  <link rel="icon" href="/assets/logo.png">
+  <link rel="stylesheet" href="/assets/tokens.css">
+  <link rel="stylesheet" href="/assets/album.css">
+  <link rel="stylesheet" href="/panel/panel.css">
+</head>
+<body class="panel">
+  <header class="bar">
+    <a class="mark" href="/" aria-label="Nore Panel"><img src="/assets/album/logo-sticker-256.png" alt="" width="30" height="30">Nore <small>Panel</small></a>
+    <nav class="links" aria-label="Nore"><a href="/">Panel</a><a href="/terms">Regulamin</a><a href="/privacy">Prywatność</a><a href="https://noreclient.pl">noreclient.pl</a></nav>
+  </header>
+  <main class="legal">
+    <h1>Polityka prywatności</h1>
+    <p class="meta">Nore Bot i Nore Panel (panel.noreclient.pl) · obowiązuje od 1 listopada 2026</p>
+
+    <h2>1. Administrator</h2>
+    <p>Administratorem danych jest właściciel projektu Nore Client. Kontakt w sprawach danych osobowych:
+    ticket na oficjalnym serwerze Discord Nore Client (link na <a href="https://noreclient.pl">noreclient.pl</a>).</p>
+
+    <h2>2. Jakie dane przetwarzamy</h2>
+    <ul>
+      <li><b>Logowanie do panelu (Discord OAuth2):</b> identyfikator, nazwa i awatar konta Discord, lista
+        serwerów, na których jesteś (z uprawnieniami), oraz token dostępu Discord. Token jest przechowywany
+        tylko po stronie serwera, w zaszyfrowanej sesji.</li>
+      <li><b>Konfiguracja serwera:</b> ustawienia bota, identyfikatory kanałów i ról, kto i kiedy zapisał zmiany.</li>
+      <li><b>Dane serwera od bota:</b> nazwa i ikona serwera, lista kanałów i ról, liczba członków, boostów i emotek.</li>
+      <li><b>Dziennik zdarzeń:</b> zdarzenia na serwerze potrzebne do działania modułów (np. dołączenie osoby,
+        moderacja, tickety) – z identyfikatorami i nazwami użytkowników Discord.</li>
+      <li><b>Generowanie emotek AI:</b> opis (prompt) wysyłany do OpenAI w celu narysowania obrazka.</li>
+      <li><b>Dane techniczne:</b> adres IP i nagłówki żądań w logach Cloudflare (bezpieczeństwo, limity zapytań).</li>
+    </ul>
+
+    <h2>3. Cele i podstawy prawne</h2>
+    <ul>
+      <li>świadczenie usługi – logowanie, konfiguracja i działanie bota (art. 6 ust. 1 lit. b RODO),</li>
+      <li>bezpieczeństwo, zapobieganie nadużyciom i limity zapytań (art. 6 ust. 1 lit. f RODO – prawnie uzasadniony interes),</li>
+      <li>obsługa zgłoszeń i kontaktu (art. 6 ust. 1 lit. f RODO).</li>
+    </ul>
+
+    <h2>4. Jak długo</h2>
+    <ul>
+      <li>sesja logowania: do 7 dni lub do wylogowania (wtedy jest usuwana),</li>
+      <li>lista Twoich serwerów: kopia w sesji na 60 sekund,</li>
+      <li>konfiguracja i dane serwera: dopóki bot jest na serwerze; po usunięciu bota usuwamy je na prośbę osoby zarządzającej serwerem,</li>
+      <li>dziennik zdarzeń: ostatnie wpisy w ograniczonej liczbie, starsze są nadpisywane,</li>
+      <li>logi techniczne Cloudflare: zgodnie z ustawieniami Cloudflare (krótkoterminowo).</li>
+    </ul>
+
+    <h2>5. Odbiorcy danych</h2>
+    <ul>
+      <li><b>Cloudflare, Inc.</b> – hosting strony, API i bazy (Workers, Durable Objects),</li>
+      <li><b>Discord Inc.</b> – logowanie i działanie bota,</li>
+      <li><b>OpenAI</b> – tylko przy generowaniu emotek AI (sam opis, bez danych konta).</li>
+    </ul>
+    <p>Dostawcy mogą przetwarzać dane poza Europejskim Obszarem Gospodarczym na podstawie standardowych klauzul
+    umownych lub decyzji o adekwatności (EU–US Data Privacy Framework).</p>
+
+    <h2>6. Ciasteczka i pamięć przeglądarki</h2>
+    <p>Panel używa tylko niezbędnych ciasteczek: <code>__Host-nore_s</code> (sesja po zalogowaniu) i
+    <code>__Host-nore_o</code> (10 minut, zabezpieczenie logowania). W pamięci przeglądarki zapisujemy wybrany
+    język. Nie używamy ciasteczek reklamowych ani śledzących, więc nie potrzebujemy na nie zgody.</p>
+
+    <h2>7. Twoje prawa</h2>
+    <p>Masz prawo do dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, przeniesienia
+    oraz sprzeciwu. Możesz w każdej chwili wylogować się (sesja zostanie usunięta), odłączyć aplikację w
+    ustawieniach Discorda (Autoryzowane aplikacje) i usunąć bota z serwera. Masz też prawo wnieść skargę do
+    Prezesa Urzędu Ochrony Danych Osobowych (ul. Stawki 2, 00-193 Warszawa, uodo.gov.pl).</p>
+
+    <h2>8. Zmiany</h2>
+    <p>O zmianach polityki informujemy na tej stronie z datą obowiązywania.</p>
+  </main>
+</body>
+</html>

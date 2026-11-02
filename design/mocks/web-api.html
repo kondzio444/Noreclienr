@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API Nore</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="web.css">
+<style>
+  .doc { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: clamp(32px, 4vw, 72px); padding: 24px var(--nore-web-margin) 120px; }
+  .index { position: sticky; top: 24px; align-self: start; font: 500 15px/1.3 var(--nore-font-text); }
+  .index h6 { margin: 26px 0 8px 14px; font: 600 14px/1 var(--nore-font-text); color: var(--nore-ink-faint); }
+  .index h6:first-child { margin-top: 0; }
+  .index a { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 999px; text-decoration: none; color: var(--nore-ink-soft); }
+  .index a.on { background: var(--nore-vinyl); color: var(--nore-vinyl-ink); font-weight: 600; }
+  .index code { font-size: 13px; }
+  .m { display: inline-grid; place-items: center; height: 22px; padding: 0 8px; border-radius: 6px; font: 700 12px/1 var(--nore-font-text); color: #0e1a12; background: var(--nore-dot-ready); }
+  .m.post { background: var(--nore-accent); color: #fff; }
+  .m.put { background: var(--nore-dot-wait); color: #241b00; }
+  h1 { margin: 0; font: var(--nore-web-heading); letter-spacing: var(--nore-web-heading-tracking); }
+  .lead { max-width: 60ch; margin: 18px 0 0; font: var(--nore-web-lead); color: var(--nore-ink-soft); }
+  .facts { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+  .facts span { display: inline-flex; align-items: center; gap: 9px; height: 40px; padding: 0 16px; border-radius: 999px; background: var(--nore-page-raised); font: 500 15px/1 var(--nore-font-text); }
+  .facts i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--nore-vinyl); }
+  .ep { margin-top: clamp(64px, 7vw, 110px); }
+  .ep-head { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .ep-head .m { height: 34px; padding: 0 14px; font-size: 15px; border: 3px solid var(--nore-vinyl); border-radius: 10px; }
+  .ep-head code { font: 600 clamp(22px, 2.2vw, 32px)/1.2 var(--nore-font-code); }
+  .ep p.desc { max-width: 64ch; margin: 16px 0 28px; color: var(--nore-ink-soft); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  table { width: 100%; border-collapse: collapse; font: 400 15px/1.45 var(--nore-font-text); }
+  th { text-align: left; font-weight: 600; color: var(--nore-ink-faint); padding: 0 12px 10px 0; }
+  td { padding: 12px 12px 12px 0; border-top: 1px solid #2a262e; vertical-align: top; }
+  td code { font: 600 14px/1.3 var(--nore-font-code); color: var(--nore-accent-light); }
+  td small { display: block; color: var(--nore-ink-soft); }
+  .try { padding: 22px; border-radius: 22px; background: var(--nore-page-raised); }
+  .try h3 { margin: 0 0 14px; font: 600 18px/1.2 var(--nore-font-text); }
+  .req { display: flex; gap: 10px; }
+  .req .field { flex: 1; display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 16px; border-radius: 14px; background: var(--nore-slot); font: 500 15px/1 var(--nore-font-code); outline: 2px solid var(--nore-accent); outline-offset: 0; overflow: hidden; white-space: nowrap; }
+  .req .field span { color: var(--nore-ink-faint); }
+  .status { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0 10px; font: 500 14px/1 var(--nore-font-text); color: var(--nore-ink-soft); font-variant-numeric: tabular-nums; }
+  .status b { display: inline-flex; align-items: center; gap: 8px; color: var(--nore-ink); }
+  .status b i { width: 10px; height: 10px; border-radius: 50%; background: var(--nore-dot-ready); border: 2px solid var(--nore-vinyl); }
+  pre { margin: 0; padding: 18px 20px; border-radius: 16px; background: var(--nore-slot); overflow: auto; font: 400 14px/1.6 var(--nore-font-code); color: var(--nore-ink-soft); }
+  pre .k { color: var(--nore-accent-light); } pre .s { color: #9fe2b8; } pre .n { color: #ffd98a; } pre .b { color: #8fc8ff; }
+  .seen { margin-top: 18px; display: flex; gap: 14px; align-items: center; padding: 14px; border-radius: 16px; background: var(--nore-page); }
+  .seen .ico { width: 54px; height: 54px; border-radius: 10px; border: 3px solid var(--nore-vinyl); background: url(../../web/public/assets/home/sky.webp) 50% 50% / 300%; flex: none; }
+  .seen b { display: block; font: 600 16px/1.2 var(--nore-font-text); }
+  .seen small { display: block; margin-top: 4px; font: 400 14px/1.35 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .seen .who { margin-left: auto; text-align: right; font: 600 15px/1.2 var(--nore-font-text); font-variant-numeric: tabular-nums; }
+  .seen .who small { font-weight: 400; }
+  .doc > main { min-width: 0; }
+  .ep-head code { overflow-wrap: anywhere; }
+  .req .field { min-width: 0; }
+  .facts span { white-space: nowrap; }
+  @media (max-width: 760px) {
+    .ep-head code { font-size: 20px; }
+    .index { min-width: 0; max-width: 100vw; }
+    .nav .links { display: none; } .nav .pill { margin-left: auto; }
+    .doc { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    .index { position: static; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-inline: calc(var(--nore-web-margin) * -1); padding-inline: var(--nore-web-margin); }
+    .index h6 { display: none; }
+    .index a { flex: none; background: var(--nore-page-raised); }
+    .two { grid-template-columns: minmax(0, 1fr); }
+    td small { overflow-wrap: anywhere; }
+    .req { flex-direction: column; }
+    .req .field { flex: none; }
+    .req .pill { width: 100%; }
+    .seen { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="mark" href="#"><img src="assets/logo-sticker-256.png" alt="">Nore</a>
+  <nav class="links" aria-label="Główne"><a href="#">Klient</a><a href="#">Launcher</a><a href="#">Szatnia</a><a href="#">Wydarzenia</a><a href="#" style="color:var(--nore-ink)">API</a></nav>
+  <a class="pill sm" href="#">Pobierz</a>
+</header>
+<div class="doc">
+  <nav class="index" aria-label="Endpointy">
+    <h6>Wydania</h6>
+    <a href="#"><span class="m">GET</span><code>/releases/latest</code></a>
+    <a href="#"><span class="m">GET</span><code>/downloads</code></a>
+    <h6>Świat Nore</h6>
+    <a href="#"><span class="m">GET</span><code>/events</code></a>
+    <a href="#"><span class="m">GET</span><code>/news</code></a>
+    <a href="#"><span class="m">GET</span><code>/platforms</code></a>
+    <h6>Gracze i serwery</h6>
+    <a href="#"><span class="m">GET</span><code>/players/{nick}</code></a>
+    <a class="on" href="#"><span class="m">GET</span><code>/servers/{adres}</code></a>
+    <a href="#"><span class="m">GET</span><code>/stats</code></a>
+    <h6>Stan</h6>
+    <a href="#"><span class="m">GET</span><code>/status</code></a>
+    <a href="#"><span class="m">GET</span><code>/openapi.json</code></a>
+  </nav>
+  <main>
+    <h1 class="in">API Nore</h1>
+    <p class="lead in d1">Wydania, wydarzenia, gracze Nore i ping serwerów Minecraft. JSON bez klucza, z CORS i ETag. Wersja v2 pod /api/v2, a v1 działa dalej dla starszych launcherów.</p>
+    <div class="facts in d2"><span><i style="background:var(--nore-dot-ready)"></i>Działa · dane sprzed 4 min</span><span><i style="background:var(--nore-dot-info)"></i>OpenAPI 3.1</span><span><i style="background:var(--nore-accent)"></i>Bez klucza</span></div>
+
+    <section class="ep" aria-labelledby="ep">
+      <div class="ep-head"><span class="m">GET</span><code id="ep">/api/v2/servers/{adres}</code></div>
+      <p class="desc">Pinguje serwer Minecraft i zwraca, czy działa, ilu graczy jest teraz, wersję, MOTD i ikonę. Tego samego używa Nore Bot w komendzie /serwer.</p>
+      <div class="two">
+        <div>
+          <table>
+            <thead><tr><th>Parametr</th><th>Opis</th></tr></thead>
+            <tbody>
+              <tr><td><code>adres</code></td><td>Domena albo IP, opcjonalnie z portem.<small>np. mc.przyklad.pl albo 51.75.10.20:25566</small></td></tr>
+              <tr><td><code>edition</code></td><td>java (domyślnie) albo bedrock.</td></tr>
+              <tr><td><code>icon</code></td><td>false pomija ikonę, gdy jej nie potrzebujesz.<small>odpowiedź jest wtedy o około 6 KB mniejsza</small></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="try" data-ui>
+          <h3>Zapytaj na żywo</h3>
+          <div class="req"><div class="field"><span>/api/v2/servers/</span>mc.przyklad.pl</div><a class="pill" href="#"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Wyślij</a></div>
+          <div class="status"><b><i></i>200 OK</b><span>41 ms</span><span>cache: HIT</span><span>ETag W/"9f2c"</span></div>
+<pre><code>{
+  <span class="k">"online"</span>: <span class="b">true</span>,
+  <span class="k">"players"</span>: { <span class="k">"online"</span>: <span class="n">7</span>, <span class="k">"max"</span>: <span class="n">20</span> },
+  <span class="k">"version"</span>: <span class="s">"Paper 1.21.11"</span>,
+  <span class="k">"motd"</span>: <span class="s">"§dNore SMP §8| §aSurvival 1.21"</span>,
+  <span class="k">"favicon"</span>: <span class="s">"data:image/png;base64,…"</span>
+}</code></pre>
+          <div class="seen"><span class="ico" role="img" aria-label="Ikona serwera"></span><div><b>Nore SMP | Survival 1.21</b><small>Tak ten serwer wygląda w launcherze</small></div><div class="who">7 / 20<small>graczy</small></div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

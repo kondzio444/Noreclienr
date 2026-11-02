@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="pl" data-event="halloween">
+<head>
+<meta charset="utf-8">
+<title>Nore Launcher – Start (Halloween)</title>
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="kit.css">
+<link rel="stylesheet" href="launcher.css">
+<style>
+  .home { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 34px; height: 100%; }
+  .hero { position: relative; display: grid; grid-template-columns: 290px 1fr; gap: 34px; align-items: center; padding: 10px 0 24px 6px; }
+  .inst { --tilt: -3deg; width: 272px; height: 272px; background-image: url(../../web/public/assets/home/panorama.webp); background-size: 190%; background-position: 38% 60%; }
+  .inst .label { position: absolute; left: -12px; bottom: 22px; rotate: 4deg; }
+  .inst .label.v { left: auto; right: -14px; bottom: auto; top: 26px; rotate: -6deg; }
+  .hero h1 { margin: 0; font: var(--nore-launcher-hero); letter-spacing: var(--nore-launcher-hero-tracking); }
+  .hero .meta { margin: 12px 0 0; color: var(--nore-ink-soft); font-size: 14.5px; display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .hero .meta b { color: var(--nore-ink); font-weight: 600; }
+  .hero .labels { display: flex; gap: 10px; margin-top: 16px; }
+  .actions { display: flex; align-items: center; gap: 12px; margin-top: 30px; }
+  .ready { margin-top: 16px; display: flex; align-items: center; gap: 9px; font: 500 13px/1 var(--nore-font-text); color: var(--nore-ink-soft); }
+
+  .recent { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .recent figure { margin: 0; }
+  .recent .sticker, .recent .slot { aspect-ratio: 1; width: 100%; }
+  .recent figcaption { margin-top: 10px; font: 600 13.5px/1.25 var(--nore-font-text); }
+  .recent figcaption small { display: flex; align-items: center; gap: 6px; margin-top: 3px; font: 500 12px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .slot.add { display: grid; place-items: center; }
+  .slot.add .ic { width: 30px; height: 30px; color: var(--nore-ghost); stroke-width: 2.4; }
+  .r1 { background: url(../../web/public/assets/home/sky.webp) 60% 40% / 220%; --tilt: 1.5deg; }
+  .r2 { background: url(../../web/public/assets/home/ward-hat.webp) 50% 25% / 170%; }
+  .r3 { background: url(../../web/public/assets/home/ward-wings.webp) 50% 30% / 150%; --tilt: -1.5deg; }
+  .r4 { background: url(../../web/public/assets/home/ward-history.webp) 50% 40% / 150%; --tilt: 1deg; }
+
+  .album { margin-top: 30px; }
+  .album .row { display: flex; gap: 14px; align-items: flex-end; }
+  .album .it { width: 58px; text-align: center; }
+  .album .it .sticker, .album .it .slot { width: 58px; height: 76px; border-radius: 10px; --rim: 2.5px; }
+  .album .it .slot { outline-offset: -5px; outline-width: 1.5px; }
+  .album .it small { display: block; margin-top: 7px; font: 500 11.5px/1.2 var(--nore-font-text); color: var(--nore-ink-soft); white-space: nowrap; }
+  .album .gap { width: 12px; }
+  .album .count { margin-left: auto; text-align: right; white-space: nowrap; font: 500 13px/1.4 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .album .count b { display: block; font: 400 26px/1 var(--nore-font-display); color: var(--nore-ink); }
+  .album .slot { display: grid; place-items: center; }
+  .album .slot img { width: 30px; image-rendering: pixelated; filter: brightness(0) invert(.2); opacity: .9; }
+  .c1 { background: url(assets/cape-dynia.png) center / cover; --tilt: -2deg; }
+  .c2 { background: url(assets/cape-nietoperz.png) center / cover; --tilt: 1deg; }
+  .c3 { background: url(assets/cape-pajeczyna.png) center / cover; --tilt: -1deg; }
+  .c4 { background: url(../../web/public/assets/home/ward-wings.webp) 50% 30% / 230%; --tilt: 2deg; }
+  .c5 { background: url(../../web/public/assets/home/ward-hat.webp) 52% 18% / 260%; }
+  .side { display: flex; flex-direction: column; gap: 26px; padding-top: 14px; }
+  .next-ev { position: relative; display: flex; gap: 14px; align-items: center; padding: 16px 16px 16px 14px; border-radius: 18px; background: var(--nore-page-raised); }
+  .next-ev img { width: 52px; image-rendering: pixelated; }
+  .next-ev b { display: block; font: 700 15px/1.2 var(--nore-font-text); }
+  .next-ev small { color: var(--nore-ink-soft); font-size: 13px; }
+  .clips { position: relative; display: grid; gap: 16px; padding-top: 4px; }
+  .clip h4 { margin: 0 0 5px; font: 700 14.5px/1.25 var(--nore-font-text); }
+  .clip p { font-size: 13px; line-height: 1.45; }
+  .clip time { display: block; margin-top: 8px; font: 600 12px/1 var(--nore-font-text); color: var(--nore-vinyl-ink-soft); }
+  .clip.a { rotate: -1.2deg; }
+  .clip.b { rotate: .8deg; margin-left: 10px; }
+  .clip .tape { top: -10px; left: 50%; margin-left: -37px; }
+  .clip.b .tape { left: auto; right: 18px; rotate: 6deg; }
+  .friends { display: grid; gap: 12px; }
+  .friend { display: flex; align-items: center; gap: 12px; }
+  .friend .h { position: relative; width: 34px; height: 34px; }
+  .friend .h img { width: 34px; height: 34px; border-radius: 50%; image-rendering: pixelated; box-shadow: 0 0 0 2.5px var(--nore-vinyl); }
+  .friend .h .dot { position: absolute; right: -3px; bottom: -2px; }
+  .friend b { display: block; font: 600 14px/1.2 var(--nore-font-text); }
+  .friend small { font: 500 12.5px/1.3 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .friend .btn { margin-left: auto; }
+
+  /* ---------------- Halloween 2026: lights out ---------------- */
+  .page { isolation: isolate; }
+  .page::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(circle 360px at var(--tx, 400px) var(--ty, 300px), rgba(255, 228, 180, .13), rgba(255, 228, 180, .045) 50%, transparent 72%); }
+  /* things in the dark: JS sets --dim from the distance to the torch (1 near, .7 far) */
+  .dim { filter: brightness(var(--dim, .58)) saturate(.8); }
+  .clip { filter: brightness(.62); }
+  .tape { opacity: .7; }
+  .rail { background-color: var(--nore-cover); }
+  .glow { filter: drop-shadow(0 0 2px var(--nore-halloween-phosphor)) drop-shadow(0 0 14px var(--nore-halloween-phosphor-glow)); animation: phosphor 4s var(--nore-ease-in-out) infinite; }
+  .ghosty { position: absolute; z-index: 3; width: 58px; image-rendering: pixelated; }
+  .inst .ghosty { right: -22px; bottom: -18px; rotate: 8deg; }
+  .web { position: absolute; right: 0; top: 36px; width: 190px; height: 165px; z-index: 0; pointer-events: none; opacity: .42; }
+  .spider { position: absolute; right: 360px; top: 0; z-index: 4; display: flex; flex-direction: column; align-items: center; transform-origin: top center; animation: sway 6s var(--nore-ease-in-out) infinite; }
+  .spider i { width: 1.5px; height: 92px; background: color-mix(in oklab, var(--nore-ink) 45%, transparent); }
+  .spider img { width: 34px; image-rendering: pixelated; }
+  .bat { position: absolute; z-index: 4; width: 44px; image-rendering: pixelated; }
+  .poster { position: relative; padding: 18px 18px 18px; border-radius: 16px; background: #1a1210; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--nore-halloween-pumpkin) 35%, transparent); rotate: -1deg; }
+  .poster .tape { top: -11px; left: 24px; background: var(--nore-tape-kraft); rotate: -8deg; }
+  .poster .tape.r { left: auto; right: 22px; rotate: 7deg; }
+  .poster h3 { margin: 4px 0 2px; font: 400 26px/1 var(--nore-font-display); color: var(--nore-halloween-pumpkin); letter-spacing: -.01em; }
+  .poster p { margin: 0 0 14px; font: 500 13px/1.45 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .poster .caps { display: flex; gap: 10px; margin-bottom: 14px; }
+  .poster .caps .sticker { width: 52px; height: 68px; border-radius: 9px; --rim: 2.5px; }
+  .poster .caps .slot { width: 52px; height: 68px; border-radius: 9px; outline-width: 1.5px; outline-offset: -5px; display: grid; place-items: center; }
+  .poster .caps .slot img { width: 28px; image-rendering: pixelated; filter: brightness(0) invert(.22); }
+  .poster .row2 { display: flex; align-items: center; gap: 12px; }
+  .poster .count { margin-left: auto; text-align: right; font: 500 12px/1.3 var(--nore-font-text); color: var(--nore-ink-soft); }
+  .poster .count b { display: block; font: 400 24px/1 var(--nore-font-display); color: var(--nore-halloween-phosphor); }
+  .btn.pumpkin { background: var(--nore-halloween-pumpkin); color: #1a0d04; box-shadow: 0 0 0 3px var(--nore-vinyl); }
+  .album .sticker.c1, .album .sticker.c2, .album .sticker.c3 { box-shadow: 0 0 14px var(--nore-halloween-phosphor-glow); }
+  .cursor { position: absolute; z-index: 9; width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+<script src="icons.js"></script>
+<div class="app">
+  <aside class="rail cloth" data-active="start"></aside>
+  <section class="page card-grain">
+    <div class="titlebar"><span class="status"><i class="dot sm ready"></i>Online · Nore Hub</span><span class="wc"><svg class="ic"><use href="#i-minus"/></svg></span><span class="wc"><svg class="ic"><use href="#i-square"/></svg></span><span class="wc"><svg class="ic"><use href="#i-x"/></svg></span></div>
+    <svg class="web" viewBox="0 0 230 200" fill="none" stroke="#d2ff7a" stroke-width="1.2" stroke-linecap="round" aria-hidden="true">
+      <path d="M230 0 L120 200 M230 0 L40 130 M230 0 L0 40 M230 0 L170 200"/>
+      <path d="M205 0 Q200 22 220 45 Q203 38 188 42 Q190 25 205 0"/>
+      <path d="M168 0 Q166 40 198 85 Q170 72 145 80 Q130 60 112 55 Q140 30 168 0"/>
+      <path d="M128 0 Q130 60 176 128 Q140 112 104 122 Q86 92 60 84 Q100 45 128 0"/>
+    </svg>
+    <div class="spider" aria-hidden="true"><i></i><img src="assets/spider.png" alt=""></div>
+    <img class="bat" src="assets/bat.png" style="left:560px;top:40px;rotate:-8deg" alt="">
+    <img class="bat" src="assets/bat.png" style="left:930px;top:470px;width:30px;rotate:10deg;opacity:.8" alt="">
+    <svg class="cursor" style="left:392px;top:300px" viewBox="0 0 20 20"><path d="M2 2l14 6-6 2-2 6z" fill="#fbfaf7" stroke="#17141a" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    <div class="content">
+      <div class="home">
+        <div>
+          <div class="hero">
+            <div class="sticker lg inst"><span class="peel"></span><img class="ghosty glow" src="assets/ghost.png" alt=""><span class="label nore">Nore Client</span><span class="label v">1.21.11</span></div>
+            <div>
+              <h1>Wiśniowy<br>Survival</h1>
+              <p class="meta"><span><b>37 h</b> w grze</span><span>ostatnio <b>wczoraj, 21:14</b></span><span><b>24</b> mody</span></p>
+              <div class="labels"><span class="label fabric">Fabric 0.17</span><span class="label">4 GB RAM</span><span class="label dark">Java 21</span></div>
+              <div class="actions">
+                <button class="btn-play"><svg class="ic"><use href="#i-play"/></svg><span>GRAJ</span></button>
+                <button class="btn">Zmień<svg class="ic"><use href="#i-down"/></svg></button>
+                <button class="btn icon" aria-label="Folder instancji"><svg class="ic"><use href="#i-folder"/></svg></button>
+              </div>
+              <p class="ready"><i class="dot ready sm"></i>Gotowe do gry · peleryna Dynia założona</p>
+            </div>
+          </div>
+          <h3 class="section-title">Ostatnio grane<span class="more">Wszystkie instancje</span></h3>
+          <div class="recent">
+            <figure><div class="sticker r1 dim"></div><figcaption>Nore Client<small><i class="dot sm nore"></i>1.21.11 · 2 dni temu</small></figcaption></figure>
+            <figure><div class="sticker r2 dim"></div><figcaption>Create: Above<small><i class="dot sm wait"></i>Aktualizacja</small></figcaption></figure>
+            <figure><div class="sticker r3 dim"></div><figcaption>PvP 1.8 feel<small><i class="dot sm off"></i>1.21.4 · tydzień</small></figcaption></figure>
+            <figure><div class="sticker r4 dim"></div><figcaption>Zima 2025<small><i class="dot sm off"></i>1.21.1 · grudzień</small></figcaption></figure>
+            <figure><div class="slot add"><svg class="ic"><use href="#i-plus"/></svg></div><figcaption class="faint">Nowa instancja<small>pusty slot</small></figcaption></figure>
+          </div>
+          <div class="album">
+            <h3 class="section-title">Twoja kolekcja<span class="more">Szatnia</span></h3>
+            <div class="row">
+              <div class="it"><div class="sticker c1"></div><small>Dynia · 15.10</small></div>
+              <div class="it"><div class="sticker c2 dim" style="--dim:.7"></div><small>Nietoperz</small></div>
+              <div class="it"><div class="sticker c3 dim" style="--dim:.62"></div><small>Pajęczyna</small></div>
+              <div class="it"><div class="sticker c4 dim"></div><small>Skrzydła</small></div>
+              <div class="it"><div class="sticker c5 dim"></div><small>Kapelusz</small></div>
+              <span class="gap"></span>
+              <div class="it"><div class="slot"><img src="assets/flake.png" alt=""></div><small class="faint">Zima</small></div>
+              <div class="it"><div class="slot"><img src="assets/gift.png" alt=""></div><small class="faint">Zima</small></div>
+              <div class="it"><div class="slot"><img src="assets/flake.png" alt=""></div><small class="faint">od 10.12</small></div>
+              <div class="count"><b class="tnum">5/8</b>w serii 2026</div>
+            </div>
+          </div>
+        </div>
+        <aside class="side">
+          <section class="poster"><span class="tape"></span><span class="tape r"></span>
+            <h3>Halloween 2026</h3>
+            <p>Zgaszone światło. Poświeć latarką, a naklejki zaczną świecić. Peleryny zbierasz do 3 listopada.</p>
+            <div class="caps"><div class="sticker c1 glow" style="background:url(assets/cape-dynia.png) center/cover"></div><div class="sticker" style="background:url(assets/cape-nietoperz.png) center/cover;--tilt:2deg"></div><div class="slot"><img src="assets/spider.png" alt=""></div><div class="sticker" style="background:#0b0a0c;display:grid;place-items:center"><img src="assets/ghost.png" class="glow" style="width:30px;image-rendering:pixelated" alt=""></div></div>
+            <div class="row2"><button class="btn pumpkin sm"><img src="assets/pumpkin.png" style="width:16px;image-rendering:pixelated" alt="">Łap dynie</button><div class="count"><b class="tnum">6 dni</b>do końca</div></div>
+          </section>
+          <div>
+            <h3 class="section-title">Co nowego</h3>
+            <div class="clips">
+              <article class="clip a"><span class="tape"></span><h4>Szatnia: uszy lisa i kota</h4><p>Nowe nakrycia głowy w Szatni, widoczne w F5.</p><time>Nore Client 2.1 · 18 paź</time></article>
+            </div>
+          </div>
+          <div>
+            <h3 class="section-title">Znajomi<span class="more">3 w grze</span></h3>
+            <div class="friends">
+              <div class="friend"><span class="h"><img src="assets/head-ola.png" alt=""><i class="dot sm ready"></i></span><div><b>ola_mc</b><small>Gra: Hypixel · Bedwars</small></div><button class="btn sm">Dołącz</button></div>
+              <div class="friend"><span class="h"><img src="assets/head-bartek.png" alt=""><i class="dot sm ready"></i></span><div><b>bartek07</b><small>W launcherze</small></div></div>
+              <div class="friend"><span class="h"><img src="assets/head-mila.png" alt=""><i class="dot sm wait"></i></span><div><b>Mila</b><small>Czeka na Twoje zaproszenie</small></div></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="rail.js"></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+{
+  "id": "gaming",
+  "emoji": "🎮",
+  "accent": "#5865f2",
+  "statusServer": false,
+  "permissionSets": {
+    "owner": ["Administrator"],
+    "admin": ["ManageGuild", "ManageRoles", "ManageChannels", "ManageMessages", "ManageWebhooks", "ManageEvents", "ManageGuildExpressions", "ManageNicknames", "ManageThreads", "KickMembers", "BanMembers", "ModerateMembers", "ViewAuditLog", "MentionEveryone", "MuteMembers", "DeafenMembers", "MoveMembers", "ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "ChangeNickname", "UseApplicationCommands", "CreateInstantInvite"],
+    "mod": ["ManageMessages", "ManageNicknames", "ManageThreads", "KickMembers", "BanMembers", "ModerateMembers", "ViewAuditLog", "MuteMembers", "MoveMembers", "ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "ChangeNickname", "UseApplicationCommands", "CreateInstantInvite"],
+    "helper": ["ManageMessages", "ModerateMembers", "MoveMembers", "ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "ChangeNickname", "UseApplicationCommands", "CreateInstantInvite"],
+    "member": ["ViewChannel", "SendMessages", "SendMessagesInThreads", "CreatePublicThreads", "EmbedLinks", "AttachFiles", "AddReactions", "UseExternalEmojis", "ReadMessageHistory", "Connect", "Speak", "Stream", "UseVAD", "ChangeNickname", "UseApplicationCommands", "CreateInstantInvite"],
+    "none": []
+  },
+  "groups": {
+    "staff": ["owner", "admin", "moderator", "helper"],
+    "admin": ["owner", "admin"],
+    "moderators": ["admin", "moderator", "helper"],
+    "member": ["member"],
+    "muted": ["muted"]
+  },
+  "lists": {
+    "games": {
+      "minecraft": { "name": "Minecraft", "emoji": "⛏️", "color": "#62b47a" },
+      "valorant": { "name": "Valorant", "emoji": "🎯", "color": "#ff4655" },
+      "cs2": { "name": "CS2", "emoji": "🔫", "color": "#de9b35" },
+      "fortnite": { "name": "Fortnite", "emoji": "🪂", "color": "#9d4dbb" },
+      "lol": { "name": "League of Legends", "emoji": "🧙", "color": "#c89b3c" },
+      "gta": { "name": "GTA Online", "emoji": "🚗", "color": "#2ecc71" },
+      "rocketleague": { "name": "Rocket League", "emoji": "🚀", "color": "#0077ff" },
+      "apex": { "name": "Apex Legends", "emoji": "🛡️", "color": "#da292a" }
+    },
+    "levels": [
+      {"id": "50", "name": "50", "color": "#ffa801"},
+      {"id": "30", "name": "30", "color": "#ffd32a"},
+      {"id": "20", "name": "20", "color": "#05c46b"},
+      {"id": "10", "name": "10", "color": "#4bcffa"},
+      {"id": "5", "name": "5", "color": "#d2dae2"}
+    ],
+    "pairs": [1, 2],
+    "voice_small": [1, 2, 3]
+  },
+  "roles": [
+    { "key": "sep_staff", "separator": true },
+    { "key": "owner", "icon": "👑", "color": "#ff4d6d", "hoist": true, "perms": "owner" },
+    { "key": "admin", "icon": "🛡️", "color": "#ff9f43", "hoist": true, "perms": "admin" },
+    { "key": "moderator", "icon": "🔨", "color": "#54a0ff", "hoist": true, "perms": "mod" },
+    { "key": "helper", "icon": "🤝", "color": "#48dbfb", "hoist": true, "perms": "helper", "bind": ["applications.forms[staff].role"] },
+    { "key": "sep_special", "separator": true },
+    { "key": "partner", "icon": "🤝", "color": "#1dd1a1", "hoist": true, "perms": "member", "bind": ["applications.forms[partner].role"] },
+    { "key": "content_creator", "icon": "🎬", "color": "#ff6b81", "hoist": true, "perms": "member" },
+    { "key": "booster", "icon": "💎", "color": "#f47fff", "hoist": true, "perms": "member", "bind": ["boosts.role"] },
+    { "key": "vip", "icon": "⭐", "color": "#ffd32a", "hoist": true, "perms": "member", "size": "medium" },
+    { "key": "sep_levels", "separator": true, "size": "medium" },
+    { "key": "level_{id}", "each": "levels", "perms": "member", "level": true, "icon": "🏅", "size": "medium" },
+    { "key": "sep_community", "separator": true },
+    { "key": "member", "icon": "🎮", "color": "#b8adc9", "perms": "member", "bind": ["verification.role"] },
+    { "key": "game_{id}", "each": "games", "perms": "none", "menu": "games" },
+    { "key": "ping_announcements", "icon": "📢", "color": "#576574", "perms": "none", "menu": "pings" },
+    { "key": "ping_events", "icon": "🎉", "color": "#576574", "perms": "none", "menu": "pings" },
+    { "key": "ping_giveaways", "icon": "🎁", "color": "#576574", "perms": "none", "menu": "pings", "bind": ["giveaways.pingRole"] },
+    { "key": "ping_streams", "icon": "🔴", "color": "#576574", "perms": "none", "menu": "pings", "size": "medium" },
+    { "key": "lang_pl", "icon": "🇵🇱", "color": "#dc143c", "perms": "none", "menu": "languages", "size": "medium" },
+    { "key": "lang_en", "icon": "🇬🇧", "color": "#012169", "perms": "none", "menu": "languages", "size": "medium" },
+    { "key": "muted", "icon": "🔇", "color": "#57606f", "perms": "none" },
+    { "key": "bots", "icon": "🤖", "color": "#2f3542", "hoist": true, "perms": "none", "bind": ["autorole.botRoles+"] }
+  ],
+  "categories": [
+    {
+      "key": "start", "emoji": "🚪", "access": "everyone",
+      "channels": [
+        { "key": "start", "emoji": "👋", "mode": "readonly", "content": ["start"] },
+        { "key": "rules", "emoji": "📜", "mode": "readonly", "content": ["rules"] },
+        { "key": "verify", "emoji": "✅", "mode": "readonly", "access": "unverified", "panel": "verification", "bind": ["verification.channel"] },
+        { "key": "announcements", "type": "announcement", "emoji": "📢", "mode": "readonly", "content": ["announcement"] },
+        { "key": "roles", "emoji": "🎭", "mode": "readonly", "content": ["roles"], "panel": "selfroles" },
+        { "key": "faq", "emoji": "❓", "mode": "readonly", "content": ["faq"], "size": "medium" }
+      ]
+    },
+    {
+      "key": "community", "emoji": "💬", "access": "member",
+      "channels": [
+        { "key": "general", "emoji": "💬" },
+        { "key": "greetings", "emoji": "👋", "mode": "readonly", "bind": ["welcome.channel", "goodbye.channel"] },
+        { "key": "media", "emoji": "🖼️", "mode": "media", "slowmode": 10 },
+        { "key": "clips", "emoji": "🎬", "mode": "media", "slowmode": 10 },
+        { "key": "memes", "emoji": "😂", "mode": "media", "slowmode": 5, "size": "medium" },
+        { "key": "off_topic", "emoji": "🌀", "size": "medium" },
+        { "key": "commands", "emoji": "🤖" },
+        { "key": "level_ups", "emoji": "🆙", "mode": "readonly", "size": "medium", "bind": ["leveling.announceChannel"] },
+        { "key": "hall_of_fame", "emoji": "⭐", "mode": "readonly", "size": "full", "bind": ["starboard.channel"] }
+      ]
+    },
+    {
+      "key": "game_{id}", "each": "games", "emoji": "🎮", "access": "member", "size": "medium",
+      "channels": [
+        { "key": "game_chat", "emoji": "💬" },
+        { "key": "game_lfg", "emoji": "🤝", "slowmode": 30 },
+        { "key": "game_clips", "emoji": "🎬", "mode": "media", "slowmode": 10, "size": "full" },
+        { "key": "game_voice_{id}", "each": "pairs", "type": "voice", "emoji": "🔊" }
+      ]
+    },
+    {
+      "key": "events", "emoji": "🎉", "access": "member", "size": "medium",
+      "channels": [
+        { "key": "event_info", "emoji": "📅", "mode": "readonly", "content": ["events"] },
+        { "key": "giveaways", "emoji": "🎁", "mode": "readonly" },
+        { "key": "tournaments", "emoji": "🏆", "mode": "readonly", "size": "full" },
+        { "key": "event_stage", "type": "stage", "emoji": "🎙️", "size": "full" }
+      ]
+    },
+    {
+      "key": "support", "emoji": "🎫", "access": "member",
+      "channels": [
+        { "key": "support_info", "emoji": "🎫", "mode": "readonly", "content": ["support"], "panel": "tickets" },
+        { "key": "suggestions", "type": "forum", "emoji": "💡", "bind": ["suggestions.channel"], "size": "medium", "tags": [{ "key": "new", "emoji": "💡" }, { "key": "accepted", "emoji": "✅", "moderated": true }, { "key": "rejected", "emoji": "❌", "moderated": true }] },
+        { "key": "partner_info", "emoji": "📜", "mode": "readonly", "content": ["partners"], "panel": "apply:partner", "size": "full" },
+        { "key": "partners", "emoji": "🤝", "mode": "readonly", "size": "full", "bind": ["applications.forms[partner].resultChannel"] },
+        { "key": "staff_apply", "emoji": "📝", "mode": "readonly", "content": ["staffapp"], "panel": "apply:staff", "size": "medium" }
+      ]
+    },
+    {
+      "key": "voice", "emoji": "🔊", "access": "member",
+      "channels": [
+        { "key": "lobby", "type": "voice", "emoji": "🏠" },
+        { "key": "talk_{id}", "each": "voice_small", "type": "voice", "emoji": "💬", "size": "medium" },
+        { "key": "music_{id}", "each": "pairs", "type": "voice", "emoji": "🎵", "size": "full" },
+        { "key": "afk", "type": "voice", "emoji": "💤" }
+      ]
+    },
+    { "key": "tickets", "emoji": "📨", "access": "staff", "channels": [], "bindCategory": "tickets.category" },
+    {
+      "key": "staff", "emoji": "🛡️", "access": "staff",
+      "channels": [
+        { "key": "staff_chat", "emoji": "💬" },
+        { "key": "staff_guide", "emoji": "📘", "mode": "readonly", "content": ["staffguide"], "size": "medium" },
+        { "key": "applications", "emoji": "📝", "bind": ["applications.reviewChannel"], "size": "medium" },
+        { "key": "staff_voice", "type": "voice", "emoji": "🔊" },
+        { "key": "mod_log", "emoji": "🔨", "bind": ["moderation.logChannel", "automod.logChannel", "tickets.logChannel"] },
+        { "key": "server_log", "emoji": "⚙️", "access": "admin", "bind": ["logging.server", "logging.members", "logging.messages"], "size": "medium" }
+      ]
+    }
+  ],
+  "binds": [
+    { "path": "tickets.panels", "value": [{ "id": "main", "channel": "", "title": "", "description": "", "style": "buttons", "categories": [], "color": "#5865f2" }] }
+  ],
+  "enable": ["welcome", "goodbye", "verification", "tickets", "suggestions", "applications", "leveling", "starboard", "logging", "automod", "boosts"],
+  "settings": {
+    "verificationLevel": "low",
+    "explicitContentFilter": "all_members",
+    "defaultNotifications": "mentions",
+    "afkChannel": "afk",
+    "afkTimeout": 900
+  }
+}
